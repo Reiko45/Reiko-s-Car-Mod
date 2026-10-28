@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "A": {
+      "tag": "c:ingots/gold"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "D": {
+      "tag": "c:dyes/red"
+    }
+  },
+  "pattern": [
+    "GGG",
+    "ADA",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:sports_car_body"
+  }
+}

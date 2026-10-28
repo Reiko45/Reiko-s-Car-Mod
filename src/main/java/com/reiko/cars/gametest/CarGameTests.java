@@ -11,6 +11,10 @@ import com.reiko.cars.pump.GasPumpBlockEntity;
 import com.reiko.cars.pump.PumpService;
 import com.reiko.cars.registry.ModBlocks;
 import com.reiko.cars.registry.ModEntities;
+import com.reiko.cars.registry.ModItems;
+import com.reiko.cars.workbench.CarAssemblyRecipe;
+import com.reiko.cars.workbench.CarPart;
+import com.reiko.cars.workbench.CarWorkbenchMenu;
 import com.reiko.economy.bank.Purse;
 import com.reiko.economy.core.CardService;
 import com.reiko.economy.core.EconomyService;
@@ -29,6 +33,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.CommonListenerCookie;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.material.Fluid;
@@ -41,7 +51,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
  * In-world tests: selling fuel for cash and card through the economy mod, the owner's free fill-ups, pipes and
- * buckets, fuel burned by driving, BuildCraft's fuel values and car locks. Run them with
+ * buckets, fuel burned by driving, BuildCraft's fuel values, car locks and building cars at the Car Workbench. Run them with
  * {@code ./gradlew runGameTestServer}. The economy mod turns taxes off on the test server, so amounts are exact.
  */
 @GameTestHolder(ReikoCars.MODID)
@@ -322,6 +332,141 @@ public final class CarGameTests {
             check(helper, !car.toggleLock(stranger), "a stranger can't lock it");
         } finally {
             leave(helper, owner, stranger);
+        }
+        helper.succeed();
+    }
+
+    // ---- the Car Workbench ----
+
+    private static final BlockPos WORKBENCH = new BlockPos(2, 1, 2);
+
+    private static CarWorkbenchMenu workbench(GameTestHelper helper, ServerPlayer player) {
+        helper.setBlock(WORKBENCH, ModBlocks.CAR_WORKBENCH.get().defaultBlockState());
+        return new CarWorkbenchMenu(1, player.getInventory(), ContainerLevelAccess.create(helper.getLevel(), helper.absolutePos(WORKBENCH)));
+    }
+
+    /** The car's button in the workbench's list. */
+    private static int button(CarWorkbenchMenu menu, CarType type) {
+        for (int i = 0; i < menu.recipes().size(); i++) {
+            if (menu.recipes().get(i).value().result().is(ModItems.car(type))) {
+                return i;
+            }
+        }
+        throw new IllegalStateException("The workbench can't build a " + type.id());
+    }
+
+    private static void giveParts(ServerPlayer player, CarType type) {
+        for (CarPart part : CarPart.values()) {
+            player.getInventory().add(new ItemStack(ModItems.part(type, part)));
+        }
+        player.getInventory().add(new ItemStack(ModItems.CAR_ENGINE.get()));
+        player.getInventory().add(new ItemStack(ModItems.TIRE.get(), 4));
+    }
+
+    private static int count(ServerPlayer player, Item item) {
+        return player.getInventory().countItem(item);
+    }
+
+    /** The menu slot showing the player's stack of {@code item}. */
+    private static int inventorySlot(CarWorkbenchMenu menu, ServerPlayer player, Item item) {
+        for (Slot slot : menu.slots) {
+            if (slot.container == player.getInventory() && slot.getItem().is(item)) {
+                return slot.index;
+            }
+        }
+        throw new IllegalStateException("No " + item + " in the inventory");
+    }
+
+    @GameTest(template = EMPTY)
+    public static void workbenchBuildsACar(GameTestHelper helper) {
+        ServerPlayer player = join(helper);
+        try {
+            CarWorkbenchMenu menu = workbench(helper, player);
+            helper.assertValueEqual(menu.recipes().size(), CarType.values().length, "one recipe per car");
+            for (CarType type : CarType.values()) {
+                helper.assertValueEqual(button(menu, type), type.ordinal(), "cars listed in order");
+            }
+            giveParts(player, CarType.SEDAN);
+            check(helper, menu.clickMenuButton(player, button(menu, CarType.SEDAN)), "sedan picked");
+            for (int slot = 0; slot < CarWorkbenchMenu.PARTS; slot++) {
+                check(helper, menu.getSlot(slot).hasItem(), "part slot " + slot + " filled from the inventory");
+            }
+            helper.assertValueEqual(count(player, ModItems.TIRE.get()), 0, "all four tires went in");
+            check(helper, menu.getSlot(CarWorkbenchMenu.RESULT).getItem().is(ModItems.car(CarType.SEDAN)), "the parts make a sedan");
+
+            menu.clicked(CarWorkbenchMenu.RESULT, 0, ClickType.QUICK_MOVE, player);
+            helper.assertValueEqual(count(player, ModItems.car(CarType.SEDAN)), 1, "the sedan is in the inventory");
+            for (int slot = 0; slot < CarWorkbenchMenu.PARTS; slot++) {
+                check(helper, !menu.getSlot(slot).hasItem(), "part " + slot + " used up");
+            }
+            check(helper, !menu.getSlot(CarWorkbenchMenu.RESULT).hasItem(), "nothing left to take");
+            helper.assertValueEqual(count(player, ModItems.car(CarType.SEDAN)), 1, "only one sedan for one set of parts");
+        } finally {
+            leave(helper, player);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void mixedPartsMakeNothing(GameTestHelper helper) {
+        ServerPlayer player = join(helper);
+        try {
+            CarWorkbenchMenu menu = workbench(helper, player);
+            // Everything for a sedan except its body, and a sports car's body instead.
+            player.getInventory().add(new ItemStack(ModItems.part(CarType.SEDAN, CarPart.CHASSIS)));
+            player.getInventory().add(new ItemStack(ModItems.part(CarType.SEDAN, CarPart.INTERIOR)));
+            player.getInventory().add(new ItemStack(ModItems.CAR_ENGINE.get()));
+            player.getInventory().add(new ItemStack(ModItems.TIRE.get(), 4));
+            player.getInventory().add(new ItemStack(ModItems.part(CarType.SPORTS_CAR, CarPart.BODY)));
+
+            menu.clickMenuButton(player, button(menu, CarType.SEDAN));
+            check(helper, !menu.getSlot(CarAssemblyRecipe.BODY).hasItem(), "the sports car's body isn't loaded into a sedan");
+            menu.clicked(inventorySlot(menu, player, ModItems.part(CarType.SPORTS_CAR, CarPart.BODY)), 0, ClickType.QUICK_MOVE, player);
+            check(helper, menu.getSlot(CarAssemblyRecipe.BODY).getItem().is(ModItems.part(CarType.SPORTS_CAR, CarPart.BODY)),
+                    "but it can be put in by hand");
+            check(helper, !menu.getSlot(CarWorkbenchMenu.RESULT).hasItem(), "a sedan with a sports car's body makes nothing");
+
+            menu.clickMenuButton(player, button(menu, CarType.SPORTS_CAR));
+            check(helper, menu.getSlot(CarAssemblyRecipe.BODY).getItem().is(ModItems.part(CarType.SPORTS_CAR, CarPart.BODY)),
+                    "picking the sports car keeps its body");
+            check(helper, !menu.getSlot(CarAssemblyRecipe.CHASSIS).hasItem(), "and hands back the sedan's chassis");
+            helper.assertValueEqual(count(player, ModItems.part(CarType.SEDAN, CarPart.CHASSIS)), 1, "the chassis is back in the inventory");
+            check(helper, menu.getSlot(CarAssemblyRecipe.ENGINE).hasItem(), "the engine fits either car, so it stays");
+            check(helper, !menu.getSlot(CarWorkbenchMenu.RESULT).hasItem(), "still no car");
+        } finally {
+            leave(helper, player);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void shiftClickSortsParts(GameTestHelper helper) {
+        ServerPlayer player = join(helper);
+        try {
+            CarWorkbenchMenu menu = workbench(helper, player);
+            player.getInventory().add(new ItemStack(ModItems.TIRE.get(), 6));
+            player.getInventory().add(new ItemStack(ModItems.part(CarType.PICKUP_TRUCK, CarPart.CHASSIS)));
+            player.getInventory().add(new ItemStack(Items.DIRT, 5));
+
+            menu.clicked(inventorySlot(menu, player, ModItems.TIRE.get()), 0, ClickType.QUICK_MOVE, player);
+            for (int wheel = 0; wheel < 4; wheel++) {
+                check(helper, menu.getSlot(CarAssemblyRecipe.FIRST_WHEEL + wheel).getItem().getCount() == 1, "one tire on wheel " + wheel);
+            }
+            helper.assertValueEqual(count(player, ModItems.TIRE.get()), 2, "two spare tires left over");
+            menu.clicked(inventorySlot(menu, player, ModItems.part(CarType.PICKUP_TRUCK, CarPart.CHASSIS)), 0, ClickType.QUICK_MOVE, player);
+            check(helper, menu.getSlot(CarAssemblyRecipe.CHASSIS).getItem().is(ModItems.part(CarType.PICKUP_TRUCK, CarPart.CHASSIS)),
+                    "the chassis went to the chassis slot");
+            menu.clicked(inventorySlot(menu, player, Items.DIRT), 0, ClickType.QUICK_MOVE, player);
+            for (int slot = 0; slot < CarWorkbenchMenu.PARTS; slot++) {
+                check(helper, !menu.getSlot(slot).getItem().is(Items.DIRT), "dirt isn't a car part");
+            }
+            helper.assertValueEqual(count(player, Items.DIRT), 5, "the dirt stays in the inventory");
+
+            menu.removed(player);
+            helper.assertValueEqual(count(player, ModItems.TIRE.get()), 6, "closing the workbench gives the tires back");
+            helper.assertValueEqual(count(player, ModItems.part(CarType.PICKUP_TRUCK, CarPart.CHASSIS)), 1, "and the chassis");
+        } finally {
+            leave(helper, player);
         }
         helper.succeed();
     }

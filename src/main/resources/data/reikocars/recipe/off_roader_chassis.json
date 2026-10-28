@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    },
+    "X": {
+      "tag": "c:gears/iron"
+    }
+  },
+  "pattern": [
+    "I I",
+    "PXP",
+    "I I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:off_roader_chassis"
+  }
+}

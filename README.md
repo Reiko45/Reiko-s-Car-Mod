@@ -41,6 +41,24 @@ in a car, a dashboard in the bottom right shows your speed and a fuel gauge.
   on, and never your own pets.
 - Cars climb a full block, so curbs, slabs and stairs don't stop them. Cars can't be blown up or burned.
 
+## Building a car
+
+Cars are put together at a **Car Workbench**. Each car has three parts of its own (a **chassis**, a **body** and an
+**interior**), and they all take a **Car Engine** and four **Tires**.
+
+1. Craft the parts (see [Recipes](#recipes)) and place a Car Workbench.
+2. Right-click the workbench. The buttons along the top are the cars it can build. Hover over one to see which parts
+   you have, and click it to put all the parts you carry into place. You can also drop parts in by hand or shift-click
+   them; a stack of tires fills all four wheels.
+3. The slots are laid out like the car seen from above: a wheel at each corner, the engine at the front, the chassis
+   in the middle with the body and interior either side. Empty slots show the part they need.
+4. A 3D model of the car fills in as the parts go in: anything not fitted yet shows as a see-through blue ghost. Drag
+   it to turn it.
+5. When every part is in, take the car from the slot on the right. A green tick on a car's button means you carry
+   everything for it.
+
+Parts left in the workbench go back to you when you close it.
+
 ## Gas pumps
 
 A pump is two blocks tall. Whoever places it owns it, and only they (or an admin) can break it. A broken pump keeps
@@ -67,13 +85,24 @@ bank account, even while they're offline. The pump's owner fills up for free.
 
 | Item | Recipe |
 | --- | --- |
+| Car Workbench | iron ingots on top, iron gear, crafting table, iron gear across the middle, iron legs |
 | Tire ×4 | dried kelp in the corners, black dye on the sides, centre empty |
 | Car Engine | iron ingots, iron gears, pistons around a BuildCraft **Combustion Engine** |
-| Sedan | 4 tires, glass pane, iron ingots, car engine |
-| Sports Car | 4 tires, glass pane, gold ingots, gold gear, car engine |
-| Pickup Truck | 4 tires, glass pane, iron ingots, chest, car engine |
-| Off-Roader | 4 tires, glass pane, iron ingots, iron block, car engine |
 | Gas Pump | iron ingots, glass pane, BuildCraft **Tank**, iron gear |
+
+The car parts, crafted on an ordinary crafting table:
+
+| Part | Sedan | Sports Car | Pickup Truck | Off-Roader |
+| --- | --- | --- | --- | --- |
+| **Chassis**: iron rails (`I I`) around a middle | iron gear | gold gear | iron block | iron gear between two pistons |
+| **Body**: glass panes on top, iron below, a dye in the middle | blue dye | red dye, gold ingots beside it | white dye, chest at the bottom | yellow dye, iron bars beside it |
+| **Interior**: a dashboard on top, redstone in the middle, seats below | clock, wool seats | clock, leather seats, gold trim | clock, leather bench | compass, wool and leather |
+
+Then at the Car Workbench: chassis + body + interior + Car Engine + 4 Tires = the car.
+
+The workbench recipes are data files (`data/reikocars/recipe/sedan.json` and so on, type `reikocars:car_assembly`),
+so a data pack can change a car's parts or add new vehicles. Each one names a `chassis`, `body`, `interior`, `engine`
+and `wheel` (an item or a tag) and a `result`.
 
 ## Settings
 
@@ -102,9 +131,10 @@ You need JDK 21. The two mods it builds on are in `libs/`: replace those jars to
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
-./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, locks), then exit
+./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, locks, the workbench), then exit
 ./gradlew runClient         # start a dev client
 ./gradlew runClient -Pshowcase  # build a test scene, buy fuel, drive, save screenshots to run/screenshots/, quit
+./gradlew runClient -Pshowcase=workbench  # the same for the Car Workbench
 ```
 
 ## Editing the models
@@ -129,10 +159,11 @@ src/main/java/com/reiko/cars/
 ├── ReikoCars.java        mod entry point
 ├── car/                  the car entity and its types, fuel (CarFuel, CarTank), the car item
 ├── pump/                 the gas pump block, its block entity, menu, protection, and PumpService (selling fuel)
+├── workbench/            the Car Workbench block and menu, the car parts, and the car_assembly recipe type
 ├── network/              packets: pump actions, horn and lock
-├── registry/             blocks, items, entities, menus, sounds, data components, capabilities, creative tab
+├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car renderer and models, dashboard, pump screen and display, engine sound, keys
+├── client/               car renderer and models, dashboard, pump and workbench screens, pump display, engine sound, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car models

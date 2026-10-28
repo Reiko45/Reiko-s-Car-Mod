@@ -2,6 +2,7 @@ package com.reiko.cars.registry;
 
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.pump.GasPumpBlock;
+import com.reiko.cars.workbench.CarWorkbenchBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
@@ -22,6 +23,14 @@ public final class ModBlocks {
                     .noOcclusion()
                     .pushReaction(PushReaction.BLOCK)
                     .lightLevel(state -> 5)));
+
+    /** Where cars are put together from their parts. */
+    public static final DeferredBlock<CarWorkbenchBlock> CAR_WORKBENCH = BLOCKS.register("car_workbench", () -> new CarWorkbenchBlock(
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_RED)
+                    .strength(3.0F, 6.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)));
 
     private ModBlocks() {
     }

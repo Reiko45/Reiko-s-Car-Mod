@@ -1,28 +1,20 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "misc",
-  "key": {
-    "T": {
-      "item": "reikocars:tire"
-    },
-    "G": {
-      "tag": "c:glass_panes"
-    },
-    "I": {
-      "tag": "c:ingots/iron"
-    },
-    "B": {
-      "tag": "c:storage_blocks/iron"
-    },
-    "E": {
-      "item": "reikocars:car_engine"
-    }
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:off_roader_chassis"
   },
-  "pattern": [
-    "TGT",
-    "IEI",
-    "TBT"
-  ],
+  "body": {
+    "item": "reikocars:off_roader_body"
+  },
+  "interior": {
+    "item": "reikocars:off_roader_interior"
+  },
+  "engine": {
+    "item": "reikocars:car_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
   "result": {
     "count": 1,
     "id": "reikocars:off_roader"

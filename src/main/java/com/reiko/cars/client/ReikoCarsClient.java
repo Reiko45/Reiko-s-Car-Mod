@@ -94,6 +94,7 @@ public final class ReikoCarsClient {
 
     private static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenus.PUMP.get(), PumpScreen::new);
+        event.register(ModMenus.CAR_WORKBENCH.get(), CarWorkbenchScreen::new);
     }
 
     private static void registerKeys(RegisterKeyMappingsEvent event) {

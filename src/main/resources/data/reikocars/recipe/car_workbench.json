@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "tag": "c:gears/iron"
+    },
+    "T": {
+      "item": "minecraft:crafting_table"
+    }
+  },
+  "pattern": [
+    "III",
+    "GTG",
+    "I I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:car_workbench"
+  }
+}

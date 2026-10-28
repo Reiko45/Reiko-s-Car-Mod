@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/orientable_with_bottom",
+  "textures": {
+    "top": "reikocars:block/car_workbench_top",
+    "bottom": "reikocars:block/car_workbench_bottom",
+    "side": "reikocars:block/car_workbench_side",
+    "front": "reikocars:block/car_workbench_front"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "B": {
+      "item": "minecraft:iron_bars"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "D": {
+      "tag": "c:dyes/yellow"
+    }
+  },
+  "pattern": [
+    "GGG",
+    "BDB",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:off_roader_body"
+  }
+}

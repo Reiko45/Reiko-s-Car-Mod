@@ -9,6 +9,7 @@ import com.reiko.cars.registry.ModDataComponents;
 import com.reiko.cars.registry.ModEntities;
 import com.reiko.cars.registry.ModItems;
 import com.reiko.cars.registry.ModMenus;
+import com.reiko.cars.registry.ModRecipes;
 import com.reiko.cars.registry.ModSounds;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
@@ -33,6 +34,8 @@ public final class ReikoCars {
         ModBlockEntities.BLOCK_ENTITIES.register(modBus);
         ModEntities.ENTITIES.register(modBus);
         ModMenus.MENUS.register(modBus);
+        ModRecipes.TYPES.register(modBus);
+        ModRecipes.SERIALIZERS.register(modBus);
         ModSounds.SOUNDS.register(modBus);
         ModCreativeTabs.TABS.register(modBus);
         container.registerConfig(ModConfig.Type.SERVER, CarsConfig.SPEC);

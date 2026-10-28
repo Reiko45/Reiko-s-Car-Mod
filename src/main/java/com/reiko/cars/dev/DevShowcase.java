@@ -9,6 +9,13 @@ import com.reiko.cars.pump.GasPumpBlockEntity;
 import com.reiko.cars.pump.PumpMenu;
 import com.reiko.cars.registry.ModBlocks;
 import com.reiko.cars.registry.ModEntities;
+import com.reiko.cars.registry.ModItems;
+import com.reiko.cars.client.CarWorkbenchScreen;
+import com.reiko.cars.workbench.CarPart;
+import com.reiko.cars.workbench.CarWorkbenchBlock;
+import com.reiko.cars.workbench.CarWorkbenchMenu;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.ItemStack;
 import com.reiko.economy.bank.Purse;
 import com.reiko.economy.core.CardService;
 import com.reiko.economy.core.EconomyService;
@@ -55,7 +62,10 @@ import net.neoforged.neoforge.network.PacketDistributor;
  */
 @EventBusSubscriber(modid = ReikoCars.MODID, value = Dist.CLIENT)
 public final class DevShowcase {
-    private static final boolean ENABLED = Boolean.getBoolean("reikocars.showcase");
+    /** "true" for the cars and pumps, "workbench" for the Car Workbench, "false" (the default) for neither. */
+    private static final String MODE = System.getProperty("reikocars.showcase", "false");
+    private static final boolean ENABLED = !MODE.equals("false");
+    private static final BlockPos BENCH = new BlockPos(2, -60, 3);
     private static final BlockPos PUMP = new BlockPos(4, -60, 6);
     private static final BlockPos PUMP2 = new BlockPos(8, -60, 6);
     private static boolean worldRequested;
@@ -90,7 +100,11 @@ public final class DevShowcase {
                     registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT)
                             .value().createWorldDimensions(), new TitleScreen());
         });
-        script();
+        if (MODE.equals("workbench")) {
+            workbenchScript();
+        } else {
+            script();
+        }
     }
 
     @SubscribeEvent
@@ -238,5 +252,95 @@ public final class DevShowcase {
         car.moveTo(x, -60.0, z, yaw, 0.0F);
         car.setFuel(type.tankCapacity() * fuel);
         level.addFreshEntity(car);
+    }
+
+    // ---- the Car Workbench: ./gradlew runClient -Pshowcase=workbench ----
+
+    private static void clickCar(Minecraft minecraft, int index) {
+        if (minecraft.player.containerMenu instanceof CarWorkbenchMenu menu) {
+            menu.clickMenuButton(minecraft.player, index);
+            minecraft.gameMode.handleInventoryButtonClick(menu.containerId, index);
+        }
+    }
+
+    /** Puts the mouse over a point of the open screen, in GUI coordinates, so its tooltip shows. */
+    private static void hover(Minecraft minecraft, double guiX, double guiY) {
+        double scale = minecraft.getWindow().getGuiScale();
+        try {
+            for (String name : new String[] {"xpos", "ypos"}) {
+                java.lang.reflect.Field field = net.minecraft.client.MouseHandler.class.getDeclaredField(name);
+                field.setAccessible(true);
+                field.setDouble(minecraft.mouseHandler, (name.equals("xpos") ? guiX : guiY) * scale);
+            }
+        } catch (ReflectiveOperationException e) {
+            ReikoCars.LOGGER.warn("Showcase couldn't move the mouse", e);
+        }
+    }
+
+    private static void give(ServerPlayer player, net.minecraft.world.item.Item item, int count) {
+        player.getInventory().add(new ItemStack(item, count));
+    }
+
+    private static void workbenchScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                for (int x = -6; x <= 12; x++) {
+                    for (int z = -2; z <= 10; z++) {
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), Blocks.SMOOTH_STONE.defaultBlockState());
+                    }
+                }
+                level.setBlockAndUpdate(BENCH, ModBlocks.CAR_WORKBENCH.get().defaultBlockState().setValue(CarWorkbenchBlock.FACING, Direction.SOUTH));
+                level.setBlockAndUpdate(BENCH.east(), ModBlocks.CAR_WORKBENCH.get().defaultBlockState().setValue(CarWorkbenchBlock.FACING, Direction.EAST));
+                spawn(level, CarType.SPORTS_CAR, 7.0, 4.0, 200, 0.5);
+                player.getInventory().clearContent();
+                // Half a sedan: no interior, two tires short.
+                give(player, ModItems.part(CarType.SEDAN, CarPart.CHASSIS), 1);
+                give(player, ModItems.part(CarType.SEDAN, CarPart.BODY), 1);
+                give(player, ModItems.CAR_ENGINE.get(), 1);
+                give(player, ModItems.TIRE.get(), 2);
+                for (CarType type : new CarType[] {CarType.PICKUP_TRUCK, CarType.OFF_ROADER}) {
+                    for (CarPart part : CarPart.values()) {
+                        give(player, ModItems.part(type, part), 1);
+                    }
+                }
+            });
+        });
+        at(70, mc -> look(mc, 3.0, -60.0, 6.6, 165.0F, 28.0F));
+        at(120, mc -> shot(mc, "12_workbench_block"));
+        at(125, mc -> server(mc, player -> player.openMenu(
+                player.serverLevel().getBlockState(BENCH).getMenuProvider(player.serverLevel(), BENCH))));
+        at(160, mc -> shot(mc, "13_workbench_blueprint"));
+        at(165, mc -> clickCar(mc, CarType.SEDAN.ordinal()));
+        at(195, mc -> shot(mc, "14_workbench_half_a_sedan"));
+        at(200, mc -> server(mc, player -> {
+            for (CarPart part : CarPart.values()) {
+                give(player, ModItems.part(CarType.SPORTS_CAR, part), 1);
+            }
+            give(player, ModItems.CAR_ENGINE.get(), 1);
+            give(player, ModItems.TIRE.get(), 4);
+        }));
+        at(210, mc -> clickCar(mc, CarType.SPORTS_CAR.ordinal()));
+        at(240, mc -> shot(mc, "15_workbench_sports_car_ready"));
+        at(245, mc -> {
+            if (mc.screen instanceof CarWorkbenchScreen screen) {
+                int left = (screen.width - 236) / 2;
+                int top = (screen.height - 212) / 2;
+                hover(mc, left + 8 + 24 * CarType.SEDAN.ordinal() + 11, top + 17 + 11);
+            }
+        });
+        at(270, mc -> shot(mc, "16_workbench_tooltip"));
+        at(275, mc -> {
+            hover(mc, 0, 0);
+            if (mc.player.containerMenu instanceof CarWorkbenchMenu menu) {
+                mc.gameMode.handleInventoryMouseClick(menu.containerId, CarWorkbenchMenu.RESULT, 0, ClickType.QUICK_MOVE, mc.player);
+            }
+        });
+        at(305, mc -> shot(mc, "17_workbench_built"));
+        at(310, mc -> mc.player.closeContainer());
+        at(320, mc -> mc.stop());
     }
 }

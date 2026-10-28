@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "P": {
+      "item": "minecraft:compass"
+    },
+    "W": {
+      "tag": "minecraft:wool"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "L": {
+      "tag": "c:leathers"
+    }
+  },
+  "pattern": [
+    " P ",
+    "WRW",
+    "LLL"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:off_roader_interior"
+  }
+}

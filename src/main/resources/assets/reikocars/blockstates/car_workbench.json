@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "reikocars:block/car_workbench"
+    },
+    "facing=east": {
+      "model": "reikocars:block/car_workbench",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "reikocars:block/car_workbench",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "reikocars:block/car_workbench",
+      "y": 270
+    }
+  }
+}

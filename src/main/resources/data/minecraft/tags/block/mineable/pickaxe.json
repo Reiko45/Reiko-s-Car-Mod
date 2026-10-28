@@ -1,5 +1,6 @@
 {
   "values": [
-    "reikocars:gas_pump"
+    "reikocars:gas_pump",
+    "reikocars:car_workbench"
   ]
 }

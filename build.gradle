@@ -33,8 +33,10 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-            // ./gradlew runClient -Pshowcase builds a test scene, drives a car and saves screenshots (see DevShowcase).
-            systemProperty 'reikocars.showcase', project.hasProperty('showcase') ? 'true' : 'false'
+            // ./gradlew runClient -Pshowcase builds a test scene, drives a car and saves screenshots (see DevShowcase);
+            // -Pshowcase=workbench does the same for the Car Workbench.
+            def showcase = project.findProperty('showcase')
+            systemProperty 'reikocars.showcase', showcase == null ? 'false' : (showcase.toString() ?: 'true')
         }
 
         server {

@@ -61,8 +61,24 @@ public final class CarModel {
     }
 
     public void renderLights(PoseStack poseStack, VertexConsumer consumer, int light, int overlay) {
+        renderLights(poseStack, consumer, light, overlay, -1);
+    }
+
+    public void renderLights(PoseStack poseStack, VertexConsumer consumer, int light, int overlay, int color) {
         if (lights != null) {
-            lights.render(poseStack, consumer, light, overlay);
+            lights.render(poseStack, consumer, light, overlay, color);
         }
+    }
+
+    // ---- one bone at a time, for the workbench's preview, where parts not fitted yet are drawn as ghosts ----
+
+    /** The trim alone, without the wheels, tinted {@code color} (ARGB). */
+    public void renderTrimOnly(PoseStack poseStack, VertexConsumer consumer, int light, int overlay, int color) {
+        trim.render(poseStack, consumer, light, overlay, color);
+    }
+
+    /** Wheel {@code index}: 0 front left, 1 front right, 2 rear left, 3 rear right. */
+    public void renderWheel(int index, PoseStack poseStack, VertexConsumer consumer, int light, int overlay, int color) {
+        wheels[index].render(poseStack, consumer, light, overlay, color);
     }
 }

@@ -1,28 +1,20 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "misc",
-  "key": {
-    "T": {
-      "item": "reikocars:tire"
-    },
-    "G": {
-      "tag": "c:glass_panes"
-    },
-    "I": {
-      "tag": "c:ingots/iron"
-    },
-    "C": {
-      "tag": "c:chests/wooden"
-    },
-    "E": {
-      "item": "reikocars:car_engine"
-    }
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:pickup_truck_chassis"
   },
-  "pattern": [
-    "TGT",
-    "IEC",
-    "TIT"
-  ],
+  "body": {
+    "item": "reikocars:pickup_truck_body"
+  },
+  "interior": {
+    "item": "reikocars:pickup_truck_interior"
+  },
+  "engine": {
+    "item": "reikocars:car_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
   "result": {
     "count": 1,
     "id": "reikocars:pickup_truck"
