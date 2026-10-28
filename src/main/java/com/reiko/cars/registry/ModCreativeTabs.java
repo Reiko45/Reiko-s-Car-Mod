@@ -27,6 +27,7 @@ public final class ModCreativeTabs {
                 }
                 output.accept(ModItems.CAR_WORKBENCH.get());
                 output.accept(ModItems.GAS_PUMP.get());
+                output.accept(ModItems.DIESEL_PUMP.get());
                 output.accept(ModItems.CAR_ENGINE.get());
                 output.accept(ModItems.TIRE.get());
                 for (CarType type : CarType.values()) {

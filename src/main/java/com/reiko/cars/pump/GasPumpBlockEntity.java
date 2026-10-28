@@ -1,6 +1,6 @@
 package com.reiko.cars.pump;
 
-import com.reiko.cars.car.CarFuel;
+import com.reiko.cars.car.FuelType;
 import com.reiko.cars.config.CarsConfig;
 import com.reiko.cars.registry.ModBlockEntities;
 import com.reiko.cars.registry.ModDataComponents;
@@ -23,13 +23,15 @@ import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The working part of a gas pump: its fuel tank, price per bucket and owner, plus a running total of what it has
- * sold. The owner gets paid for every sale, straight into their bank account.
+ * The working part of a gas or diesel pump: its fuel tank, price per bucket and owner, plus a running total of what
+ * it has sold. The owner gets paid for every sale, straight into their bank account. The tank only takes the pump's
+ * own kind of fuel.
  */
 public final class GasPumpBlockEntity extends BlockEntity {
     /** How often, in ticks, a changing tank is sent to nearby players for the price display. */
     private static final int SYNC_INTERVAL = 10;
 
+    private final FuelType fuelType;
     private final FluidTank tank;
     /** What pipes see: fuel goes in, nothing comes out, so the pump can only be emptied by selling. */
     private final IFluidHandler pipeInput;
@@ -45,7 +47,9 @@ public final class GasPumpBlockEntity extends BlockEntity {
     public GasPumpBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GAS_PUMP.get(), pos, state);
         this.price = Math.round(CarsConfig.get(CarsConfig.DEFAULT_PUMP_PRICE) * 100.0);
-        this.tank = new FluidTank(CarsConfig.get(CarsConfig.PUMP_CAPACITY) * 1000, CarFuel::isFuel) {
+        FuelType sells = state.getBlock() instanceof GasPumpBlock block ? block.fuel() : FuelType.GASOLINE;
+        this.fuelType = sells;
+        this.tank = new FluidTank(CarsConfig.get(CarsConfig.PUMP_CAPACITY) * 1000, sells::matches) {
             @Override
             protected void onContentsChanged() {
                 setChanged();
@@ -60,6 +64,11 @@ public final class GasPumpBlockEntity extends BlockEntity {
             needsSync = false;
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
         }
+    }
+
+    /** Gasoline for a gas pump, diesel for a diesel pump. */
+    public FuelType fuelType() {
+        return fuelType;
     }
 
     /** The full tank, for the owner's buckets and for selling. */

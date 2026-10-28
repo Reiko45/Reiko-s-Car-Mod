@@ -67,7 +67,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
  */
 @EventBusSubscriber(modid = ReikoCars.MODID, value = Dist.CLIENT)
 public final class DevShowcase {
-    /** "true" for the cars and pumps, "workbench" for the Car Workbench, "false" (the default) for neither. */
+    /** "true" for the cars and pumps, "workbench" for the Car Workbench, "diesel" for the diesel pump, "false" for none. */
     private static final String MODE = System.getProperty("reikocars.showcase", "false");
     private static final boolean ENABLED = !MODE.equals("false");
     private static final BlockPos BENCH = new BlockPos(2, -60, 3);
@@ -107,6 +107,8 @@ public final class DevShowcase {
         });
         if (MODE.equals("workbench")) {
             workbenchScript();
+        } else if (MODE.equals("diesel")) {
+            dieselScript();
         } else {
             script();
         }
@@ -155,7 +157,11 @@ public final class DevShowcase {
     }
 
     private static void placePump(ServerLevel level, BlockPos pos, ServerPlayer owner, String fluid, int amount, long price) {
-        BlockState lower = ModBlocks.GAS_PUMP.get().defaultBlockState().setValue(GasPumpBlock.FACING, Direction.NORTH);
+        placePump(level, ModBlocks.GAS_PUMP.get(), pos, owner, fluid, amount, price);
+    }
+
+    private static void placePump(ServerLevel level, GasPumpBlock block, BlockPos pos, ServerPlayer owner, String fluid, int amount, long price) {
+        BlockState lower = block.defaultBlockState().setValue(GasPumpBlock.FACING, Direction.NORTH);
         level.setBlockAndUpdate(pos, lower);
         level.setBlockAndUpdate(pos.above(), lower.setValue(GasPumpBlock.HALF, DoubleBlockHalf.UPPER));
         GasPumpBlockEntity pump = (GasPumpBlockEntity) level.getBlockEntity(pos);
@@ -186,7 +192,7 @@ public final class DevShowcase {
                 // A fake second player owns the pumps, so buying from them costs money.
                 ServerPlayer owner = player;
                 placePump(level, PUMP, owner, "fuel_light", 12_000, 375);
-                placePump(level, PUMP2, owner, "fuel_dense", 4_000, 1450);
+                placePump(level, ModBlocks.DIESEL_PUMP.get(), PUMP2, owner, "fuel_dense", 4_000, 1450);
                 GasPumpBlockEntity first = (GasPumpBlockEntity) level.getBlockEntity(PUMP);
                 first.setOwner(null); // nobody owns it: the player pays like a customer, money leaves the economy
                 spawn(level, CarType.SEDAN, 4.5, 2.5, 90, 0.12); // facing west, down the empty road
@@ -394,5 +400,73 @@ public final class DevShowcase {
         if (check == null) {
             handler.transferRecipe(menu, recipe, layout.getRecipeSlotsView(), minecraft.player, false, true);
         }
+    }
+
+    // ---- the diesel pump: ./gradlew runClient -Pshowcase=diesel ----
+
+    /** Presses the pump screen's button that switches between filling the car and filling buckets. */
+    private static void pressTargetButton(Minecraft minecraft) {
+        if (minecraft.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen) {
+            screen.mouseClicked(screen.getGuiLeft() + 15, screen.getGuiTop() + 51, 0);
+        }
+    }
+
+    private static void dieselScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                for (int x = -6; x <= 14; x++) {
+                    for (int z = -4; z <= 10; z++) {
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), z <= 3 ? Blocks.GRAY_CONCRETE.defaultBlockState()
+                                : Blocks.SMOOTH_STONE.defaultBlockState());
+                    }
+                }
+                placePump(level, PUMP, player, "fuel_light", 12_000, 375);
+                placePump(level, ModBlocks.DIESEL_PUMP.get(), PUMP2, player, "fuel_dense", 9_000, 1450);
+                ((GasPumpBlockEntity) level.getBlockEntity(PUMP)).setOwner(null);
+                ((GasPumpBlockEntity) level.getBlockEntity(PUMP2)).setOwner(null);
+                spawn(level, CarType.PICKUP_TRUCK, 8.5, 2.5, 90, 0.3);
+                player.getInventory().clearContent();
+                EconomyService.INSTANCE.ensureAccount(player.server, player.getUUID(), player.getGameProfile().getName());
+                Purse.give(player, 8_000);
+                give(player, net.minecraft.world.item.Items.BUCKET, 4);
+            });
+        });
+        // Both pumps from the front: the signs say GAS and DIESEL.
+        at(70, mc -> look(mc, 6.0, -60.0, 1.6, 0.0F, -18.0F));
+        at(120, mc -> shot(mc, "22_gas_and_diesel_pumps"));
+        at(125, mc -> look(mc, 3.0, -59.0, -4.0, 0.0F, 12.0F));
+        at(175, mc -> shot(mc, "23_pumps_from_the_road"));
+        // The diesel pump's screen: the pickup at the hose runs on gasoline, so it starts on buckets.
+        at(180, mc -> look(mc, 8.5, -60.0, 9.0, 180.0F, 15.0F));
+        at(200, mc -> server(mc, player -> PumpMenu.open(player, (GasPumpBlockEntity) player.level().getBlockEntity(PUMP2))));
+        at(230, mc -> shot(mc, "24_diesel_pump_buckets"));
+        at(235, mc -> {
+            if (mc.player.containerMenu instanceof PumpMenu menu) {
+                PacketDistributor.sendToServer(PumpActionPayload.fillBuckets(menu.containerId, 3, menu.price(), Payment.cash()));
+            }
+        });
+        at(260, mc -> shot(mc, "25_diesel_pump_bought"));
+        at(265, mc -> pressTargetButton(mc));
+        at(290, mc -> shot(mc, "26_diesel_pump_car_wrong_fuel"));
+        at(295, mc -> mc.player.closeContainer());
+        // Pouring a bucket of diesel into the pickup is refused.
+        at(300, mc -> server(mc, player -> {
+            for (int slot = 0; slot < player.getInventory().items.size(); slot++) {
+                ItemStack stack = player.getInventory().items.get(slot);
+                if (net.neoforged.neoforge.fluids.FluidUtil.getFluidContained(stack).isPresent()) {
+                    player.getInventory().selected = slot < 9 ? slot : player.getInventory().selected;
+                    player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, stack.copy());
+                    break;
+                }
+            }
+            CarEntity pickup = car(player.serverLevel(), CarType.PICKUP_TRUCK);
+            pickup.interact(player, net.minecraft.world.InteractionHand.MAIN_HAND);
+        }));
+        at(305, mc -> shot(mc, "27_diesel_refused_by_car"));
+        at(320, mc -> mc.stop());
     }
 }

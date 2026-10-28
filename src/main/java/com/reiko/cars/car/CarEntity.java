@@ -262,6 +262,10 @@ public class CarEntity extends VehicleEntity {
             }
         }
         if (CarsConfig.get(CarsConfig.BUCKET_FUELING) && FluidUtil.getFluidContained(held).filter(CarFuel::isFuel).isPresent()) {
+            FuelType poured = FuelType.of(FluidUtil.getFluidContained(held).get());
+            if (poured != carType().fuel()) {
+                return refuse(player, Component.translatable("car.reikocars.wrong_fuel", carType().fuel().displayName(), poured.displayName()));
+            }
             if (!level().isClientSide) {
                 pourFrom(player, hand);
             }

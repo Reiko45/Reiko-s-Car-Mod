@@ -11,9 +11,9 @@ public final class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, ReikoCars.MODID);
 
-    /** Only the bottom half of a pump has a block entity. */
+    /** Gas and diesel pumps share it. Only the bottom half of a pump has one. */
     public static final Supplier<BlockEntityType<GasPumpBlockEntity>> GAS_PUMP = BLOCK_ENTITIES.register("gas_pump",
-            () -> BlockEntityType.Builder.of(GasPumpBlockEntity::new, ModBlocks.GAS_PUMP.get()).build(null));
+            () -> BlockEntityType.Builder.of(GasPumpBlockEntity::new, ModBlocks.GAS_PUMP.get(), ModBlocks.DIESEL_PUMP.get()).build(null));
 
     private ModBlockEntities() {
     }

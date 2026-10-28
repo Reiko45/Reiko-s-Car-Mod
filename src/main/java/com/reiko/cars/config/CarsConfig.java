@@ -37,7 +37,7 @@ public final class CarsConfig {
                 .comment("Lets players pour fuel into a car straight from a bucket or tank item, without a gas pump.")
                 .define("allowBucketFueling", true);
         FALLBACK_FUEL_ENERGY = builder
-                .comment("MJ per bucket for a fluid in the reikocars:car_fuels tag that BuildCraft has no fuel value for.")
+                .comment("MJ per bucket for a fluid in the reikocars:gasoline or reikocars:diesel tag that BuildCraft has no fuel value for.")
                 .defineInRange("fallbackEnergyPerBucket", 90_000.0, 1.0, 100_000_000.0);
         builder.pop();
 

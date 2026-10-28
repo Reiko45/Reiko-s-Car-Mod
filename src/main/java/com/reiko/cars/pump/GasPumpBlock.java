@@ -1,8 +1,12 @@
 package com.reiko.cars.pump;
 
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.reiko.cars.car.FuelType;
 import com.reiko.cars.registry.ModBlockEntities;
 import java.util.EnumMap;
+import java.util.Locale;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -41,12 +45,17 @@ import net.neoforged.neoforge.fluids.FluidUtil;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A two-block-tall gas pump. The bottom half holds the {@link GasPumpBlockEntity} (the fuel, price and owner);
- * the top half is just there to be solid and clickable. Fuel goes in through pipes on any side of either half,
- * or from a bucket by the owner. Right-click opens the pump screen.
+ * A two-block-tall fuel pump: the gas pump or the diesel pump, which work the same way but sell different fuel
+ * ({@link #fuel()}). The bottom half holds the {@link GasPumpBlockEntity} (the fuel, price and owner); the top half is
+ * just there to be solid and clickable. Fuel goes in through pipes on any side of either half, or from a bucket by
+ * the owner. Right-click opens the pump screen.
  */
 public final class GasPumpBlock extends HorizontalDirectionalBlock implements EntityBlock {
-    public static final MapCodec<GasPumpBlock> CODEC = simpleCodec(GasPumpBlock::new);
+    private static final Codec<FuelType> FUEL_CODEC = Codec.STRING.xmap(name -> FuelType.valueOf(name.toUpperCase(Locale.ROOT)), FuelType::id);
+    public static final MapCodec<GasPumpBlock> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+            FUEL_CODEC.fieldOf("fuel").forGetter(GasPumpBlock::fuel),
+            propertiesCodec()
+    ).apply(instance, GasPumpBlock::new));
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
 
     // Shapes for a pump facing north, in pixels; rotated for the other directions.
@@ -55,9 +64,17 @@ public final class GasPumpBlock extends HorizontalDirectionalBlock implements En
     private static final Map<Direction, VoxelShape> UPPER = shapes(
             Block.box(2, 0, 4, 14, 12, 12), Block.box(1, 12, 3, 15, 16, 13));
 
-    public GasPumpBlock(Properties properties) {
+    private final FuelType fuel;
+
+    public GasPumpBlock(FuelType fuel, Properties properties) {
         super(properties);
+        this.fuel = fuel;
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(HALF, DoubleBlockHalf.LOWER));
+    }
+
+    /** What this pump sells. */
+    public FuelType fuel() {
+        return fuel;
     }
 
     @Override
@@ -200,7 +217,7 @@ public final class GasPumpBlock extends HorizontalDirectionalBlock implements En
             if (!pump.canManage(player)) {
                 player.displayClientMessage(Component.translatable("pump.reikocars.owner_only_fill", pump.ownerName()), true);
             } else if (!FluidUtil.interactWithFluidHandler(player, hand, pump.tank())) {
-                player.displayClientMessage(Component.translatable("pump.reikocars.wrong_fluid"), true);
+                player.displayClientMessage(Component.translatable("pump.reikocars.wrong_fluid", fuel.displayName()), true);
             }
         }
         return ItemInteractionResult.sidedSuccess(level.isClientSide);

@@ -6,6 +6,7 @@ import com.reiko.cars.car.CarEntity;
 import com.reiko.cars.car.CarFuel;
 import com.reiko.cars.car.CarTank;
 import com.reiko.cars.car.CarType;
+import com.reiko.cars.car.FuelType;
 import com.reiko.cars.pump.GasPumpBlock;
 import com.reiko.cars.pump.GasPumpBlockEntity;
 import com.reiko.cars.pump.PumpService;
@@ -45,13 +46,15 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.FluidUtil;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
  * In-world tests: selling fuel for cash and card through the economy mod, the owner's free fill-ups, pipes and
- * buckets, fuel burned by driving, BuildCraft's fuel values, car locks and building cars at the Car Workbench. Run them with
+ * buckets, gasoline and diesel, selling into buckets, fuel burned by driving, BuildCraft's fuel values, car locks and
+ * building cars at the Car Workbench. Run them with
  * {@code ./gradlew runGameTestServer}. The economy mod turns taxes off on the test server, so amounts are exact.
  */
 @GameTestHolder(ReikoCars.MODID)
@@ -107,9 +110,13 @@ public final class CarGameTests {
         }
     }
 
-    /** A pump owned by {@code owner}, holding {@code millibuckets} of {@code fuel} at $4.00 a bucket. */
+    /** A gas pump owned by {@code owner}, holding {@code millibuckets} of {@code fuel} at $4.00 a bucket. */
     private static GasPumpBlockEntity pump(GameTestHelper helper, ServerPlayer owner, Fluid fuel, int millibuckets) {
-        BlockState lower = ModBlocks.GAS_PUMP.get().defaultBlockState().setValue(GasPumpBlock.FACING, Direction.NORTH);
+        return pump(helper, ModBlocks.GAS_PUMP.get(), owner, fuel, millibuckets);
+    }
+
+    private static GasPumpBlockEntity pump(GameTestHelper helper, GasPumpBlock block, ServerPlayer owner, Fluid fuel, int millibuckets) {
+        BlockState lower = block.defaultBlockState().setValue(GasPumpBlock.FACING, Direction.NORTH);
         helper.setBlock(PUMP, lower);
         helper.setBlock(PUMP.above(), lower.setValue(GasPumpBlock.HALF, DoubleBlockHalf.UPPER));
         GasPumpBlockEntity pump = (GasPumpBlockEntity) helper.getBlockEntity(PUMP);
@@ -145,10 +152,17 @@ public final class CarGameTests {
     public static void buildcraftFuelValues(GameTestHelper helper) {
         near(helper, CarFuel.energyPerBucket(new FluidStack(bc("fuel_light"), 1)), 90_000, "light fuel MJ per bucket");
         near(helper, CarFuel.energyPerBucket(new FluidStack(bc("fuel_dense"), 1)), 360_000, "dense fuel MJ per bucket");
-        check(helper, !CarFuel.isFuel(new FluidStack(bc("oil"), 1)), "crude oil doesn't run a car");
-        check(helper, !CarFuel.isFuel(new FluidStack(Fluids.WATER, 1)), "nor does water");
-        near(helper, CarFuel.millibucketsThatFit(new FluidStack(bc("fuel_dense"), 1), CarType.SEDAN.tankCapacity()), 2000,
-                "a sedan holds 2 buckets of dense fuel");
+        check(helper, FuelType.of(new FluidStack(bc("fuel_light"), 1)) == FuelType.GASOLINE, "light fuel is gasoline");
+        check(helper, FuelType.of(new FluidStack(bc("fuel_dense"), 1)) == FuelType.DIESEL, "dense fuel is diesel");
+        check(helper, FuelType.of(new FluidStack(bc("fuel_mixed_heavy"), 1)) == FuelType.DIESEL, "so are the mixed heavy fuels");
+        check(helper, !CarFuel.isFuel(new FluidStack(bc("oil"), 1)), "crude oil isn't a fuel");
+        check(helper, !CarFuel.isFuel(new FluidStack(Fluids.WATER, 1)), "nor is water");
+        for (CarType type : CarType.values()) {
+            check(helper, CarFuel.runs(type, new FluidStack(bc("fuel_light"), 1)), type.id() + " runs on gasoline");
+            check(helper, !CarFuel.runs(type, new FluidStack(bc("fuel_dense"), 1)), type.id() + " doesn't run on diesel");
+        }
+        near(helper, CarFuel.millibucketsThatFit(new FluidStack(bc("fuel_light"), 1), CarType.SEDAN.tankCapacity()), 8000,
+                "a sedan holds 8 buckets of light fuel");
         helper.succeed();
     }
 
@@ -272,9 +286,10 @@ public final class CarGameTests {
     public static void bucketsFillTheTank(GameTestHelper helper) {
         CarEntity car = car(helper, CarType.PICKUP_TRUCK);
         CarTank tank = new CarTank(car);
-        helper.assertValueEqual(tank.fill(new FluidStack(bc("fuel_dense"), 1000), IFluidHandler.FluidAction.EXECUTE), 1000, "dense fuel goes in");
-        near(helper, car.fuel(), 360_000, "four buckets' worth from one bucket of dense fuel");
+        helper.assertValueEqual(tank.fill(new FluidStack(bc("fuel_dense"), 1000), IFluidHandler.FluidAction.EXECUTE), 0, "no diesel");
         helper.assertValueEqual(tank.fill(new FluidStack(Fluids.WATER, 1000), IFluidHandler.FluidAction.EXECUTE), 0, "no water");
+        helper.assertValueEqual(tank.fill(new FluidStack(bc("fuel_light"), 1000), IFluidHandler.FluidAction.EXECUTE), 1000, "light fuel goes in");
+        near(helper, car.fuel(), 90_000, "a bucket of light fuel");
         car.setFuel(CarType.PICKUP_TRUCK.tankCapacity() - 10_000);
         helper.assertValueEqual(tank.fill(new FluidStack(bc("fuel_light"), 1000), IFluidHandler.FluidAction.SIMULATE), 111,
                 "only what fits");
@@ -467,6 +482,89 @@ public final class CarGameTests {
             helper.assertValueEqual(count(player, ModItems.part(CarType.PICKUP_TRUCK, CarPart.CHASSIS)), 1, "and the chassis");
         } finally {
             leave(helper, player);
+        }
+        helper.succeed();
+    }
+
+    // ---- diesel pumps and selling by the bucket ----
+
+    @GameTest(template = EMPTY)
+    public static void dieselPumpSellsDieselByTheBucket(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer owner = join(helper);
+        ServerPlayer buyer = join(helper);
+        try {
+            GasPumpBlockEntity pump = pump(helper, ModBlocks.DIESEL_PUMP.get(), owner, bc("fuel_dense"), 5000);
+            check(helper, pump.fuelType() == FuelType.DIESEL, "a diesel pump");
+            IFluidHandler pipe = helper.getLevel().getCapability(net.neoforged.neoforge.capabilities.Capabilities.FluidHandler.BLOCK,
+                    helper.absolutePos(PUMP), Direction.UP);
+            helper.assertValueEqual(pipe.fill(new FluidStack(bc("fuel_dense"), 1000), IFluidHandler.FluidAction.EXECUTE), 1000,
+                    "pipes top it up with dense fuel");
+            helper.assertValueEqual(pump.fuel().getAmount(), 6000, "six buckets in the pump");
+
+            CarEntity car = car(helper, CarType.PICKUP_TRUCK);
+            Purse.give(buyer, 2000);
+            ShopActionResult wrongCar = PumpService.fill(buyer, pump, car, 1000, FOUR_DOLLARS, Payment.cash());
+            check(helper, !wrongCar.success(), "no diesel in a gasoline car");
+            near(helper, car.fuel(), 0, "the car got nothing");
+            helper.assertValueEqual(Purse.value(buyer), 2000L, "and the buyer paid nothing");
+
+            ShopActionResult noBuckets = PumpService.fillBuckets(buyer, pump, 2, FOUR_DOLLARS, Payment.cash());
+            check(helper, !noBuckets.success(), "no empty buckets, no sale");
+
+            buyer.getInventory().add(new ItemStack(Items.BUCKET, 3));
+            long ownerBefore = ECO.getBalance(server, owner.getUUID());
+            ShopActionResult sold = PumpService.fillBuckets(buyer, pump, 5, FOUR_DOLLARS, Payment.cash());
+            check(helper, sold.success(), "bucket sale: " + sold.message().getString());
+            helper.assertValueEqual(count(buyer, Items.BUCKET), 0, "all three empty buckets used");
+            int full = 0;
+            for (ItemStack stack : buyer.getInventory().items) {
+                if (FluidUtil.getFluidContained(stack).filter(fluid -> fluid.getFluid() == bc("fuel_dense") && fluid.getAmount() == 1000).isPresent()) {
+                    full += stack.getCount();
+                }
+            }
+            helper.assertValueEqual(full, 3, "three buckets of dense fuel");
+            helper.assertValueEqual(pump.fuel().getAmount(), 3000, "three buckets left in the pump");
+            helper.assertValueEqual(Purse.value(buyer), 2000L - 1200, "$12.00 paid");
+            helper.assertValueEqual(ECO.getBalance(server, owner.getUUID()), ownerBefore + 1200, "owner paid $12.00");
+
+            // A bucket of diesel can't be poured into a gasoline car either.
+            ItemStack dieselBucket = FluidUtil.getFilledBucket(new FluidStack(bc("fuel_dense"), 1000));
+            buyer.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, dieselBucket.copy());
+            car.interact(buyer, net.minecraft.world.InteractionHand.MAIN_HAND);
+            near(helper, car.fuel(), 0, "no diesel poured into the pickup");
+            check(helper, ItemStack.isSameItemSameComponents(buyer.getMainHandItem(), dieselBucket), "the bucket is still full");
+            check(helper, !buyer.isPassenger(), "and the buyer didn't get in");
+        } finally {
+            leave(helper, owner, buyer);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void pumpsOnlyTakeTheirOwnFuel(GameTestHelper helper) {
+        ServerPlayer owner = join(helper);
+        try {
+            GasPumpBlockEntity diesel = pump(helper, ModBlocks.DIESEL_PUMP.get(), owner, bc("fuel_light"), 0);
+            helper.assertValueEqual(diesel.pipeInput().fill(new FluidStack(bc("fuel_light"), 1000), IFluidHandler.FluidAction.EXECUTE), 0,
+                    "no gasoline in a diesel pump");
+            helper.assertValueEqual(diesel.pipeInput().fill(new FluidStack(bc("fuel_mixed_heavy"), 1000), IFluidHandler.FluidAction.EXECUTE), 1000,
+                    "the mixed heavy fuels count as diesel");
+            helper.setBlock(PUMP.above(), net.minecraft.world.level.block.Blocks.AIR);
+            helper.setBlock(PUMP, net.minecraft.world.level.block.Blocks.AIR);
+            GasPumpBlockEntity gas = pump(helper, owner, bc("fuel_light"), 0);
+            helper.assertValueEqual(gas.pipeInput().fill(new FluidStack(bc("fuel_dense"), 1000), IFluidHandler.FluidAction.EXECUTE), 0,
+                    "no diesel in a gas pump");
+            helper.assertValueEqual(gas.pipeInput().fill(new FluidStack(bc("fuel_light"), 1000), IFluidHandler.FluidAction.EXECUTE), 1000,
+                    "gasoline goes in");
+
+            // The owner can take fuel back out of their own pump in buckets, free.
+            owner.getInventory().add(new ItemStack(Items.BUCKET, 1));
+            check(helper, PumpService.fillBuckets(owner, gas, 1, FOUR_DOLLARS, Payment.cash()).success(), "owner fills a bucket");
+            helper.assertValueEqual(gas.fuel().getAmount(), 0, "the pump is empty again");
+            helper.assertValueEqual(gas.earned(), 0L, "and the owner didn't pay themselves");
+        } finally {
+            leave(helper, owner);
         }
         helper.succeed();
     }

@@ -95,6 +95,11 @@ public enum CarType {
         return seats.size();
     }
 
+    /** What the car runs on. Every car runs on gasoline for now; diesel pumps sell diesel by the bucket. */
+    public FuelType fuel() {
+        return FuelType.GASOLINE;
+    }
+
     /** Fuel a full tank holds, in MJ. */
     public double tankCapacity() {
         return tankBuckets * LIGHT_FUEL_MJ;

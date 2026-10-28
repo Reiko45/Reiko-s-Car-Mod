@@ -3,30 +3,29 @@ package com.reiko.cars.car;
 import buildcraftreborn.api.fuels.BuildcraftFuelRegistry;
 import buildcraftreborn.api.fuels.IFuel;
 import buildcraftreborn.api.mj.MjAPI;
-import com.reiko.cars.ReikoCars;
 import com.reiko.cars.config.CarsConfig;
-import net.minecraft.tags.FluidTags;
-import net.minecraft.tags.TagKey;
-import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidStack;
 
 /**
- * Which fluids run a car and how far they go. A fluid is a car fuel if it's in the {@code reikocars:car_fuels} tag
- * (BuildCraft's fuels and the common gasoline and diesel tags by default, but not crude oil). How much energy a
- * bucket holds comes from BuildCraft Reborn's fuel registry, the same numbers the combustion engine uses, so a
- * bucket of dense fuel takes a car four times as far as a bucket of light fuel.
+ * Which fluids run a car and how far they go. Fuels are gasoline or diesel ({@link FuelType}), and each car runs on
+ * one of them ({@link CarType#fuel()}). How much energy a bucket holds comes from BuildCraft Reborn's fuel registry,
+ * the same numbers the combustion engine uses.
  */
 public final class CarFuel {
-    public static final TagKey<Fluid> CAR_FUELS = FluidTags.create(ReikoCars.id("car_fuels"));
-
     private CarFuel() {
     }
 
+    /** Whether {@code stack} is a fuel of either kind. */
     public static boolean isFuel(FluidStack stack) {
-        return !stack.isEmpty() && stack.is(CAR_FUELS);
+        return FuelType.of(stack) != null;
     }
 
-    /** MJ in a bucket of {@code stack}'s fluid, or 0 if it isn't a car fuel. Server side: BuildCraft's values are data. */
+    /** Whether a car of {@code type} runs on {@code stack}. */
+    public static boolean runs(CarType type, FluidStack stack) {
+        return FuelType.of(stack) == type.fuel();
+    }
+
+    /** MJ in a bucket of {@code stack}'s fluid, or 0 if it isn't a fuel. Server side: BuildCraft's values are data. */
     public static double energyPerBucket(FluidStack stack) {
         if (!isFuel(stack)) {
             return 0;

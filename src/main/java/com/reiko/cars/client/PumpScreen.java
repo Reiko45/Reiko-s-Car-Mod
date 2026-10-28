@@ -5,6 +5,7 @@ import com.reiko.cars.config.CarsConfig;
 import com.reiko.cars.network.PumpActionPayload;
 import com.reiko.cars.pump.PumpMenu;
 import com.reiko.cars.pump.PumpService;
+import com.reiko.cars.registry.ModItems;
 import com.reiko.economy.client.screen.ShopScreenBase;
 import com.reiko.economy.config.EconomyConfig;
 import com.reiko.economy.core.TaxRates;
@@ -12,17 +13,27 @@ import com.reiko.economy.shop.Payment;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.FluidType;
+import net.neoforged.neoforge.fluids.FluidUtil;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * The gas pump screen. Built on the economy mod's shop screen, so paying looks and works the same: pick a card
- * (the ⇄ button switches when you carry several), type its PIN and press Card, or press Cash. The pump's owner
+ * The gas and diesel pump screen. Built on the economy mod's shop screen, so paying looks and works the same: pick a
+ * card (the ⇄ button switches when you carry several), type its PIN and press Card, or press Cash. The pump's owner
  * fills up free, and also gets a row for setting the price.
+ *
+ * <p>The pump fills either the car at the hose or the empty buckets the player carries. The little button at the
+ * start of the car row switches between them; until the player uses it, the screen fills the car if one that runs on
+ * this fuel is at the hose, and buckets otherwise.
  */
 public final class PumpScreen extends ShopScreenBase<PumpMenu> {
     private static final int WIDTH = 176;
@@ -40,9 +51,19 @@ public final class PumpScreen extends ShopScreenBase<PumpMenu> {
     private static final int FEEDBACK_ROW = 165;
     private static final int OWNER_ROW = 204;
     private static final int FEEDBACK_LINES = 3;
+    private static final int BUCKET = FluidType.BUCKET_VOLUME;
+    /** Where the car or bucket's name starts on the car row, after the button that switches between them. */
+    private static final int TARGET_TEXT_X = 26;
+    private static final ResourceLocation BUTTON_SPRITE = ResourceLocation.withDefaultNamespace("widget/button");
+    private static final ResourceLocation BUTTON_HIGHLIGHTED = ResourceLocation.withDefaultNamespace("widget/button_highlighted");
 
-    /** Millibuckets to pump. */
+    /** Millibuckets to pump: whole buckets when filling buckets. */
     private int amount;
+    /** Filling the player's empty buckets rather than a car. */
+    private boolean buckets;
+    /** Pick {@link #buckets} by whether a car that runs on this fuel is at the hose, until the player chooses. */
+    private boolean autoTarget = true;
+    private TargetButton targetButton;
     /** Keep {@link #amount} at "fill it up" as the car and the stock change, until the player picks an amount. */
     private boolean fillUp = true;
     private long shownTotal = -1;
@@ -59,6 +80,12 @@ public final class PumpScreen extends ShopScreenBase<PumpMenu> {
     @Override
     protected void init() {
         super.init();
+        targetButton = addRenderableWidget(new TargetButton(leftPos + 8, topPos + CAR_ROW - 3, button -> {
+            autoTarget = false;
+            buckets = !buckets;
+            fillUp = true;
+            updateButtons();
+        }));
         addRenderableWidget(Button.builder(Component.literal("-"), button -> changeAmount(-1))
                 .bounds(leftPos + 8, topPos + AMOUNT_ROW, 20, 20).build());
         addRenderableWidget(Button.builder(Component.literal("+"), button -> changeAmount(1))
@@ -96,19 +123,29 @@ public final class PumpScreen extends ShopScreenBase<PumpMenu> {
     }
 
     private int maxAmount() {
+        if (buckets) {
+            return bucketable() ? Math.min(menu.stock() / BUCKET, PumpService.emptyBuckets(minecraft.player)) * BUCKET : 0;
+        }
         return Math.min(menu.stock(), menu.carType() == null ? 0 : menu.carRoom());
     }
 
+    /** Whether the pump's fuel can go in a bucket (every BuildCraft fuel can). */
+    private boolean bucketable() {
+        return menu.stock() > 0 && !FluidUtil.getFilledBucket(new FluidStack(menu.fluid(), BUCKET)).isEmpty();
+    }
+
     private void changeAmount(int direction) {
-        int step = hasShiftDown() ? PumpService.STEP : 5 * PumpService.STEP;
-        int base = fillUp ? maxAmount() - maxAmount() % PumpService.STEP : amount;
-        amount = Math.max(PumpService.STEP, Math.min(maxAmount(), base + direction * step));
+        int step = buckets ? BUCKET : hasShiftDown() ? PumpService.STEP : 5 * PumpService.STEP;
+        int base = fillUp ? maxAmount() - maxAmount() % step : amount;
+        amount = Math.max(step, Math.min(maxAmount(), base + direction * step));
         fillUp = false;
         updateButtons();
     }
 
     private void fill(Payment payment) {
-        PacketDistributor.sendToServer(PumpActionPayload.fill(menu.containerId, amount, menu.price(), payment));
+        PacketDistributor.sendToServer(buckets
+                ? PumpActionPayload.fillBuckets(menu.containerId, amount / BUCKET, menu.price(), payment)
+                : PumpActionPayload.fill(menu.containerId, amount, menu.price(), payment));
     }
 
     private void setPrice() {
@@ -129,6 +166,10 @@ public final class PumpScreen extends ShopScreenBase<PumpMenu> {
     }
 
     private void updateButtons() {
+        if (autoTarget) {
+            buckets = menu.carType() == null || !menu.carRuns();
+        }
+        targetButton.setTooltip(Tooltip.create(Component.translatable(buckets ? "gui.reikocars.target_car" : "gui.reikocars.target_buckets")));
         int max = maxAmount();
         amount = fillUp ? max : Math.min(amount, max);
         long total = total();
@@ -158,7 +199,7 @@ public final class PumpScreen extends ShopScreenBase<PumpMenu> {
         Fluid fluid = menu.fluid();
         drawBar(graphics, barX, topPos + FUEL_ROW + 10, (float) menu.stock() / menu.capacity(), fluidColor(fluid));
         // The car's tank.
-        if (menu.carType() != null) {
+        if (!buckets && menu.carType() != null && menu.carRuns()) {
             drawBar(graphics, barX, topPos + CAR_ROW + 10, menu.carFuel(), menu.carFuel() < 0.15F ? 0xFFE53935 : 0xFF43A047);
         }
         // The amount being bought.
@@ -202,17 +243,29 @@ public final class PumpScreen extends ShopScreenBase<PumpMenu> {
         graphics.drawString(font, price, 8, PRICE_ROW, LABEL_COLOR, false);
 
         CarType car = menu.carType();
-        if (car == null) {
+        int textWidth = imageWidth - 8 - TARGET_TEXT_X;
+        if (buckets) {
+            Component label = Component.translatable("gui.reikocars.your_buckets");
+            Component count = bucketable() || menu.stock() == 0
+                    ? Component.translatable("gui.reikocars.empty_buckets", PumpService.emptyBuckets(minecraft.player))
+                    : Component.translatable("gui.reikocars.no_bucket_form");
+            graphics.drawString(font, label, TARGET_TEXT_X, CAR_ROW, LABEL_COLOR, false);
+            Component shownCount = fit(count, textWidth - 6 - font.width(label));
+            graphics.drawString(font, shownCount, imageWidth - 8 - font.width(shownCount), CAR_ROW, MUTED_COLOR, false);
+        } else if (car == null) {
             Component none = Component.translatable("gui.reikocars.no_car", (int) CarsConfig.get(CarsConfig.HOSE_LENGTH));
-            graphics.drawString(font, fit(none, imageWidth - 16), 8, CAR_ROW, 0xB3261E, false);
+            graphics.drawString(font, fit(none, textWidth), TARGET_TEXT_X, CAR_ROW, 0xB3261E, false);
         } else {
             Component carName = Component.translatable("entity.reikocars." + car.id());
-            Component tank = menu.carRoom() > 0
-                    ? Component.translatable("gui.reikocars.car_room", Math.round(menu.carFuel() * 100), PumpService.buckets(menu.carRoom()))
-                    : Component.translatable("gui.reikocars.car_full", Math.round(menu.carFuel() * 100));
-            Component shownTank = fit(tank, imageWidth - 22 - font.width(carName));
-            graphics.drawString(font, carName, 8, CAR_ROW, LABEL_COLOR, false);
-            graphics.drawString(font, shownTank, imageWidth - 8 - font.width(shownTank), CAR_ROW, MUTED_COLOR, false);
+            boolean wrongFuel = !menu.carRuns();
+            Component tank = wrongFuel
+                    ? Component.translatable("gui.reikocars.car_wrong_fuel", car.fuel().displayName())
+                    : menu.carRoom() > 0
+                            ? Component.translatable("gui.reikocars.car_room", Math.round(menu.carFuel() * 100), PumpService.buckets(menu.carRoom()))
+                            : Component.translatable("gui.reikocars.car_full", Math.round(menu.carFuel() * 100));
+            Component shownTank = fit(tank, textWidth - 6 - font.width(carName));
+            graphics.drawString(font, carName, TARGET_TEXT_X, CAR_ROW, LABEL_COLOR, false);
+            graphics.drawString(font, shownTank, imageWidth - 8 - font.width(shownTank), CAR_ROW, wrongFuel ? 0xB3261E : MUTED_COLOR, false);
         }
 
         String shown = PumpService.buckets(amount) + " B";
@@ -238,6 +291,28 @@ public final class PumpScreen extends ShopScreenBase<PumpMenu> {
             Component sold = Component.translatable("gui.reikocars.sold", PumpService.buckets((int) Math.min(Integer.MAX_VALUE, menu.millibucketsSold())),
                     format(menu.earned()));
             graphics.drawString(font, fit(sold, imageWidth - 16), 8, OWNER_ROW + 21, MUTED_COLOR, false);
+        }
+    }
+
+    /** A small button showing what the pump fills (a car or a bucket); pressing it switches to the other. */
+    private final class TargetButton extends Button {
+        private final ItemStack bucket = new ItemStack(Items.BUCKET);
+
+        TargetButton(int x, int y, OnPress onPress) {
+            super(x, y, 14, 12, Component.translatable("gui.reikocars.target"), onPress, DEFAULT_NARRATION);
+        }
+
+        @Override
+        protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            graphics.blitSprite(isHoveredOrFocused() ? BUTTON_HIGHLIGHTED : BUTTON_SPRITE, getX(), getY(), width, height);
+            CarType car = menu.carType();
+            ItemStack icon = buckets ? bucket : new ItemStack(ModItems.car(car != null ? car : CarType.SEDAN));
+            var pose = graphics.pose();
+            pose.pushPose();
+            pose.translate(getX() + 2.0F, getY() + 1.0F, 0.0F);
+            pose.scale(0.625F, 0.625F, 1.0F);
+            graphics.renderFakeItem(icon, 0, 0);
+            pose.popPose();
         }
     }
 }

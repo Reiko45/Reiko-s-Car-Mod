@@ -2,6 +2,7 @@ package com.reiko.cars.pump;
 
 import com.reiko.cars.car.CarEntity;
 import com.reiko.cars.car.CarType;
+import com.reiko.cars.car.FuelType;
 import com.reiko.cars.registry.ModMenus;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -21,7 +22,7 @@ import net.minecraft.world.level.material.Fluids;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The pump screen's server side. It has no slots: fill-ups and price changes go through {@code PumpActionPayload}.
+ * The pump screen's server side. It has no slots: sales and price changes go through {@code PumpActionPayload}.
  * The fuel in the pump and the car at the hose are kept live through data slots, so the screen follows along as
  * fuel arrives by pipe or a car pulls up.
  */
@@ -32,11 +33,14 @@ public final class PumpMenu extends AbstractContainerMenu {
     private static final int CAR_TYPE = 2;
     private static final int CAR_FUEL_PERMILLE = 3;
     private static final int CAR_ROOM = 4;
-    private static final int SLOTS = 5;
+    /** 1 if the car at the hose runs on the pump's fuel. */
+    private static final int CAR_RUNS = 5;
+    private static final int SLOTS = 6;
 
     @Nullable
     private final GasPumpBlockEntity pump; // null on the client
     private final BlockPos pos;
+    private final FuelType fuelType;
     private final String ownerName;
     private final boolean manager;
     /** The viewer owns the pump, so fills up for free. */
@@ -52,15 +56,16 @@ public final class PumpMenu extends AbstractContainerMenu {
     private CarEntity car;
 
     public PumpMenu(int containerId, Inventory inventory, RegistryFriendlyByteBuf buf) {
-        this(containerId, null, buf.readBlockPos(), buf.readUtf(64), buf.readBoolean(), buf.readBoolean(), buf.readVarLong(),
-                buf.readVarInt(), buf.readVarLong(), buf.readVarLong(), new SimpleContainerData(SLOTS));
+        this(containerId, null, buf.readBlockPos(), buf.readEnum(FuelType.class), buf.readUtf(64), buf.readBoolean(), buf.readBoolean(),
+                buf.readVarLong(), buf.readVarInt(), buf.readVarLong(), buf.readVarLong(), new SimpleContainerData(SLOTS));
     }
 
-    private PumpMenu(int containerId, @Nullable GasPumpBlockEntity pump, BlockPos pos, String ownerName, boolean manager,
+    private PumpMenu(int containerId, @Nullable GasPumpBlockEntity pump, BlockPos pos, FuelType fuelType, String ownerName, boolean manager,
                      boolean owner, long price, int capacity, long millibucketsSold, long earned, ContainerData data) {
         super(ModMenus.PUMP.get(), containerId);
         this.pump = pump;
         this.pos = pos;
+        this.fuelType = fuelType;
         this.ownerName = ownerName;
         this.manager = manager;
         this.owner = owner;
@@ -73,21 +78,23 @@ public final class PumpMenu extends AbstractContainerMenu {
     }
 
     public static void open(ServerPlayer player, GasPumpBlockEntity pump) {
+        String name = "container.reikocars." + pump.fuelType().pumpId();
         Component title = pump.ownerName().isEmpty()
-                ? Component.translatable("container.reikocars.gas_pump")
-                : Component.translatable("container.reikocars.gas_pump_of", pump.ownerName());
+                ? Component.translatable(name)
+                : Component.translatable(name + "_of", pump.ownerName());
         boolean manager = pump.canManage(player);
         boolean owner = pump.isOwner(player);
         long price = pump.price();
         int capacity = pump.tank().getCapacity();
         player.openMenu(new SimpleMenuProvider((id, inventory, p) -> {
-            PumpMenu menu = new PumpMenu(id, pump, pump.getBlockPos(), pump.ownerName(), manager, owner, price, capacity,
+            PumpMenu menu = new PumpMenu(id, pump, pump.getBlockPos(), pump.fuelType(), pump.ownerName(), manager, owner, price, capacity,
                     pump.millibucketsSold(), pump.earned(), new SimpleContainerData(SLOTS));
             menu.viewer = player;
             menu.refresh();
             return menu;
         }, title), buf -> {
             buf.writeBlockPos(pump.getBlockPos());
+            buf.writeEnum(pump.fuelType());
             buf.writeUtf(pump.ownerName(), 64);
             buf.writeBoolean(manager);
             buf.writeBoolean(owner);
@@ -112,6 +119,7 @@ public final class PumpMenu extends AbstractContainerMenu {
         data.set(CAR_TYPE, car == null ? -1 : car.carType().ordinal());
         data.set(CAR_FUEL_PERMILLE, car == null ? 0 : Math.round(car.fuelFraction() * 1000));
         data.set(CAR_ROOM, car == null ? 0 : clamp(PumpService.room(pump, car)));
+        data.set(CAR_RUNS, car != null && PumpService.runsOn(pump, car) ? 1 : 0);
     }
 
     private static int clamp(int value) {
@@ -137,6 +145,11 @@ public final class PumpMenu extends AbstractContainerMenu {
 
     public BlockPos pos() {
         return pos;
+    }
+
+    /** What the pump sells: gasoline or diesel. */
+    public FuelType fuelType() {
+        return fuelType;
     }
 
     public String ownerName() {
@@ -187,6 +200,11 @@ public final class PumpMenu extends AbstractContainerMenu {
     /** 0 to 1. */
     public float carFuel() {
         return data.get(CAR_FUEL_PERMILLE) / 1000.0F;
+    }
+
+    /** Whether the car at the hose runs on the pump's fuel. */
+    public boolean carRuns() {
+        return data.get(CAR_RUNS) == 1;
     }
 
     /** Millibuckets of the pump's fuel the car can still take. */

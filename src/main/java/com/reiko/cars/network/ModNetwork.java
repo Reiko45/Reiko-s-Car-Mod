@@ -47,6 +47,8 @@ public final class ModNetwork {
         ShopActionResult result = switch (payload.action()) {
             case PumpActionPayload.FILL -> PumpService.fill(player, pump, menu.car(), payload.millibuckets(),
                     payload.expectedPrice(), payload.payment());
+            case PumpActionPayload.FILL_BUCKETS -> PumpService.fillBuckets(player, pump, payload.millibuckets(), payload.expectedPrice(),
+                    payload.payment());
             case PumpActionPayload.SET_PRICE -> {
                 ShopActionResult set = PumpService.setPrice(player, pump, payload.priceText());
                 if (set.success()) {

@@ -2,6 +2,7 @@ package com.reiko.cars.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import com.reiko.cars.car.FuelType;
 import com.reiko.cars.pump.GasPumpBlock;
 import com.reiko.cars.pump.GasPumpBlockEntity;
 import com.reiko.economy.api.EconomyApi;
@@ -16,13 +17,16 @@ import net.minecraft.world.phys.AABB;
 
 /**
  * The lit display on the front of a pump: the price per bucket, and how much fuel is left (or "EMPTY"). It sits on
- * the dark screen in the pump's model, 19 to 26 pixels up its front.
+ * the dark screen in the pump's model, 19 to 26 pixels up its front. The sign on top says what the pump sells, "GAS"
+ * or "DIESEL", in the fuel's colour.
  */
 public final class GasPumpRenderer implements BlockEntityRenderer<GasPumpBlockEntity> {
     /** The screen's middle, in pixels from the bottom of the pump. */
     private static final float SCREEN_Y = 22.5F / 16.0F;
     /** How far the screen's face is from the middle of the block, toward the front. */
     private static final float SCREEN_DEPTH = 0.5F - 3.0F / 16.0F + 0.003F;
+    /** The sign's middle, above the screen's. Its face is as far forward as the screen's. */
+    private static final float SIGN_Y = (30.0F - 22.5F) / 16.0F;
     private static final int PRICE_COLOR = 0xFFFFB300;
     private static final int OK_COLOR = 0xFF66BB6A;
     private static final int EMPTY_COLOR = 0xFFEF5350;
@@ -44,17 +48,22 @@ public final class GasPumpRenderer implements BlockEntityRenderer<GasPumpBlockEn
         poseStack.translate(0.0F, 0.0F, SCREEN_DEPTH);
 
         String price = EconomyApi.get().format(pump.price());
-        drawCentered(poseStack, buffers, price, 0.0F, 1.4F / 16.0F, 0.02F, PRICE_COLOR);
+        drawCentered(poseStack, buffers, price, 0.0F, 1.4F / 16.0F, 0.02F, 9.0F / 16.0F, PRICE_COLOR);
         Component status = pump.fuel().isEmpty()
                 ? Component.translatable("display.reikocars.empty")
                 : Component.translatable("display.reikocars.per_bucket");
-        drawCentered(poseStack, buffers, status.getString(), 0.0F, -1.7F / 16.0F, 0.0095F, pump.fuel().isEmpty() ? EMPTY_COLOR : OK_COLOR);
+        drawCentered(poseStack, buffers, status.getString(), 0.0F, -1.7F / 16.0F, 0.0095F, 9.0F / 16.0F,
+                pump.fuel().isEmpty() ? EMPTY_COLOR : OK_COLOR);
+
+        FuelType fuel = pump.fuelType();
+        String sign = Component.translatable("display.reikocars." + fuel.pumpId()).getString();
+        drawCentered(poseStack, buffers, sign, 0.0F, SIGN_Y, 0.021F, 12.0F / 16.0F, fuel.signColor);
         poseStack.popPose();
     }
 
-    /** Draws {@code text} centred on ({@code x}, {@code y}) of the screen, in blocks, shrinking it to fit if needed. */
-    private void drawCentered(PoseStack poseStack, MultiBufferSource buffers, String text, float x, float y, float scale, int color) {
-        float maxWidth = 9.0F / 16.0F;
+    /** Draws {@code text} centred on ({@code x}, {@code y}) of the screen, in blocks, shrunk to {@code maxWidth} if needed. */
+    private void drawCentered(PoseStack poseStack, MultiBufferSource buffers, String text, float x, float y, float scale, float maxWidth,
+                              int color) {
         float width = font.width(text) * scale;
         if (width > maxWidth) {
             scale *= maxWidth / width;

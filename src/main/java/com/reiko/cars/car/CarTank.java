@@ -5,7 +5,7 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 /**
  * A car's tank as a fluid handler, so buckets, BuildCraft tanks and other mods' fluid items can fill it. It only
- * takes car fuels, turns them into energy on the way in, and can't be drained.
+ * takes the car's own kind of fuel, turns it into energy on the way in, and can't be drained.
  */
 public final class CarTank implements IFluidHandler {
     private final CarEntity car;
@@ -33,12 +33,12 @@ public final class CarTank implements IFluidHandler {
 
     @Override
     public boolean isFluidValid(int tank, FluidStack stack) {
-        return CarFuel.isFuel(stack);
+        return CarFuel.runs(car.carType(), stack);
     }
 
     @Override
     public int fill(FluidStack resource, FluidAction action) {
-        if (!CarFuel.isFuel(resource) || car.level().isClientSide) {
+        if (!CarFuel.runs(car.carType(), resource) || car.level().isClientSide) {
             return 0;
         }
         int amount = Math.min(resource.getAmount(), CarFuel.millibucketsThatFit(resource, car.fuelRoom()));

@@ -1,9 +1,9 @@
 # Reiko's Car Mod
 
-Drivable cars for Minecraft 1.21.1 (NeoForge) that run on **BuildCraft Reborn**'s fuel, and gas pumps that sell
-that fuel for **cash or card** through **Reiko's Economy Mod**.
+Drivable cars for Minecraft 1.21.1 (NeoForge) that run on **BuildCraft Reborn**'s fuel, and gas and diesel pumps
+that sell it for **cash or card** through **Reiko's Economy Mod**.
 
-Refine oil into fuel with BuildCraft, pipe it into a gas pump, set a price, and other players pay you to fill up.
+Refine oil into fuel with BuildCraft, pipe it into a pump, set a price, and other players pay you to fill up.
 
 ## Requirements
 
@@ -27,11 +27,13 @@ Tank sizes are in buckets of BuildCraft's **light fuel**. A sedan goes about 600
 is the handbrake and **sneak** gets out. **H** sounds the horn and **L** locks or unlocks the car. While you're
 in a car, a dashboard in the bottom right shows your speed and a fuel gauge.
 
-- **Fuel:** cars burn fuel for every block they cover, and a little while idling with someone at the wheel. Any
-  fluid in the `reikocars:car_fuels` tag works. That's BuildCraft's fuels, plus other mods' gasoline, diesel,
-  biodiesel and ethanol. How far a bucket goes comes from BuildCraft's own fuel values, so **dense fuel goes four
-  times as far as light fuel**. Crude oil doesn't run a car.
-- **Filling up:** buy fuel at a gas pump, or (if the server allows it) pour a fuel bucket straight into the car.
+- **Fuel:** cars burn fuel for every block they cover, and a little while idling with someone at the wheel. Every
+  car runs on **gasoline**: BuildCraft's Light Fuel (and the Mixed Light and Gaseous Fuels), or other mods' gasoline,
+  ethanol, kerosene and LPG. How far a bucket goes comes from BuildCraft's own fuel values. **Diesel** (BuildCraft's
+  Dense Fuel and Mixed Heavy Fuels, and other mods' diesel and biodiesel) doesn't run any car yet, and neither does
+  crude oil. The `reikocars:gasoline` and `reikocars:diesel` fluid tags decide which fuel is which, so a data pack can
+  move fluids between them.
+- **Filling up:** buy gasoline at a gas pump, or (if the server allows it) pour a bucket of it straight into the car.
 - **Ownership:** whoever puts a car down owns it. New cars start **locked**, so only the owner can get in, though
   anyone can ride along while the owner is inside. Only the owner (or an admin) can pick a car back up. Punch it a
   few times and it drops as an item, keeping its fuel and paint. A pickup's bed spills its items.
@@ -68,24 +70,34 @@ is used for (U). Clicking the arrow in the workbench's screen lists every car. W
 button puts that car's parts in from your inventory, the same as clicking the car's button; if you're missing any,
 the button is greyed out and JEI marks the missing parts in red.
 
-## Gas pumps
+## Gas and diesel pumps
+
+There are two pumps, which work the same way:
+
+- The **Gas Pump** (red, "GAS" on its sign) sells gasoline.
+- The **Diesel Pump** (green, "DIESEL" on its sign) sells diesel: BuildCraft's Dense Fuel or Mixed Heavy Fuels, or
+  other mods' diesel and biodiesel. No car runs on diesel yet, so for now it sells diesel by the bucket, to run
+  BuildCraft's combustion engines and other mods' generators.
 
 A pump is two blocks tall. Whoever places it owns it, and only they (or an admin) can break it. A broken pump keeps
 its fuel and price on the item.
 
 **Getting fuel in:** connect any pipe (BuildCraft's or another mod's) to either half of the pump, from any side.
-The pump holds 16 buckets of one kind of car fuel. Nothing can be piped back out, so the only way out is to sell
-it. The owner can also fill it from a bucket.
+The pump holds 16 buckets of its own kind of fuel, one fluid at a time. Nothing can be piped back out, so the only
+way out is to sell it. The owner can also fill it from a bucket.
 
-**Buying fuel:** park within 6 blocks of the pump and right-click it. The screen shows the fuel in the pump, its
-price, and the car at the hose. Choose an amount (or **Fill up**), then pay:
+**Buying fuel:** right-click the pump. The screen shows the fuel in the pump and its price. A pump fills either the
+car at the hose (within 6 blocks) or the **empty buckets** you carry. The little button at the start of the car row
+switches between them, showing a car or a bucket. The screen starts on the car if one that runs on this fuel is at
+the hose, and on buckets otherwise. Choose an amount (or **Fill up**), then pay:
 
 - **Card:** the card you carry (the ⇄ button switches if you have several), its PIN, then **Card**. A debit card
   pays from its bank account; a credit card puts it on the bill.
 - **Cash:** **Cash** pays with the coins and bills you carry, or from your wallet, and gives change.
 
 This is the economy mod's own shop payment, so sales tax applies and the money goes straight into the owner's
-bank account, even while they're offline. The pump's owner fills up for free.
+bank account, even while they're offline. The pump's owner fills up for free, so they can also take fuel back out
+of their own pump in buckets.
 
 **Setting the price:** the owner sees a price row at the bottom of the screen. Type a price per bucket and press
 **Set**. The lit display on the front of the pump shows the price, or EMPTY.
@@ -98,6 +110,7 @@ bank account, even while they're offline. The pump's owner fills up for free.
 | Tire ×4 | dried kelp in the corners, black dye on the sides, centre empty |
 | Car Engine | iron ingots, iron gears, pistons around a BuildCraft **Combustion Engine** |
 | Gas Pump | iron ingots, glass pane, BuildCraft **Tank**, iron gear |
+| Diesel Pump | as the Gas Pump, with green dye either side of the iron gear |
 
 The car parts, crafted on an ordinary crafting table:
 
@@ -142,10 +155,11 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
-./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, locks, the workbench), then exit
+./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench), then exit
 ./gradlew runClient         # start a dev client
 ./gradlew runClient -Pshowcase  # build a test scene, buy fuel, drive, save screenshots to run/screenshots/, quit
 ./gradlew runClient -Pshowcase=workbench  # the same for the Car Workbench and its JEI pages
+./gradlew runClient -Pshowcase=diesel     # the same for the gas and diesel pumps and selling buckets
 ```
 
 ## Editing the models
@@ -169,7 +183,7 @@ The car's front faces north (−Z), and the driver's side is **−X** in Blockbe
 src/main/java/com/reiko/cars/
 ├── ReikoCars.java        mod entry point
 ├── car/                  the car entity and its types, fuel (CarFuel, CarTank), the car item
-├── pump/                 the gas pump block, its block entity, menu, protection, and PumpService (selling fuel)
+├── pump/                 the gas and diesel pump block, its block entity, menu, protection, and PumpService (selling fuel)
 ├── workbench/            the Car Workbench block and menu, the car parts, and the car_assembly recipe type
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
 ├── network/              packets: pump actions, horn and lock

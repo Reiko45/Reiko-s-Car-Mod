@@ -37,6 +37,8 @@ public final class ModItems {
     public static final DeferredItem<Item> CAR_ENGINE = ITEMS.registerSimpleItem("car_engine");
     public static final DeferredItem<DoubleHighBlockItem> GAS_PUMP = ITEMS.register("gas_pump",
             () -> new DoubleHighBlockItem(ModBlocks.GAS_PUMP.get(), new Item.Properties()));
+    public static final DeferredItem<DoubleHighBlockItem> DIESEL_PUMP = ITEMS.register("diesel_pump",
+            () -> new DoubleHighBlockItem(ModBlocks.DIESEL_PUMP.get(), new Item.Properties()));
     public static final DeferredItem<BlockItem> CAR_WORKBENCH = ITEMS.registerSimpleBlockItem(ModBlocks.CAR_WORKBENCH);
 
     private ModItems() {

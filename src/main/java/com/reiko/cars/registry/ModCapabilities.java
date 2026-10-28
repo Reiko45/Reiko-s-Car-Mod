@@ -24,7 +24,7 @@ public final class ModCapabilities {
         event.registerBlock(Capabilities.FluidHandler.BLOCK, (level, pos, state, blockEntity, side) -> {
             GasPumpBlockEntity pump = GasPumpBlock.pumpAt(level, pos, state);
             return pump == null ? null : pump.pipeInput();
-        }, ModBlocks.GAS_PUMP.get());
+        }, ModBlocks.GAS_PUMP.get(), ModBlocks.DIESEL_PUMP.get());
 
         for (CarType type : CarType.values()) {
             event.registerEntity(Capabilities.FluidHandler.ENTITY, ModEntities.car(type), (car, context) -> new CarTank(car));

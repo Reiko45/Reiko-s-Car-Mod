@@ -8,17 +8,19 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 /**
- * Client to server, from the pump screen: fill the car ({@link #FILL}) or set the pump's price ({@link #SET_PRICE}).
+ * Client to server, from the pump screen: fill the car ({@link #FILL}), fill the player's empty buckets
+ * ({@link #FILL_BUCKETS}) or set the pump's price ({@link #SET_PRICE}).
  *
- * @param millibuckets how much to pump (fill only)
- * @param expectedPrice the price per bucket the screen showed (fill only)
- * @param payment card with PIN, or cash (fill only)
+ * @param millibuckets how much to pump into the car, or how many buckets to fill
+ * @param expectedPrice the price per bucket the screen showed (filling only)
+ * @param payment card with PIN, or cash (filling only)
  * @param priceText the new price as typed (set price only)
  */
 public record PumpActionPayload(int containerId, int action, int millibuckets, long expectedPrice, Payment payment,
                                 String priceText) implements CustomPacketPayload {
     public static final int FILL = 0;
     public static final int SET_PRICE = 1;
+    public static final int FILL_BUCKETS = 2;
 
     public static final Type<PumpActionPayload> TYPE = new Type<>(ReikoCars.id("pump_action"));
     public static final StreamCodec<RegistryFriendlyByteBuf, PumpActionPayload> STREAM_CODEC = StreamCodec.composite(
@@ -32,6 +34,10 @@ public record PumpActionPayload(int containerId, int action, int millibuckets, l
 
     public static PumpActionPayload fill(int containerId, int millibuckets, long expectedPrice, Payment payment) {
         return new PumpActionPayload(containerId, FILL, millibuckets, expectedPrice, payment, "");
+    }
+
+    public static PumpActionPayload fillBuckets(int containerId, int buckets, long expectedPrice, Payment payment) {
+        return new PumpActionPayload(containerId, FILL_BUCKETS, buckets, expectedPrice, payment, "");
     }
 
     public static PumpActionPayload setPrice(int containerId, String priceText) {

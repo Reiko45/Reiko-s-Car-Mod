@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "T": {
+      "item": "buildcraftreborn:tank"
+    },
+    "R": {
+      "tag": "c:gears/iron"
+    },
+    "D": {
+      "tag": "c:dyes/green"
+    }
+  },
+  "pattern": [
+    "IGI",
+    "ITI",
+    "DRD"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:diesel_pump"
+  }
+}
