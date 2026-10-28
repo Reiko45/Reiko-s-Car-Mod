@@ -20,14 +20,23 @@ Refine oil into fuel with BuildCraft, pipe it into a pump, set a price, and othe
 | Sports Car | 2 | 58 mph | 6 buckets | Fast, quick to accelerate, thirsty |
 | Pickup Truck | 2 | 36 mph | 12 buckets | 27-slot truck bed (sneak + use) |
 | Off-Roader | 4 | 38 mph | 10 buckets | Keeps full speed on grass, sand and snow |
+| Hatchback | 4 | 36 mph | 6 buckets | Small and cheap, about 800 blocks to a bucket |
+| Muscle Car | 2 | 54 mph | 8 buckets | Big V8: quick off the line, slow to turn, thirsty |
+| Convertible | 2 | 51 mph | 6 buckets | Open-top roadster |
+| Minivan | 6 | 34 mph | 10 buckets | Three rows of seats, 9-slot trunk (sneak + use) |
 | Semi Truck | 2 | 38 mph | 12 buckets of diesel | Runs on diesel and pulls a trailer (see [Semis and trailers](#semis-and-trailers)) |
+| Delivery Van | 2 | 34 mph | 10 buckets of diesel | 54-slot cargo area (sneak + use) |
+| City Bus | 10 | 29 mph | 16 buckets of diesel | A driver and nine passengers; turns about its back axle, so swing wide |
+| Heavy-Duty Pickup | 4 | 38 mph | 14 buckets of diesel | Lifted crew-cab 4x4: 27-slot truck bed, full speed off-road |
+| Farm Tractor | 1 | 20 mph | 6 buckets of diesel | Slow, but at home in a field: full speed on grass, dirt and farmland |
 | Sport Bike | 2 | 65 mph | 4 buckets | The fastest thing on the road (see [Motorcycles](#motorcycles)) |
 | Cruiser | 2 | 45 mph | 5 buckets | 9-slot saddlebags (sneak + use) |
 | Dirt Bike | 1 | 42 mph | 3 buckets | Keeps full speed on grass, sand and snow |
 | Scooter | 1 | 27 mph | 2 buckets | Slow, but about 2,500 blocks to a bucket |
 
-Tank sizes are in buckets of the car's own fuel: BuildCraft's **light fuel** for the cars, **dense fuel** for the
-semi. A sedan goes about 600 blocks on a bucket; a semi about 250, or 180 pulling a trailer.
+Tank sizes are in buckets of the car's own fuel: BuildCraft's **light fuel** for the gasoline cars, **dense fuel**
+for the diesel ones (the semi, delivery van, city bus, heavy-duty pickup and farm tractor). A sedan goes about 600
+blocks on a bucket; a semi about 250, or 180 pulling a trailer; the bus about 300.
 
 **Driving:** right-click a car to get in (the first person in drives). The movement keys drive and steer, **jump**
 is the handbrake and **sneak** gets out. **H** sounds the horn, **L** locks or unlocks the car and **G** hitches a
@@ -36,8 +45,8 @@ in a car, a dashboard in the bottom right shows your speed and a fuel gauge.
 
 - **Fuel:** cars burn fuel for every block they cover, and a little while idling with someone at the wheel. The cars
   run on **gasoline**: BuildCraft's Light Fuel (and the Mixed Light and Gaseous Fuels), or other mods' gasoline,
-  ethanol, kerosene and LPG. The semi runs on **diesel**: BuildCraft's Dense Fuel and Mixed Heavy Fuels, or other
-  mods' diesel and biodiesel. Neither takes the other's fuel, and nothing runs on crude oil. How far a bucket goes
+  ethanol, kerosene and LPG. The semi, delivery van, city bus, heavy-duty pickup and farm tractor run on **diesel**:
+  BuildCraft's Dense Fuel and Mixed Heavy Fuels, or other mods' diesel and biodiesel. Neither takes the other's fuel, and nothing runs on crude oil. How far a bucket goes
   comes from BuildCraft's own fuel values. The `reikocars:gasoline` and `reikocars:diesel` fluid tags decide which
   fuel is which, so a data pack can move fluids between them. A car's tooltip says what it runs on.
 - **Filling up:** buy gasoline at a gas pump and diesel at a diesel pump, or (if the server allows it) pour a bucket
@@ -47,7 +56,7 @@ in a car, a dashboard in the bottom right shows your speed and a fuel gauge.
   few times and it drops as an item, keeping its fuel and paint. A pickup's bed spills its items.
 - **Paint:** right-click a car with any dye.
 - **Off-road:** grass, dirt, sand, snow and the like (the `reikocars:off_road` block tag) slow every car but the
-  off-roader. Ice is slippery.
+  off-roader, the heavy-duty pickup, the farm tractor and the dirt bike. Ice is slippery.
 - **Running things over** hurts mobs and knocks them aside, more the faster you go. Players only get hurt with PvP
   on, and never your own pets.
 - Cars climb a full block, so curbs, slabs and stairs don't stop them. Cars can't be blown up or burned.
@@ -100,7 +109,8 @@ nearby that will take it, nearest first. So a tanker can fill up at a BuildCraft
 row of pumps. Pumps only take their own kind of fuel, and never give any back, so you can't load from someone's pump.
 A picked-up tanker keeps its load.
 
-**The car hauler:** drive a car up to the hauler's back end, lined up with it, and press **G**: the car drives on
+**The car hauler:** it carries cars and motorcycles up to a minivan's size, but not trucks, vans, buses or tractors.
+Drive a car up to the hauler's back end, lined up with it, and press **G**: the car drives on
 and stays on when you get out. With both spots full, nothing more goes on. Get in a car on the hauler and press **G**
 to drive it off the back. Hitch the hauler to a semi and its cars go wherever it goes.
 
@@ -194,6 +204,22 @@ The car parts, crafted on an ordinary crafting table:
 Then at the Car Workbench: chassis + body + interior + engine + 4 Tires = the car. The semi takes a Diesel Engine;
 the rest take a Car Engine. A trailer is the Trailer Chassis + its body + 4 Tires.
 
+The second lot of cars' parts, the same way:
+
+| Part | Hatchback | Muscle Car | Convertible | Minivan |
+| --- | --- | --- | --- | --- |
+| **Chassis**: iron rails (`I I`) around a middle | copper ingot | piston | gold ingot | iron bars |
+| **Body** | glass panes over lime dye and iron | two glass panes over orange dye and iron | a glass pane over cyan dye and iron | glass all round light grey dye, iron below |
+| **Interior** | clock, redstone, wool seats | clock, redstone, leather seats | clock, redstone, leather and wool | clock, two rows of wool and redstone |
+
+| Part | Delivery Van | City Bus | Heavy-Duty Pickup | Farm Tractor |
+| --- | --- | --- | --- | --- |
+| **Chassis** | iron rails, copper between iron blocks | iron rows, iron gear between iron blocks | iron rails, iron block between pistons | iron rails, iron block between iron gears |
+| **Body** | glass and white dye, iron | glass all round yellow dye, iron blocks below | glass, red dye, iron blocks and a chest | iron frame round green dye |
+| **Interior** | clock, redstone, leather, iron below | clock and redstone in wool | clock, redstone, leather, iron | compass, redstone, leather, iron |
+
+The gasoline cars take a Car Engine, the diesel ones a Diesel Engine.
+
 The motorcycles' parts:
 
 | Part | Sport Bike | Cruiser | Dirt Bike | Scooter |
@@ -245,6 +271,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 ./gradlew runClient -Pshowcase=diesel     # the same for the gas and diesel pumps and selling buckets
 ./gradlew runClient -Pshowcase=semi       # the same for semis, hitching, driving a rig, trailers and the tanker
 ./gradlew runClient -Pshowcase=bikes      # the same for the motorcycles: parked, riding and leaning, saddlebags
+./gradlew runClient -Pshowcase=cars2      # the same for the hatchback, muscle car, convertible, minivan, van, bus, 4x4, tractor
 ```
 
 ## Editing the models

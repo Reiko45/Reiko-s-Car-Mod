@@ -324,6 +324,9 @@ public class CarEntity extends VehicleEntity {
         player.openMenu(new SimpleMenuProvider((id, inventory, p) -> switch (rows) {
             case 1 -> new ChestMenu(MenuType.GENERIC_9x1, id, inventory, bed, 1);
             case 2 -> new ChestMenu(MenuType.GENERIC_9x2, id, inventory, bed, 2);
+            case 4 -> new ChestMenu(MenuType.GENERIC_9x4, id, inventory, bed, 4);
+            case 5 -> new ChestMenu(MenuType.GENERIC_9x5, id, inventory, bed, 5);
+            case 6 -> ChestMenu.sixRows(id, inventory, bed);
             default -> ChestMenu.threeRows(id, inventory, bed);
         }, title));
     }
@@ -743,10 +746,10 @@ public class CarEntity extends VehicleEntity {
         }
 
         if (isEngineRunning() && tickCount % 3 == 0) {
-            if (type.isTractor()) {
-                // Out of the tops of the two stacks behind the cab.
-                for (double side : new double[] {-1.19, 1.19}) {
-                    Vec3 stack = new Vec3(side, 4.3, -0.94).yRot(-getYRot() * Mth.DEG_TO_RAD);
+            if (!type.exhaustStacks().isEmpty()) {
+                // Out of the tops of its exhaust stacks (the semi's behind the cab, the tractor's on the hood).
+                for (Vec3 local : type.exhaustStacks()) {
+                    Vec3 stack = local.yRot(-getYRot() * Mth.DEG_TO_RAD);
                     level().addParticle(ParticleTypes.SMOKE, getX() + stack.x, getY() + stack.y, getZ() + stack.z, 0.0, 0.06, 0.0);
                 }
             } else {

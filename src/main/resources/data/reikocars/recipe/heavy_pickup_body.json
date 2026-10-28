@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "tag": "c:storage_blocks/iron"
+    },
+    "C": {
+      "tag": "c:chests/wooden"
+    },
+    "D": {
+      "tag": "c:dyes/red"
+    }
+  },
+  "pattern": [
+    "GGG",
+    "IDI",
+    "BCB"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:heavy_pickup_body"
+  }
+}

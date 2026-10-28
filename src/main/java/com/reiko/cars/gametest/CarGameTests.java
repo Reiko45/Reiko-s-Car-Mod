@@ -909,4 +909,27 @@ public final class CarGameTests {
         }
         helper.succeed();
     }
+
+    @GameTest(template = EMPTY)
+    public static void newCarsHaveTheirSeatsAndFuel(GameTestHelper helper) {
+        check(helper, CarType.HATCHBACK.fuel() == FuelType.GASOLINE && CarType.MUSCLE_CAR.fuel() == FuelType.GASOLINE
+                && CarType.CONVERTIBLE.fuel() == FuelType.GASOLINE && CarType.MINIVAN.fuel() == FuelType.GASOLINE, "four new gasoline cars");
+        check(helper, CarType.DELIVERY_VAN.fuel() == FuelType.DIESEL && CarType.CITY_BUS.fuel() == FuelType.DIESEL
+                && CarType.HEAVY_PICKUP.fuel() == FuelType.DIESEL && CarType.FARM_TRACTOR.fuel() == FuelType.DIESEL, "four new diesel ones");
+        helper.assertValueEqual(CarType.CITY_BUS.seatCount(), 10, "bus seats");
+        helper.assertValueEqual(CarType.MINIVAN.seatCount(), 6, "minivan seats");
+        helper.assertValueEqual(CarType.FARM_TRACTOR.seatCount(), 1, "tractor seat");
+        CarEntity van = car(helper, CarType.DELIVERY_VAN);
+        helper.assertValueEqual(van.bed().getContainerSize(), 54, "the van's cargo area");
+        CarEntity minivan = car(helper, CarType.MINIVAN);
+        helper.assertValueEqual(minivan.bed().getContainerSize(), 9, "the minivan's trunk");
+        check(helper, CarType.HEAVY_PICKUP.offRoad && CarType.FARM_TRACTOR.offRoad, "the 4x4 and the tractor go off-road");
+        check(helper, CarType.HATCHBACK.fitsOnHauler() && CarType.MINIVAN.fitsOnHauler(), "small cars fit on a car hauler");
+        check(helper, !CarType.CITY_BUS.fitsOnHauler() && !CarType.DELIVERY_VAN.fitsOnHauler() && !CarType.SEMI_TRUCK.fitsOnHauler(),
+                "buses, vans and semis don't");
+        CarTank tank = new CarTank(car(helper, CarType.CITY_BUS));
+        helper.assertValueEqual(tank.fill(new FluidStack(bc("fuel_light"), 1000), IFluidHandler.FluidAction.SIMULATE), 0, "no gasoline in a bus");
+        helper.assertValueEqual(tank.fill(new FluidStack(bc("fuel_dense"), 1000), IFluidHandler.FluidAction.SIMULATE), 1000, "diesel goes in");
+        helper.succeed();
+    }
 }

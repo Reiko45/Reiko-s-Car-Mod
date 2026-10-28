@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "K": {
+      "item": "minecraft:clock"
+    },
+    "W": {
+      "tag": "minecraft:wool"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    }
+  },
+  "pattern": [
+    "WKW",
+    "WRW",
+    "WWW"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:city_bus_interior"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "X": {
+      "tag": "c:ingots/copper"
+    }
+  },
+  "pattern": [
+    "I I",
+    "IXI",
+    "I I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:hatchback_chassis"
+  }
+}

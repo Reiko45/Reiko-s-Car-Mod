@@ -387,7 +387,7 @@ public class TrailerEntity extends VehicleEntity {
 
     @Override
     protected boolean canAddPassenger(Entity passenger) {
-        return type.carSlots > 0 && passenger instanceof CarEntity car && !car.carType().isTractor() && cars().size() < type.carSlots;
+        return type.carSlots > 0 && passenger instanceof CarEntity car && car.carType().fitsOnHauler() && cars().size() < type.carSlots;
     }
 
     @Override

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "D": {
+      "tag": "c:dyes/green"
+    }
+  },
+  "pattern": [
+    "I I",
+    "IDI",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:farm_tractor_body"
+  }
+}

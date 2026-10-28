@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "P": {
+      "item": "minecraft:compass"
+    },
+    "L": {
+      "tag": "c:leathers"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "pattern": [
+    " P ",
+    "LRL",
+    " I "
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:farm_tractor_interior"
+  }
+}

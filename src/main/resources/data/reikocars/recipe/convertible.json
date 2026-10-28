@@ -1,0 +1,22 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:convertible_chassis"
+  },
+  "body": {
+    "item": "reikocars:convertible_body"
+  },
+  "interior": {
+    "item": "reikocars:convertible_interior"
+  },
+  "engine": {
+    "item": "reikocars:car_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:convertible"
+  }
+}

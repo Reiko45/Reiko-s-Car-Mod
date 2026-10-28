@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    },
+    "B": {
+      "tag": "c:storage_blocks/iron"
+    }
+  },
+  "pattern": [
+    "I I",
+    "PBP",
+    "I I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:heavy_pickup_chassis"
+  }
+}

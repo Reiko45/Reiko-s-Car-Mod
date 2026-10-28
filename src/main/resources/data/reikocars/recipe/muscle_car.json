@@ -1,0 +1,22 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:muscle_car_chassis"
+  },
+  "body": {
+    "item": "reikocars:muscle_car_body"
+  },
+  "interior": {
+    "item": "reikocars:muscle_car_interior"
+  },
+  "engine": {
+    "item": "reikocars:car_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:muscle_car"
+  }
+}

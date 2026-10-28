@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "tag": "c:storage_blocks/iron"
+    },
+    "X": {
+      "tag": "c:gears/iron"
+    }
+  },
+  "pattern": [
+    "III",
+    "BXB",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:city_bus_chassis"
+  }
+}

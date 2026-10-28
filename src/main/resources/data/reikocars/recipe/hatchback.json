@@ -1,0 +1,22 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:hatchback_chassis"
+  },
+  "body": {
+    "item": "reikocars:hatchback_body"
+  },
+  "interior": {
+    "item": "reikocars:hatchback_interior"
+  },
+  "engine": {
+    "item": "reikocars:car_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:hatchback"
+  }
+}

@@ -66,7 +66,7 @@ public final class Hitching {
         Vec3 front = car.position().add(car.forward().scale(car.carType().length / 2.0));
         return car.level().getEntitiesOfClass(TrailerEntity.class, car.getBoundingBox().inflate(TrailerType.LENGTH),
                         hauler -> hauler.trailerType().carSlots > 0 && hauler.isAlive() && hauler.cars().size() < hauler.trailerType().carSlots
-                                && hauler.canBeUsedBy(driver) && !car.carType().isTractor()
+                                && hauler.canBeUsedBy(driver) && car.carType().fitsOnHauler()
                                 && horizontalDistance(hauler.rear(), front) <= LOAD_REACH
                                 && Math.abs(hauler.rear().y - front.y) <= 1.5
                                 && Math.abs(Mth.wrapDegrees(hauler.getYRot() - car.getYRot())) <= 60.0F)

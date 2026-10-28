@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "K": {
+      "item": "minecraft:clock"
+    },
+    "L": {
+      "tag": "c:leathers"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "pattern": [
+    " K ",
+    "LRL",
+    "LIL"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:heavy_pickup_interior"
+  }
+}

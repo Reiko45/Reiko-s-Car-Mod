@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "reikocars:item/muscle_car_paint",
+    "layer1": "reikocars:item/muscle_car_trim"
+  }
+}

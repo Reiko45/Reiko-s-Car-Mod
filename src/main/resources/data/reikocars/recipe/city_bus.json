@@ -1,0 +1,22 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:city_bus_chassis"
+  },
+  "body": {
+    "item": "reikocars:city_bus_body"
+  },
+  "interior": {
+    "item": "reikocars:city_bus_interior"
+  },
+  "engine": {
+    "item": "reikocars:diesel_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:city_bus"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "tag": "c:storage_blocks/iron"
+    },
+    "D": {
+      "tag": "c:dyes/yellow"
+    }
+  },
+  "pattern": [
+    "GGG",
+    "GDG",
+    "BIB"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:city_bus_body"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "D": {
+      "tag": "c:dyes/orange"
+    }
+  },
+  "pattern": [
+    "GG ",
+    "IDI",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:muscle_car_body"
+  }
+}

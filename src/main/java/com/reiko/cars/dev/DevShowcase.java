@@ -72,7 +72,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public final class DevShowcase {
     /**
      * "true" for the cars and pumps, "workbench" for the Car Workbench, "diesel" for the diesel pump, "semi" for semis
-     * and trailers, "bikes" for the motorcycles, "false" for none.
+     * and trailers, "bikes" for the motorcycles, "cars2" for the second wave of cars, "false" for none.
      */
     private static final String MODE = System.getProperty("reikocars.showcase", "false");
     private static final boolean ENABLED = !MODE.equals("false");
@@ -119,6 +119,8 @@ public final class DevShowcase {
             semiScript();
         } else if (MODE.equals("bikes")) {
             bikeScript();
+        } else if (MODE.equals("cars2")) {
+            moreCarsScript();
         } else {
             script();
         }
@@ -750,5 +752,78 @@ public final class DevShowcase {
         at(585, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
         at(610, mc -> shot(mc, "61_items"));
         at(620, mc -> mc.stop());
+    }
+
+    // ---- the second wave of cars: ./gradlew runClient -Pshowcase=cars2 ----
+
+    private static void moreCarsScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                for (int x = -40; x <= 40; x++) {
+                    for (int z = -24; z <= 24; z++) {
+                        BlockState ground = z > 14 ? Blocks.GRASS_BLOCK.defaultBlockState()
+                                : Math.floorMod(z, 12) == 6 && x % 4 != 0 ? Blocks.WHITE_CONCRETE.defaultBlockState()
+                                : Blocks.GRAY_CONCRETE.defaultBlockState();
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), ground);
+                    }
+                }
+                // Gasoline in front, diesel behind, all facing east.
+                spawned(level, CarType.HATCHBACK, -12.0, 0.5, -90.0F, 0.6);
+                spawned(level, CarType.MUSCLE_CAR, -6.0, 0.5, -90.0F, 0.6);
+                spawned(level, CarType.CONVERTIBLE, 0.0, 0.5, -90.0F, 0.6);
+                spawned(level, CarType.MINIVAN, 6.0, 0.5, -90.0F, 0.6);
+                spawned(level, CarType.DELIVERY_VAN, -14.0, 7.5, -90.0F, 0.6);
+                spawned(level, CarType.HEAVY_PICKUP, -8.0, 7.5, -90.0F, 0.6);
+                spawned(level, CarType.FARM_TRACTOR, -2.0, 7.5, -90.0F, 0.6);
+                spawned(level, CarType.CITY_BUS, 7.0, 7.5, -90.0F, 0.6);
+                player.getInventory().clearContent();
+                for (CarType type : new CarType[] {CarType.HATCHBACK, CarType.MUSCLE_CAR, CarType.CONVERTIBLE, CarType.MINIVAN,
+                        CarType.DELIVERY_VAN, CarType.CITY_BUS, CarType.HEAVY_PICKUP, CarType.FARM_TRACTOR}) {
+                    give(player, ModItems.car(type), 1);
+                }
+            });
+        });
+        at(80, mc -> look(mc, 12.0, -57.0, -8.0, 50.0F, 18.0F));
+        at(130, mc -> shot(mc, "70_gas_cars_front"));
+        at(135, mc -> look(mc, -20.0, -57.0, -6.0, -55.0F, 16.0F));
+        at(185, mc -> shot(mc, "71_gas_cars_rear"));
+        at(190, mc -> look(mc, -20.0, -56.5, 16.0, -125.0F, 16.0F));
+        at(240, mc -> shot(mc, "72_diesel_rear"));
+        at(245, mc -> look(mc, 18.0, -56.5, 15.0, 120.0F, 14.0F));
+        at(295, mc -> shot(mc, "73_bus_front"));
+        // Riding in the bus: driver's seat, then third person.
+        at(300, mc -> server(mc, player -> player.startRiding(car(player.serverLevel(), CarType.CITY_BUS), true)));
+        at(330, mc -> shot(mc, "74_bus_driver"));
+        at(332, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        at(350, mc -> shot(mc, "75_bus_third_person"));
+        at(352, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> player.stopRiding());
+        });
+        // The tractor in the field, and the van's cargo area.
+        at(360, mc -> look(mc, 3.0, -58.0, 13.0, 150.0F, 18.0F));
+        at(400, mc -> shot(mc, "76_tractor"));
+        at(405, mc -> server(mc, player -> {
+            CarEntity van = car(player.serverLevel(), CarType.DELIVERY_VAN);
+            player.teleportTo(player.serverLevel(), van.getX(), van.getY(), van.getZ() - 2.5, 0.0F, 20.0F);
+            van.bed().setItem(0, new ItemStack(net.minecraft.world.item.Items.CHEST, 16));
+            van.bed().setItem(30, new ItemStack(net.minecraft.world.item.Items.OAK_LOG, 64));
+            van.interact(player, net.minecraft.world.InteractionHand.MAIN_HAND);
+            player.setShiftKeyDown(true);
+            van.interact(player, net.minecraft.world.InteractionHand.MAIN_HAND);
+            player.setShiftKeyDown(false);
+        }));
+        at(430, mc -> shot(mc, "77_van_cargo"));
+        at(432, mc -> mc.player.closeContainer());
+        at(440, mc -> jeiShow(RecipeIngredientRole.OUTPUT, new ItemStack(ModItems.car(CarType.CITY_BUS))));
+        at(470, mc -> shot(mc, "78_jei_bus"));
+        at(475, mc -> mc.setScreen(null));
+        at(480, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
+        at(505, mc -> shot(mc, "79_items"));
+        at(515, mc -> mc.stop());
     }
 }

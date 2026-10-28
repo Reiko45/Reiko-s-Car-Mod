@@ -28,9 +28,34 @@ public enum CarType {
             seat(6, -1), seat(-6, -1)),
     OFF_ROADER(  2.4f,  2.05f, 3.6f,  7,    0.85f, 0.014f, 0.040f, 0.25f, 4.0f, 10, 168, 0xC9A15A, 11, true,  0, 4, GASOLINE, noFifthWheel(),
             seat(6, -3), seat(-6, -3), seat(6, 11), seat(-6, 11)),
+    /** Small and cheap, and easy on fuel. */
+    HATCHBACK(   2.1f,  1.75f, 3.1f,  5,    0.80f, 0.013f, 0.040f, 0.25f, 4.6f,  6, 110, 0x7CB342,  7, false, 0, 4, GASOLINE, noFifthWheel(),
+            seat(6, -1), seat(-6, -1), seat(6, 11), seat(-6, 11)),
+    /** A big V8: fast in a straight line, slow to turn, thirsty. */
+    MUSCLE_CAR(  2.3f,  1.5f,  3.9f,  6,    1.20f, 0.024f, 0.040f, 0.25f, 3.6f,  8, 250, 0xF57C00,  6, false, 0, 4, GASOLINE, noFifthWheel(),
+            seat(6, 2), seat(-6, 2)),
+    /** An open-top roadster. */
+    CONVERTIBLE( 2.2f,  1.4f,  3.6f,  5,    1.15f, 0.019f, 0.048f, 0.25f, 4.8f,  6, 170, 0x26A69A,  6, false, 0, 4, GASOLINE, noFifthWheel(),
+            seat(6, 3), seat(-6, 3)),
+    /** Three rows of seats and a trunk. */
+    MINIVAN(     2.35f, 2.1f,  4.1f,  6,    0.75f, 0.010f, 0.035f, 0.22f, 3.6f, 10, 160, 0xB0BEC5, 10, false, 1, 4, GASOLINE, noFifthWheel(),
+            seat(6, -12), seat(-6, -12), seat(6, 1), seat(-6, 1), seat(6, 15), seat(-6, 15)),
     /** A semi tractor: pulls trailers on the fifth wheel behind its sleeper. Its tank is in buckets of dense fuel. */
     SEMI_TRUCK(  2.4f,  3.6f,  6.25f, 8,    0.85f, 0.010f, 0.035f, 0.20f, 3.2f, 12, 1440, 0x2E6B3A, 25, false, 0, 4, DIESEL, fifthWheel(32, 18),
             seat(9, -12), seat(-9, -12)),
+    /** A tall van with a 54-slot cargo area behind the cab. */
+    DELIVERY_VAN(2.4f,  2.6f,  4.45f, 6,    0.75f, 0.010f, 0.035f, 0.22f, 3.4f, 10, 900, 0xF5F5F5, 16, false, 6, 4, DIESEL, noFifthWheel(),
+            seat(7, -15), seat(-7, -15)),
+    /** Ten seats: the driver's, four rows of two, and the back bench. Turns about its back axle. */
+    CITY_BUS(    2.6f,  3.4f,  7.75f, 7,    0.65f, 0.008f, 0.030f, 0.18f, 2.8f, 16, 1200, 0xFFB300, 18, false, 0, 4, DIESEL, noFifthWheel(),
+            seat(10, -49), seat(8, -30), seat(-8, -30), seat(8, -14), seat(-8, -14), seat(8, 2), seat(-8, 2), seat(8, 18), seat(-8, 18),
+            seat(0, 44)),
+    /** A lifted crew-cab 4x4 with a truck bed. */
+    HEAVY_PICKUP(2.5f,  2.45f, 4.5f,  8,    0.85f, 0.013f, 0.040f, 0.22f, 3.8f, 14, 600, 0xB71C1C, 15, true,  3, 4, DIESEL, noFifthWheel(),
+            seat(7, -8), seat(-7, -8), seat(7, 4), seat(-7, 4)),
+    /** Slow, but at home in a field. */
+    FARM_TRACTOR(2.2f,  2.95f, 3.5f,  8,    0.45f, 0.010f, 0.040f, 0.15f, 4.5f,  6, 500, 0x388E3C, 24, true,  0, 4, DIESEL, noFifthWheel(),
+            seat(0, 9)),
 
     // Motorcycles: two wheels, lean into turns, a rider and maybe a passenger behind.
     /** The fastest thing on the road, and quick off the line. */
@@ -156,17 +181,43 @@ public enum CarType {
         return wheels == 2;
     }
 
-    /** What its storage is called: the pickup's truck bed, the cruiser's saddlebags. */
+    /** What its storage is called: a pickup's truck bed, the cruiser's saddlebags, the minivan's trunk... */
     public String storageKey() {
-        return isBike() ? "container.reikocars.saddlebags" : "container.reikocars.truck_bed";
+        return switch (this) {
+            case CRUISER -> "container.reikocars.saddlebags";
+            case MINIVAN -> "container.reikocars.trunk";
+            case DELIVERY_VAN -> "container.reikocars.cargo_area";
+            default -> "container.reikocars.truck_bed";
+        };
+    }
+
+    /** Whether it fits on a car hauler: anything up to a minivan's size, but no trucks, vans or buses. */
+    public boolean fitsOnHauler() {
+        return !isTractor() && length <= 4.1f && fuel == FuelType.GASOLINE;
+    }
+
+    /**
+     * Where its exhaust stacks' tops are, for the smoke, relative to the vehicle facing south (+z): x to its left, z
+     * forward, in blocks. Empty for one with a tailpipe at the back.
+     */
+    public List<Vec3> exhaustStacks() {
+        return switch (this) {
+            case SEMI_TRUCK -> List.of(new Vec3(1.19, 4.3, -0.94), new Vec3(-1.19, 4.3, -0.94));
+            case FARM_TRACTOR -> List.of(new Vec3(-0.375, 2.6, 0.81));
+            default -> List.of();
+        };
     }
 
     /** The horn's pitch: a big truck's is low, a scooter's beeps. */
     public float hornPitch() {
         return switch (this) {
-            case SPORTS_CAR -> 1.15F;
-            case PICKUP_TRUCK -> 0.85F;
-            case SEMI_TRUCK -> 0.6F;
+            case SPORTS_CAR, CONVERTIBLE -> 1.15F;
+            case PICKUP_TRUCK, DELIVERY_VAN -> 0.85F;
+            case SEMI_TRUCK, CITY_BUS -> 0.6F;
+            case HATCHBACK -> 1.25F;
+            case MUSCLE_CAR -> 0.9F;
+            case MINIVAN -> 1.05F;
+            case HEAVY_PICKUP, FARM_TRACTOR -> 0.75F;
             case SPORT_BIKE, DIRT_BIKE -> 1.35F;
             case CRUISER -> 1.1F;
             case SCOOTER -> 1.6F;
@@ -177,7 +228,12 @@ public enum CarType {
     /** The engine sound's pitch at idle, against a car's 1.0. */
     public float enginePitch() {
         return switch (this) {
-            case SEMI_TRUCK -> 0.75F;
+            case SEMI_TRUCK, CITY_BUS -> 0.7F;
+            case DELIVERY_VAN -> 0.85F;
+            case HEAVY_PICKUP, MUSCLE_CAR -> 0.78F;
+            case FARM_TRACTOR -> 0.62F;
+            case HATCHBACK -> 1.15F;
+            case CONVERTIBLE -> 1.05F;
             case SPORT_BIKE -> 1.3F;
             case CRUISER -> 0.8F;
             case DIRT_BIKE -> 1.4F;
@@ -198,9 +254,13 @@ public enum CarType {
     /**
      * How far behind its middle the vehicle turns about, in blocks. A tractor turns about its back axles, which are
      * under the fifth wheel, as a real one does: then the fifth wheel follows the cab round a bend instead of being
-     * flung out sideways, and the trailer follows it. Cars turn about their middle.
+     * flung out sideways, and the trailer follows it. The bus turns about its back axle too. Cars turn about their
+     * middle.
      */
     public double pivotBack() {
+        if (this == CITY_BUS) {
+            return 36 / 16.0; // its back axle: the bus swings its long nose round corners, as a real one does
+        }
         return fifthWheel == null ? 0.0 : fifthWheel[0] / 16.0;
     }
 
