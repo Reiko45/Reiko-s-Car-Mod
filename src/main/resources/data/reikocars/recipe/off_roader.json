@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "T": {
+      "item": "reikocars:tire"
+    },
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "tag": "c:storage_blocks/iron"
+    },
+    "E": {
+      "item": "reikocars:car_engine"
+    }
+  },
+  "pattern": [
+    "TGT",
+    "IEI",
+    "TBT"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:off_roader"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "car.engine": {
+    "sounds": [
+      {
+        "name": "reikocars:engine",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "car.engine_start": {
+    "sounds": [
+      {
+        "name": "reikocars:engine_start",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.reikocars.car.engine_start"
+  },
+  "car.horn": {
+    "sounds": [
+      {
+        "name": "reikocars:horn",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.reikocars.car.horn"
+  },
+  "car.lock": {
+    "sounds": [
+      "reikocars:lock"
+    ],
+    "subtitle": "subtitles.reikocars.car.lock"
+  },
+  "gas_pump.pump": {
+    "sounds": [
+      "reikocars:pump"
+    ],
+    "subtitle": "subtitles.reikocars.gas_pump.pump"
+  }
+}

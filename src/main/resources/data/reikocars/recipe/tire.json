@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "K": {
+      "item": "minecraft:dried_kelp"
+    },
+    "D": {
+      "tag": "c:dyes/black"
+    }
+  },
+  "pattern": [
+    "KDK",
+    "D D",
+    "KDK"
+  ],
+  "result": {
+    "count": 4,
+    "id": "reikocars:tire"
+  }
+}

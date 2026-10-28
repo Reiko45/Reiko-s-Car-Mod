@@ -1,0 +1,31 @@
+{
+  "variants": {
+    "facing=north,half=lower": {
+      "model": "reikocars:block/gas_pump"
+    },
+    "facing=north,half=upper": {
+      "model": "reikocars:block/gas_pump_top"
+    },
+    "facing=east,half=lower": {
+      "model": "reikocars:block/gas_pump",
+      "y": 90
+    },
+    "facing=east,half=upper": {
+      "model": "reikocars:block/gas_pump_top"
+    },
+    "facing=south,half=lower": {
+      "model": "reikocars:block/gas_pump",
+      "y": 180
+    },
+    "facing=south,half=upper": {
+      "model": "reikocars:block/gas_pump_top"
+    },
+    "facing=west,half=lower": {
+      "model": "reikocars:block/gas_pump",
+      "y": 270
+    },
+    "facing=west,half=upper": {
+      "model": "reikocars:block/gas_pump_top"
+    }
+  }
+}

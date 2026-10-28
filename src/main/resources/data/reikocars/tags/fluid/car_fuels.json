@@ -1,0 +1,68 @@
+{
+  "values": [
+    {
+      "id": "buildcraftreborn:fuel_light",
+      "required": false
+    },
+    {
+      "id": "buildcraftreborn:fuel_dense",
+      "required": false
+    },
+    {
+      "id": "buildcraftreborn:fuel_mixed_light",
+      "required": false
+    },
+    {
+      "id": "buildcraftreborn:fuel_mixed_heavy",
+      "required": false
+    },
+    {
+      "id": "buildcraftreborn:fuel_gaseous",
+      "required": false
+    },
+    {
+      "id": "#c:fuel",
+      "required": false
+    },
+    {
+      "id": "#c:light_fuel",
+      "required": false
+    },
+    {
+      "id": "#c:gasoline",
+      "required": false
+    },
+    {
+      "id": "#c:diesel",
+      "required": false
+    },
+    {
+      "id": "#c:biodiesel",
+      "required": false
+    },
+    {
+      "id": "#c:ethanol",
+      "required": false
+    },
+    {
+      "id": "#c:bioethanol",
+      "required": false
+    },
+    {
+      "id": "#c:kerosene",
+      "required": false
+    },
+    {
+      "id": "#c:lpg",
+      "required": false
+    },
+    {
+      "id": "#c:high_power_biodiesel",
+      "required": false
+    },
+    {
+      "id": "#c:boosted_diesel",
+      "required": false
+    }
+  ]
+}

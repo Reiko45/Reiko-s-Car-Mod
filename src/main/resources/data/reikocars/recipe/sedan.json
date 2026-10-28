@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "T": {
+      "item": "reikocars:tire"
+    },
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "E": {
+      "item": "reikocars:car_engine"
+    }
+  },
+  "pattern": [
+    "TGT",
+    "IEI",
+    "TIT"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:sedan"
+  }
+}

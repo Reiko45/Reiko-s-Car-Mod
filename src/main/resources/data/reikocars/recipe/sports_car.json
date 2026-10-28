@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "T": {
+      "item": "reikocars:tire"
+    },
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "A": {
+      "tag": "c:ingots/gold"
+    },
+    "D": {
+      "tag": "c:gears/gold"
+    },
+    "E": {
+      "item": "reikocars:car_engine"
+    }
+  },
+  "pattern": [
+    "TGT",
+    "AEA",
+    "TDT"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:sports_car"
+  }
+}

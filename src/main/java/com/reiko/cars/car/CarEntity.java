@@ -1,0 +1,824 @@
+package com.reiko.cars.car;
+
+import com.reiko.cars.ReikoCars;
+import com.reiko.cars.config.CarsConfig;
+import com.reiko.cars.registry.ModItems;
+import com.reiko.cars.registry.ModSounds;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.util.Mth;
+import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.entity.OwnableEntity;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.vehicle.DismountHelper;
+import net.minecraft.world.entity.vehicle.VehicleEntity;
+import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.item.DyeItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemUtils;
+import net.minecraft.world.item.component.DyedItemColor;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.fluids.FluidActionResult;
+import net.neoforged.neoforge.fluids.FluidUtil;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * A drivable car. Like a boat, the driver's own client works out where the car goes and the server accepts it, so
+ * steering feels instant even with lag. The server burns fuel for the distance the car actually covered, hurts
+ * whatever it runs over, and keeps the fuel, paint, owner and lock, which it sends to every client.
+ *
+ * <p>Fuel is stored as energy (BuildCraft MJ) rather than as a fluid, so any car fuel can go in any tank and
+ * stronger fuels go further. A full tank is {@link CarType#tankBuckets} buckets of light fuel's worth.
+ */
+public class CarEntity extends VehicleEntity {
+    public static final ResourceKey<DamageType> RUN_OVER = ResourceKey.create(Registries.DAMAGE_TYPE, ReikoCars.id("car"));
+    /** Grass, dirt, sand, snow and the like slow every car but the off-roader. */
+    public static final TagKey<Block> OFF_ROAD = BlockTags.create(ReikoCars.id("off_road"));
+
+    private static final EntityDataAccessor<Float> DATA_FUEL = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Integer> DATA_COLOR = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Boolean> DATA_LOCKED = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Optional<UUID>> DATA_OWNER = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.OPTIONAL_UUID);
+
+    /** Fuel changes smaller than this (in MJ) aren't sent to clients straight away, so driving doesn't send a packet every tick. */
+    private static final float FUEL_SYNC_STEP = 250;
+    private static final int HORN_COOLDOWN = 12;
+
+    private final CarType type;
+    private final SimpleContainer bed;
+
+    // Server-side state
+    private double fuel;
+    private String ownerName = "";
+    @Nullable
+    private Vec3 lastFuelPos;
+    private int hornCooldown;
+
+    // Driving state, on whichever side simulates the car
+    private boolean inputForward;
+    private boolean inputBack;
+    private boolean inputLeft;
+    private boolean inputRight;
+    private boolean inputBrake;
+    /** Signed speed along the car's heading, in blocks per tick. */
+    private double speed;
+    /** -1 (full right) to 1 (full left), eased toward the keys being held. */
+    private float steering;
+    /** How much the car turned this tick, which turns its passengers with it. */
+    private float deltaRotation;
+
+    // Lerping toward the server's position, on clients that don't drive it
+    private int lerpSteps;
+    private double lerpX;
+    private double lerpY;
+    private double lerpZ;
+    private double lerpYRot;
+    private double lerpXRot;
+
+    // Client-side animation
+    private double measuredSpeed;
+    private float wheelAngle;
+    private float wheelAngleO;
+    private float steerAngle;
+    private float steerAngleO;
+
+    public CarEntity(EntityType<? extends CarEntity> entityType, Level level, CarType type) {
+        super(entityType, level);
+        this.type = type;
+        this.blocksBuilding = true;
+        this.bed = new SimpleContainer(Math.max(1, type.storageRows) * 9) {
+            @Override
+            public boolean stillValid(Player player) {
+                return CarEntity.this.isAlive() && player.distanceToSqr(CarEntity.this) < 64.0;
+            }
+        };
+        this.entityData.set(DATA_COLOR, type.defaultColor);
+    }
+
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(DATA_FUEL, 0.0F);
+        builder.define(DATA_COLOR, 0xFFFFFF);
+        builder.define(DATA_LOCKED, false);
+        builder.define(DATA_OWNER, Optional.empty());
+    }
+
+    public CarType carType() {
+        return type;
+    }
+
+    // ---- fuel ----
+
+    /** MJ in the tank. Exact on the server; on clients, accurate to within a few hundred MJ. */
+    public double fuel() {
+        return level().isClientSide ? entityData.get(DATA_FUEL) : fuel;
+    }
+
+    /** 0 to 1. */
+    public float fuelFraction() {
+        return (float) Mth.clamp(fuel() / type.tankCapacity(), 0.0, 1.0);
+    }
+
+    /** MJ of free space in the tank. */
+    public double fuelRoom() {
+        return Math.max(0.0, type.tankCapacity() - fuel());
+    }
+
+    public boolean hasFuel() {
+        return fuel() > 0.0;
+    }
+
+    public void setFuel(double mj) {
+        double clamped = Mth.clamp(mj, 0.0, type.tankCapacity());
+        fuel = clamped;
+        float synced = entityData.get(DATA_FUEL);
+        if (Math.abs(synced - clamped) >= FUEL_SYNC_STEP || clamped == 0.0 || clamped >= type.tankCapacity()
+                || (synced == 0.0F) != (clamped == 0.0)) {
+            entityData.set(DATA_FUEL, (float) clamped);
+        }
+    }
+
+    /** Adds fuel, up to a full tank. Returns the MJ that went in. */
+    public double addFuel(double mj) {
+        double added = Math.min(mj, fuelRoom());
+        if (added > 0) {
+            setFuel(fuel + added);
+            entityData.set(DATA_FUEL, (float) fuel); // fills always show straight away
+        }
+        return added;
+    }
+
+    // ---- paint, owner, lock ----
+
+    public int color() {
+        return entityData.get(DATA_COLOR);
+    }
+
+    public void setColor(int rgb) {
+        entityData.set(DATA_COLOR, rgb & 0xFFFFFF);
+    }
+
+    public boolean isLocked() {
+        return entityData.get(DATA_LOCKED);
+    }
+
+    public void setLocked(boolean locked) {
+        entityData.set(DATA_LOCKED, locked);
+    }
+
+    @Nullable
+    public UUID owner() {
+        return entityData.get(DATA_OWNER).orElse(null);
+    }
+
+    public String ownerName() {
+        return ownerName;
+    }
+
+    public void setOwner(@Nullable Player player) {
+        entityData.set(DATA_OWNER, Optional.ofNullable(player).map(Entity::getUUID));
+        ownerName = player == null ? "" : player.getGameProfile().getName();
+    }
+
+    public boolean isOwner(Player player) {
+        return player.getUUID().equals(owner());
+    }
+
+    /** Owners and admins can always get in. Anyone can get into an unlocked or unowned car, or join its owner. */
+    public boolean canBeUsedBy(Player player) {
+        if (!isLocked() || owner() == null || isOwner(player) || player.hasPermissions(2) || hasPassenger(player)) {
+            return true;
+        }
+        return getPassengers().stream().anyMatch(passenger -> passenger instanceof Player p && isOwner(p));
+    }
+
+    /** Who may break the car to pick it up or repaint it: its owner, an admin, or anyone if nobody owns it. */
+    public boolean canManage(Player player) {
+        return owner() == null || isOwner(player) || player.hasPermissions(2);
+    }
+
+    // ---- interaction ----
+
+    @Override
+    public InteractionResult interact(Player player, InteractionHand hand) {
+        ItemStack held = player.getItemInHand(hand);
+        if (player.isSecondaryUseActive()) {
+            if (type.storageRows == 0) {
+                return InteractionResult.PASS;
+            }
+            if (!canBeUsedBy(player)) {
+                return refuse(player, Component.translatable("car.reikocars.locked"));
+            }
+            if (player instanceof ServerPlayer serverPlayer) {
+                openBed(serverPlayer);
+            }
+            return InteractionResult.sidedSuccess(level().isClientSide);
+        }
+        if (held.getItem() instanceof DyeItem dye) {
+            if (!canManage(player)) {
+                return refuse(player, Component.translatable("car.reikocars.not_yours", ownerName));
+            }
+            int rgb = dye.getDyeColor().getTextureDiffuseColor() & 0xFFFFFF;
+            if (rgb != color()) {
+                if (!level().isClientSide) {
+                    setColor(rgb);
+                    held.consume(1, player);
+                }
+                return InteractionResult.sidedSuccess(level().isClientSide);
+            }
+        }
+        if (CarsConfig.get(CarsConfig.BUCKET_FUELING) && FluidUtil.getFluidContained(held).filter(CarFuel::isFuel).isPresent()) {
+            if (!level().isClientSide) {
+                pourFrom(player, hand);
+            }
+            return InteractionResult.sidedSuccess(level().isClientSide);
+        }
+        if (!canAddPassenger(player)) {
+            return InteractionResult.PASS;
+        }
+        if (!canBeUsedBy(player)) {
+            return refuse(player, Component.translatable("car.reikocars.locked"));
+        }
+        if (!level().isClientSide) {
+            return player.startRiding(this) ? InteractionResult.CONSUME : InteractionResult.PASS;
+        }
+        return InteractionResult.SUCCESS;
+    }
+
+    private InteractionResult refuse(Player player, Component message) {
+        if (!level().isClientSide) {
+            player.displayClientMessage(message, true);
+            playSound(ModSounds.LOCK.get(), 0.5F, 0.6F);
+        }
+        return InteractionResult.sidedSuccess(level().isClientSide);
+    }
+
+    /** Pours a bucket (or any fluid container) of fuel into the tank. */
+    private void pourFrom(Player player, InteractionHand hand) {
+        ItemStack held = player.getItemInHand(hand);
+        CarTank tank = new CarTank(this);
+        FluidActionResult result = FluidUtil.tryEmptyContainer(held, tank, Integer.MAX_VALUE, player, true);
+        if (result.isSuccess()) {
+            player.setItemInHand(hand, ItemUtils.createFilledResult(held, player, result.getResult()));
+            player.displayClientMessage(Component.translatable("car.reikocars.fuel_level", Math.round(fuelFraction() * 100)), true);
+        } else {
+            player.displayClientMessage(Component.translatable(fuelRoom() <= 0 ? "car.reikocars.tank_full" : "car.reikocars.no_room_for_bucket"), true);
+        }
+    }
+
+    private void openBed(ServerPlayer player) {
+        Component title = Component.translatable("container.reikocars.truck_bed");
+        player.openMenu(new SimpleMenuProvider((id, inventory, p) -> ChestMenu.threeRows(id, inventory, bed), title));
+    }
+
+    /** The truck bed's items, or an empty container for cars without one. */
+    public SimpleContainer bed() {
+        return bed;
+    }
+
+    /** The horn, sent from the driver's key. */
+    public void honk() {
+        if (hornCooldown <= 0) {
+            hornCooldown = HORN_COOLDOWN;
+            level().playSound(null, getX(), getY(), getZ(), ModSounds.HORN.get(), SoundSource.NEUTRAL, 2.0F,
+                    type == CarType.SPORTS_CAR ? 1.15F : type == CarType.PICKUP_TRUCK ? 0.85F : 1.0F);
+        }
+    }
+
+    /** Locks or unlocks the car for its owner. Returns false, and changes nothing, for anyone else. */
+    public boolean toggleLock(ServerPlayer player) {
+        if (!canManage(player) || owner() == null) {
+            return false;
+        }
+        setLocked(!isLocked());
+        playSound(ModSounds.LOCK.get(), 0.7F, isLocked() ? 1.0F : 1.3F);
+        player.displayClientMessage(Component.translatable(isLocked() ? "car.reikocars.now_locked" : "car.reikocars.now_unlocked"), true);
+        return true;
+    }
+
+    // ---- passengers ----
+
+    @Override
+    protected boolean canAddPassenger(Entity passenger) {
+        return getPassengers().size() < type.seatCount();
+    }
+
+    @Nullable
+    @Override
+    public LivingEntity getControllingPassenger() {
+        return getFirstPassenger() instanceof Player player ? player : null;
+    }
+
+    @Override
+    protected void addPassenger(Entity passenger) {
+        boolean hadDriver = getControllingPassenger() != null;
+        super.addPassenger(passenger);
+        if (!level().isClientSide && !hadDriver && getControllingPassenger() != null && hasFuel()) {
+            playSound(ModSounds.ENGINE_START.get(), 1.0F, 1.0F);
+        }
+        if (level().isClientSide && passenger instanceof Player player && player.isLocalPlayer()) {
+            // Getting in, you face the windscreen (your client owns your view, so it's set here).
+            player.setYRot(getYRot());
+            player.yRotO = getYRot();
+            player.setYHeadRot(getYRot());
+            player.setXRot(Math.max(player.getXRot(), 5.0F));
+        }
+    }
+
+    @Override
+    protected Vec3 getPassengerAttachmentPoint(Entity entity, EntityDimensions dimensions, float partialTick) {
+        int seat = Math.max(0, getPassengers().indexOf(entity));
+        return type.seatOffset(seat).yRot(-getYRot() * Mth.DEG_TO_RAD);
+    }
+
+    @Override
+    protected void positionRider(Entity passenger, Entity.MoveFunction callback) {
+        super.positionRider(passenger, callback);
+        if (level().isClientSide) {
+            passenger.setYRot(passenger.getYRot() + deltaRotation);
+            passenger.setYHeadRot(passenger.getYHeadRot() + deltaRotation);
+        }
+        clampRotation(passenger);
+    }
+
+    /** Passengers face roughly forward, but can look over their shoulder. */
+    protected void clampRotation(Entity passenger) {
+        passenger.setYBodyRot(getYRot());
+        float relative = Mth.wrapDegrees(passenger.getYRot() - getYRot());
+        float clamped = Mth.clamp(relative, -120.0F, 120.0F);
+        passenger.yRotO += clamped - relative;
+        passenger.setYRot(passenger.getYRot() + clamped - relative);
+        passenger.setYHeadRot(passenger.getYRot());
+    }
+
+    @Override
+    public void onPassengerTurned(Entity passenger) {
+        clampRotation(passenger);
+    }
+
+    @Override
+    public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
+        // Out of the door on the passenger's own side, then the other side, then anywhere around the car.
+        int seat = getPassengers().indexOf(passenger);
+        double side = seat >= 0 && type.seatOffset(seat).x < 0 ? -1.0 : 1.0;
+        double reach = type.width / 2.0 + passenger.getBbWidth() / 2.0 + 0.2;
+        for (double sideSign : new double[] {side, -side}) {
+            Vec3 offset = new Vec3(sideSign * reach, 0.0, 0.0).yRot(-getYRot() * Mth.DEG_TO_RAD);
+            BlockPos pos = BlockPos.containing(getX() + offset.x, getBoundingBox().maxY, getZ() + offset.z);
+            for (BlockPos candidate : new BlockPos[] {pos, pos.below(), pos.below(2)}) {
+                double floor = level().getBlockFloorHeight(candidate);
+                if (!DismountHelper.isBlockFloorValid(floor)) {
+                    continue;
+                }
+                Vec3 spot = new Vec3(getX() + offset.x, candidate.getY() + floor, getZ() + offset.z);
+                for (Pose pose : passenger.getDismountPoses()) {
+                    if (DismountHelper.canDismountTo(level(), spot, passenger, pose)) {
+                        passenger.setPose(pose);
+                        return spot;
+                    }
+                }
+            }
+        }
+        return super.getDismountLocationForPassenger(passenger);
+    }
+
+    // ---- input (set by the driver's client) ----
+
+    public void setInput(boolean forward, boolean back, boolean left, boolean right, boolean brake) {
+        this.inputForward = forward;
+        this.inputBack = back;
+        this.inputLeft = left;
+        this.inputRight = right;
+        this.inputBrake = brake;
+    }
+
+    // ---- ticking ----
+
+    @Override
+    public void tick() {
+        if (getHurtTime() > 0) {
+            setHurtTime(getHurtTime() - 1);
+        }
+        if (getDamage() > 0.0F) {
+            setDamage(getDamage() - 1.0F);
+        }
+        float yawBefore = getYRot();
+        super.tick();
+        tickLerp();
+        if (isControlledByLocalInstance()) {
+            if (getControllingPassenger() == null) {
+                setInput(false, false, false, false, false);
+            }
+            drive();
+            Vec3 before = position();
+            move(MoverType.SELF, getDeltaMovement());
+            afterMove(before);
+        } else {
+            setDeltaMovement(Vec3.ZERO);
+        }
+        deltaRotation = Mth.wrapDegrees(getYRot() - yawBefore);
+        if (level().isClientSide) {
+            clientTick();
+        } else {
+            serverTick();
+        }
+        checkInsideBlocks();
+    }
+
+    private void tickLerp() {
+        if (isControlledByLocalInstance()) {
+            lerpSteps = 0;
+            syncPacketPositionCodec(getX(), getY(), getZ());
+        }
+        if (lerpSteps > 0) {
+            lerpPositionAndRotationStep(lerpSteps, lerpX, lerpY, lerpZ, lerpYRot, lerpXRot);
+            lerpSteps--;
+        }
+    }
+
+    /** Works out this tick's speed, heading and velocity from the driver's keys and the ground under the car. */
+    private void drive() {
+        double speedScale = CarsConfig.get(CarsConfig.SPEED);
+        BlockState ground = level().getBlockState(getBlockPosBelowThatAffectsMyMovement());
+        float friction = ground.getFriction(level(), getBlockPosBelowThatAffectsMyMovement(), this);
+        double grip = onGround() ? Mth.clamp((1.0 - friction) / 0.4, 0.1, 1.0) : 0.0;
+        double top = type.topSpeed * speedScale * surfaceFactor();
+        if (isInWater()) {
+            top = Math.min(top, 0.1);
+        }
+        double accel = type.acceleration * speedScale;
+        boolean engine = getControllingPassenger() != null && hasFuel();
+
+        if (onGround()) {
+            if (inputForward && engine) {
+                speed = speed < 0 ? approach(speed, 0, type.braking * grip) : speed + accel * grip * (1.0 - 0.5 * speed / top);
+            } else if (inputBack) {
+                if (speed > 0.001) {
+                    speed = approach(speed, 0, type.braking * grip);
+                } else if (engine) {
+                    speed = Math.max(-type.reverseSpeed * speedScale, speed - accel * 0.8 * grip);
+                }
+            } else {
+                speed = approach(speed * 0.992, 0, 0.003 * Math.max(grip, 0.3));
+            }
+            if (inputBrake) {
+                speed = approach(speed, 0, type.braking * 1.5 * grip);
+            }
+            if (Math.abs(speed) > top) {
+                speed = approach(speed, Math.copySign(top, speed), 0.03);
+            }
+        } else {
+            speed *= 0.995;
+        }
+
+        float steerTarget = (inputLeft ? 1.0F : 0.0F) - (inputRight ? 1.0F : 0.0F);
+        steering += (steerTarget - steering) * 0.3F;
+        double pace = Math.abs(speed);
+        double turnFactor = Mth.clamp(pace / 0.15, 0.0, 1.0) * (1.0 - 0.35 * Math.min(1.0, pace / type.topSpeed));
+        float turn = (float) (steering * type.turnRate * turnFactor * Math.signum(speed) * (onGround() ? 1.0 : 0.2));
+        setYRot(getYRot() - turn);
+
+        Vec3 forward = forward();
+        Vec3 current = getDeltaMovement();
+        double vy = isNoGravity() ? 0.0 : (current.y - 0.08) * 0.98;
+        if (isInWater()) {
+            vy *= 0.6;
+        }
+        // On ice the car keeps sliding the way it was going, instead of following its wheels.
+        double vx = Mth.lerp(onGround() ? grip : 0.02, current.x, forward.x * speed);
+        double vz = Mth.lerp(onGround() ? grip : 0.02, current.z, forward.z * speed);
+        setDeltaMovement(vx, vy, vz);
+    }
+
+    /** Hitting a wall stops the car instead of leaving it pushing forever at full speed. */
+    private void afterMove(Vec3 before) {
+        if (horizontalCollision) {
+            double along = position().subtract(before).dot(forward());
+            if (Math.abs(along) < Math.abs(speed)) {
+                speed = along;
+            }
+        }
+    }
+
+    private double surfaceFactor() {
+        if (type.offRoad) {
+            return 1.0;
+        }
+        BlockState on = level().getBlockState(getOnPos());
+        BlockState feet = level().getBlockState(blockPosition());
+        return on.is(OFF_ROAD) || feet.is(OFF_ROAD) ? CarsConfig.get(CarsConfig.OFF_ROAD_SPEED) : 1.0;
+    }
+
+    private static double approach(double value, double target, double step) {
+        return value < target ? Math.min(target, value + step) : Math.max(target, value - step);
+    }
+
+    /** The way the car faces, flat. */
+    public Vec3 forward() {
+        float yaw = getYRot() * Mth.DEG_TO_RAD;
+        return new Vec3(-Mth.sin(yaw), 0.0, Mth.cos(yaw));
+    }
+
+    private void serverTick() {
+        if (hornCooldown > 0) {
+            hornCooldown--;
+        }
+        Vec3 pos = position();
+        double moved = lastFuelPos == null ? 0.0 : Math.sqrt(Mth.square(pos.x - lastFuelPos.x) + Mth.square(pos.z - lastFuelPos.z));
+        if (moved > 8.0) {
+            moved = 0.0; // teleported, not driven
+        }
+        lastFuelPos = pos;
+        LivingEntity driver = getControllingPassenger();
+        if (driver != null && fuel > 0) {
+            double burn = moved * type.fuelPerBlock * CarsConfig.get(CarsConfig.FUEL_USE) + CarsConfig.get(CarsConfig.IDLE_FUEL_USE);
+            setFuel(fuel - burn);
+            if (fuel <= 0 && driver instanceof Player player) {
+                player.displayClientMessage(Component.translatable("car.reikocars.out_of_fuel"), true);
+            }
+        }
+        if (moved > 0.3) {
+            runOver(driver, moved);
+        }
+    }
+
+    /** Hurts and shoves mobs in the car's way, scaled by how fast it's going. Players only with PvP on. */
+    private void runOver(@Nullable LivingEntity driver, double moved) {
+        double perSpeed = CarsConfig.get(CarsConfig.RUN_OVER_DAMAGE);
+        if (perSpeed <= 0) {
+            return;
+        }
+        Vec3 heading = forward().scale(Math.signum(speedAlong(moved)));
+        AABB box = getBoundingBox().inflate(0.1, 0.0, 0.1).expandTowards(heading.scale(0.6));
+        List<LivingEntity> hit = level().getEntitiesOfClass(LivingEntity.class, box, entity -> entity.isAlive()
+                && !entity.isPassengerOfSameVehicle(this) && entity.getVehicle() != this && !entity.isSpectator());
+        if (hit.isEmpty()) {
+            return;
+        }
+        DamageSource source = level().damageSources().source(RUN_OVER, this, driver);
+        for (LivingEntity entity : hit) {
+            if (entity instanceof Player player && (player.isCreative() || level().getServer() == null
+                    || !level().getServer().isPvpAllowed())) {
+                continue;
+            }
+            if (driver != null && entity instanceof OwnableEntity pet && driver.getUUID().equals(pet.getOwnerUUID())) {
+                continue;
+            }
+            if (entity.hurt(source, (float) (moved * perSpeed))) {
+                entity.push(heading.x * moved * 0.8, 0.25 + moved * 0.2, heading.z * moved * 0.8);
+                entity.hurtMarked = true;
+            }
+        }
+    }
+
+    /** Whether this tick's movement went forward (positive) or backward (negative). */
+    private double speedAlong(double moved) {
+        Vec3 delta = position().subtract(xo, yo, zo);
+        double along = delta.dot(forward());
+        return along == 0.0 ? moved : along;
+    }
+
+    private void clientTick() {
+        Vec3 delta = position().subtract(xo, yo, zo);
+        measuredSpeed = delta.dot(forward());
+        wheelAngleO = wheelAngle;
+        wheelAngle += (float) (measuredSpeed / type.wheelRadius());
+        steerAngleO = steerAngle;
+        float target;
+        if (isControlledByLocalInstance()) {
+            target = steering * 0.5F;
+        } else {
+            // Other players' cars: guess the steering from how fast the car is turning.
+            target = Math.abs(measuredSpeed) < 0.01 ? steerAngle : (float) Mth.clamp(-deltaRotation / type.turnRate * 0.5F, -0.5F, 0.5F);
+        }
+        steerAngle += (target - steerAngle) * 0.4F;
+
+        if (isEngineRunning() && tickCount % 3 == 0) {
+            Vec3 tail = forward().scale(-type.length / 2.0 - 0.1);
+            Vec3 side = new Vec3(-0.35, 0, 0).yRot(-getYRot() * Mth.DEG_TO_RAD);
+            level().addParticle(ParticleTypes.SMOKE, getX() + tail.x + side.x, getY() + 0.3, getZ() + tail.z + side.z,
+                    tail.x * 0.02, 0.02, tail.z * 0.02);
+        }
+    }
+
+    /** Someone's driving and there's fuel. */
+    public boolean isEngineRunning() {
+        return getControllingPassenger() != null && hasFuel();
+    }
+
+    /** Speed along the heading in blocks per tick, as seen on this client. */
+    public double displaySpeed() {
+        return measuredSpeed;
+    }
+
+    public float wheelAngle(float partialTick) {
+        return Mth.lerp(partialTick, wheelAngleO, wheelAngle);
+    }
+
+    /** Front wheels' steering angle in radians, positive to the left. */
+    public float steerAngle(float partialTick) {
+        return Mth.lerp(partialTick, steerAngleO, steerAngle);
+    }
+
+    // ---- syncing position with the server ----
+
+    @Override
+    public void lerpTo(double x, double y, double z, float yRot, float xRot, int steps) {
+        lerpX = x;
+        lerpY = y;
+        lerpZ = z;
+        lerpYRot = yRot;
+        lerpXRot = xRot;
+        lerpSteps = 5;
+    }
+
+    @Override
+    public double lerpTargetX() {
+        return lerpSteps > 0 ? lerpX : getX();
+    }
+
+    @Override
+    public double lerpTargetY() {
+        return lerpSteps > 0 ? lerpY : getY();
+    }
+
+    @Override
+    public double lerpTargetZ() {
+        return lerpSteps > 0 ? lerpZ : getZ();
+    }
+
+    @Override
+    public float lerpTargetXRot() {
+        return lerpSteps > 0 ? (float) lerpXRot : getXRot();
+    }
+
+    @Override
+    public float lerpTargetYRot() {
+        return lerpSteps > 0 ? (float) lerpYRot : getYRot();
+    }
+
+    // ---- physical properties ----
+
+    /** Climbs a full block, so curbs, slabs and stairs don't stop it. */
+    @Override
+    public float maxUpStep() {
+        return 1.0F;
+    }
+
+    @Override
+    public boolean canBeCollidedWith() {
+        return true;
+    }
+
+    /** Solid to other vehicles; drives through mobs (and hurts them) instead of stopping at them. */
+    @Override
+    public boolean canCollideWith(Entity entity) {
+        return entity.canBeCollidedWith() && !isPassengerOfSameVehicle(entity);
+    }
+
+    @Override
+    public boolean isPushable() {
+        return false;
+    }
+
+    @Override
+    public boolean isPickable() {
+        return !isRemoved();
+    }
+
+    @Override
+    public boolean fireImmune() {
+        return true;
+    }
+
+    @Override
+    protected Entity.MovementEmission getMovementEmission() {
+        return Entity.MovementEmission.EVENTS;
+    }
+
+    @Override
+    protected void checkFallDamage(double y, boolean onGround, BlockState state, BlockPos pos) {
+        fallDistance = 0.0F; // cars land on their suspension; the people inside don't take the fall either
+    }
+
+    // ---- damage and dropping ----
+
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        if (level().isClientSide || isRemoved()) {
+            return true;
+        }
+        if (!(source.getEntity() instanceof Player player)) {
+            return false; // only players can break cars: no losing one to a creeper or lava
+        }
+        if (!canManage(player)) {
+            player.displayClientMessage(Component.translatable("car.reikocars.not_yours", ownerName), true);
+            return false;
+        }
+        return super.hurt(source, amount);
+    }
+
+    @Override
+    protected void destroy(DamageSource source) {
+        kill();
+        if (level().getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
+            spawnAtLocation(toItem());
+        }
+    }
+
+    @Override
+    public void remove(RemovalReason reason) {
+        if (!level().isClientSide && reason.shouldDestroy() && type.storageRows > 0) {
+            Containers.dropContents(level(), this, bed);
+        }
+        super.remove(reason);
+    }
+
+    /** This car as an item, keeping its fuel, paint and name. */
+    public ItemStack toItem() {
+        ItemStack stack = new ItemStack(getDropItem());
+        CarItem.withFuel(stack, fuel());
+        if (color() != type.defaultColor) {
+            stack.set(net.minecraft.core.component.DataComponents.DYED_COLOR, new DyedItemColor(color(), false));
+        }
+        if (hasCustomName()) {
+            stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, getCustomName());
+        }
+        return stack;
+    }
+
+    @Override
+    protected Item getDropItem() {
+        return ModItems.car(type);
+    }
+
+    @Override
+    public ItemStack getPickResult() {
+        return new ItemStack(getDropItem());
+    }
+
+    // ---- saving ----
+
+    @Override
+    protected void addAdditionalSaveData(CompoundTag tag) {
+        tag.putDouble("Fuel", fuel);
+        tag.putInt("Color", color());
+        tag.putBoolean("Locked", isLocked());
+        if (owner() != null) {
+            tag.putUUID("Owner", owner());
+            tag.putString("OwnerName", ownerName);
+        }
+        if (type.storageRows > 0) {
+            tag.put("Bed", bed.createTag(registryAccess()));
+        }
+    }
+
+    @Override
+    protected void readAdditionalSaveData(CompoundTag tag) {
+        setFuel(tag.getDouble("Fuel"));
+        entityData.set(DATA_FUEL, (float) fuel);
+        if (tag.contains("Color", Tag.TAG_INT)) {
+            setColor(tag.getInt("Color"));
+        }
+        setLocked(tag.getBoolean("Locked"));
+        entityData.set(DATA_OWNER, tag.hasUUID("Owner") ? Optional.of(tag.getUUID("Owner")) : Optional.empty());
+        ownerName = tag.getString("OwnerName");
+        if (type.storageRows > 0 && tag.contains("Bed", Tag.TAG_LIST)) {
+            bed.fromTag(tag.getList("Bed", Tag.TAG_COMPOUND), registryAccess());
+        }
+    }
+}
