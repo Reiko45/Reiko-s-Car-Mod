@@ -19,18 +19,32 @@ import org.jetbrains.annotations.Nullable;
  * tractor's fifth wheel, where a trailer's kingpin sits, is given in pixels behind the middle and up from the ground.
  */
 public enum CarType {
-    //          width  height length wheel  top    accel   brake   reverse turn  tank MJ/block colour  seat off-road bed fuel     fifth wheel
-    SEDAN(       2.25f, 1.8f,  3.5f,  5,    0.90f, 0.012f, 0.040f, 0.25f, 4.0f,  8, 144, 0x2E5EAA,  7, false, 0, GASOLINE, noFifthWheel(),
+    //          width  height length wheel  top    accel   brake   reverse turn  tank MJ/block colour  seat off-road bed wheels fuel   fifth wheel
+    SEDAN(       2.25f, 1.8f,  3.5f,  5,    0.90f, 0.012f, 0.040f, 0.25f, 4.0f,  8, 144, 0x2E5EAA,  7, false, 0, 4, GASOLINE, noFifthWheel(),
             seat(6, -2), seat(-6, -2), seat(6, 9), seat(-6, 9)),
-    SPORTS_CAR(  2.25f, 1.6f,  3.5f,  5,    1.30f, 0.020f, 0.050f, 0.25f, 4.5f,  6, 216, 0xC0262D,  5, false, 0, GASOLINE, noFifthWheel(),
+    SPORTS_CAR(  2.25f, 1.6f,  3.5f,  5,    1.30f, 0.020f, 0.050f, 0.25f, 4.5f,  6, 216, 0xC0262D,  5, false, 0, 4, GASOLINE, noFifthWheel(),
             seat(6, 4), seat(-6, 4)),
-    PICKUP_TRUCK(2.4f,  2.0f,  3.75f, 6,    0.80f, 0.010f, 0.035f, 0.22f, 3.5f, 12, 180, 0xE9E9E4, 10, false, 3, GASOLINE, noFifthWheel(),
+    PICKUP_TRUCK(2.4f,  2.0f,  3.75f, 6,    0.80f, 0.010f, 0.035f, 0.22f, 3.5f, 12, 180, 0xE9E9E4, 10, false, 3, 4, GASOLINE, noFifthWheel(),
             seat(6, -1), seat(-6, -1)),
-    OFF_ROADER(  2.4f,  2.05f, 3.6f,  7,    0.85f, 0.014f, 0.040f, 0.25f, 4.0f, 10, 168, 0xC9A15A, 11, true,  0, GASOLINE, noFifthWheel(),
+    OFF_ROADER(  2.4f,  2.05f, 3.6f,  7,    0.85f, 0.014f, 0.040f, 0.25f, 4.0f, 10, 168, 0xC9A15A, 11, true,  0, 4, GASOLINE, noFifthWheel(),
             seat(6, -3), seat(-6, -3), seat(6, 11), seat(-6, 11)),
     /** A semi tractor: pulls trailers on the fifth wheel behind its sleeper. Its tank is in buckets of dense fuel. */
-    SEMI_TRUCK(  2.4f,  3.6f,  6.25f, 8,    0.85f, 0.010f, 0.035f, 0.20f, 3.2f, 12, 1440, 0x2E6B3A, 25, false, 0, DIESEL, fifthWheel(32, 18),
-            seat(9, -12), seat(-9, -12));
+    SEMI_TRUCK(  2.4f,  3.6f,  6.25f, 8,    0.85f, 0.010f, 0.035f, 0.20f, 3.2f, 12, 1440, 0x2E6B3A, 25, false, 0, 4, DIESEL, fifthWheel(32, 18),
+            seat(9, -12), seat(-9, -12)),
+
+    // Motorcycles: two wheels, lean into turns, a rider and maybe a passenger behind.
+    /** The fastest thing on the road, and quick off the line. */
+    SPORT_BIKE(  1.1f,  1.4f,  2.25f, 6,    1.45f, 0.026f, 0.055f, 0.10f, 5.5f,  4, 110, 0x1E88E5, 15, false, 0, 2, GASOLINE, noFifthWheel(),
+            seat(0, 3), seat(0, 10)),
+    /** Long, low and loud, with saddlebags. */
+    CRUISER(     1.1f,  1.5f,  2.6f,  6,    1.00f, 0.016f, 0.040f, 0.10f, 4.5f,  5, 100, 0x262626, 12, false, 1, 2, GASOLINE, noFifthWheel(),
+            seat(0, 2), seat(0, 9)),
+    /** Keeps its speed off-road. */
+    DIRT_BIKE(   1.1f,  1.4f,  2.5f,  7,    0.95f, 0.022f, 0.050f, 0.10f, 6.0f,  3,  90, 0xF2C014, 18, true,  0, 2, GASOLINE, noFifthWheel(),
+            seat(0, 3)),
+    /** Slow, but goes a long way on a little fuel. */
+    SCOOTER(     1.0f,  1.3f,  1.8f,  4,    0.60f, 0.014f, 0.040f, 0.08f, 6.5f,  2,  36, 0x7FD1C6, 13, false, 0, 2, GASOLINE, noFifthWheel(),
+            seat(0, 6));
 
     /**
      * How far a seated player's model hangs below the attachment point, in pixels: a player sits 0.6 blocks lower
@@ -58,8 +72,10 @@ public enum CarType {
     private final int seatHeight;
     /** Keeps its speed on grass, sand and snow. */
     public final boolean offRoad;
-    /** Rows of 9 slots in the truck bed, or 0 for none. */
+    /** Rows of 9 slots in the truck bed (or saddlebags), or 0 for none. */
     public final int storageRows;
+    /** 4 for a car, 2 for a motorcycle. */
+    public final int wheels;
     private final FuelType fuel;
     @Nullable
     private final int[] fifthWheel;
@@ -67,7 +83,7 @@ public enum CarType {
 
     CarType(float width, float height, float length, int wheelRadius, float topSpeed, float acceleration, float braking, float reverseSpeed,
             float turnRate, int tankBuckets, double fuelPerBlock, int defaultColor, int seatHeight, boolean offRoad,
-            int storageRows, FuelType fuel, @Nullable int[] fifthWheel, int[]... seats) {
+            int storageRows, int wheels, FuelType fuel, @Nullable int[] fifthWheel, int[]... seats) {
         this.id = name().toLowerCase(Locale.ROOT);
         this.width = width;
         this.height = height;
@@ -84,6 +100,7 @@ public enum CarType {
         this.seatHeight = seatHeight;
         this.offRoad = offRoad;
         this.storageRows = storageRows;
+        this.wheels = wheels;
         this.fuel = fuel;
         this.fifthWheel = fifthWheel;
         this.seats = List.of(seats);
@@ -118,7 +135,13 @@ public enum CarType {
         return seats.size();
     }
 
-    /** What the car runs on: gasoline, or diesel for the semi. */
+    /** "1 seat" or "4 seats". */
+    public net.minecraft.network.chat.Component seatsText() {
+        return seats.size() == 1 ? net.minecraft.network.chat.Component.translatable("gui.reikocars.seats.one")
+                : net.minecraft.network.chat.Component.translatable("gui.reikocars.seats", seats.size());
+    }
+
+    /** What it runs on: gasoline, or diesel for the semi. */
     public FuelType fuel() {
         return fuel;
     }
@@ -126,6 +149,41 @@ public enum CarType {
     /** Fuel a full tank holds, in MJ. */
     public double tankCapacity() {
         return tankBuckets * fuel.bucketEnergy;
+    }
+
+    /** A motorcycle: two wheels, leans into turns. */
+    public boolean isBike() {
+        return wheels == 2;
+    }
+
+    /** What its storage is called: the pickup's truck bed, the cruiser's saddlebags. */
+    public String storageKey() {
+        return isBike() ? "container.reikocars.saddlebags" : "container.reikocars.truck_bed";
+    }
+
+    /** The horn's pitch: a big truck's is low, a scooter's beeps. */
+    public float hornPitch() {
+        return switch (this) {
+            case SPORTS_CAR -> 1.15F;
+            case PICKUP_TRUCK -> 0.85F;
+            case SEMI_TRUCK -> 0.6F;
+            case SPORT_BIKE, DIRT_BIKE -> 1.35F;
+            case CRUISER -> 1.1F;
+            case SCOOTER -> 1.6F;
+            default -> 1.0F;
+        };
+    }
+
+    /** The engine sound's pitch at idle, against a car's 1.0. */
+    public float enginePitch() {
+        return switch (this) {
+            case SEMI_TRUCK -> 0.75F;
+            case SPORT_BIKE -> 1.3F;
+            case CRUISER -> 0.8F;
+            case DIRT_BIKE -> 1.4F;
+            case SCOOTER -> 1.6F;
+            default -> 1.0F;
+        };
     }
 
     /** Whether it can pull a trailer. */

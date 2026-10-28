@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "D": {
+      "tag": "c:dyes/black"
+    },
+    "L": {
+      "tag": "c:leathers"
+    }
+  },
+  "pattern": [
+    "IDI",
+    "L L"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:cruiser_body"
+  }
+}

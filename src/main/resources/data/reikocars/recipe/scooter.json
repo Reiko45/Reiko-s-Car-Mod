@@ -1,0 +1,23 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:scooter_chassis"
+  },
+  "body": {
+    "item": "reikocars:scooter_body"
+  },
+  "interior": {
+    "item": "reikocars:scooter_interior"
+  },
+  "engine": {
+    "item": "reikocars:motorcycle_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "wheels": 2,
+  "result": {
+    "count": 1,
+    "id": "reikocars:scooter"
+  }
+}

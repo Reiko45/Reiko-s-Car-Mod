@@ -1,5 +1,9 @@
 package com.reiko.cars.client;
 
+import net.neoforged.bus.api.EventPriority;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.util.Mth;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarEntity;
@@ -11,7 +15,11 @@ import com.reiko.cars.client.model.CarHaulerModel;
 import com.reiko.cars.client.model.OffRoaderModel;
 import com.reiko.cars.client.model.PickupTruckModel;
 import com.reiko.cars.client.model.SedanModel;
+import com.reiko.cars.client.model.CruiserModel;
+import com.reiko.cars.client.model.DirtBikeModel;
+import com.reiko.cars.client.model.ScooterModel;
 import com.reiko.cars.client.model.SemiTruckModel;
+import com.reiko.cars.client.model.SportBikeModel;
 import com.reiko.cars.client.model.SportsCarModel;
 import com.reiko.cars.client.model.TankerTrailerModel;
 import com.reiko.cars.network.CarActionPayload;
@@ -41,6 +49,8 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.client.event.CalculateDetachedCameraDistanceEvent;
+import net.neoforged.neoforge.client.event.RenderLivingEvent;
+import net.neoforged.neoforge.client.event.ViewportEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
@@ -76,6 +86,9 @@ public final class ReikoCarsClient {
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::onClientTick);
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::keepEnginesRunning);
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::pullCameraBack);
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, ReikoCarsClient::leanRider);
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, ReikoCarsClient::unleanRider);
+        NeoForge.EVENT_BUS.addListener(ReikoCarsClient::rollCamera);
         TrailerEntity.openTankerScreen = tanker -> Minecraft.getInstance().setScreen(new TankerScreen(tanker));
     }
 
@@ -102,6 +115,10 @@ public final class ReikoCarsClient {
             case PICKUP_TRUCK -> PickupTruckModel::createBodyLayer;
             case OFF_ROADER -> OffRoaderModel::createBodyLayer;
             case SEMI_TRUCK -> SemiTruckModel::createBodyLayer;
+            case SPORT_BIKE -> SportBikeModel::createBodyLayer;
+            case CRUISER -> CruiserModel::createBodyLayer;
+            case DIRT_BIKE -> DirtBikeModel::createBodyLayer;
+            case SCOOTER -> ScooterModel::createBodyLayer;
         };
     }
 
@@ -194,6 +211,47 @@ public final class ReikoCarsClient {
         if (viewer.getRootVehicle() instanceof CarEntity car && car != viewer) {
             double length = car.carType().length + (car.trailer() != null ? TrailerType.LENGTH : 0.0);
             event.setDistance(Math.max(event.getDistance(), (float) (length * 0.75 + 1.0)));
+        }
+    }
+
+    /** Riders drawn leaning with their motorcycle; their ids, so the pose is put back after. */
+    private static final java.util.Set<Integer> LEANING = new java.util.HashSet<>();
+
+    /** Tips a motorcycle's riders over with it, about the line where its wheels touch the ground. */
+    private static void leanRider(RenderLivingEvent.Pre<?, ?> event) {
+        LivingEntity rider = event.getEntity();
+        if (!(rider.getVehicle() instanceof CarEntity bike) || !bike.carType().isBike()) {
+            return;
+        }
+        float partialTick = event.getPartialTick();
+        float lean = bike.lean(partialTick);
+        if (lean == 0.0F) {
+            return;
+        }
+        PoseStack pose = event.getPoseStack();
+        pose.pushPose();
+        // The pose's origin is the rider; move to the bike's, lean, and come back.
+        double dx = Mth.lerp(partialTick, bike.xo, bike.getX()) - Mth.lerp(partialTick, rider.xo, rider.getX());
+        double dy = Mth.lerp(partialTick, bike.yo, bike.getY()) - Mth.lerp(partialTick, rider.yo, rider.getY());
+        double dz = Mth.lerp(partialTick, bike.zo, bike.getZ()) - Mth.lerp(partialTick, rider.zo, rider.getZ());
+        pose.translate(dx, dy, dz);
+        CarRenderer.leanOver(pose, bike, bike.getViewYRot(partialTick), partialTick);
+        pose.translate(-dx, -dy, -dz);
+        LEANING.add(rider.getId());
+    }
+
+    private static void unleanRider(RenderLivingEvent.Post<?, ?> event) {
+        if (LEANING.remove(event.getEntity().getId())) {
+            event.getPoseStack().popPose();
+        }
+    }
+
+    /** In first person on a motorcycle, the view tilts a little as the bike leans. */
+    private static void rollCamera(ViewportEvent.ComputeCameraAngles event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.options.getCameraType().isFirstPerson() && minecraft.player != null
+                && minecraft.player.getVehicle() instanceof CarEntity bike && bike.carType().isBike()) {
+            event.setRoll(event.getRoll() + bike.lean((float) event.getPartialTick()) * 0.6F);
         }
     }
 

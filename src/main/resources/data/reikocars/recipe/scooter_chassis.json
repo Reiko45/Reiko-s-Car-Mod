@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "X": {
+      "tag": "c:gears/iron"
+    }
+  },
+  "pattern": [
+    "I  ",
+    "IXI",
+    "  I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:scooter_chassis"
+  }
+}

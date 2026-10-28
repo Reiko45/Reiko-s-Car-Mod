@@ -91,7 +91,7 @@ final class CarAssemblyCategory implements IRecipeCategory<RecipeHolder<CarAssem
             if (!recipe.needs(slot)) {
                 continue; // a trailer has no interior or engine
             }
-            Component role = Component.translatable("gui.reikocars.workbench.slot." + SLOT_NAMES[slot]).withStyle(ChatFormatting.GRAY);
+            Component role = Component.translatable(CarWorkbenchScreen.slotName(recipe, slot)).withStyle(ChatFormatting.GRAY);
             builder.addSlot(RecipeIngredientRole.INPUT, SLOTS[slot][0], SLOTS[slot][1])
                     .setStandardSlotBackground()
                     .setSlotName(SLOT_NAMES[slot])
@@ -123,7 +123,7 @@ final class CarAssemblyCategory implements IRecipeCategory<RecipeHolder<CarAssem
             CarPreview.draw(graphics, type, (PREVIEW_LEFT + PREVIEW_RIGHT) / 2.0F, PREVIEW_BOTTOM / 2.0F + 2.0F, 14.0F, yaw, CarPreview.Fitted.all());
             CarsClientConfig.SpeedUnit unit = CarsClientConfig.speedUnit();
             long speed = Math.round(type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * unit.perBlockPerTick);
-            Component stats = Component.translatable("gui.reikocars.workbench.jei_stats", type.seatCount(), speed,
+            Component stats = Component.translatable("gui.reikocars.workbench.jei_stats", type.seatsText(), speed,
                     Component.translatable(unit.translationKey), type.tankBuckets);
             graphics.drawString(font, stats, (WIDTH - font.width(stats)) / 2, HEIGHT - 9, 0xFF606060, false);
         } else if (result.getItem() instanceof TrailerItem trailer) {

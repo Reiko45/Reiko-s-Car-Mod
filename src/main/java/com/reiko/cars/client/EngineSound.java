@@ -49,6 +49,6 @@ public final class EngineSound extends AbstractTickableSoundInstance {
         level += (target - level) * 0.15F;
         float pace = (float) Mth.clamp(Math.abs(car.displaySpeed()) / car.carType().topSpeed, 0.0, 1.2);
         volume = level * (0.35F + 0.35F * pace);
-        pitch = 0.7F + 0.9F * pace;
+        pitch = (0.7F + 0.9F * pace) * car.carType().enginePitch();
     }
 }

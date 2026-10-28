@@ -1,5 +1,7 @@
 package com.reiko.cars.workbench;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.reiko.cars.registry.ModItems;
@@ -35,7 +37,8 @@ import net.minecraft.world.level.Level;
  * }</pre>
  *
  * <p>The interior and engine may be left out, for a vehicle that has none (the trailers): then those slots must be
- * empty.
+ * empty. A motorcycle says {@code "wheels": 2}: it takes a front wheel (the front left slot) and a back one (the rear
+ * left slot), and the right-hand wheel slots stay empty.
  */
 public final class CarAssemblyRecipe implements Recipe<CarAssemblyRecipe.Input> {
     /** The workbench's part slots, in order. */
@@ -52,19 +55,31 @@ public final class CarAssemblyRecipe implements Recipe<CarAssemblyRecipe.Input> 
     private final Ingredient interior;
     private final Ingredient engine;
     private final Ingredient wheel;
+    /** 4, or 2 for a motorcycle. */
+    private final int wheels;
     private final ItemStack result;
 
-    public CarAssemblyRecipe(Ingredient chassis, Ingredient body, Ingredient interior, Ingredient engine, Ingredient wheel, ItemStack result) {
+    public CarAssemblyRecipe(Ingredient chassis, Ingredient body, Ingredient interior, Ingredient engine, Ingredient wheel, int wheels,
+            ItemStack result) {
         this.chassis = chassis;
         this.body = body;
         this.interior = interior;
         this.engine = engine;
         this.wheel = wheel;
+        this.wheels = wheels;
         this.result = result;
+    }
+
+    /** How many wheels it takes: 4, or 2 for a motorcycle. */
+    public int wheels() {
+        return wheels;
     }
 
     /** Whether this vehicle takes a part in slot {@code slot} at all (a trailer has no interior or engine). */
     public boolean needs(int slot) {
+        if (wheels == 2 && (slot == FIRST_WHEEL + 1 || slot == FIRST_WHEEL + 3)) {
+            return false; // a motorcycle's wheels go in the left-hand slots: front and back
+        }
         return !ingredient(slot).isEmpty();
     }
 
@@ -114,7 +129,11 @@ public final class CarAssemblyRecipe implements Recipe<CarAssemblyRecipe.Input> 
 
     @Override
     public NonNullList<Ingredient> getIngredients() {
-        return NonNullList.of(Ingredient.EMPTY, chassis, body, interior, engine, wheel, wheel, wheel, wheel);
+        NonNullList<Ingredient> list = NonNullList.withSize(SLOTS, Ingredient.EMPTY);
+        for (int slot = 0; slot < SLOTS; slot++) {
+            list.set(slot, needs(slot) ? ingredient(slot) : Ingredient.EMPTY);
+        }
+        return list;
     }
 
     /** Keeps these out of the vanilla recipe book, which has no tab for them: the workbench shows its own. */
@@ -158,17 +177,24 @@ public final class CarAssemblyRecipe implements Recipe<CarAssemblyRecipe.Input> 
                 Ingredient.CODEC_NONEMPTY.optionalFieldOf("interior", Ingredient.EMPTY).forGetter(recipe -> recipe.interior),
                 Ingredient.CODEC_NONEMPTY.optionalFieldOf("engine", Ingredient.EMPTY).forGetter(recipe -> recipe.engine),
                 Ingredient.CODEC_NONEMPTY.fieldOf("wheel").forGetter(recipe -> recipe.wheel),
+                Codec.INT.validate(n -> n == 2 || n == 4 ? DataResult.success(n) : DataResult.error(() -> "wheels must be 2 or 4, not " + n))
+                        .optionalFieldOf("wheels", 4).forGetter(recipe -> recipe.wheels),
                 ItemStack.STRICT_CODEC.fieldOf("result").forGetter(recipe -> recipe.result)
         ).apply(instance, CarAssemblyRecipe::new));
 
-        private static final StreamCodec<RegistryFriendlyByteBuf, CarAssemblyRecipe> STREAM_CODEC = StreamCodec.composite(
-                Ingredient.CONTENTS_STREAM_CODEC, recipe -> recipe.chassis,
-                Ingredient.CONTENTS_STREAM_CODEC, recipe -> recipe.body,
-                Ingredient.CONTENTS_STREAM_CODEC, recipe -> recipe.interior,
-                Ingredient.CONTENTS_STREAM_CODEC, recipe -> recipe.engine,
-                Ingredient.CONTENTS_STREAM_CODEC, recipe -> recipe.wheel,
-                ItemStack.STREAM_CODEC, recipe -> recipe.result,
-                CarAssemblyRecipe::new);
+        private static final StreamCodec<RegistryFriendlyByteBuf, CarAssemblyRecipe> STREAM_CODEC = StreamCodec.of(
+                (buf, recipe) -> {
+                    Ingredient.CONTENTS_STREAM_CODEC.encode(buf, recipe.chassis);
+                    Ingredient.CONTENTS_STREAM_CODEC.encode(buf, recipe.body);
+                    Ingredient.CONTENTS_STREAM_CODEC.encode(buf, recipe.interior);
+                    Ingredient.CONTENTS_STREAM_CODEC.encode(buf, recipe.engine);
+                    Ingredient.CONTENTS_STREAM_CODEC.encode(buf, recipe.wheel);
+                    buf.writeVarInt(recipe.wheels);
+                    ItemStack.STREAM_CODEC.encode(buf, recipe.result);
+                },
+                buf -> new CarAssemblyRecipe(Ingredient.CONTENTS_STREAM_CODEC.decode(buf), Ingredient.CONTENTS_STREAM_CODEC.decode(buf),
+                        Ingredient.CONTENTS_STREAM_CODEC.decode(buf), Ingredient.CONTENTS_STREAM_CODEC.decode(buf),
+                        Ingredient.CONTENTS_STREAM_CODEC.decode(buf), buf.readVarInt(), ItemStack.STREAM_CODEC.decode(buf)));
 
         @Override
         public MapCodec<CarAssemblyRecipe> codec() {

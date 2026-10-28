@@ -15,6 +15,7 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import org.joml.Quaternionf;
 
 /**
  * Draws a car in three passes: the paint tinted with the car's colour, then the trim and wheels (whose glass can
@@ -34,6 +35,7 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
     @Override
     public void render(CarEntity car, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource buffers, int light) {
         poseStack.pushPose();
+        leanOver(poseStack, car, entityYaw, partialTick);
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - entityYaw));
         float hurt = car.getHurtTime() - partialTick;
         float damage = Math.max(0.0F, car.getDamage() - partialTick);
@@ -52,6 +54,18 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
                 lit ? LightTexture.FULL_BRIGHT : light, overlay);
         poseStack.popPose();
         super.render(car, entityYaw, partialTick, poseStack, buffers, light);
+    }
+
+    /**
+     * Tips the pose over by a motorcycle's lean, about the line where its wheels touch the ground (the pose's origin
+     * is the bike's position, on the ground), so it leans into turns. Its riders are tipped over the same way.
+     */
+    static void leanOver(PoseStack poseStack, CarEntity car, float yaw, float partialTick) {
+        float lean = car.lean(partialTick);
+        if (lean != 0.0F) {
+            float radians = yaw * Mth.DEG_TO_RAD;
+            poseStack.mulPose(new Quaternionf().rotationAxis(lean * Mth.DEG_TO_RAD, -Mth.sin(radians), 0.0F, Mth.cos(radians)));
+        }
     }
 
     @Override

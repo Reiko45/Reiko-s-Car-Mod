@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "K": {
+      "item": "minecraft:clock"
+    },
+    "L": {
+      "tag": "c:leathers"
+    }
+  },
+  "pattern": [
+    " K ",
+    "LLL",
+    "L L"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:cruiser_interior"
+  }
+}

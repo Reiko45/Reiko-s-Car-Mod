@@ -322,12 +322,26 @@ public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkben
             CarType type = car.carType();
             CarsClientConfig.SpeedUnit unit = CarsClientConfig.speedUnit();
             long speed = Math.round(type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * unit.perBlockPerTick);
-            graphics.drawCenteredString(font, Component.translatable("gui.reikocars.workbench.stats", type.seatCount(), speed,
+            graphics.drawCenteredString(font, Component.translatable("gui.reikocars.workbench.stats", type.seatsText(), speed,
                     Component.translatable(unit.translationKey)), middle, PREVIEW_BOTTOM - 11, 0xB8C4D0);
         } else if (result.getItem() instanceof TrailerItem trailer) {
             graphics.drawCenteredString(font, trailerStats(trailer.trailerType()), middle, PREVIEW_BOTTOM - 11, 0xB8C4D0);
         }
         pose.popPose();
+    }
+
+    /**
+     * The translation key for part slot {@code slot}'s name: "Chassis", "Front left wheel" and so on. A motorcycle's
+     * two wheels are its front and back wheels.
+     */
+    public static String slotName(@org.jetbrains.annotations.Nullable CarAssemblyRecipe recipe, int slot) {
+        if (recipe != null && recipe.wheels() == 2 && slot == CarAssemblyRecipe.FIRST_WHEEL) {
+            return "gui.reikocars.workbench.slot.wheel_front";
+        }
+        if (recipe != null && recipe.wheels() == 2 && slot == CarAssemblyRecipe.FIRST_WHEEL + 2) {
+            return "gui.reikocars.workbench.slot.wheel_back";
+        }
+        return "gui.reikocars.workbench.slot." + SLOT_NAMES[slot];
     }
 
     /** What a trailer carries, for under its preview: "54 slots", "64 buckets", "2 cars". */
@@ -348,7 +362,7 @@ public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkben
         Slot slot = hoveredSlot;
         if (slot != null && slot.index < CarWorkbenchMenu.PARTS && !slot.hasItem()) {
             List<Component> lines = new ArrayList<>();
-            lines.add(Component.translatable("gui.reikocars.workbench.slot." + SLOT_NAMES[slot.index]));
+            lines.add(Component.translatable(slotName(menu.selectedRecipe().orElse(null), slot.index)));
             menu.selectedRecipe().ifPresent(recipe -> {
                 ItemStack wanted = cycle(recipe.ingredient(slot.index));
                 if (!recipe.needs(slot.index)) {
@@ -376,9 +390,9 @@ public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkben
         }
         int wheels = 0;
         for (int slot = CarAssemblyRecipe.FIRST_WHEEL; slot < CarAssemblyRecipe.SLOTS; slot++) {
-            wheels += have[slot] ? 1 : 0;
+            wheels += have[slot] && recipe.needs(slot) ? 1 : 0;
         }
-        int needed = CarAssemblyRecipe.SLOTS - CarAssemblyRecipe.FIRST_WHEEL;
+        int needed = recipe.wheels();
         lines.add(partLine(cycle(recipe.ingredient(CarAssemblyRecipe.FIRST_WHEEL)).getHoverName(), wheels == needed, needed, wheels));
         lines.add(Component.translatable("gui.reikocars.workbench.click_to_load").withStyle(ChatFormatting.DARK_GRAY));
         return lines;

@@ -1,0 +1,23 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:cruiser_chassis"
+  },
+  "body": {
+    "item": "reikocars:cruiser_body"
+  },
+  "interior": {
+    "item": "reikocars:cruiser_interior"
+  },
+  "engine": {
+    "item": "reikocars:motorcycle_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "wheels": 2,
+  "result": {
+    "count": 1,
+    "id": "reikocars:cruiser"
+  }
+}

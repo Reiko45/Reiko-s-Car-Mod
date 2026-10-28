@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "tag": "c:gears/iron"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    },
+    "E": {
+      "item": "buildcraftreborn:engine_iron"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "pattern": [
+    " G ",
+    "PEP",
+    "I I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:motorcycle_engine"
+  }
+}

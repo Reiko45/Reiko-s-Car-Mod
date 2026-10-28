@@ -41,6 +41,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.DismountHelper;
 import net.minecraft.world.entity.vehicle.VehicleEntity;
 import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.DyeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -80,6 +81,10 @@ public class CarEntity extends VehicleEntity {
     /** Fuel changes smaller than this (in MJ) aren't sent to clients straight away, so driving doesn't send a packet every tick. */
     private static final float FUEL_SYNC_STEP = 250;
     private static final int HORN_COOLDOWN = 12;
+    /** How far a motorcycle leans at full lock and speed, in degrees. */
+    private static final float MAX_LEAN = 32.0F;
+    /** How far a parked motorcycle leans over on its kickstand, to its left, in degrees. */
+    private static final float KICKSTAND_LEAN = 9.0F;
 
     private final CarType type;
     private final SimpleContainer bed;
@@ -120,6 +125,9 @@ public class CarEntity extends VehicleEntity {
     private float wheelAngleO;
     private float steerAngle;
     private float steerAngleO;
+    /** A motorcycle's lean, in degrees: positive to its right. Client-side, for drawing. */
+    private float lean;
+    private float leanO;
 
     public CarEntity(EntityType<? extends CarEntity> entityType, Level level, CarType type) {
         super(entityType, level);
@@ -311,8 +319,13 @@ public class CarEntity extends VehicleEntity {
     }
 
     private void openBed(ServerPlayer player) {
-        Component title = Component.translatable("container.reikocars.truck_bed");
-        player.openMenu(new SimpleMenuProvider((id, inventory, p) -> ChestMenu.threeRows(id, inventory, bed), title));
+        Component title = Component.translatable(type.storageKey());
+        int rows = type.storageRows;
+        player.openMenu(new SimpleMenuProvider((id, inventory, p) -> switch (rows) {
+            case 1 -> new ChestMenu(MenuType.GENERIC_9x1, id, inventory, bed, 1);
+            case 2 -> new ChestMenu(MenuType.GENERIC_9x2, id, inventory, bed, 2);
+            default -> ChestMenu.threeRows(id, inventory, bed);
+        }, title));
     }
 
     /** The truck bed's items, or an empty container for cars without one. */
@@ -325,7 +338,7 @@ public class CarEntity extends VehicleEntity {
         if (hornCooldown <= 0) {
             hornCooldown = HORN_COOLDOWN;
             level().playSound(null, getX(), getY(), getZ(), ModSounds.HORN.get(), SoundSource.NEUTRAL, 2.0F,
-                    type == CarType.SPORTS_CAR ? 1.15F : type == CarType.PICKUP_TRUCK ? 0.85F : type == CarType.SEMI_TRUCK ? 0.6F : 1.0F);
+                    type.hornPitch());
         }
     }
 
@@ -721,6 +734,13 @@ public class CarEntity extends VehicleEntity {
             target = Math.abs(measuredSpeed) < 0.01 ? steerAngle : (float) Mth.clamp(-deltaRotation / type.turnRate * 0.5F, -0.5F, 0.5F);
         }
         steerAngle += (target - steerAngle) * 0.4F;
+        leanO = lean;
+        if (type.isBike()) {
+            // Into the turn, more the faster it's going; parked with nobody on, over on its kickstand.
+            float leanTarget = riders().isEmpty() ? -KICKSTAND_LEAN
+                    : -steerAngle / 0.5F * MAX_LEAN * (float) Math.min(1.0, Math.abs(measuredSpeed) / 0.35);
+            lean += (leanTarget - lean) * 0.25F;
+        }
 
         if (isEngineRunning() && tickCount % 3 == 0) {
             if (type.isTractor()) {
@@ -731,7 +751,7 @@ public class CarEntity extends VehicleEntity {
                 }
             } else {
                 Vec3 tail = forward().scale(-type.length / 2.0 - 0.1);
-                Vec3 side = new Vec3(-0.35, 0, 0).yRot(-getYRot() * Mth.DEG_TO_RAD);
+                Vec3 side = new Vec3(type.isBike() ? -0.25 : -0.35, 0, 0).yRot(-getYRot() * Mth.DEG_TO_RAD);
                 level().addParticle(ParticleTypes.SMOKE, getX() + tail.x + side.x, getY() + 0.3, getZ() + tail.z + side.z,
                         tail.x * 0.02, 0.02, tail.z * 0.02);
             }
@@ -750,6 +770,11 @@ public class CarEntity extends VehicleEntity {
 
     public float wheelAngle(float partialTick) {
         return Mth.lerp(partialTick, wheelAngleO, wheelAngle);
+    }
+
+    /** A motorcycle's lean in degrees, positive to its right; 0 for a car. */
+    public float lean(float partialTick) {
+        return Mth.lerp(partialTick, leanO, lean);
     }
 
     /** Front wheels' steering angle in radians, positive to the left. */

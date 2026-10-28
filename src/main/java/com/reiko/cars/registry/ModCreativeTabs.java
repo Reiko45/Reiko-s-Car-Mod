@@ -34,6 +34,7 @@ public final class ModCreativeTabs {
                 }
                 output.accept(ModItems.CAR_ENGINE.get());
                 output.accept(ModItems.DIESEL_ENGINE.get());
+                output.accept(ModItems.MOTORCYCLE_ENGINE.get());
                 output.accept(ModItems.TIRE.get());
                 for (CarType type : CarType.values()) {
                     for (CarPart part : CarPart.values()) {

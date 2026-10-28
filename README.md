@@ -1,7 +1,7 @@
 # Reiko's Car Mod
 
-Drivable cars and semi trucks for Minecraft 1.21.1 (NeoForge) that run on **BuildCraft Reborn**'s fuel, trailers
-for the semis to pull, and gas and diesel pumps that sell the fuel for **cash or card** through **Reiko's Economy Mod**.
+Drivable cars, motorcycles and semi trucks for Minecraft 1.21.1 (NeoForge) that run on **BuildCraft Reborn**'s fuel,
+trailers for the semis to pull, and gas and diesel pumps that sell the fuel for **cash or card** through **Reiko's Economy Mod**.
 
 Refine oil into fuel with BuildCraft, pipe it into a pump, set a price, and other players pay you to fill up.
 
@@ -21,6 +21,10 @@ Refine oil into fuel with BuildCraft, pipe it into a pump, set a price, and othe
 | Pickup Truck | 2 | 36 mph | 12 buckets | 27-slot truck bed (sneak + use) |
 | Off-Roader | 4 | 38 mph | 10 buckets | Keeps full speed on grass, sand and snow |
 | Semi Truck | 2 | 38 mph | 12 buckets of diesel | Runs on diesel and pulls a trailer (see [Semis and trailers](#semis-and-trailers)) |
+| Sport Bike | 2 | 65 mph | 4 buckets | The fastest thing on the road (see [Motorcycles](#motorcycles)) |
+| Cruiser | 2 | 45 mph | 5 buckets | 9-slot saddlebags (sneak + use) |
+| Dirt Bike | 1 | 42 mph | 3 buckets | Keeps full speed on grass, sand and snow |
+| Scooter | 1 | 27 mph | 2 buckets | Slow, but about 2,500 blocks to a bucket |
 
 Tank sizes are in buckets of the car's own fuel: BuildCraft's **light fuel** for the cars, **dense fuel** for the
 semi. A sedan goes about 600 blocks on a bucket; a semi about 250, or 180 pulling a trailer.
@@ -47,6 +51,21 @@ in a car, a dashboard in the bottom right shows your speed and a fuel gauge.
 - **Running things over** hurts mobs and knocks them aside, more the faster you go. Players only get hurt with PvP
   on, and never your own pets.
 - Cars climb a full block, so curbs, slabs and stairs don't stop them. Cars can't be blown up or burned.
+
+## Motorcycles
+
+Four motorcycles ride like the cars (same keys, fuel, locks, paint and pumps), on gasoline:
+
+- **Sport Bike**: the fastest thing in the mod and the quickest off the line, with a seat for a passenger.
+- **Cruiser**: long, low and loud, with a passenger seat and **saddlebags**: sneak + use opens their 9 slots.
+- **Dirt Bike**: one seat, high and light, and it keeps its speed on grass, sand and snow like the off-roader.
+- **Scooter**: one seat, slow, with a tiny tank that lasts ages (about 2,500 blocks a bucket).
+
+They turn tighter than cars and **lean into turns**, more the faster you go, and the rider and passenger lean with
+them. In first person the view tilts a little too. Parked with nobody on, a bike stands over on its kickstand.
+
+They're built at the Car Workbench like the cars, from their own **frame**, **bodywork** and **seat**, a **Motorcycle
+Engine** and **two** tires: the front wheel goes in the front left slot and the back wheel in the rear left one.
 
 ## Semis and trailers
 
@@ -158,6 +177,7 @@ of their own pump in buckets.
 | Gas Pump | iron ingots, glass pane, BuildCraft **Tank**, iron gear |
 | Diesel Pump | as the Gas Pump, with green dye either side of the iron gear |
 | Diesel Engine | as the Car Engine, with an iron block in place of the top gear |
+| Motorcycle Engine | iron gear on top, piston, BuildCraft **Combustion Engine**, piston across the middle, iron legs |
 | Trailer Chassis | iron ingots on top, iron gears in the outer middle slots, iron legs |
 | Box Trailer Body | iron ingots top and bottom, chests in the outer middle slots |
 | Tanker Trailer Tank | four BuildCraft **Tanks** around an empty middle, iron ingots in the corners |
@@ -174,10 +194,20 @@ The car parts, crafted on an ordinary crafting table:
 Then at the Car Workbench: chassis + body + interior + engine + 4 Tires = the car. The semi takes a Diesel Engine;
 the rest take a Car Engine. A trailer is the Trailer Chassis + its body + 4 Tires.
 
+The motorcycles' parts:
+
+| Part | Sport Bike | Cruiser | Dirt Bike | Scooter |
+| --- | --- | --- | --- | --- |
+| **Frame**: iron ingots in a diagonal (`I  `/`I?I`/`  I`) around a middle | gold gear | iron block | piston | iron gear |
+| **Bodywork** | glass pane over iron and blue dye | black dye between iron, leather below | yellow dye either side over three iron | iron around cyan dye |
+| **Seat**: a clock or compass on top over three of leather or wool | clock, leather, iron stalk | clock, leather, leather legs | compass, wool, iron stalk | clock, wool, iron legs |
+
+At the Car Workbench: frame + bodywork + seat + Motorcycle Engine + 2 Tires = the motorcycle.
+
 The workbench recipes are data files (`data/reikocars/recipe/sedan.json` and so on, type `reikocars:car_assembly`),
 so a data pack can change a car's parts or add new vehicles. Each one names a `chassis`, `body`, `interior`, `engine`
 and `wheel` (an item or a tag) and a `result`. The `interior` and `engine` can be left out, as the trailers'
-recipes do, and then those slots must be empty.
+recipes do, and then those slots must be empty. `"wheels": 2` makes it a two-wheeler, as the motorcycles are.
 
 ## Settings
 
@@ -208,12 +238,13 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
-./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis and trailers), then exit
+./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles), then exit
 ./gradlew runClient         # start a dev client
 ./gradlew runClient -Pshowcase  # build a test scene, buy fuel, drive, save screenshots to run/screenshots/, quit
 ./gradlew runClient -Pshowcase=workbench  # the same for the Car Workbench and its JEI pages
 ./gradlew runClient -Pshowcase=diesel     # the same for the gas and diesel pumps and selling buckets
 ./gradlew runClient -Pshowcase=semi       # the same for semis, hitching, driving a rig, trailers and the tanker
+./gradlew runClient -Pshowcase=bikes      # the same for the motorcycles: parked, riding and leaning, saddlebags
 ```
 
 ## Editing the models
@@ -226,6 +257,9 @@ the mod relies on:
 - `lights`: head- and taillights, which glow while the engine runs.
 - `wheel_fl`, `wheel_fr`, `wheel_rl`, `wheel_rr`: each pivoting on its axle. They roll, and the front pair steers.
 - `wheel_rl2`, `wheel_rr2` (the semi only): the second rear axle, which rolls with the first.
+
+A motorcycle has `body`, `trim`, `lights`, `wheel_rl` (its back wheel) and a `fork`, which steers and holds the
+forks, handlebars and `wheel_fl` (its front wheel) inside it. It has no right-hand wheels.
 
 The trailers (`box_trailer`, `tanker_trailer`, `car_hauler`) work the same way, with `body`, `trim`, `lights` and
 two axles of wheels, `wheel_l1`, `wheel_r1`, `wheel_l2` and `wheel_r2`. Their textures are in
@@ -253,7 +287,7 @@ src/main/java/com/reiko/cars/
 ├── client/               car and trailer renderers and models, dashboard, pump, workbench and tanker screens, pump display, engine sound, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
-blockbench/               the car, semi and trailer models
+blockbench/               the car, motorcycle, semi and trailer models
 ```
 
 ## License

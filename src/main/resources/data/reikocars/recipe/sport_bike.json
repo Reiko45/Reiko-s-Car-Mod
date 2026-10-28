@@ -1,0 +1,23 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:sport_bike_chassis"
+  },
+  "body": {
+    "item": "reikocars:sport_bike_body"
+  },
+  "interior": {
+    "item": "reikocars:sport_bike_interior"
+  },
+  "engine": {
+    "item": "reikocars:motorcycle_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "wheels": 2,
+  "result": {
+    "count": 1,
+    "id": "reikocars:sport_bike"
+  }
+}

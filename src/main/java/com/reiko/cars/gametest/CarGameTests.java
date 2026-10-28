@@ -311,12 +311,13 @@ public final class CarGameTests {
         car.setFuel(100_000);
         driver.startRiding(car, true);
         Vec3 start = car.position();
-        // Drive 10 blocks east, one block a tick, as the driver's client would report it.
+        // Drive 10 blocks east, one block a tick, as the driver's client would report it. Start a couple of ticks
+        // in, so the car has ticked where it stands first and the first block counts.
         for (int tick = 1; tick <= 10; tick++) {
             int step = tick;
-            helper.runAtTickTime(tick, () -> car.setPos(start.x + step, start.y, start.z));
+            helper.runAtTickTime(tick + 2, () -> car.setPos(start.x + step, start.y, start.z));
         }
-        helper.runAtTickTime(14, () -> {
+        helper.runAtTickTime(16, () -> {
             try {
                 double burned = 100_000 - car.fuel();
                 double expected = 10 * CarType.SEDAN.fuelPerBlock; // plus a little idling
@@ -846,6 +847,65 @@ public final class CarGameTests {
             }
         } finally {
             leave(helper, player);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void workbenchBuildsAMotorcycle(GameTestHelper helper) {
+        ServerPlayer player = join(helper);
+        try {
+            CarWorkbenchMenu menu = workbench(helper, player);
+            for (CarPart part : CarPart.values()) {
+                player.getInventory().add(new ItemStack(ModItems.part(CarType.SCOOTER, part)));
+            }
+            player.getInventory().add(new ItemStack(ModItems.MOTORCYCLE_ENGINE.get()));
+            player.getInventory().add(new ItemStack(ModItems.TIRE.get(), 4));
+            CarAssemblyRecipe recipe = menu.recipes().get(button(menu, CarType.SCOOTER)).value();
+            helper.assertValueEqual(recipe.wheels(), 2, "a scooter takes two wheels");
+            check(helper, menu.clickMenuButton(player, button(menu, CarType.SCOOTER)), "scooter picked");
+            check(helper, menu.getSlot(CarAssemblyRecipe.FIRST_WHEEL).hasItem() && menu.getSlot(CarAssemblyRecipe.FIRST_WHEEL + 2).hasItem(),
+                    "front and back wheels in");
+            check(helper, !menu.getSlot(CarAssemblyRecipe.FIRST_WHEEL + 1).hasItem() && !menu.getSlot(CarAssemblyRecipe.FIRST_WHEEL + 3).hasItem(),
+                    "no right-hand wheels on a bike");
+            helper.assertValueEqual(count(player, ModItems.TIRE.get()), 2, "two tires left over");
+            check(helper, menu.getSlot(CarWorkbenchMenu.RESULT).getItem().is(ModItems.car(CarType.SCOOTER)), "they make a scooter");
+            // A third tire in a right-hand slot spoils it.
+            menu.getSlot(CarAssemblyRecipe.FIRST_WHEEL + 1).set(new ItemStack(ModItems.TIRE.get()));
+            check(helper, !menu.getSlot(CarWorkbenchMenu.RESULT).hasItem(), "a scooter with three wheels is nothing");
+            menu.getSlot(CarAssemblyRecipe.FIRST_WHEEL + 1).set(ItemStack.EMPTY);
+            menu.clicked(CarWorkbenchMenu.RESULT, 0, ClickType.QUICK_MOVE, player);
+            helper.assertValueEqual(count(player, ModItems.car(CarType.SCOOTER)), 1, "the scooter is in the inventory");
+        } finally {
+            leave(helper, player);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void motorcyclesSeatTheirRiders(GameTestHelper helper) {
+        ServerPlayer rider = join(helper);
+        ServerPlayer passenger = join(helper);
+        ServerPlayer third = join(helper);
+        ServerPlayer fourth = join(helper);
+        try {
+            CarEntity bike = car(helper, CarType.SPORT_BIKE);
+            check(helper, CarType.SPORT_BIKE.isBike() && !CarType.SEDAN.isBike(), "the sport bike is a motorcycle");
+            check(helper, bike.carType().fuel() == FuelType.GASOLINE, "on gasoline");
+            check(helper, rider.startRiding(bike), "the rider gets on");
+            check(helper, passenger.startRiding(bike), "a passenger gets on behind");
+            check(helper, !third.startRiding(bike), "but nobody else");
+            check(helper, bike.getControllingPassenger() == rider, "the first one on rides");
+            check(helper, Math.abs(rider.getX() - bike.getX()) < 0.01 || Math.abs(rider.getZ() - bike.getZ()) < 0.01,
+                    "sitting on the centre line");
+            helper.assertValueEqual(CarType.CRUISER.storageRows * 9, 9, "the cruiser's saddlebags hold 9 stacks");
+            CarEntity cruiser = car(helper, CarType.CRUISER);
+            helper.assertValueEqual(cruiser.bed().getContainerSize(), 9, "and that's the container's size");
+            CarEntity scooter = car(helper, CarType.SCOOTER);
+            check(helper, third.startRiding(scooter), "someone rides the scooter");
+            check(helper, !fourth.startRiding(scooter), "a scooter has one seat");
+        } finally {
+            leave(helper, rider, passenger, third, fourth);
         }
         helper.succeed();
     }

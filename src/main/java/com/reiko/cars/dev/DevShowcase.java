@@ -72,7 +72,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public final class DevShowcase {
     /**
      * "true" for the cars and pumps, "workbench" for the Car Workbench, "diesel" for the diesel pump, "semi" for semis
-     * and trailers, "false" for none.
+     * and trailers, "bikes" for the motorcycles, "false" for none.
      */
     private static final String MODE = System.getProperty("reikocars.showcase", "false");
     private static final boolean ENABLED = !MODE.equals("false");
@@ -117,6 +117,8 @@ public final class DevShowcase {
             dieselScript();
         } else if (MODE.equals("semi")) {
             semiScript();
+        } else if (MODE.equals("bikes")) {
+            bikeScript();
         } else {
             script();
         }
@@ -656,5 +658,97 @@ public final class DevShowcase {
         });
         at(955, mc -> shot(mc, "46_workbench_trailer_tooltip"));
         at(960, mc -> mc.stop());
+    }
+
+    // ---- motorcycles: ./gradlew runClient -Pshowcase=bikes ----
+
+    private static void bikeScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                for (int x = -40; x <= 40; x++) {
+                    for (int z = -20; z <= 20; z++) {
+                        BlockState ground = Math.floorMod(z, 12) == 6 && x % 4 != 0 ? Blocks.WHITE_CONCRETE.defaultBlockState()
+                                : Blocks.GRAY_CONCRETE.defaultBlockState();
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), ground);
+                    }
+                }
+                // Parked in a row, angled like at a bike rack: over on their kickstands.
+                spawned(level, CarType.SPORT_BIKE, 0.5, 0.5, -90.0F, 0.8);
+                spawned(level, CarType.CRUISER, 0.5, 3.5, -90.0F, 0.8);
+                spawned(level, CarType.DIRT_BIKE, 0.5, 6.5, -90.0F, 0.8);
+                spawned(level, CarType.SCOOTER, 0.5, 9.5, -90.0F, 0.8);
+                spawned(level, CarType.SEDAN, -9.0, 4.5, -90.0F, 0.5);
+                player.getInventory().clearContent();
+                for (CarType type : new CarType[] {CarType.SPORT_BIKE, CarType.CRUISER, CarType.DIRT_BIKE, CarType.SCOOTER}) {
+                    give(player, ModItems.car(type), 1);
+                }
+                give(player, ModItems.MOTORCYCLE_ENGINE.get(), 1);
+                for (CarPart part : CarPart.values()) {
+                    give(player, ModItems.part(CarType.CRUISER, part), 1);
+                }
+            });
+        });
+        at(80, mc -> look(mc, 7.0, -59.0, -4.0, 40.0F, 16.0F));
+        at(130, mc -> shot(mc, "50_bikes_parked"));
+        at(135, mc -> look(mc, 2.5, -60.0, -3.0, 20.0F, 12.0F));
+        at(185, mc -> shot(mc, "51_bikes_side"));
+        at(190, mc -> look(mc, 4.0, -60.0, 13.0, 140.0F, 14.0F));
+        at(240, mc -> shot(mc, "52_scooter_and_dirt_bike"));
+        // Ride the sport bike, with the cruiser's rider behind.
+        at(245, mc -> server(mc, player -> player.startRiding(car(player.serverLevel(), CarType.SPORT_BIKE), true)));
+        at(275, mc -> shot(mc, "53_sport_bike_seat"));
+        at(280, mc -> mc.options.keyUp.setDown(true));
+        at(330, mc -> mc.options.keyLeft.setDown(true));
+        at(342, mc -> shot(mc, "54_leaning_first_person"));
+        at(343, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        at(352, mc -> shot(mc, "55_leaning_third_person"));
+        at(353, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+        at(362, mc -> shot(mc, "56_leaning_front"));
+        at(378, mc -> {
+            mc.options.keyLeft.setDown(false);
+            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+        });
+        at(400, mc -> shot(mc, "57_upright"));
+        at(402, mc -> {
+            mc.options.keyUp.setDown(false);
+            mc.options.keyJump.setDown(true);
+        });
+        at(440, mc -> mc.options.keyJump.setDown(false));
+        at(445, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> player.stopRiding());
+        });
+        // The cruiser's saddlebags.
+        at(455, mc -> server(mc, player -> {
+            CarEntity cruiser = car(player.serverLevel(), CarType.CRUISER);
+            player.teleportTo(player.serverLevel(), cruiser.getX() + 1.5, cruiser.getY(), cruiser.getZ(), 90.0F, 30.0F);
+            cruiser.bed().setItem(0, new ItemStack(net.minecraft.world.item.Items.BREAD, 12));
+            cruiser.bed().setItem(4, new ItemStack(net.minecraft.world.item.Items.MAP));
+            player.openMenu(new net.minecraft.world.SimpleMenuProvider((id, inventory, p) ->
+                    new net.minecraft.world.inventory.ChestMenu(net.minecraft.world.inventory.MenuType.GENERIC_9x1, id, inventory, cruiser.bed(), 1),
+                    net.minecraft.network.chat.Component.translatable(CarType.CRUISER.storageKey())));
+        }));
+        at(480, mc -> shot(mc, "58_saddlebags"));
+        at(482, mc -> mc.player.closeContainer());
+        // Building a cruiser at the workbench, and the scooter in JEI.
+        at(490, mc -> server(mc, player -> {
+            BlockPos bench = new BlockPos(-6, -60, -10);
+            player.teleportTo(player.serverLevel(), -6.5, -60.0, -7.5, 180.0F, 30.0F);
+            player.serverLevel().setBlockAndUpdate(bench, ModBlocks.CAR_WORKBENCH.get().defaultBlockState());
+            give(player, ModItems.TIRE.get(), 1);
+            player.openMenu(player.serverLevel().getBlockState(bench).getMenuProvider(player.serverLevel(), bench));
+        }));
+        at(510, mc -> clickCar(mc, CarType.CRUISER.ordinal()));
+        at(535, mc -> shot(mc, "59_workbench_cruiser"));
+        at(540, mc -> jeiShow(RecipeIngredientRole.OUTPUT, new ItemStack(ModItems.car(CarType.SCOOTER))));
+        at(570, mc -> shot(mc, "60_jei_scooter"));
+        at(575, mc -> mc.player.closeContainer());
+        at(585, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
+        at(610, mc -> shot(mc, "61_items"));
+        at(620, mc -> mc.stop());
     }
 }

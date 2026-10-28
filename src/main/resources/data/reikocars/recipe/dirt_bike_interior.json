@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "P": {
+      "item": "minecraft:compass"
+    },
+    "W": {
+      "tag": "minecraft:wool"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "pattern": [
+    " P ",
+    "WWW",
+    " I "
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:dirt_bike_interior"
+  }
+}

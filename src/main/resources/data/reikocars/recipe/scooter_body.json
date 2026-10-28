@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "D": {
+      "tag": "c:dyes/cyan"
+    }
+  },
+  "pattern": [
+    "III",
+    "IDI",
+    " I "
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:scooter_body"
+  }
+}
