@@ -40,6 +40,10 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.part(type, part));
                     }
                 }
+                output.accept(ModItems.TRAILER_CHASSIS.get());
+                for (TrailerType type : TrailerType.values()) {
+                    output.accept(ModItems.trailerBody(type));
+                }
             })
             .build());
 

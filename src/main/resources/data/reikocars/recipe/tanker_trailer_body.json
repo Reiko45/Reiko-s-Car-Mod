@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "K": {
+      "item": "buildcraftreborn:tank"
+    }
+  },
+  "pattern": [
+    "IKI",
+    "K K",
+    "IKI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:tanker_trailer_body"
+  }
+}

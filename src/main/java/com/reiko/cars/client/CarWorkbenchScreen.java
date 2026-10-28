@@ -4,6 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.reiko.cars.car.CarItem;
 import com.reiko.cars.car.CarType;
 import com.reiko.cars.config.CarsConfig;
+import com.reiko.cars.trailer.TrailerItem;
+import com.reiko.cars.trailer.TrailerType;
 import com.reiko.cars.workbench.CarAssemblyRecipe;
 import com.reiko.cars.workbench.CarWorkbenchMenu;
 import java.util.ArrayList;
@@ -26,10 +28,10 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
 /**
- * The Car Workbench screen. Along the top, a button for each car it can build: clicking one shows that car's parts
- * in the empty slots and puts in any the player carries. Below, the part slots, laid out like the car seen from
- * above, and a turning 3D model of the car, with each part drawn as a blue ghost until it's fitted. Drag the model
- * to turn it.
+ * The Car Workbench screen. Along the top, a button for each car and trailer it can build: clicking one shows its
+ * parts in the empty slots and puts in any the player carries. Below, the part slots, laid out like the car seen from
+ * above (the ones a trailer doesn't use are shaded), and a turning 3D model of the vehicle, with each part drawn as a
+ * blue ghost until it's fitted. Drag the model to turn it.
  */
 public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkbenchMenu> {
     private static final int WIDTH = 236;
@@ -130,7 +132,9 @@ public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkben
             int sx = x + CarWorkbenchMenu.PART_POSITIONS[slot][0];
             int sy = y + CarWorkbenchMenu.PART_POSITIONS[slot][1];
             drawSlot(graphics, sx, sy, 0);
-            if (recipe.isPresent() && !menu.getSlot(slot).hasItem()) {
+            if (recipe.isPresent() && !recipe.get().needs(slot)) {
+                graphics.fill(sx, sy, sx + 16, sy + 16, 0x60373737); // not used by this vehicle
+            } else if (recipe.isPresent() && !menu.getSlot(slot).hasItem()) {
                 ItemStack ghost = cycle(recipe.get().ingredient(slot));
                 if (!ghost.isEmpty()) {
                     graphics.renderFakeItem(ghost, sx, sy);
@@ -262,6 +266,9 @@ public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkben
         graphics.enableScissor(x0, y0, x1, y1);
         if (result.getItem() instanceof CarItem car) {
             drawCar(graphics, car.carType(), recipe.get(), (x0 + x1) / 2.0F, (y0 + y1) / 2.0F + 1.0F);
+        } else if (result.getItem() instanceof TrailerItem trailer) {
+            CarPreview.draw(graphics, trailer.trailerType(), (x0 + x1) / 2.0F, (y0 + y1) / 2.0F + 1.0F, 18.0F, yaw,
+                    fittedParts(recipe.get(), CarAssemblyRecipe.CHASSIS));
         } else {
             PoseStack pose = graphics.pose();
             pose.pushPose();
@@ -281,12 +288,16 @@ public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkben
 
     /** The car with its fitted parts drawn as they look in the world, the rest as ghosts. */
     private void drawCar(GuiGraphics graphics, CarType type, CarAssemblyRecipe recipe, float cx, float cy) {
+        CarPreview.draw(graphics, type, cx, cy, 18.0F, yaw, fittedParts(recipe, CarAssemblyRecipe.INTERIOR));
+    }
+
+    /** Which parts are in: the body, the part in slot {@code trim} (a car's interior, a trailer's chassis), the wheels. */
+    private CarPreview.Fitted fittedParts(CarAssemblyRecipe recipe, int trim) {
         boolean[] wheels = new boolean[4];
         for (int wheel = 0; wheel < 4; wheel++) {
             wheels[wheel] = fitted(recipe, CarAssemblyRecipe.FIRST_WHEEL + wheel);
         }
-        CarPreview.draw(graphics, type, cx, cy, 18.0F, yaw, new CarPreview.Fitted(
-                fitted(recipe, CarAssemblyRecipe.BODY), fitted(recipe, CarAssemblyRecipe.INTERIOR), wheels));
+        return new CarPreview.Fitted(fitted(recipe, CarAssemblyRecipe.BODY), fitted(recipe, trim), wheels);
     }
 
     // ---- labels and tooltips ----
@@ -313,8 +324,15 @@ public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkben
             long speed = Math.round(type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * unit.perBlockPerTick);
             graphics.drawCenteredString(font, Component.translatable("gui.reikocars.workbench.stats", type.seatCount(), speed,
                     Component.translatable(unit.translationKey)), middle, PREVIEW_BOTTOM - 11, 0xB8C4D0);
+        } else if (result.getItem() instanceof TrailerItem trailer) {
+            graphics.drawCenteredString(font, trailerStats(trailer.trailerType()), middle, PREVIEW_BOTTOM - 11, 0xB8C4D0);
         }
         pose.popPose();
+    }
+
+    /** What a trailer carries, for under its preview: "54 slots", "64 buckets", "2 cars". */
+    public static Component trailerStats(TrailerType type) {
+        return Component.translatable("gui.reikocars.workbench.trailer." + type.id(), type.cargoRows * 9, type.tankBuckets, type.carSlots);
     }
 
     @Override
@@ -333,7 +351,10 @@ public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkben
             lines.add(Component.translatable("gui.reikocars.workbench.slot." + SLOT_NAMES[slot.index]));
             menu.selectedRecipe().ifPresent(recipe -> {
                 ItemStack wanted = cycle(recipe.ingredient(slot.index));
-                if (!wanted.isEmpty()) {
+                if (!recipe.needs(slot.index)) {
+                    lines.add(Component.translatable("gui.reikocars.workbench.not_used", recipe.result().getHoverName())
+                            .withStyle(ChatFormatting.GRAY));
+                } else if (!wanted.isEmpty()) {
                     lines.add(Component.translatable("gui.reikocars.workbench.needs", wanted.getHoverName()).withStyle(ChatFormatting.GRAY));
                 }
             });
@@ -349,7 +370,9 @@ public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkben
         lines.add(recipe.result().getHoverName());
         boolean[] have = menu.partsAvailable(minecraft.player.getInventory(), recipe);
         for (int slot = 0; slot < CarAssemblyRecipe.FIRST_WHEEL; slot++) {
-            lines.add(partLine(cycle(recipe.ingredient(slot)).getHoverName(), have[slot], 1, have[slot] ? 1 : 0));
+            if (recipe.needs(slot)) {
+                lines.add(partLine(cycle(recipe.ingredient(slot)).getHoverName(), have[slot], 1, have[slot] ? 1 : 0));
+            }
         }
         int wheels = 0;
         for (int slot = CarAssemblyRecipe.FIRST_WHEEL; slot < CarAssemblyRecipe.SLOTS; slot++) {

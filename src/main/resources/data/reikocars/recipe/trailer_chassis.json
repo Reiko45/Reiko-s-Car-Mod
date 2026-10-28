@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "tag": "c:gears/iron"
+    }
+  },
+  "pattern": [
+    "III",
+    "G G",
+    "I I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:trailer_chassis"
+  }
+}

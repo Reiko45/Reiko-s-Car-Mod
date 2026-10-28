@@ -4,6 +4,7 @@ import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarItem;
 import com.reiko.cars.car.CarType;
 import com.reiko.cars.trailer.TrailerItem;
+import com.reiko.cars.trailer.TrailerPartItem;
 import com.reiko.cars.trailer.TrailerType;
 import com.reiko.cars.workbench.CarPart;
 import com.reiko.cars.workbench.CarPartItem;
@@ -21,6 +22,7 @@ public final class ModItems {
     private static final Map<CarType, DeferredItem<CarItem>> CARS = new EnumMap<>(CarType.class);
     private static final Map<CarType, Map<CarPart, DeferredItem<CarPartItem>>> PARTS = new EnumMap<>(CarType.class);
     private static final Map<TrailerType, DeferredItem<TrailerItem>> TRAILERS = new EnumMap<>(TrailerType.class);
+    private static final Map<TrailerType, DeferredItem<TrailerPartItem>> TRAILER_BODIES = new EnumMap<>(TrailerType.class);
 
     static {
         for (CarType type : CarType.values()) {
@@ -37,7 +39,14 @@ public final class ModItems {
         for (TrailerType type : TrailerType.values()) {
             TRAILERS.put(type, ITEMS.register(type.id(), () -> new TrailerItem(type, new Item.Properties().stacksTo(1))));
         }
+        for (TrailerType type : TrailerType.values()) {
+            TRAILER_BODIES.put(type, ITEMS.register(type.id() + "_body", () -> new TrailerPartItem(type, new Item.Properties().stacksTo(16))));
+        }
     }
+
+    /** Every trailer's chassis: built into a trailer at the workbench with that trailer's body and four tires. */
+    public static final DeferredItem<TrailerPartItem> TRAILER_CHASSIS = ITEMS.register("trailer_chassis",
+            () -> new TrailerPartItem(null, new Item.Properties().stacksTo(16)));
 
     public static final DeferredItem<Item> TIRE = ITEMS.registerSimpleItem("tire");
     public static final DeferredItem<Item> CAR_ENGINE = ITEMS.registerSimpleItem("car_engine");
@@ -58,6 +67,11 @@ public final class ModItems {
 
     public static TrailerItem trailer(TrailerType type) {
         return TRAILERS.get(type).get();
+    }
+
+    /** {@code type}'s body: the box, the tank or the car deck, like {@code box_trailer_body}. */
+    public static TrailerPartItem trailerBody(TrailerType type) {
+        return TRAILER_BODIES.get(type).get();
     }
 
     /** {@code type}'s chassis, body or interior, like {@code sedan_chassis}. */

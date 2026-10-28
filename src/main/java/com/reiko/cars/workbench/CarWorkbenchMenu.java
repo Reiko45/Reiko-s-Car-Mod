@@ -1,6 +1,7 @@
 package com.reiko.cars.workbench;
 
 import com.reiko.cars.car.CarItem;
+import com.reiko.cars.trailer.TrailerItem;
 import com.reiko.cars.registry.ModBlocks;
 import com.reiko.cars.registry.ModMenus;
 import com.reiko.cars.registry.ModRecipes;
@@ -28,9 +29,10 @@ import net.minecraft.world.level.Level;
 
 /**
  * The Car Workbench's menu: eight part slots laid out like a car seen from above (a wheel at each corner, the engine
- * at the front, the chassis in the middle, the body and interior beside it) and the finished car.
+ * at the front, the chassis in the middle, the body and interior beside it) and the finished car or trailer. A
+ * trailer takes no interior or engine, so those slots stay empty for it.
  *
- * <p>The screen lists every car the workbench can build. Picking one (a menu button click, so it works like the
+ * <p>The screen lists every car and trailer the workbench can build. Picking one (a menu button click, so it works like the
  * stonecutter's list) shows its parts in the empty slots and moves any of them the player carries into place.
  * The car that comes out is whatever the parts make, whichever car is picked.
  */
@@ -89,15 +91,24 @@ public final class CarWorkbenchMenu extends AbstractContainerMenu {
     }
 
     /**
-     * Every car recipe, the mod's cars first in their usual order, then any others by name. The client and the
-     * server sort the same list the same way, so a button number means the same car on both.
+     * Every workbench recipe: the mod's cars in their usual order, then its trailers, then any others by name. The
+     * client and the server sort the same list the same way, so a button number means the same vehicle on both.
      */
     public static List<RecipeHolder<CarAssemblyRecipe>> sortedRecipes(RecipeManager recipeManager) {
         List<RecipeHolder<CarAssemblyRecipe>> list = new ArrayList<>(recipeManager.getAllRecipesFor(ModRecipes.CAR_ASSEMBLY.get()));
-        list.sort(Comparator.<RecipeHolder<CarAssemblyRecipe>>comparingInt(holder ->
-                        holder.value().result().getItem() instanceof CarItem car ? car.carType().ordinal() : Integer.MAX_VALUE)
+        list.sort(Comparator.<RecipeHolder<CarAssemblyRecipe>>comparingInt(holder -> order(holder.value().result()))
                 .thenComparing(holder -> holder.id().toString()));
         return List.copyOf(list);
+    }
+
+    private static int order(ItemStack result) {
+        if (result.getItem() instanceof CarItem car) {
+            return car.carType().ordinal();
+        }
+        if (result.getItem() instanceof TrailerItem trailer) {
+            return 1000 + trailer.trailerType().ordinal();
+        }
+        return Integer.MAX_VALUE;
     }
 
     public List<RecipeHolder<CarAssemblyRecipe>> recipes() {
@@ -125,8 +136,8 @@ public final class CarWorkbenchMenu extends AbstractContainerMenu {
     }
 
     /**
-     * For each part slot, whether {@code recipe}'s part for it is in the workbench or {@code inventory}. Shared
-     * parts (the four tires) are counted once each.
+     * For each part slot, whether {@code recipe}'s part for it is in the workbench or {@code inventory} (or it takes
+     * none there). Shared parts (the four tires) are counted once each.
      */
     public boolean[] partsAvailable(Inventory inventory, CarAssemblyRecipe recipe) {
         List<ItemStack> pool = new ArrayList<>();
@@ -138,6 +149,10 @@ public final class CarWorkbenchMenu extends AbstractContainerMenu {
         }
         boolean[] have = new boolean[PARTS];
         for (int slot = 0; slot < PARTS; slot++) {
+            if (!recipe.needs(slot)) {
+                have[slot] = true;
+                continue;
+            }
             for (ItemStack stack : pool) {
                 if (!stack.isEmpty() && recipe.ingredient(slot).test(stack)) {
                     stack.shrink(1);
@@ -149,10 +164,10 @@ public final class CarWorkbenchMenu extends AbstractContainerMenu {
         return have;
     }
 
-    /** Whether any car takes {@code stack} in part slot {@code slot}. */
+    /** Whether any vehicle takes {@code stack} in part slot {@code slot}. */
     public boolean fits(int slot, ItemStack stack) {
         for (RecipeHolder<CarAssemblyRecipe> holder : recipes) {
-            if (holder.value().ingredient(slot).test(stack)) {
+            if (holder.value().needs(slot) && holder.value().ingredient(slot).test(stack)) {
                 return true;
             }
         }
@@ -210,13 +225,16 @@ public final class CarWorkbenchMenu extends AbstractContainerMenu {
         Inventory inventory = player.getInventory();
         for (int slot = 0; slot < PARTS; slot++) {
             ItemStack stack = parts.getItem(slot);
-            if (!stack.isEmpty() && !recipe.ingredient(slot).test(stack)) {
+            if (!stack.isEmpty() && (!recipe.needs(slot) || !recipe.ingredient(slot).test(stack))) {
                 parts.setItem(slot, ItemStack.EMPTY);
                 inventory.placeItemBackInInventory(stack);
             }
         }
         for (int slot = 0; slot < PARTS; slot++) {
             if (!parts.getItem(slot).isEmpty()) {
+                continue;
+            }
+            if (!recipe.needs(slot)) {
                 continue;
             }
             for (ItemStack carried : inventory.items) {
@@ -358,12 +376,17 @@ public final class CarWorkbenchMenu extends AbstractContainerMenu {
         @Override
         public void onTake(Player taker, ItemStack stack) {
             checkTakeAchievements(stack);
+            boolean engine = !parts.getItem(CarAssemblyRecipe.ENGINE).isEmpty();
             for (int slot = 0; slot < PARTS; slot++) {
                 parts.removeItem(slot, 1);
             }
             access.execute((level, pos) -> {
                 level.playSound(null, pos, SoundEvents.SMITHING_TABLE_USE, SoundSource.BLOCKS, 1.0F, 0.9F);
-                level.playSound(null, pos, ModSounds.ENGINE_START.get(), SoundSource.BLOCKS, 0.7F, 1.0F);
+                if (engine) {
+                    level.playSound(null, pos, ModSounds.ENGINE_START.get(), SoundSource.BLOCKS, 0.7F, 1.0F);
+                } else {
+                    level.playSound(null, pos, SoundEvents.CHAIN_PLACE, SoundSource.BLOCKS, 1.0F, 0.9F);
+                }
             });
             super.onTake(taker, stack);
         }

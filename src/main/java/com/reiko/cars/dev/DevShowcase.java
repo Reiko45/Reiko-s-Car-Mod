@@ -610,7 +610,7 @@ public final class DevShowcase {
         at(760, mc -> shot(mc, "41_items"));
         // Building a semi at the Car Workbench, and its recipe in JEI.
         at(765, mc -> {
-            mc.setScreen(null);
+            mc.player.closeContainer();
             server(mc, player -> {
                 BlockPos bench = new BlockPos(-6, -60, 20);
                 player.serverLevel().setBlockAndUpdate(bench, ModBlocks.CAR_WORKBENCH.get().defaultBlockState());
@@ -629,6 +629,32 @@ public final class DevShowcase {
         at(845, mc -> shot(mc, "43_jei_semi_recipe"));
         at(850, mc -> jeiShow(RecipeIngredientRole.OUTPUT, new ItemStack(ModItems.trailer(TrailerType.TANKER_TRAILER))));
         at(880, mc -> shot(mc, "44_jei_tanker_recipe"));
-        at(890, mc -> mc.stop());
+        // A car hauler at the workbench, two tires short: no engine or interior slot for a trailer.
+        at(885, mc -> {
+            mc.player.closeContainer(); // hands the semi's parts back, so take them away after
+            server(mc, player -> {
+                BlockPos bench = new BlockPos(-6, -60, 20);
+                player.closeContainer();
+                player.getInventory().clearContent();
+                give(player, ModItems.TRAILER_CHASSIS.get(), 1);
+                give(player, ModItems.trailerBody(TrailerType.CAR_HAULER), 1);
+                give(player, ModItems.TIRE.get(), 2);
+                for (TrailerType type : TrailerType.values()) {
+                    give(player, ModItems.trailerBody(type), 1);
+                }
+                player.openMenu(player.serverLevel().getBlockState(bench).getMenuProvider(player.serverLevel(), bench));
+            });
+        });
+        at(905, mc -> clickCar(mc, CarType.values().length + TrailerType.CAR_HAULER.ordinal()));
+        at(930, mc -> shot(mc, "45_workbench_car_hauler"));
+        at(932, mc -> {
+            if (mc.screen instanceof CarWorkbenchScreen screen) {
+                int left = (screen.width - 236) / 2;
+                int top = (screen.height - 212) / 2;
+                hover(mc, left + 8 + 24 * (CarType.values().length + TrailerType.TANKER_TRAILER.ordinal()) + 11, top + 17 + 11);
+            }
+        });
+        at(955, mc -> shot(mc, "46_workbench_trailer_tooltip"));
+        at(960, mc -> mc.stop());
     }
 }

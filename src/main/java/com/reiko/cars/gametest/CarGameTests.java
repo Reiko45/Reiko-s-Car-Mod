@@ -377,6 +377,16 @@ public final class CarGameTests {
         throw new IllegalStateException("The workbench can't build a " + type.id());
     }
 
+    /** The trailer's button in the workbench's list. */
+    private static int button(CarWorkbenchMenu menu, TrailerType type) {
+        for (int i = 0; i < menu.recipes().size(); i++) {
+            if (menu.recipes().get(i).value().result().is(ModItems.trailer(type))) {
+                return i;
+            }
+        }
+        throw new IllegalStateException("The workbench can't build a " + type.id());
+    }
+
     private static void giveParts(ServerPlayer player, CarType type) {
         for (CarPart part : CarPart.values()) {
             player.getInventory().add(new ItemStack(ModItems.part(type, part)));
@@ -404,9 +414,13 @@ public final class CarGameTests {
         ServerPlayer player = join(helper);
         try {
             CarWorkbenchMenu menu = workbench(helper, player);
-            helper.assertValueEqual(menu.recipes().size(), CarType.values().length, "one recipe per car");
+            helper.assertValueEqual(menu.recipes().size(), CarType.values().length + TrailerType.values().length,
+                    "one recipe per car and trailer");
             for (CarType type : CarType.values()) {
                 helper.assertValueEqual(button(menu, type), type.ordinal(), "cars listed in order");
+            }
+            for (TrailerType type : TrailerType.values()) {
+                helper.assertValueEqual(button(menu, type), CarType.values().length + type.ordinal(), "then the trailers");
             }
             giveParts(player, CarType.SEDAN);
             check(helper, menu.clickMenuButton(player, button(menu, CarType.SEDAN)), "sedan picked");
@@ -795,6 +809,43 @@ public final class CarGameTests {
             helper.assertValueEqual(hauler.cars().size(), 1, "one car left aboard");
         } finally {
             leave(helper, driver);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void workbenchBuildsATrailer(GameTestHelper helper) {
+        ServerPlayer player = join(helper);
+        try {
+            CarWorkbenchMenu menu = workbench(helper, player);
+            // A stray engine in the engine slot: trailers have none, so it's handed back.
+            check(helper, menu.getSlot(CarAssemblyRecipe.ENGINE).mayPlace(new ItemStack(ModItems.CAR_ENGINE.get())), "engines still fit for cars");
+            menu.getSlot(CarAssemblyRecipe.ENGINE).set(new ItemStack(ModItems.CAR_ENGINE.get()));
+            player.getInventory().add(new ItemStack(ModItems.TRAILER_CHASSIS.get()));
+            player.getInventory().add(new ItemStack(ModItems.trailerBody(TrailerType.TANKER_TRAILER)));
+            player.getInventory().add(new ItemStack(ModItems.TIRE.get(), 4));
+            check(helper, menu.partsAvailable(player.getInventory(), menu.recipes().get(button(menu, TrailerType.TANKER_TRAILER)).value())[CarAssemblyRecipe.INTERIOR],
+                    "a trailer needs no interior");
+            check(helper, menu.clickMenuButton(player, button(menu, TrailerType.TANKER_TRAILER)), "tanker picked");
+            check(helper, !menu.getSlot(CarAssemblyRecipe.ENGINE).hasItem(), "the engine came out");
+            helper.assertValueEqual(count(player, ModItems.CAR_ENGINE.get()), 1, "and went back to the player");
+            check(helper, !menu.getSlot(CarAssemblyRecipe.INTERIOR).hasItem(), "no interior");
+            check(helper, menu.getSlot(CarAssemblyRecipe.CHASSIS).getItem().is(ModItems.TRAILER_CHASSIS.get()), "the trailer chassis went in");
+            check(helper, menu.getSlot(CarAssemblyRecipe.BODY).getItem().is(ModItems.trailerBody(TrailerType.TANKER_TRAILER)), "and the tank");
+            check(helper, menu.getSlot(CarWorkbenchMenu.RESULT).getItem().is(ModItems.trailer(TrailerType.TANKER_TRAILER)), "they make a tanker");
+
+            // With the engine put back, the parts make nothing.
+            menu.getSlot(CarAssemblyRecipe.ENGINE).set(new ItemStack(ModItems.CAR_ENGINE.get()));
+            check(helper, !menu.getSlot(CarWorkbenchMenu.RESULT).hasItem(), "a tanker with an engine is nothing");
+            menu.getSlot(CarAssemblyRecipe.ENGINE).set(ItemStack.EMPTY);
+
+            menu.clicked(CarWorkbenchMenu.RESULT, 0, ClickType.QUICK_MOVE, player);
+            helper.assertValueEqual(count(player, ModItems.trailer(TrailerType.TANKER_TRAILER)), 1, "the tanker is in the inventory");
+            for (int slot = 0; slot < CarWorkbenchMenu.PARTS; slot++) {
+                check(helper, !menu.getSlot(slot).hasItem(), "part " + slot + " used up");
+            }
+        } finally {
+            leave(helper, player);
         }
         helper.succeed();
     }

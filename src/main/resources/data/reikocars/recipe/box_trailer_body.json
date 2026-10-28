@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "C": {
+      "tag": "c:chests/wooden"
+    }
+  },
+  "pattern": [
+    "III",
+    "C C",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:box_trailer_body"
+  }
+}

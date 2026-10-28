@@ -58,6 +58,10 @@ The **Semi Truck** pulls one trailer at a time. There are three:
 | **Tanker Trailer** | 64 buckets of any one fluid: fuel, oil, water, lava, other mods' fluids |
 | **Car Hauler** | 2 cars, one behind the other |
 
+**Building a trailer:** trailers are put together at the Car Workbench too, from the **Trailer Chassis** (which
+every trailer takes), the trailer's own body (the **Box Trailer Body**, **Tanker Trailer Tank** or **Car Hauler
+Deck**) and four **Tires**. They take no engine or interior, so those two slots are shaded for them.
+
 **Putting a trailer down:** use the trailer item on the ground. It stands on its landing legs facing the way you
 look, so face the way you'll drive off. Whoever puts it down owns it.
 
@@ -87,9 +91,9 @@ paint it. Punch it to pick it up. A box trailer spills its cargo.
 
 ## Building a car
 
-Cars are put together at a **Car Workbench**. Each car has three parts of its own (a **chassis**, a **body** and an
-**interior**), and they all take four **Tires** and an engine: a **Car Engine**, or a **Diesel Engine** for the
-semi.
+Cars and trailers are put together at a **Car Workbench**. Each car has three parts of its own (a **chassis**, a
+**body** and an **interior**), and they all take four **Tires** and an engine: a **Car Engine**, or a **Diesel
+Engine** for the semi. A trailer takes the Trailer Chassis, its own body and four tires.
 
 1. Craft the parts (see [Recipes](#recipes)) and place a Car Workbench.
 2. Right-click the workbench. The buttons along the top are the cars it can build. Hover over one to see which parts
@@ -106,8 +110,8 @@ Parts left in the workbench go back to you when you close it.
 
 ### With JEI
 
-If JEI is installed, it gets a **Car Workbench** recipe page for each car: the parts laid out as in the workbench, the
-car turning in 3D, and its seats, top speed and tank size. Look up a car's recipe (R), or what a part, tire or engine
+If JEI is installed, it gets a **Car Workbench** recipe page for each car and trailer: the parts laid out as in the
+workbench, the vehicle turning in 3D, and a car's seats, top speed and tank size, or what a trailer carries. Look up a car's recipe (R), or what a part, tire or engine
 is used for (U). Clicking the arrow in the workbench's screen lists every car. With the workbench open, JEI's **+**
 button puts that car's parts in from your inventory, the same as clicking the car's button; if you're missing any,
 the button is greyed out and JEI marks the missing parts in red.
@@ -154,9 +158,10 @@ of their own pump in buckets.
 | Gas Pump | iron ingots, glass pane, BuildCraft **Tank**, iron gear |
 | Diesel Pump | as the Gas Pump, with green dye either side of the iron gear |
 | Diesel Engine | as the Car Engine, with an iron block in place of the top gear |
-| Box Trailer | iron ingots on top, chest, iron block, chest across the middle, two tires below |
-| Tanker Trailer | iron ingots on top, BuildCraft **Tank**, iron block, Tank across the middle, two tires below |
-| Car Hauler | iron bars on top, iron ingot, iron block, iron ingot across the middle, two tires below |
+| Trailer Chassis | iron ingots on top, iron gears in the outer middle slots, iron legs |
+| Box Trailer Body | iron ingots top and bottom, chests in the outer middle slots |
+| Tanker Trailer Tank | four BuildCraft **Tanks** around an empty middle, iron ingots in the corners |
+| Car Hauler Deck | iron bars in the corners, iron ingots across the middle |
 
 The car parts, crafted on an ordinary crafting table:
 
@@ -167,11 +172,12 @@ The car parts, crafted on an ordinary crafting table:
 | **Interior**: a dashboard on top, redstone in the middle, seats below | clock, wool seats | clock, leather seats, gold trim | clock, leather bench | compass, wool and leather | clock, leather, a bed (the sleeper) |
 
 Then at the Car Workbench: chassis + body + interior + engine + 4 Tires = the car. The semi takes a Diesel Engine;
-the rest take a Car Engine.
+the rest take a Car Engine. A trailer is the Trailer Chassis + its body + 4 Tires.
 
 The workbench recipes are data files (`data/reikocars/recipe/sedan.json` and so on, type `reikocars:car_assembly`),
 so a data pack can change a car's parts or add new vehicles. Each one names a `chassis`, `body`, `interior`, `engine`
-and `wheel` (an item or a tag) and a `result`.
+and `wheel` (an item or a tag) and a `result`. The `interior` and `engine` can be left out, as the trailers'
+recipes do, and then those slots must be empty.
 
 ## Settings
 

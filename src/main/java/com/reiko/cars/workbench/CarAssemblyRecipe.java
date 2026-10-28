@@ -18,9 +18,9 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 
 /**
- * A car put together at a Car Workbench, from a chassis, a body, an interior, an engine and four wheels. Recipes are
- * data files ({@code data/reikocars/recipe/sedan.json} and the rest), so a data pack can change the parts or add more
- * vehicles:
+ * A vehicle put together at a Car Workbench, from a chassis, a body, an interior, an engine and four wheels. Recipes
+ * are data files ({@code data/reikocars/recipe/sedan.json} and the rest), so a data pack can change the parts or add
+ * more vehicles:
  *
  * <pre>{@code
  * {
@@ -33,6 +33,9 @@ import net.minecraft.world.level.Level;
  *   "result": {"id": "reikocars:sedan"}
  * }
  * }</pre>
+ *
+ * <p>The interior and engine may be left out, for a vehicle that has none (the trailers): then those slots must be
+ * empty.
  */
 public final class CarAssemblyRecipe implements Recipe<CarAssemblyRecipe.Input> {
     /** The workbench's part slots, in order. */
@@ -60,7 +63,12 @@ public final class CarAssemblyRecipe implements Recipe<CarAssemblyRecipe.Input> 
         this.result = result;
     }
 
-    /** What goes in part slot {@code slot}. */
+    /** Whether this vehicle takes a part in slot {@code slot} at all (a trailer has no interior or engine). */
+    public boolean needs(int slot) {
+        return !ingredient(slot).isEmpty();
+    }
+
+    /** What goes in part slot {@code slot}: an empty ingredient if nothing does. */
     public Ingredient ingredient(int slot) {
         return switch (slot) {
             case CHASSIS -> chassis;
@@ -81,7 +89,8 @@ public final class CarAssemblyRecipe implements Recipe<CarAssemblyRecipe.Input> 
             return false;
         }
         for (int slot = 0; slot < SLOTS; slot++) {
-            if (!ingredient(slot).test(input.getItem(slot))) {
+            ItemStack stack = input.getItem(slot);
+            if (needs(slot) ? !ingredient(slot).test(stack) : !stack.isEmpty()) {
                 return false;
             }
         }
@@ -146,8 +155,8 @@ public final class CarAssemblyRecipe implements Recipe<CarAssemblyRecipe.Input> 
         private static final MapCodec<CarAssemblyRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                 Ingredient.CODEC_NONEMPTY.fieldOf("chassis").forGetter(recipe -> recipe.chassis),
                 Ingredient.CODEC_NONEMPTY.fieldOf("body").forGetter(recipe -> recipe.body),
-                Ingredient.CODEC_NONEMPTY.fieldOf("interior").forGetter(recipe -> recipe.interior),
-                Ingredient.CODEC_NONEMPTY.fieldOf("engine").forGetter(recipe -> recipe.engine),
+                Ingredient.CODEC_NONEMPTY.optionalFieldOf("interior", Ingredient.EMPTY).forGetter(recipe -> recipe.interior),
+                Ingredient.CODEC_NONEMPTY.optionalFieldOf("engine", Ingredient.EMPTY).forGetter(recipe -> recipe.engine),
                 Ingredient.CODEC_NONEMPTY.fieldOf("wheel").forGetter(recipe -> recipe.wheel),
                 ItemStack.STRICT_CODEC.fieldOf("result").forGetter(recipe -> recipe.result)
         ).apply(instance, CarAssemblyRecipe::new));

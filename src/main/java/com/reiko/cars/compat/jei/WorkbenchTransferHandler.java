@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Optional;
 import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
-import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
@@ -56,11 +55,10 @@ final class WorkbenchTransferHandler implements IRecipeTransferHandler<CarWorkbe
             return helper.createInternalError();
         }
         boolean[] have = menu.partsAvailable(player.getInventory(), recipe.value());
-        List<IRecipeSlotView> inputs = recipeSlots.getSlotViews(RecipeIngredientRole.INPUT);
         List<IRecipeSlotView> missing = new ArrayList<>();
-        for (int slot = 0; slot < have.length && slot < inputs.size(); slot++) {
+        for (int slot = 0; slot < have.length; slot++) {
             if (!have[slot]) {
-                missing.add(inputs.get(slot));
+                recipeSlots.findSlotByName(CarAssemblyCategory.SLOT_NAMES[slot]).ifPresent(missing::add);
             }
         }
         if (!missing.isEmpty()) {

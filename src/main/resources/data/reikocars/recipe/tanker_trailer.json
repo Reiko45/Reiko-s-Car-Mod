@@ -1,25 +1,14 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "misc",
-  "key": {
-    "I": {
-      "tag": "c:ingots/iron"
-    },
-    "K": {
-      "item": "buildcraftreborn:tank"
-    },
-    "B": {
-      "tag": "c:storage_blocks/iron"
-    },
-    "T": {
-      "item": "reikocars:tire"
-    }
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:trailer_chassis"
   },
-  "pattern": [
-    "III",
-    "KBK",
-    "T T"
-  ],
+  "body": {
+    "item": "reikocars:tanker_trailer_body"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
   "result": {
     "count": 1,
     "id": "reikocars:tanker_trailer"

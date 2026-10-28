@@ -49,4 +49,19 @@ public final class TrailerModel {
     public void renderLights(PoseStack poseStack, VertexConsumer consumer, int light, int overlay) {
         lights.render(poseStack, consumer, light, overlay);
     }
+
+    // For the workbench preview, which draws each part on its own, some as see-through ghosts.
+
+    public void renderTrimOnly(PoseStack poseStack, VertexConsumer consumer, int light, int overlay, int color) {
+        trim.render(poseStack, consumer, light, overlay, color);
+    }
+
+    /** Wheel {@code index}: front left, front right, back left, back right (the first axle, then the second). */
+    public void renderWheel(int index, PoseStack poseStack, VertexConsumer consumer, int light, int overlay, int color) {
+        wheels[index].render(poseStack, consumer, light, overlay, color);
+    }
+
+    public void renderLights(PoseStack poseStack, VertexConsumer consumer, int light, int overlay, int color) {
+        lights.render(poseStack, consumer, light, overlay, color);
+    }
 }

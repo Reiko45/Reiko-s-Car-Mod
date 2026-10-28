@@ -1,25 +1,14 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "misc",
-  "key": {
-    "R": {
-      "item": "minecraft:iron_bars"
-    },
-    "I": {
-      "tag": "c:ingots/iron"
-    },
-    "B": {
-      "tag": "c:storage_blocks/iron"
-    },
-    "T": {
-      "item": "reikocars:tire"
-    }
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:trailer_chassis"
   },
-  "pattern": [
-    "RRR",
-    "IBI",
-    "T T"
-  ],
+  "body": {
+    "item": "reikocars:car_hauler_body"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
   "result": {
     "count": 1,
     "id": "reikocars:car_hauler"

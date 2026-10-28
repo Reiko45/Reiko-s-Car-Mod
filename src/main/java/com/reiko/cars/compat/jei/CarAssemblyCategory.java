@@ -3,9 +3,11 @@ package com.reiko.cars.compat.jei;
 import com.reiko.cars.car.CarItem;
 import com.reiko.cars.car.CarType;
 import com.reiko.cars.client.CarPreview;
+import com.reiko.cars.client.CarWorkbenchScreen;
 import com.reiko.cars.client.CarsClientConfig;
 import com.reiko.cars.config.CarsConfig;
 import com.reiko.cars.registry.ModItems;
+import com.reiko.cars.trailer.TrailerItem;
 import com.reiko.cars.workbench.CarAssemblyRecipe;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
@@ -26,9 +28,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
 /**
- * A car built at the Car Workbench, laid out like the workbench: the parts in a car shape seen from above (a wheel
- * at each corner, the engine at the front, the chassis in the middle between the body and the interior), the car
- * turning on a stand, and the finished car. The car's seats, top speed and tank size are written underneath.
+ * A car or trailer built at the Car Workbench, laid out like the workbench: the parts in a car shape seen from above
+ * (a wheel at each corner, the engine at the front, the chassis in the middle between the body and the interior;
+ * a trailer leaves the engine and interior out), the vehicle turning on a stand, and the finished vehicle. A car's
+ * seats, top speed and tank size are written underneath, or what a trailer carries.
  */
 final class CarAssemblyCategory implements IRecipeCategory<RecipeHolder<CarAssemblyRecipe>> {
     private static final int WIDTH = 190;
@@ -37,7 +40,7 @@ final class CarAssemblyCategory implements IRecipeCategory<RecipeHolder<CarAssem
     private static final int[][] SLOTS = {
             {21, 21}, {1, 21}, {41, 21}, {21, 1},
             {1, 1}, {41, 1}, {1, 41}, {41, 41}};
-    private static final String[] SLOT_NAMES = {"chassis", "body", "interior", "engine", "wheel_fl", "wheel_fr", "wheel_rl", "wheel_rr"};
+    static final String[] SLOT_NAMES = {"chassis", "body", "interior", "engine", "wheel_fl", "wheel_fr", "wheel_rl", "wheel_rr"};
     private static final int PREVIEW_LEFT = 62;
     private static final int PREVIEW_RIGHT = 132;
     private static final int PREVIEW_BOTTOM = 59;
@@ -85,6 +88,9 @@ final class CarAssemblyCategory implements IRecipeCategory<RecipeHolder<CarAssem
     public void setRecipe(IRecipeLayoutBuilder builder, RecipeHolder<CarAssemblyRecipe> holder, IFocusGroup focuses) {
         CarAssemblyRecipe recipe = holder.value();
         for (int slot = 0; slot < CarAssemblyRecipe.SLOTS; slot++) {
+            if (!recipe.needs(slot)) {
+                continue; // a trailer has no interior or engine
+            }
             Component role = Component.translatable("gui.reikocars.workbench.slot." + SLOT_NAMES[slot]).withStyle(ChatFormatting.GRAY);
             builder.addSlot(RecipeIngredientRole.INPUT, SLOTS[slot][0], SLOTS[slot][1])
                     .setStandardSlotBackground()
@@ -119,6 +125,12 @@ final class CarAssemblyCategory implements IRecipeCategory<RecipeHolder<CarAssem
             long speed = Math.round(type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * unit.perBlockPerTick);
             Component stats = Component.translatable("gui.reikocars.workbench.jei_stats", type.seatCount(), speed,
                     Component.translatable(unit.translationKey), type.tankBuckets);
+            graphics.drawString(font, stats, (WIDTH - font.width(stats)) / 2, HEIGHT - 9, 0xFF606060, false);
+        } else if (result.getItem() instanceof TrailerItem trailer) {
+            float yaw = 215.0F + (Util.getMillis() % 12_000L) / 12_000.0F * 360.0F;
+            CarPreview.draw(graphics, trailer.trailerType(), (PREVIEW_LEFT + PREVIEW_RIGHT) / 2.0F, PREVIEW_BOTTOM / 2.0F + 2.0F, 14.0F, yaw,
+                    CarPreview.Fitted.all());
+            Component stats = CarWorkbenchScreen.trailerStats(trailer.trailerType());
             graphics.drawString(font, stats, (WIDTH - font.width(stats)) / 2, HEIGHT - 9, 0xFF606060, false);
         } else {
             var pose = graphics.pose();
