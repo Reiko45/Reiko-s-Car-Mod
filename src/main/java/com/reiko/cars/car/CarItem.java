@@ -113,7 +113,7 @@ public final class CarItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         int percent = (int) Math.round(fuelOf(stack) / type.tankCapacity() * 100.0);
-        tooltip.add(Component.translatable("item.reikocars.car.fuel", percent).withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("item.reikocars.car.fuel", type.fuel().displayName(), percent).withStyle(ChatFormatting.GRAY));
         CarsClientConfig.SpeedUnit unit = CarsClientConfig.speedUnit();
         tooltip.add(Component.translatable("item.reikocars.car.stats", type.seatCount(),
                 Math.round(type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * unit.perBlockPerTick),
@@ -123,6 +123,9 @@ public final class CarItem extends Item {
         }
         if (type.offRoad) {
             tooltip.add(Component.translatable("item.reikocars.car.off_road").withStyle(ChatFormatting.DARK_GRAY));
+        }
+        if (type.isTractor()) {
+            tooltip.add(Component.translatable("item.reikocars.car.tractor").withStyle(ChatFormatting.DARK_GRAY));
         }
     }
 }

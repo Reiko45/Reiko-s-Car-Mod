@@ -3,6 +3,7 @@ package com.reiko.cars.registry;
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarItem;
 import com.reiko.cars.car.CarType;
+import com.reiko.cars.trailer.TrailerType;
 import com.reiko.cars.workbench.CarPart;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
@@ -28,7 +29,11 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.CAR_WORKBENCH.get());
                 output.accept(ModItems.GAS_PUMP.get());
                 output.accept(ModItems.DIESEL_PUMP.get());
+                for (TrailerType type : TrailerType.values()) {
+                    output.accept(ModItems.trailer(type));
+                }
                 output.accept(ModItems.CAR_ENGINE.get());
+                output.accept(ModItems.DIESEL_ENGINE.get());
                 output.accept(ModItems.TIRE.get());
                 for (CarType type : CarType.values()) {
                     for (CarPart part : CarPart.values()) {

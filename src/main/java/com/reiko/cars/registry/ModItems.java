@@ -3,6 +3,8 @@ package com.reiko.cars.registry;
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarItem;
 import com.reiko.cars.car.CarType;
+import com.reiko.cars.trailer.TrailerItem;
+import com.reiko.cars.trailer.TrailerType;
 import com.reiko.cars.workbench.CarPart;
 import com.reiko.cars.workbench.CarPartItem;
 import java.util.EnumMap;
@@ -18,6 +20,7 @@ public final class ModItems {
 
     private static final Map<CarType, DeferredItem<CarItem>> CARS = new EnumMap<>(CarType.class);
     private static final Map<CarType, Map<CarPart, DeferredItem<CarPartItem>>> PARTS = new EnumMap<>(CarType.class);
+    private static final Map<TrailerType, DeferredItem<TrailerItem>> TRAILERS = new EnumMap<>(TrailerType.class);
 
     static {
         for (CarType type : CarType.values()) {
@@ -31,10 +34,15 @@ public final class ModItems {
             }
             PARTS.put(type, parts);
         }
+        for (TrailerType type : TrailerType.values()) {
+            TRAILERS.put(type, ITEMS.register(type.id(), () -> new TrailerItem(type, new Item.Properties().stacksTo(1))));
+        }
     }
 
     public static final DeferredItem<Item> TIRE = ITEMS.registerSimpleItem("tire");
     public static final DeferredItem<Item> CAR_ENGINE = ITEMS.registerSimpleItem("car_engine");
+    /** The semi's engine. */
+    public static final DeferredItem<Item> DIESEL_ENGINE = ITEMS.registerSimpleItem("diesel_engine");
     public static final DeferredItem<DoubleHighBlockItem> GAS_PUMP = ITEMS.register("gas_pump",
             () -> new DoubleHighBlockItem(ModBlocks.GAS_PUMP.get(), new Item.Properties()));
     public static final DeferredItem<DoubleHighBlockItem> DIESEL_PUMP = ITEMS.register("diesel_pump",
@@ -46,6 +54,10 @@ public final class ModItems {
 
     public static CarItem car(CarType type) {
         return CARS.get(type).get();
+    }
+
+    public static TrailerItem trailer(TrailerType type) {
+        return TRAILERS.get(type).get();
     }
 
     /** {@code type}'s chassis, body or interior, like {@code sedan_chassis}. */

@@ -4,6 +4,7 @@ import com.reiko.cars.ReikoCars;
 import com.reiko.cars.config.CarsConfig;
 import com.reiko.cars.registry.ModItems;
 import com.reiko.cars.registry.ModSounds;
+import com.reiko.cars.trailer.TrailerEntity;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -60,8 +61,11 @@ import org.jetbrains.annotations.Nullable;
  * steering feels instant even with lag. The server burns fuel for the distance the car actually covered, hurts
  * whatever it runs over, and keeps the fuel, paint, owner and lock, which it sends to every client.
  *
- * <p>Fuel is stored as energy (BuildCraft MJ) rather than as a fluid, so any car fuel can go in any tank and
- * stronger fuels go further. A full tank is {@link CarType#tankBuckets} buckets of light fuel's worth.
+ * <p>Fuel is stored as energy (BuildCraft MJ) rather than as a fluid, so stronger fuels go further. A full tank is
+ * {@link CarType#tankBuckets} buckets of BuildCraft's own fuel of the car's kind: light fuel, or dense fuel for diesels.
+ *
+ * <p>A semi tractor pulls a {@link TrailerEntity}, which rides it as a passenger (without taking a seat), so it's
+ * moved straight after the tractor every tick. A car can ride a car hauler the same way, and doesn't drive while it does.
  */
 public class CarEntity extends VehicleEntity {
     public static final ResourceKey<DamageType> RUN_OVER = ResourceKey.create(Registries.DAMAGE_TYPE, ReikoCars.id("car"));
@@ -99,6 +103,8 @@ public class CarEntity extends VehicleEntity {
     private float steering;
     /** How much the car turned this tick, which turns its passengers with it. */
     private float deltaRotation;
+    /** This tick's sideways shift from turning about a point behind the middle (see {@link CarType#pivotBack}). */
+    private Vec3 pivotShift = Vec3.ZERO;
 
     // Lerping toward the server's position, on clients that don't drive it
     private int lerpSteps;
@@ -319,7 +325,7 @@ public class CarEntity extends VehicleEntity {
         if (hornCooldown <= 0) {
             hornCooldown = HORN_COOLDOWN;
             level().playSound(null, getX(), getY(), getZ(), ModSounds.HORN.get(), SoundSource.NEUTRAL, 2.0F,
-                    type == CarType.SPORTS_CAR ? 1.15F : type == CarType.PICKUP_TRUCK ? 0.85F : 1.0F);
+                    type == CarType.SPORTS_CAR ? 1.15F : type == CarType.PICKUP_TRUCK ? 0.85F : type == CarType.SEMI_TRUCK ? 0.6F : 1.0F);
         }
     }
 
@@ -329,6 +335,10 @@ public class CarEntity extends VehicleEntity {
             return false;
         }
         setLocked(!isLocked());
+        TrailerEntity trailer = trailer();
+        if (trailer != null && trailer.canManage(player)) {
+            trailer.setLocked(isLocked()); // the rig locks as one
+        }
         playSound(ModSounds.LOCK.get(), 0.7F, isLocked() ? 1.0F : 1.3F);
         player.displayClientMessage(Component.translatable(isLocked() ? "car.reikocars.now_locked" : "car.reikocars.now_unlocked"), true);
         return true;
@@ -336,15 +346,41 @@ public class CarEntity extends VehicleEntity {
 
     // ---- passengers ----
 
-    @Override
-    protected boolean canAddPassenger(Entity passenger) {
-        return getPassengers().size() < type.seatCount();
+    /** The passengers in seats: everyone but the trailer. */
+    private List<Entity> riders() {
+        return getPassengers().stream().filter(passenger -> !(passenger instanceof TrailerEntity)).toList();
     }
 
+    /** The trailer this tractor is pulling, if any. */
+    @Nullable
+    public TrailerEntity trailer() {
+        for (Entity passenger : getPassengers()) {
+            if (passenger instanceof TrailerEntity trailer) {
+                return trailer;
+            }
+        }
+        return null;
+    }
+
+    /** Where a trailer's kingpin sits: the top of the fifth wheel, behind the cab. */
+    public Vec3 fifthWheel() {
+        return position().add(type.fifthWheelOffset().yRot(-getYRot() * Mth.DEG_TO_RAD));
+    }
+
+    @Override
+    protected boolean canAddPassenger(Entity passenger) {
+        if (passenger instanceof TrailerEntity) {
+            return type.isTractor() && trailer() == null;
+        }
+        return riders().size() < type.seatCount();
+    }
+
+    /** The driver: whoever's in the first seat. */
     @Nullable
     @Override
     public LivingEntity getControllingPassenger() {
-        return getFirstPassenger() instanceof Player player ? player : null;
+        List<Entity> riders = riders();
+        return !riders.isEmpty() && riders.get(0) instanceof Player player ? player : null;
     }
 
     @Override
@@ -365,12 +401,16 @@ public class CarEntity extends VehicleEntity {
 
     @Override
     protected Vec3 getPassengerAttachmentPoint(Entity entity, EntityDimensions dimensions, float partialTick) {
-        int seat = Math.max(0, getPassengers().indexOf(entity));
+        int seat = Math.max(0, riders().indexOf(entity));
         return type.seatOffset(seat).yRot(-getYRot() * Mth.DEG_TO_RAD);
     }
 
     @Override
     protected void positionRider(Entity passenger, Entity.MoveFunction callback) {
+        if (passenger instanceof TrailerEntity trailer) {
+            trailer.followTractor(this);
+            return;
+        }
         super.positionRider(passenger, callback);
         if (level().isClientSide) {
             passenger.setYRot(passenger.getYRot() + deltaRotation);
@@ -397,7 +437,7 @@ public class CarEntity extends VehicleEntity {
     @Override
     public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
         // Out of the door on the passenger's own side, then the other side, then anywhere around the car.
-        int seat = getPassengers().indexOf(passenger);
+        int seat = riders().indexOf(passenger);
         double side = seat >= 0 && type.seatOffset(seat).x < 0 ? -1.0 : 1.0;
         double reach = type.width / 2.0 + passenger.getBbWidth() / 2.0 + 0.2;
         for (double sideSign : new double[] {side, -side}) {
@@ -443,13 +483,24 @@ public class CarEntity extends VehicleEntity {
         float yawBefore = getYRot();
         super.tick();
         tickLerp();
-        if (isControlledByLocalInstance()) {
+        if (isPassenger()) {
+            stopDead(); // carried on a car hauler: the hauler moves it
+        } else if (isControlledByLocalInstance()) {
             if (getControllingPassenger() == null) {
                 setInput(false, false, false, false, false);
             }
             drive();
             Vec3 before = position();
-            move(MoverType.SELF, getDeltaMovement());
+            boolean endsWereClear = !endsBlocked();
+            // The pivot shift moves the car but isn't speed: it mustn't carry over into next tick's velocity.
+            move(MoverType.SELF, getDeltaMovement().add(pivotShift));
+            if (endsWereClear && endsBlocked()) {
+                // A long vehicle's nose or tail ran into a wall: stop it there, as its hitbox alone wouldn't.
+                setPos(before.x, getY(), before.z);
+                setYRot(yawBefore);
+                speed = 0.0;
+                setDeltaMovement(0.0, getDeltaMovement().y, 0.0);
+            }
             afterMove(before);
         } else {
             setDeltaMovement(Vec3.ZERO);
@@ -485,6 +536,10 @@ public class CarEntity extends VehicleEntity {
             top = Math.min(top, 0.1);
         }
         double accel = type.acceleration * speedScale;
+        if (trailer() != null) {
+            top *= 0.9; // pulling a trailer: slower, and slower to get going
+            accel *= 0.7;
+        }
         boolean engine = getControllingPassenger() != null && hasFuel();
 
         if (onGround()) {
@@ -514,7 +569,9 @@ public class CarEntity extends VehicleEntity {
         double pace = Math.abs(speed);
         double turnFactor = Mth.clamp(pace / 0.15, 0.0, 1.0) * (1.0 - 0.35 * Math.min(1.0, pace / type.topSpeed));
         float turn = (float) (steering * type.turnRate * turnFactor * Math.signum(speed) * (onGround() ? 1.0 : 0.2));
+        Vec3 pivotBefore = forward().scale(-type.pivotBack());
         setYRot(getYRot() - turn);
+        pivotShift = type.pivotBack() > 0.0 ? pivotBefore.subtract(forward().scale(-type.pivotBack())) : Vec3.ZERO;
 
         Vec3 forward = forward();
         Vec3 current = getDeltaMovement();
@@ -526,6 +583,35 @@ public class CarEntity extends VehicleEntity {
         double vx = Mth.lerp(onGround() ? grip : 0.02, current.x, forward.x * speed);
         double vz = Mth.lerp(onGround() ? grip : 0.02, current.z, forward.z * speed);
         setDeltaMovement(vx, vy, vz);
+    }
+
+    /** Stops the car where it is, for when it's carried or moved. */
+    public void stopDead() {
+        speed = 0.0;
+        setDeltaMovement(Vec3.ZERO);
+    }
+
+    /**
+     * Whether a long vehicle's nose or tail is inside a wall. Its hitbox is square, as every entity's is, so for the
+     * semi it stops well short of the bumpers; these boxes cover the ends, from a block up (so it still climbs
+     * curbs) to its roof. Ordinary cars are short enough that their hitbox does the job.
+     */
+    private boolean endsBlocked() {
+        if (type.length < type.width + 2.0F) {
+            return false;
+        }
+        double half = type.width * 0.45;
+        double reach = type.length / 2.0 - half;
+        Vec3 forward = forward();
+        for (double sign : new double[] {1.0, -1.0}) {
+            double x = getX() + forward.x * reach * sign;
+            double z = getZ() + forward.z * reach * sign;
+            AABB end = new AABB(x - half, getY() + maxUpStep() + 0.01, z - half, x + half, getY() + type.height, z + half);
+            if (!level().noBlockCollision(this, end)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Hitting a wall stops the car instead of leaving it pushing forever at full speed. */
@@ -561,6 +647,10 @@ public class CarEntity extends VehicleEntity {
         if (hornCooldown > 0) {
             hornCooldown--;
         }
+        if (isPassenger()) {
+            lastFuelPos = null; // being carried, not driven: no fuel burned, nobody run over
+            return;
+        }
         Vec3 pos = position();
         double moved = lastFuelPos == null ? 0.0 : Math.sqrt(Mth.square(pos.x - lastFuelPos.x) + Mth.square(pos.z - lastFuelPos.z));
         if (moved > 8.0) {
@@ -569,7 +659,8 @@ public class CarEntity extends VehicleEntity {
         lastFuelPos = pos;
         LivingEntity driver = getControllingPassenger();
         if (driver != null && fuel > 0) {
-            double burn = moved * type.fuelPerBlock * CarsConfig.get(CarsConfig.FUEL_USE) + CarsConfig.get(CarsConfig.IDLE_FUEL_USE);
+            double load = trailer() != null ? 1.4 : 1.0;
+            double burn = moved * type.fuelPerBlock * load * CarsConfig.get(CarsConfig.FUEL_USE) + CarsConfig.get(CarsConfig.IDLE_FUEL_USE);
             setFuel(fuel - burn);
             if (fuel <= 0 && driver instanceof Player player) {
                 player.displayClientMessage(Component.translatable("car.reikocars.out_of_fuel"), true);
@@ -632,10 +723,18 @@ public class CarEntity extends VehicleEntity {
         steerAngle += (target - steerAngle) * 0.4F;
 
         if (isEngineRunning() && tickCount % 3 == 0) {
-            Vec3 tail = forward().scale(-type.length / 2.0 - 0.1);
-            Vec3 side = new Vec3(-0.35, 0, 0).yRot(-getYRot() * Mth.DEG_TO_RAD);
-            level().addParticle(ParticleTypes.SMOKE, getX() + tail.x + side.x, getY() + 0.3, getZ() + tail.z + side.z,
-                    tail.x * 0.02, 0.02, tail.z * 0.02);
+            if (type.isTractor()) {
+                // Out of the tops of the two stacks behind the cab.
+                for (double side : new double[] {-1.19, 1.19}) {
+                    Vec3 stack = new Vec3(side, 4.3, -0.94).yRot(-getYRot() * Mth.DEG_TO_RAD);
+                    level().addParticle(ParticleTypes.SMOKE, getX() + stack.x, getY() + stack.y, getZ() + stack.z, 0.0, 0.06, 0.0);
+                }
+            } else {
+                Vec3 tail = forward().scale(-type.length / 2.0 - 0.1);
+                Vec3 side = new Vec3(-0.35, 0, 0).yRot(-getYRot() * Mth.DEG_TO_RAD);
+                level().addParticle(ParticleTypes.SMOKE, getX() + tail.x + side.x, getY() + 0.3, getZ() + tail.z + side.z,
+                        tail.x * 0.02, 0.02, tail.z * 0.02);
+            }
         }
     }
 
@@ -706,6 +805,12 @@ public class CarEntity extends VehicleEntity {
     @Override
     public boolean canBeCollidedWith() {
         return true;
+    }
+
+    /** The semi is longer than its hitbox: keep drawing it while its ends could be on screen. */
+    @Override
+    public AABB getBoundingBoxForCulling() {
+        return getBoundingBox().inflate(type.length / 2.0, 0.5, type.length / 2.0);
     }
 
     /** Solid to other vehicles; drives through mobs (and hurts them) instead of stopping at them. */

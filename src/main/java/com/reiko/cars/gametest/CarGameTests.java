@@ -13,6 +13,10 @@ import com.reiko.cars.pump.PumpService;
 import com.reiko.cars.registry.ModBlocks;
 import com.reiko.cars.registry.ModEntities;
 import com.reiko.cars.registry.ModItems;
+import com.reiko.cars.trailer.Hitching;
+import com.reiko.cars.trailer.TankerService;
+import com.reiko.cars.trailer.TrailerEntity;
+import com.reiko.cars.trailer.TrailerType;
 import com.reiko.cars.workbench.CarAssemblyRecipe;
 import com.reiko.cars.workbench.CarPart;
 import com.reiko.cars.workbench.CarWorkbenchMenu;
@@ -54,7 +58,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 /**
  * In-world tests: selling fuel for cash and card through the economy mod, the owner's free fill-ups, pipes and
  * buckets, gasoline and diesel, selling into buckets, fuel burned by driving, BuildCraft's fuel values, car locks and
- * building cars at the Car Workbench. Run them with
+ * building cars at the Car Workbench, and semis: diesel, hitching and towing trailers, tankers and car haulers. Run them with
  * {@code ./gradlew runGameTestServer}. The economy mod turns taxes off on the test server, so amounts are exact.
  */
 @GameTestHolder(ReikoCars.MODID)
@@ -158,9 +162,12 @@ public final class CarGameTests {
         check(helper, !CarFuel.isFuel(new FluidStack(bc("oil"), 1)), "crude oil isn't a fuel");
         check(helper, !CarFuel.isFuel(new FluidStack(Fluids.WATER, 1)), "nor is water");
         for (CarType type : CarType.values()) {
-            check(helper, CarFuel.runs(type, new FluidStack(bc("fuel_light"), 1)), type.id() + " runs on gasoline");
-            check(helper, !CarFuel.runs(type, new FluidStack(bc("fuel_dense"), 1)), type.id() + " doesn't run on diesel");
+            boolean diesel = type.fuel() == FuelType.DIESEL;
+            check(helper, CarFuel.runs(type, new FluidStack(bc("fuel_light"), 1)) != diesel, type.id() + " runs on gasoline unless it's diesel");
+            check(helper, CarFuel.runs(type, new FluidStack(bc("fuel_dense"), 1)) == diesel, type.id() + " runs on diesel only if it's diesel");
         }
+        check(helper, CarType.SEMI_TRUCK.fuel() == FuelType.DIESEL, "the semi runs on diesel");
+        check(helper, CarType.SEMI_TRUCK.isTractor() && !CarType.PICKUP_TRUCK.isTractor(), "only the semi pulls trailers");
         near(helper, CarFuel.millibucketsThatFit(new FluidStack(bc("fuel_light"), 1), CarType.SEDAN.tankCapacity()), 8000,
                 "a sedan holds 8 buckets of light fuel");
         helper.succeed();
@@ -565,6 +572,229 @@ public final class CarGameTests {
             helper.assertValueEqual(gas.earned(), 0L, "and the owner didn't pay themselves");
         } finally {
             leave(helper, owner);
+        }
+        helper.succeed();
+    }
+
+    // ---- semis and trailers ----
+
+    /** A long empty yard (10 x 34 blocks) for the semi tests: a rig is 15 blocks long. */
+    private static final String YARD = "yard";
+
+    /** A {@code type} in the yard, its middle at ({@code x}, {@code z}), facing south (+z). */
+    private static CarEntity vehicle(GameTestHelper helper, CarType type, double x, double z) {
+        CarEntity car = ModEntities.car(type).create(helper.getLevel());
+        Vec3 at = helper.absoluteVec(new Vec3(x, 1.0, z));
+        car.moveTo(at.x, at.y, at.z, 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(car);
+        return car;
+    }
+
+    private static TrailerEntity trailer(GameTestHelper helper, TrailerType type, Vec3 relative, float yaw) {
+        Vec3 at = helper.absoluteVec(relative);
+        return trailerAt(helper, type, at, yaw);
+    }
+
+    private static TrailerEntity trailerAt(GameTestHelper helper, TrailerType type, Vec3 at, float yaw) {
+        TrailerEntity trailer = ModEntities.trailer(type).create(helper.getLevel());
+        trailer.moveTo(at.x, at.y, at.z, yaw, 0.0F);
+        helper.getLevel().addFreshEntity(trailer);
+        return trailer;
+    }
+
+    /** A trailer standing right behind {@code tractor}, lined up, its kingpin over the fifth wheel. */
+    private static TrailerEntity readyToHitch(GameTestHelper helper, TrailerType type, CarEntity tractor) {
+        Vec3 fifthWheel = tractor.fifthWheel();
+        Vec3 forward = tractor.forward();
+        Vec3 at = new Vec3(fifthWheel.x - forward.x * TrailerType.KINGPIN_FORWARD, tractor.getY(),
+                fifthWheel.z - forward.z * TrailerType.KINGPIN_FORWARD);
+        return trailerAt(helper, type, at, tractor.getYRot());
+    }
+
+    private static Vec3 facing(float yaw) {
+        float radians = yaw * net.minecraft.util.Mth.DEG_TO_RAD;
+        return new Vec3(-Math.sin(radians), 0.0, Math.cos(radians));
+    }
+
+    private static double flatDistance(Vec3 a, Vec3 b) {
+        return Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.z - b.z) * (a.z - b.z));
+    }
+
+    @GameTest(template = EMPTY)
+    public static void semiRunsOnDiesel(GameTestHelper helper) {
+        ServerPlayer owner = join(helper);
+        ServerPlayer buyer = join(helper);
+        try {
+            GasPumpBlockEntity pump = pump(helper, ModBlocks.DIESEL_PUMP.get(), owner, bc("fuel_dense"), 10_000);
+            CarEntity semi = car(helper, CarType.SEMI_TRUCK);
+            near(helper, CarType.SEMI_TRUCK.tankCapacity(), CarType.SEMI_TRUCK.tankBuckets * 360_000.0, "the tank is measured in buckets of diesel");
+            CarTank tank = new CarTank(semi);
+            helper.assertValueEqual(tank.fill(new FluidStack(bc("fuel_light"), 1000), IFluidHandler.FluidAction.SIMULATE), 0,
+                    "no gasoline in a semi");
+
+            Purse.give(buyer, 2000);
+            ShopActionResult result = PumpService.fill(buyer, pump, semi, 3000, FOUR_DOLLARS, Payment.cash());
+            check(helper, result.success(), "diesel fill-up: " + result.message().getString());
+            near(helper, semi.fuel(), 3 * 360_000, "three buckets of diesel in the tank");
+            helper.assertValueEqual(Purse.value(buyer), 2000L - 1200, "$12.00 paid");
+
+            helper.setBlock(PUMP.above(), net.minecraft.world.level.block.Blocks.AIR);
+            helper.setBlock(PUMP, net.minecraft.world.level.block.Blocks.AIR);
+            GasPumpBlockEntity gas = pump(helper, owner, bc("fuel_light"), 5000);
+            check(helper, !PumpService.fill(buyer, gas, semi, 1000, FOUR_DOLLARS, Payment.cash()).success(), "a gas pump won't fill a semi");
+            helper.assertValueEqual(gas.fuel().getAmount(), 5000, "and pumps nothing");
+        } finally {
+            leave(helper, owner, buyer);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 60)
+    public static void semiTowsATrailer(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        CarEntity semi = vehicle(helper, CarType.SEMI_TRUCK, 5.0, 12.0);
+        semi.setFuel(CarType.SEMI_TRUCK.tankCapacity());
+        TrailerEntity trailer = readyToHitch(helper, TrailerType.BOX_TRAILER, semi);
+        TrailerEntity spare = trailer(helper, TrailerType.TANKER_TRAILER, new Vec3(1.5, 1.0, 30.0), 0.0F);
+        driver.startRiding(semi, true);
+        try {
+            check(helper, Hitching.available(semi, driver) == Hitching.Action.HITCH, "the trailer can be hitched");
+            Hitching.use(driver);
+            check(helper, trailer.getVehicle() == semi && semi.trailer() == trailer, "hitched");
+            check(helper, semi.getControllingPassenger() == driver, "the driver still drives");
+            check(helper, Hitching.available(semi, driver) == Hitching.Action.UNHITCH, "next press unhitches");
+            check(helper, !spare.isPassenger(), "only one trailer at a time");
+        } catch (RuntimeException e) {
+            leave(helper, driver);
+            throw e;
+        }
+        Vec3 start = semi.position();
+        // 10 ticks straight ahead, a block a tick, then 10 ticks turning 4.5 degrees (about the back axles, as a
+        // semi does) and half a block a tick, as the driver's client would report it. Each tick, the trailer's kingpin
+        // must still be on the fifth wheel.
+        Vec3[] at = new Vec3[21];
+        float[] yaw = new float[21];
+        at[0] = start;
+        double back = CarType.SEMI_TRUCK.pivotBack();
+        for (int tick = 1; tick <= 20; tick++) {
+            yaw[tick] = tick <= 10 ? 0.0F : (tick - 10) * 4.5F;
+            Vec3 before = facing(yaw[tick - 1]);
+            Vec3 after = facing(yaw[tick]);
+            double step = tick <= 10 ? 1.0 : 0.5;
+            at[tick] = at[tick - 1].add(before.scale(-back)).subtract(after.scale(-back)).add(after.scale(step));
+        }
+        for (int tick = 1; tick <= 21; tick++) {
+            int now = tick;
+            helper.runAtTickTime(tick, () -> {
+                try {
+                    if (now > 1) {
+                        double gap = flatDistance(trailer.kingpin(), semi.fifthWheel());
+                        helper.assertTrue(gap < 0.01, "kingpin " + gap + " blocks off the fifth wheel after tick " + (now - 1));
+                    }
+                    if (now == 11) {
+                        near(helper, trailer.getYRot(), 0.0, "straight behind on the straight");
+                        near(helper, flatDistance(trailer.position(), semi.position()), 32 / 16.0 + TrailerType.KINGPIN_FORWARD,
+                                "trailer middle behind the semi's");
+                    }
+                    if (now <= 20) {
+                        semi.setYRot(yaw[now]);
+                        semi.setPos(at[now].x, at[now].y, at[now].z);
+                        return;
+                    }
+                    float lag = trailer.getYRot();
+                    helper.assertTrue(lag > 8.0F && lag < 40.0F, "the trailer swings round behind the turn, at " + lag + " degrees");
+                    double burned = CarType.SEMI_TRUCK.tankCapacity() - semi.fuel();
+                    double distance = 10.0 + 10 * 0.5;
+                    helper.assertTrue(burned > distance * CarType.SEMI_TRUCK.fuelPerBlock * 1.3,
+                            "pulling a trailer burns more: " + burned + " MJ for " + distance + " blocks");
+
+                    Hitching.use(driver);
+                    check(helper, !trailer.isPassenger() && semi.trailer() == null, "unhitched");
+                    check(helper, Hitching.available(semi, driver) == Hitching.Action.HITCH, "and it can be hitched again where it stands");
+                    leave(helper, driver);
+                    helper.succeed();
+                } catch (RuntimeException e) {
+                    leave(helper, driver);
+                    throw e;
+                }
+            });
+        }
+    }
+
+    @GameTest(template = YARD)
+    public static void tankerFillsAndEmpties(GameTestHelper helper) {
+        ServerPlayer owner = join(helper);
+        try {
+            GasPumpBlockEntity pump = pump(helper, ModBlocks.DIESEL_PUMP.get(), owner, bc("fuel_dense"), 0);
+            TrailerEntity tanker = trailer(helper, TrailerType.TANKER_TRAILER, new Vec3(3.5, 1.0, 6.0), 0.0F);
+            BlockPos cauldron = new BlockPos(6, 1, 5);
+            helper.setBlock(cauldron, net.minecraft.world.level.block.Blocks.WATER_CAULDRON.defaultBlockState()
+                    .setValue(net.minecraft.world.level.block.LayeredCauldronBlock.LEVEL, 3));
+            helper.setBlock(new BlockPos(9, 1, 30), net.minecraft.world.level.block.Blocks.WATER_CAULDRON.defaultBlockState()
+                    .setValue(net.minecraft.world.level.block.LayeredCauldronBlock.LEVEL, 3));
+
+            TankerService.load(owner, tanker);
+            helper.assertValueEqual(tanker.tank().getFluidAmount(), 1000, "a bucket of water from the cauldron beside it, not the far one");
+            helper.assertBlockPresent(net.minecraft.world.level.block.Blocks.CAULDRON, cauldron);
+            tanker.tank().setFluid(FluidStack.EMPTY);
+
+            tanker.tank().fill(new FluidStack(bc("fuel_light"), 5000), IFluidHandler.FluidAction.EXECUTE);
+            TankerService.unload(owner, tanker);
+            helper.assertValueEqual(tanker.tank().getFluidAmount(), 5000, "a diesel pump takes no gasoline");
+            helper.assertValueEqual(pump.fuel().getAmount(), 0, "so it stays empty");
+
+            tanker.tank().setFluid(new FluidStack(bc("fuel_dense"), 20_000));
+            TankerService.unload(owner, tanker);
+            check(helper, pump.fuel().getAmount() > 0, "diesel goes into the diesel pump");
+            helper.assertValueEqual(pump.fuel().getAmount() + tanker.tank().getFluidAmount(), 20_000, "none spilled");
+
+            int left = tanker.tank().getFluidAmount();
+            TankerService.load(owner, tanker);
+            helper.assertValueEqual(tanker.tank().getFluidAmount(), left, "pumps never give fuel back to a tanker");
+            check(helper, tanker.toItem().has(com.reiko.cars.registry.ModDataComponents.TANK_FLUID.get()), "a picked-up tanker keeps its load");
+        } finally {
+            leave(helper, owner);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD)
+    public static void carHaulerCarriesTwoCars(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        try {
+            TrailerEntity hauler = trailer(helper, TrailerType.CAR_HAULER, new Vec3(5.0, 1.0, 20.0), 0.0F);
+            Vec3 behind = helper.relativeVec(hauler.rear()).add(0.0, 0.0, -(CarType.SEDAN.length / 2.0 + 1.0));
+            CarEntity[] cars = new CarEntity[3];
+            for (int i = 0; i < cars.length; i++) {
+                cars[i] = vehicle(helper, CarType.SEDAN, behind.x, behind.z);
+                driver.startRiding(cars[i], true);
+                if (i < 2) {
+                    check(helper, Hitching.available(cars[i], driver) == Hitching.Action.LOAD, "car " + (i + 1) + " can drive on");
+                    Hitching.use(driver);
+                    check(helper, cars[i].getVehicle() == hauler, "car " + (i + 1) + " is on the hauler");
+                    driver.stopRiding();
+                    check(helper, cars[i].getVehicle() == hauler, "and stays on when its driver gets out");
+                } else {
+                    check(helper, Hitching.available(cars[i], driver) == null, "no room for a third");
+                    Hitching.use(driver);
+                    check(helper, !cars[i].isPassenger(), "so it stays on the ground");
+                    driver.stopRiding();
+                    cars[i].discard();
+                }
+            }
+            helper.assertValueEqual(hauler.cars().size(), 2, "two cars aboard");
+            CarEntity extra = vehicle(helper, CarType.SPORTS_CAR, 1.5, 4.0);
+            check(helper, !extra.startRiding(hauler), "and no more");
+            extra.discard();
+
+            driver.startRiding(cars[1], true);
+            check(helper, Hitching.available(cars[1], driver) == Hitching.Action.UNLOAD, "the back car can drive off");
+            Hitching.use(driver);
+            check(helper, !cars[1].isPassenger(), "it's off");
+            check(helper, flatDistance(cars[1].position(), hauler.rear()) < CarType.SEDAN.length / 2.0 + 1.5, "just behind the hauler");
+            helper.assertValueEqual(hauler.cars().size(), 1, "one car left aboard");
+        } finally {
+            leave(helper, driver);
         }
         helper.succeed();
     }

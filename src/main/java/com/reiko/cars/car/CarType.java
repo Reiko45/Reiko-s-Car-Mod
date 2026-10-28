@@ -1,8 +1,12 @@
 package com.reiko.cars.car;
 
+import static com.reiko.cars.car.FuelType.DIESEL;
+import static com.reiko.cars.car.FuelType.GASOLINE;
+
 import java.util.List;
 import java.util.Locale;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The kinds of car and how each one drives. Speeds are in blocks per tick (1.0 is 72 km/h), fuel in BuildCraft MJ.
@@ -10,20 +14,24 @@ import net.minecraft.world.phys.Vec3;
  * <p>Seats are where each passenger's hips go, in model pixels (16 to a block) measured from the middle of the car
  * on the ground: {@code x} toward the car's left (the driver's side), {@code y} up, {@code z} toward the front. They
  * match the seats in the Blockbench models in {@code blockbench/}; move both together.
+ *
+ * <p>Tank sizes are in buckets of the car's own fuel: light fuel for gasoline cars, dense fuel for diesel ones. A
+ * tractor's fifth wheel, where a trailer's kingpin sits, is given in pixels behind the middle and up from the ground.
  */
 public enum CarType {
-    //          width  height length wheel  top    accel   brake   reverse turn  tank MJ/block colour  seat off-road bed
-    SEDAN(       2.25f, 1.8f,  3.5f,  5,    0.90f, 0.012f, 0.040f, 0.25f, 4.0f,  8, 144, 0x2E5EAA,  7, false, 0,
+    //          width  height length wheel  top    accel   brake   reverse turn  tank MJ/block colour  seat off-road bed fuel     fifth wheel
+    SEDAN(       2.25f, 1.8f,  3.5f,  5,    0.90f, 0.012f, 0.040f, 0.25f, 4.0f,  8, 144, 0x2E5EAA,  7, false, 0, GASOLINE, noFifthWheel(),
             seat(6, -2), seat(-6, -2), seat(6, 9), seat(-6, 9)),
-    SPORTS_CAR(  2.25f, 1.6f,  3.5f,  5,    1.30f, 0.020f, 0.050f, 0.25f, 4.5f,  6, 216, 0xC0262D,  5, false, 0,
+    SPORTS_CAR(  2.25f, 1.6f,  3.5f,  5,    1.30f, 0.020f, 0.050f, 0.25f, 4.5f,  6, 216, 0xC0262D,  5, false, 0, GASOLINE, noFifthWheel(),
             seat(6, 4), seat(-6, 4)),
-    PICKUP_TRUCK(2.4f,  2.0f,  3.75f, 6,    0.80f, 0.010f, 0.035f, 0.22f, 3.5f, 12, 180, 0xE9E9E4, 10, false, 3,
+    PICKUP_TRUCK(2.4f,  2.0f,  3.75f, 6,    0.80f, 0.010f, 0.035f, 0.22f, 3.5f, 12, 180, 0xE9E9E4, 10, false, 3, GASOLINE, noFifthWheel(),
             seat(6, -1), seat(-6, -1)),
-    OFF_ROADER(  2.4f,  2.05f, 3.6f,  7,    0.85f, 0.014f, 0.040f, 0.25f, 4.0f, 10, 168, 0xC9A15A, 11, true,  0,
-            seat(6, -3), seat(-6, -3), seat(6, 11), seat(-6, 11));
+    OFF_ROADER(  2.4f,  2.05f, 3.6f,  7,    0.85f, 0.014f, 0.040f, 0.25f, 4.0f, 10, 168, 0xC9A15A, 11, true,  0, GASOLINE, noFifthWheel(),
+            seat(6, -3), seat(-6, -3), seat(6, 11), seat(-6, 11)),
+    /** A semi tractor: pulls trailers on the fifth wheel behind its sleeper. Its tank is in buckets of dense fuel. */
+    SEMI_TRUCK(  2.4f,  3.6f,  6.25f, 8,    0.85f, 0.010f, 0.035f, 0.20f, 3.2f, 12, 1440, 0x2E6B3A, 25, false, 0, DIESEL, fifthWheel(32, 18),
+            seat(9, -12), seat(-9, -12));
 
-    /** MJ in a bucket of BuildCraft's light fuel. Tank sizes are given in buckets of it. */
-    public static final double LIGHT_FUEL_MJ = 90_000;
     /**
      * How far a seated player's model hangs below the attachment point, in pixels: a player sits 0.6 blocks lower
      * than where they're attached, and their (15/16-scale) legs put the hips 11.25 pixels above their feet.
@@ -52,11 +60,14 @@ public enum CarType {
     public final boolean offRoad;
     /** Rows of 9 slots in the truck bed, or 0 for none. */
     public final int storageRows;
+    private final FuelType fuel;
+    @Nullable
+    private final int[] fifthWheel;
     private final List<int[]> seats;
 
     CarType(float width, float height, float length, int wheelRadius, float topSpeed, float acceleration, float braking, float reverseSpeed,
             float turnRate, int tankBuckets, double fuelPerBlock, int defaultColor, int seatHeight, boolean offRoad,
-            int storageRows, int[]... seats) {
+            int storageRows, FuelType fuel, @Nullable int[] fifthWheel, int[]... seats) {
         this.id = name().toLowerCase(Locale.ROOT);
         this.width = width;
         this.height = height;
@@ -73,7 +84,19 @@ public enum CarType {
         this.seatHeight = seatHeight;
         this.offRoad = offRoad;
         this.storageRows = storageRows;
+        this.fuel = fuel;
+        this.fifthWheel = fifthWheel;
         this.seats = List.of(seats);
+    }
+
+    /** An ordinary car, which can't pull a trailer. */
+    @Nullable
+    private static int[] noFifthWheel() {
+        return null;
+    }
+
+    private static int[] fifthWheel(int back, int height) {
+        return new int[] {back, height};
     }
 
     /** A seat {@code x} pixels to the car's left and {@code back} pixels behind its middle. */
@@ -95,14 +118,36 @@ public enum CarType {
         return seats.size();
     }
 
-    /** What the car runs on. Every car runs on gasoline for now; diesel pumps sell diesel by the bucket. */
+    /** What the car runs on: gasoline, or diesel for the semi. */
     public FuelType fuel() {
-        return FuelType.GASOLINE;
+        return fuel;
     }
 
     /** Fuel a full tank holds, in MJ. */
     public double tankCapacity() {
-        return tankBuckets * LIGHT_FUEL_MJ;
+        return tankBuckets * fuel.bucketEnergy;
+    }
+
+    /** Whether it can pull a trailer. */
+    public boolean isTractor() {
+        return fifthWheel != null;
+    }
+
+    /**
+     * Where a trailer's kingpin sits, relative to the car's position (the middle of its footprint, on the ground) when
+     * it faces south (+z), in blocks. Rotate it by the car's yaw before use. Only for tractors.
+     */
+    /**
+     * How far behind its middle the vehicle turns about, in blocks. A tractor turns about its back axles, which are
+     * under the fifth wheel, as a real one does: then the fifth wheel follows the cab round a bend instead of being
+     * flung out sideways, and the trailer follows it. Cars turn about their middle.
+     */
+    public double pivotBack() {
+        return fifthWheel == null ? 0.0 : fifthWheel[0] / 16.0;
+    }
+
+    public Vec3 fifthWheelOffset() {
+        return fifthWheel == null ? Vec3.ZERO : new Vec3(0.0, fifthWheel[1] / 16.0, -fifthWheel[0] / 16.0);
     }
 
     /**

@@ -1,7 +1,7 @@
 # Reiko's Car Mod
 
-Drivable cars for Minecraft 1.21.1 (NeoForge) that run on **BuildCraft Reborn**'s fuel, and gas and diesel pumps
-that sell it for **cash or card** through **Reiko's Economy Mod**.
+Drivable cars and semi trucks for Minecraft 1.21.1 (NeoForge) that run on **BuildCraft Reborn**'s fuel, trailers
+for the semis to pull, and gas and diesel pumps that sell the fuel for **cash or card** through **Reiko's Economy Mod**.
 
 Refine oil into fuel with BuildCraft, pipe it into a pump, set a price, and other players pay you to fill up.
 
@@ -20,20 +20,24 @@ Refine oil into fuel with BuildCraft, pipe it into a pump, set a price, and othe
 | Sports Car | 2 | 58 mph | 6 buckets | Fast, quick to accelerate, thirsty |
 | Pickup Truck | 2 | 36 mph | 12 buckets | 27-slot truck bed (sneak + use) |
 | Off-Roader | 4 | 38 mph | 10 buckets | Keeps full speed on grass, sand and snow |
+| Semi Truck | 2 | 38 mph | 12 buckets of diesel | Runs on diesel and pulls a trailer (see [Semis and trailers](#semis-and-trailers)) |
 
-Tank sizes are in buckets of BuildCraft's **light fuel**. A sedan goes about 600 blocks on a bucket of it.
+Tank sizes are in buckets of the car's own fuel: BuildCraft's **light fuel** for the cars, **dense fuel** for the
+semi. A sedan goes about 600 blocks on a bucket; a semi about 250, or 180 pulling a trailer.
 
 **Driving:** right-click a car to get in (the first person in drives). The movement keys drive and steer, **jump**
-is the handbrake and **sneak** gets out. **H** sounds the horn and **L** locks or unlocks the car. While you're
+is the handbrake and **sneak** gets out. **H** sounds the horn, **L** locks or unlocks the car and **G** hitches a
+trailer or loads a car onto a car hauler. While you're
 in a car, a dashboard in the bottom right shows your speed and a fuel gauge.
 
-- **Fuel:** cars burn fuel for every block they cover, and a little while idling with someone at the wheel. Every
-  car runs on **gasoline**: BuildCraft's Light Fuel (and the Mixed Light and Gaseous Fuels), or other mods' gasoline,
-  ethanol, kerosene and LPG. How far a bucket goes comes from BuildCraft's own fuel values. **Diesel** (BuildCraft's
-  Dense Fuel and Mixed Heavy Fuels, and other mods' diesel and biodiesel) doesn't run any car yet, and neither does
-  crude oil. The `reikocars:gasoline` and `reikocars:diesel` fluid tags decide which fuel is which, so a data pack can
-  move fluids between them.
-- **Filling up:** buy gasoline at a gas pump, or (if the server allows it) pour a bucket of it straight into the car.
+- **Fuel:** cars burn fuel for every block they cover, and a little while idling with someone at the wheel. The cars
+  run on **gasoline**: BuildCraft's Light Fuel (and the Mixed Light and Gaseous Fuels), or other mods' gasoline,
+  ethanol, kerosene and LPG. The semi runs on **diesel**: BuildCraft's Dense Fuel and Mixed Heavy Fuels, or other
+  mods' diesel and biodiesel. Neither takes the other's fuel, and nothing runs on crude oil. How far a bucket goes
+  comes from BuildCraft's own fuel values. The `reikocars:gasoline` and `reikocars:diesel` fluid tags decide which
+  fuel is which, so a data pack can move fluids between them. A car's tooltip says what it runs on.
+- **Filling up:** buy gasoline at a gas pump and diesel at a diesel pump, or (if the server allows it) pour a bucket
+  of the right fuel straight into the tank.
 - **Ownership:** whoever puts a car down owns it. New cars start **locked**, so only the owner can get in, though
   anyone can ride along while the owner is inside. Only the owner (or an admin) can pick a car back up. Punch it a
   few times and it drops as an item, keeping its fuel and paint. A pickup's bed spills its items.
@@ -44,10 +48,48 @@ in a car, a dashboard in the bottom right shows your speed and a fuel gauge.
   on, and never your own pets.
 - Cars climb a full block, so curbs, slabs and stairs don't stop them. Cars can't be blown up or burned.
 
+## Semis and trailers
+
+The **Semi Truck** pulls one trailer at a time. There are three:
+
+| Trailer | Carries |
+| --- | --- |
+| **Box Trailer** | 54 slots of cargo. Right-click it to open it, like a double chest |
+| **Tanker Trailer** | 64 buckets of any one fluid: fuel, oil, water, lava, other mods' fluids |
+| **Car Hauler** | 2 cars, one behind the other |
+
+**Putting a trailer down:** use the trailer item on the ground. It stands on its landing legs facing the way you
+look, so face the way you'll drive off. Whoever puts it down owns it.
+
+**Hitching:** back the semi up under the trailer's front, so the fifth wheel (the plate behind the cab) is under
+the trailer's nose and the two are roughly in line (within 45°), then press **G**. The dashboard shows
+**[G] Hitch trailer** when you're close enough. Press G again to drop it off where it stands.
+
+**Driving a rig:** the trailer swings round behind you on bends and cuts the corner, as a real one does, and it can't
+fold back on itself past 100°. The semi turns about its back wheels, so take corners wide. Pulling a trailer, the
+semi is a little slower to get going and burns 40% more fuel. In third person the camera stands far enough back to
+see the whole rig. Trailers aren't solid: you can walk through them and they never snag the semi.
+
+**The tanker:** fill or empty it with a bucket (or any fluid container) by right-clicking it. To move fuel in bulk,
+park it with a tank beside it (within 2 blocks of its sides or ends) and right-click it with an empty hand: **Load**
+takes from every tank, cauldron or machine nearby that will give up its fluid, and **Unload** fills everything
+nearby that will take it, nearest first. So a tanker can fill up at a BuildCraft refinery's tanks and unload into a
+row of pumps. Pumps only take their own kind of fuel, and never give any back, so you can't load from someone's pump.
+A picked-up tanker keeps its load.
+
+**The car hauler:** drive a car up to the hauler's back end, lined up with it, and press **G**: the car drives on
+and stays on when you get out. With both spots full, nothing more goes on. Get in a car on the hauler and press **G**
+to drive it off the back. Hitch the hauler to a semi and its cars go wherever it goes.
+
+**Ownership and paint:** as with cars. **Sneak + right-click** with an empty hand locks or unlocks a trailer (only
+its owner can), and a locked trailer can only be opened, hitched or loaded by its owner. Right-click with a dye to
+paint it. Punch it to pick it up. A box trailer spills its cargo.
+
 ## Building a car
 
 Cars are put together at a **Car Workbench**. Each car has three parts of its own (a **chassis**, a **body** and an
-**interior**), and they all take a **Car Engine** and four **Tires**.
+**interior**), and they all take four **Tires** and an engine: a **Car Engine**, or a **Diesel Engine** for the
+semi.
 
 1. Craft the parts (see [Recipes](#recipes)) and place a Car Workbench.
 2. Right-click the workbench. The buttons along the top are the cars it can build. Hover over one to see which parts
@@ -76,15 +118,15 @@ There are two pumps, which work the same way:
 
 - The **Gas Pump** (red, "GAS" on its sign) sells gasoline.
 - The **Diesel Pump** (green, "DIESEL" on its sign) sells diesel: BuildCraft's Dense Fuel or Mixed Heavy Fuels, or
-  other mods' diesel and biodiesel. No car runs on diesel yet, so for now it sells diesel by the bucket, to run
-  BuildCraft's combustion engines and other mods' generators.
+  other mods' diesel and biodiesel. It fills semis, and sells diesel by the bucket for BuildCraft's combustion
+  engines and other mods' generators.
 
 A pump is two blocks tall. Whoever places it owns it, and only they (or an admin) can break it. A broken pump keeps
 its fuel and price on the item.
 
 **Getting fuel in:** connect any pipe (BuildCraft's or another mod's) to either half of the pump, from any side.
 The pump holds 16 buckets of its own kind of fuel, one fluid at a time. Nothing can be piped back out, so the only
-way out is to sell it. The owner can also fill it from a bucket.
+way out is to sell it. The owner can also fill it from a bucket, and anyone can unload a tanker into it.
 
 **Buying fuel:** right-click the pump. The screen shows the fuel in the pump and its price. A pump fills either the
 car at the hose (within 6 blocks) or the **empty buckets** you carry. The little button at the start of the car row
@@ -111,16 +153,21 @@ of their own pump in buckets.
 | Car Engine | iron ingots, iron gears, pistons around a BuildCraft **Combustion Engine** |
 | Gas Pump | iron ingots, glass pane, BuildCraft **Tank**, iron gear |
 | Diesel Pump | as the Gas Pump, with green dye either side of the iron gear |
+| Diesel Engine | as the Car Engine, with an iron block in place of the top gear |
+| Box Trailer | iron ingots on top, chest, iron block, chest across the middle, two tires below |
+| Tanker Trailer | iron ingots on top, BuildCraft **Tank**, iron block, Tank across the middle, two tires below |
+| Car Hauler | iron bars on top, iron ingot, iron block, iron ingot across the middle, two tires below |
 
 The car parts, crafted on an ordinary crafting table:
 
-| Part | Sedan | Sports Car | Pickup Truck | Off-Roader |
-| --- | --- | --- | --- | --- |
-| **Chassis**: iron rails (`I I`) around a middle | iron gear | gold gear | iron block | iron gear between two pistons |
-| **Body**: glass panes on top, iron below, a dye in the middle | blue dye | red dye, gold ingots beside it | white dye, chest at the bottom | yellow dye, iron bars beside it |
-| **Interior**: a dashboard on top, redstone in the middle, seats below | clock, wool seats | clock, leather seats, gold trim | clock, leather bench | compass, wool and leather |
+| Part | Sedan | Sports Car | Pickup Truck | Off-Roader | Semi Truck |
+| --- | --- | --- | --- | --- | --- |
+| **Chassis**: iron rails (`I I`) around a middle | iron gear | gold gear | iron block | iron gear between two pistons | iron gear between two iron blocks |
+| **Body**: glass panes on top, iron below, a dye in the middle | blue dye | red dye, gold ingots beside it | white dye, chest at the bottom | yellow dye, iron bars beside it | green dye, iron block at the bottom (the cab) |
+| **Interior**: a dashboard on top, redstone in the middle, seats below | clock, wool seats | clock, leather seats, gold trim | clock, leather bench | compass, wool and leather | clock, leather, a bed (the sleeper) |
 
-Then at the Car Workbench: chassis + body + interior + Car Engine + 4 Tires = the car.
+Then at the Car Workbench: chassis + body + interior + engine + 4 Tires = the car. The semi takes a Diesel Engine;
+the rest take a Car Engine.
 
 The workbench recipes are data files (`data/reikocars/recipe/sedan.json` and so on, type `reikocars:car_assembly`),
 so a data pack can change a car's parts or add new vehicles. Each one names a `chassis`, `body`, `interior`, `engine`
@@ -155,11 +202,12 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
-./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench), then exit
+./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis and trailers), then exit
 ./gradlew runClient         # start a dev client
 ./gradlew runClient -Pshowcase  # build a test scene, buy fuel, drive, save screenshots to run/screenshots/, quit
 ./gradlew runClient -Pshowcase=workbench  # the same for the Car Workbench and its JEI pages
 ./gradlew runClient -Pshowcase=diesel     # the same for the gas and diesel pumps and selling buckets
+./gradlew runClient -Pshowcase=semi       # the same for semis, hitching, driving a rig, trailers and the tanker
 ```
 
 ## Editing the models
@@ -171,6 +219,12 @@ the mod relies on:
 - `trim`: glass (may be see-through), seats, bumpers, grille and so on, drawn as painted.
 - `lights`: head- and taillights, which glow while the engine runs.
 - `wheel_fl`, `wheel_fr`, `wheel_rl`, `wheel_rr`: each pivoting on its axle. They roll, and the front pair steers.
+- `wheel_rl2`, `wheel_rr2` (the semi only): the second rear axle, which rolls with the first.
+
+The trailers (`box_trailer`, `tanker_trailer`, `car_hauler`) work the same way, with `body`, `trim`, `lights` and
+two axles of wheels, `wheel_l1`, `wheel_r1`, `wheel_l2` and `wheel_r2`. Their textures are in
+`textures/entity/trailer/`. The front faces north, and the kingpin (which sits on the semi's fifth wheel) must stay
+56 pixels ahead of the middle and 18 up, as set in `trailer/TrailerType.java`.
 
 The car's front faces north (−Z), and the driver's side is **−X** in Blockbench. To change a car, edit its
 `.bbmodel`, save the texture over `src/main/resources/assets/reikocars/textures/entity/car/<car>.png`, use
@@ -184,15 +238,16 @@ src/main/java/com/reiko/cars/
 ├── ReikoCars.java        mod entry point
 ├── car/                  the car entity and its types, fuel (CarFuel, CarTank), the car item
 ├── pump/                 the gas and diesel pump block, its block entity, menu, protection, and PumpService (selling fuel)
+├── trailer/              the trailers, their item, hitching and car hauling (Hitching), and the tanker (TankerService)
 ├── workbench/            the Car Workbench block and menu, the car parts, and the car_assembly recipe type
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
-├── network/              packets: pump actions, horn and lock
+├── network/              packets: pump actions, horn, lock and hitch, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car renderer and models, dashboard, pump and workbench screens, pump display, engine sound, keys
+├── client/               car and trailer renderers and models, dashboard, pump, workbench and tanker screens, pump display, engine sound, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
-blockbench/               the car models
+blockbench/               the car, semi and trailer models
 ```
 
 ## License

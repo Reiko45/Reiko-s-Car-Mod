@@ -16,18 +16,23 @@ import org.jetbrains.annotations.Nullable;
  * fluids between them. Each car runs on one kind ({@link CarType#fuel()}) and each pump sells one kind.
  */
 public enum FuelType {
-    GASOLINE("gas_pump", 0xFFC62828),
-    DIESEL("diesel_pump", 0xFF2E7D32);
+    GASOLINE("gas_pump", 0xFFC62828, 90_000),
+    DIESEL("diesel_pump", 0xFF2E7D32, 360_000);
 
     private final String id = name().toLowerCase(Locale.ROOT);
     private final TagKey<Fluid> tag = FluidTags.create(ReikoCars.id(id));
     private final String pumpId;
     /** The colour of the fuel's name on a pump's sign. */
     public final int signColor;
+    /**
+     * MJ in a bucket of BuildCraft's own fuel of this kind (light fuel, dense fuel), the unit car tanks are measured in.
+     */
+    public final double bucketEnergy;
 
-    FuelType(String pumpId, int signColor) {
+    FuelType(String pumpId, int signColor, double bucketEnergy) {
         this.pumpId = pumpId;
         this.signColor = signColor;
+        this.bucketEnergy = bucketEnergy;
     }
 
     /** The pump that sells it: {@code gas_pump} or {@code diesel_pump}. */

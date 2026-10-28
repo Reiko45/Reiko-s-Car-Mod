@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "K": {
+      "item": "buildcraftreborn:tank"
+    },
+    "B": {
+      "tag": "c:storage_blocks/iron"
+    },
+    "T": {
+      "item": "reikocars:tire"
+    }
+  },
+  "pattern": [
+    "III",
+    "KBK",
+    "T T"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:tanker_trailer"
+  }
+}

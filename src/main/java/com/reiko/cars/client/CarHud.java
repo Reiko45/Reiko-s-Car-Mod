@@ -1,6 +1,7 @@
 package com.reiko.cars.client;
 
 import com.reiko.cars.car.CarEntity;
+import com.reiko.cars.trailer.Hitching;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -70,6 +71,14 @@ public final class CarHud implements LayeredDraw.Layer {
         if (fuel <= 0) {
             Component empty = Component.translatable("hud.reikocars.out_of_fuel");
             graphics.drawString(font, empty, x + (WIDTH - font.width(empty)) / 2, barY - 10, 0xFF5252, true);
+        }
+
+        // What the hitch key would do here, just above the dashboard.
+        Hitching.Action action = car.getControllingPassenger() == minecraft.player ? Hitching.available(car, minecraft.player) : null;
+        if (action != null) {
+            Component hint = Component.translatable("hud.reikocars.hitch." + action.name().toLowerCase(java.util.Locale.ROOT),
+                    ReikoCarsClient.HITCH.getTranslatedKeyMessage());
+            graphics.drawString(font, hint, x + WIDTH - font.width(hint), y - 11, 0xFFFFD54F, true);
         }
     }
 }

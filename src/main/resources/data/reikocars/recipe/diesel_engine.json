@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "tag": "c:storage_blocks/iron"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    },
+    "E": {
+      "item": "buildcraftreborn:engine_iron"
+    },
+    "G": {
+      "tag": "c:gears/iron"
+    }
+  },
+  "pattern": [
+    "IBI",
+    "PEP",
+    "IGI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:diesel_engine"
+  }
+}

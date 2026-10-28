@@ -3,7 +3,10 @@ package com.reiko.cars.dev;
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarEntity;
 import com.reiko.cars.car.CarType;
+import com.reiko.cars.network.CarActionPayload;
 import com.reiko.cars.network.PumpActionPayload;
+import com.reiko.cars.trailer.TrailerEntity;
+import com.reiko.cars.trailer.TrailerType;
 import com.reiko.cars.pump.GasPumpBlock;
 import com.reiko.cars.pump.GasPumpBlockEntity;
 import com.reiko.cars.pump.PumpMenu;
@@ -67,7 +70,10 @@ import net.neoforged.neoforge.network.PacketDistributor;
  */
 @EventBusSubscriber(modid = ReikoCars.MODID, value = Dist.CLIENT)
 public final class DevShowcase {
-    /** "true" for the cars and pumps, "workbench" for the Car Workbench, "diesel" for the diesel pump, "false" for none. */
+    /**
+     * "true" for the cars and pumps, "workbench" for the Car Workbench, "diesel" for the diesel pump, "semi" for semis
+     * and trailers, "false" for none.
+     */
     private static final String MODE = System.getProperty("reikocars.showcase", "false");
     private static final boolean ENABLED = !MODE.equals("false");
     private static final BlockPos BENCH = new BlockPos(2, -60, 3);
@@ -109,6 +115,8 @@ public final class DevShowcase {
             workbenchScript();
         } else if (MODE.equals("diesel")) {
             dieselScript();
+        } else if (MODE.equals("semi")) {
+            semiScript();
         } else {
             script();
         }
@@ -139,7 +147,11 @@ public final class DevShowcase {
     }
 
     private static void look(Minecraft minecraft, double x, double y, double z, float yaw, float pitch) {
-        server(minecraft, player -> player.teleportTo(player.serverLevel(), x, y, z, yaw, pitch));
+        server(minecraft, player -> {
+            player.teleportTo(player.serverLevel(), x, y, z, yaw, pitch);
+            player.getAbilities().flying = true; // hold still in mid-air for the shot
+            player.onUpdateAbilities();
+        });
     }
 
     private static void shot(Minecraft minecraft, String name) {
@@ -150,6 +162,12 @@ public final class DevShowcase {
     private static CarEntity car(ServerLevel level, CarType type) {
         return level.getEntitiesOfClass(CarEntity.class, new net.minecraft.world.phys.AABB(-40, -70, -40, 40, -40, 40),
                 car -> car.carType() == type).getFirst();
+    }
+
+    /** The first {@code type} found, the one with or without a trailer. */
+    private static CarEntity car(ServerLevel level, CarType type, boolean towing) {
+        return level.getEntitiesOfClass(CarEntity.class, new net.minecraft.world.phys.AABB(-40, -70, -40, 40, -40, 40),
+                car -> car.carType() == type && (car.trailer() != null) == towing).getFirst();
     }
 
     private static Fluid fuel(String name) {
@@ -468,5 +486,149 @@ public final class DevShowcase {
         }));
         at(305, mc -> shot(mc, "27_diesel_refused_by_car"));
         at(320, mc -> mc.stop());
+    }
+
+    // ---- semis and trailers: ./gradlew runClient -Pshowcase=semi ----
+
+    private static TrailerEntity trailer(ServerLevel level, TrailerType type, double x, double z, float yaw) {
+        TrailerEntity trailer = ModEntities.trailer(type).create(level);
+        trailer.moveTo(x, -60.0, z, yaw, 0.0F);
+        level.addFreshEntity(trailer);
+        return trailer;
+    }
+
+    /** A trailer standing behind {@code tractor}, its kingpin on the fifth wheel, turned {@code angle} degrees. */
+    private static TrailerEntity behind(ServerLevel level, TrailerType type, CarEntity tractor, float angle) {
+        float yaw = tractor.getYRot() + angle;
+        float radians = yaw * net.minecraft.util.Mth.DEG_TO_RAD;
+        net.minecraft.world.phys.Vec3 fifthWheel = tractor.fifthWheel();
+        return trailer(level, type, fifthWheel.x + Math.sin(radians) * TrailerType.KINGPIN_FORWARD,
+                fifthWheel.z - Math.cos(radians) * TrailerType.KINGPIN_FORWARD, yaw);
+    }
+
+    private static CarEntity spawned(ServerLevel level, CarType type, double x, double z, float yaw, double fuel) {
+        CarEntity car = ModEntities.car(type).create(level);
+        car.moveTo(x, -60.0, z, yaw, 0.0F);
+        car.setFuel(type.tankCapacity() * fuel);
+        level.addFreshEntity(car);
+        return car;
+    }
+
+    private static void semiScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                for (int x = -50; x <= 50; x++) {
+                    for (int z = -26; z <= 26; z++) {
+                        BlockState ground = Math.floorMod(z, 12) == 6 && x % 4 != 0 ? Blocks.WHITE_CONCRETE.defaultBlockState()
+                                : Blocks.GRAY_CONCRETE.defaultBlockState();
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), ground);
+                    }
+                }
+                // Row 1: a semi with a box trailer lined up behind it, ready to hitch, and a diesel pump.
+                CarEntity semi = spawned(level, CarType.SEMI_TRUCK, 0.5, 0.5, -90.0F, 0.7);
+                behind(level, TrailerType.BOX_TRAILER, semi, 0.0F);
+                placePump(level, ModBlocks.DIESEL_PUMP.get(), new BlockPos(3, -60, -3), player, "fuel_dense", 9_000, 1450);
+                // Row 2: a red semi pulling a tanker of diesel, swung round as if turning.
+                CarEntity red = spawned(level, CarType.SEMI_TRUCK, 4.5, 12.5, -90.0F, 1.0);
+                red.setColor(0xB02E26);
+                TrailerEntity tanker = behind(level, TrailerType.TANKER_TRAILER, red, 25.0F);
+                tanker.tank().fill(new FluidStack(fuel("fuel_dense"), 41_500), IFluidHandler.FluidAction.EXECUTE);
+                tanker.startRiding(red, true);
+                // Row 3: a car hauler with a sedan and a sports car aboard, standing on its own.
+                TrailerEntity hauler = trailer(level, TrailerType.CAR_HAULER, -2.0, -12.5, -90.0F);
+                spawned(level, CarType.SEDAN, -20.0, -12.5, -90.0F, 0.5).startRiding(hauler, true);
+                spawned(level, CarType.SPORTS_CAR, -26.0, -12.5, -90.0F, 0.5).startRiding(hauler, true);
+                spawned(level, CarType.PICKUP_TRUCK, -12.5, -16.5, -90.0F, 0.5);
+                player.getInventory().clearContent();
+                give(player, ModItems.car(CarType.SEMI_TRUCK), 1);
+                for (TrailerType type : TrailerType.values()) {
+                    give(player, ModItems.trailer(type), 1);
+                }
+                give(player, ModItems.DIESEL_ENGINE.get(), 1);
+                for (CarPart part : CarPart.values()) {
+                    give(player, ModItems.part(CarType.SEMI_TRUCK, part), 1);
+                }
+            });
+        });
+        // The yard, from the side.
+        at(80, mc -> look(mc, 26.0, -48.0, -26.0, 49.1F, 18.9F));
+        at(140, mc -> shot(mc, "30_semi_yard"));
+        // The semi's cab, three-quarters front.
+        at(145, mc -> look(mc, 9.5, -60.0, -6.5, 47.0F, 6.8F));
+        at(200, mc -> shot(mc, "31_semi_front"));
+        // The rear three-quarters: fifth wheel, twin wheels, the trailer's front and landing legs.
+        at(205, mc -> look(mc, -4.5, -60.0, -5.0, -28.6F, 11.0F));
+        at(260, mc -> shot(mc, "32_fifth_wheel"));
+        // The red rig from above: the tanker swung round behind it.
+        at(265, mc -> look(mc, -2.0, -40.0, -1.0, 0.0F, 58.0F));
+        at(320, mc -> shot(mc, "33_rig_from_above"));
+        // The car hauler, loaded.
+        at(325, mc -> look(mc, 6.5, -59.0, -20.5, 49.9F, 9.7F));
+        at(380, mc -> shot(mc, "34_car_hauler"));
+        // In the cab: the dashboard says the trailer can be hitched.
+        at(385, mc -> server(mc, player -> player.startRiding(car(player.serverLevel(), CarType.SEMI_TRUCK, false), true)));
+        at(420, mc -> shot(mc, "35_cab_hitch_hint"));
+        at(425, mc -> PacketDistributor.sendToServer(new CarActionPayload(CarActionPayload.HITCH)));
+        at(430, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        at(445, mc -> shot(mc, "36_hitched"));
+        // Pull away and turn left: the trailer follows round.
+        at(450, mc -> mc.options.keyUp.setDown(true));
+        at(500, mc -> mc.options.keyLeft.setDown(true));
+        at(530, mc -> shot(mc, "37_turning"));
+        at(545, mc -> mc.options.keyLeft.setDown(false));
+        at(565, mc -> shot(mc, "38_turned"));
+        at(566, mc -> {
+            mc.options.keyUp.setDown(false);
+            mc.options.keyJump.setDown(true);
+        });
+        at(600, mc -> mc.options.keyJump.setDown(false));
+        // Night: the trailer's lights come on with the semi's.
+        at(605, mc -> {
+            server(mc, player -> player.serverLevel().setDayTime(18000));
+            mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+        });
+        at(650, mc -> shot(mc, "39_night"));
+        at(655, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                player.stopRiding();
+                player.serverLevel().setDayTime(6000);
+            });
+        });
+        // The tanker's screen.
+        at(665, mc -> look(mc, -6.0, -60.0, 16.0, 180.0F, 10.0F));
+        at(690, mc -> mc.level.getEntitiesOfClass(TrailerEntity.class, new net.minecraft.world.phys.AABB(-40, -70, -40, 40, -40, 40),
+                t -> t.trailerType() == TrailerType.TANKER_TRAILER).forEach(t -> TrailerEntity.openTankerScreen.accept(t)));
+        at(720, mc -> shot(mc, "40_tanker_screen"));
+        at(725, mc -> mc.setScreen(null));
+        // The items.
+        at(730, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
+        at(760, mc -> shot(mc, "41_items"));
+        // Building a semi at the Car Workbench, and its recipe in JEI.
+        at(765, mc -> {
+            mc.setScreen(null);
+            server(mc, player -> {
+                BlockPos bench = new BlockPos(-6, -60, 20);
+                player.serverLevel().setBlockAndUpdate(bench, ModBlocks.CAR_WORKBENCH.get().defaultBlockState());
+                player.getInventory().clearContent();
+                for (CarPart part : CarPart.values()) {
+                    give(player, ModItems.part(CarType.SEMI_TRUCK, part), 1);
+                }
+                give(player, ModItems.DIESEL_ENGINE.get(), 1);
+                give(player, ModItems.TIRE.get(), 4);
+                player.openMenu(player.serverLevel().getBlockState(bench).getMenuProvider(player.serverLevel(), bench));
+            });
+        });
+        at(785, mc -> clickCar(mc, CarType.SEMI_TRUCK.ordinal()));
+        at(810, mc -> shot(mc, "42_workbench_semi"));
+        at(815, mc -> jeiShow(RecipeIngredientRole.OUTPUT, new ItemStack(ModItems.car(CarType.SEMI_TRUCK))));
+        at(845, mc -> shot(mc, "43_jei_semi_recipe"));
+        at(850, mc -> jeiShow(RecipeIngredientRole.OUTPUT, new ItemStack(ModItems.trailer(TrailerType.TANKER_TRAILER))));
+        at(880, mc -> shot(mc, "44_jei_tanker_recipe"));
+        at(890, mc -> mc.stop());
     }
 }

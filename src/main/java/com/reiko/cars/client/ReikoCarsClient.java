@@ -3,17 +3,25 @@ package com.reiko.cars.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarEntity;
+import net.minecraft.world.entity.Entity;
 import com.reiko.cars.car.CarItem;
 import com.reiko.cars.car.CarType;
+import com.reiko.cars.client.model.BoxTrailerModel;
+import com.reiko.cars.client.model.CarHaulerModel;
 import com.reiko.cars.client.model.OffRoaderModel;
 import com.reiko.cars.client.model.PickupTruckModel;
 import com.reiko.cars.client.model.SedanModel;
+import com.reiko.cars.client.model.SemiTruckModel;
 import com.reiko.cars.client.model.SportsCarModel;
+import com.reiko.cars.client.model.TankerTrailerModel;
 import com.reiko.cars.network.CarActionPayload;
 import com.reiko.cars.registry.ModBlockEntities;
 import com.reiko.cars.registry.ModEntities;
 import com.reiko.cars.registry.ModItems;
 import com.reiko.cars.registry.ModMenus;
+import com.reiko.cars.trailer.TrailerEntity;
+import com.reiko.cars.trailer.TrailerItem;
+import com.reiko.cars.trailer.TrailerType;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.function.Supplier;
@@ -32,6 +40,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.client.event.CalculateDetachedCameraDistanceEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
@@ -53,6 +62,8 @@ public final class ReikoCarsClient {
             InputConstants.Type.KEYSYM, InputConstants.KEY_H, "key.categories.reikocars");
     public static final KeyMapping LOCK = new KeyMapping("key.reikocars.lock", KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM, InputConstants.KEY_L, "key.categories.reikocars");
+    public static final KeyMapping HITCH = new KeyMapping("key.reikocars.hitch", KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM, InputConstants.KEY_G, "key.categories.reikocars");
 
     public ReikoCarsClient(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.CLIENT, CarsClientConfig.SPEC);
@@ -64,10 +75,24 @@ public final class ReikoCarsClient {
         modBus.addListener(ReikoCarsClient::registerItemColors);
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::onClientTick);
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::keepEnginesRunning);
+        NeoForge.EVENT_BUS.addListener(ReikoCarsClient::pullCameraBack);
+        TrailerEntity.openTankerScreen = tanker -> Minecraft.getInstance().setScreen(new TankerScreen(tanker));
     }
 
     public static ModelLayerLocation layer(CarType type) {
         return new ModelLayerLocation(ReikoCars.id(type.id()), "main");
+    }
+
+    public static ModelLayerLocation layer(TrailerType type) {
+        return new ModelLayerLocation(ReikoCars.id(type.id()), "main");
+    }
+
+    private static Supplier<LayerDefinition> definition(TrailerType type) {
+        return switch (type) {
+            case BOX_TRAILER -> BoxTrailerModel::createBodyLayer;
+            case TANKER_TRAILER -> TankerTrailerModel::createBodyLayer;
+            case CAR_HAULER -> CarHaulerModel::createBodyLayer;
+        };
     }
 
     private static Supplier<LayerDefinition> definition(CarType type) {
@@ -76,6 +101,7 @@ public final class ReikoCarsClient {
             case SPORTS_CAR -> SportsCarModel::createBodyLayer;
             case PICKUP_TRUCK -> PickupTruckModel::createBodyLayer;
             case OFF_ROADER -> OffRoaderModel::createBodyLayer;
+            case SEMI_TRUCK -> SemiTruckModel::createBodyLayer;
         };
     }
 
@@ -83,11 +109,17 @@ public final class ReikoCarsClient {
         for (CarType type : CarType.values()) {
             event.registerLayerDefinition(layer(type), definition(type));
         }
+        for (TrailerType type : TrailerType.values()) {
+            event.registerLayerDefinition(layer(type), definition(type));
+        }
     }
 
     private static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         for (CarType type : CarType.values()) {
             event.registerEntityRenderer(ModEntities.car(type), context -> new CarRenderer(context, type, layer(type)));
+        }
+        for (TrailerType type : TrailerType.values()) {
+            event.registerEntityRenderer(ModEntities.trailer(type), context -> new TrailerRenderer(context, type, layer(type)));
         }
         BlockEntityRenderers.register(ModBlockEntities.GAS_PUMP.get(), GasPumpRenderer::new);
     }
@@ -100,6 +132,7 @@ public final class ReikoCarsClient {
     private static void registerKeys(RegisterKeyMappingsEvent event) {
         event.register(HORN);
         event.register(LOCK);
+        event.register(HITCH);
     }
 
     private static void registerHud(RegisterGuiLayersEvent event) {
@@ -112,6 +145,10 @@ public final class ReikoCarsClient {
             event.register((stack, tintIndex) -> tintIndex == 0 ? FastColor.ARGB32.opaque(CarItem.colorOf(stack, type)) : -1,
                     ModItems.car(type));
         }
+        for (TrailerType type : TrailerType.values()) {
+            event.register((stack, tintIndex) -> tintIndex == 0 ? FastColor.ARGB32.opaque(TrailerItem.colorOf(stack, type)) : -1,
+                    ModItems.trailer(type));
+        }
     }
 
     /** Hands the driver's keys to their car before it ticks, and sends the horn and lock keys. */
@@ -121,6 +158,7 @@ public final class ReikoCarsClient {
         if (player == null || !(player.getVehicle() instanceof CarEntity car)) {
             HORN.consumeClick();
             LOCK.consumeClick();
+            HITCH.consumeClick();
             return;
         }
         if (car.getControllingPassenger() == player) {
@@ -135,6 +173,9 @@ public final class ReikoCarsClient {
         while (LOCK.consumeClick()) {
             PacketDistributor.sendToServer(new CarActionPayload(CarActionPayload.TOGGLE_LOCK));
         }
+        while (HITCH.consumeClick()) {
+            PacketDistributor.sendToServer(new CarActionPayload(CarActionPayload.HITCH));
+        }
     }
 
     /** The engine sound playing for each nearby car. Weak keys, so cars that unload are forgotten. */
@@ -144,6 +185,18 @@ public final class ReikoCarsClient {
      * Once a second, gives every nearby car with its engine running an engine sound, and restarts any that the
      * sound engine dropped (it can, when too many sounds play at once).
      */
+    /**
+     * In third person, stands the camera far enough back to see the whole vehicle: a semi and its trailer are 15
+     * blocks long, and the usual 4 blocks would put the camera inside the trailer.
+     */
+    private static void pullCameraBack(CalculateDetachedCameraDistanceEvent event) {
+        Entity viewer = event.getCamera().getEntity();
+        if (viewer.getRootVehicle() instanceof CarEntity car && car != viewer) {
+            double length = car.carType().length + (car.trailer() != null ? TrailerType.LENGTH : 0.0);
+            event.setDistance(Math.max(event.getDistance(), (float) (length * 0.75 + 1.0)));
+        }
+    }
+
     private static void keepEnginesRunning(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null || minecraft.isPaused() || minecraft.level.getGameTime() % 20 != 0) {

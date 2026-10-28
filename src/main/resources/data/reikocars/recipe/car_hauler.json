@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "R": {
+      "item": "minecraft:iron_bars"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "tag": "c:storage_blocks/iron"
+    },
+    "T": {
+      "item": "reikocars:tire"
+    }
+  },
+  "pattern": [
+    "RRR",
+    "IBI",
+    "T T"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:car_hauler"
+  }
+}
