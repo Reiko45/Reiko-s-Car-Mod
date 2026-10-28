@@ -67,11 +67,29 @@ configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
+repositories {
+    // JEI. Only its API is compiled against; the full mod is on the dev runs' classpath to try the plugin out.
+    maven {
+        name = "Jared's Maven"
+        url = "https://maven.blamejared.com/"
+        content {
+            includeGroup "mezz.jei"
+        }
+    }
+}
+
 dependencies {
     // Reiko's Economy Mod (cash, cards, ShopPayments) and BuildCraft Reborn (the fuels and their energy values).
     // Both are required at runtime too, so they go on the dev runs' classpath, where NeoForge loads them as mods.
     implementation files("libs/${economy_jar}")
     implementation files("libs/${buildcraft_jar}")
+
+    // JEI is optional: the plugin in compat/jei only loads when JEI is installed.
+    compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    localRuntime("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}") {
+        transitive = false // the mod jar has everything it needs inside it
+    }
 
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'

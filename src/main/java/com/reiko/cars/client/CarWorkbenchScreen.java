@@ -1,29 +1,20 @@
 package com.reiko.cars.client;
 
-import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
-import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarItem;
 import com.reiko.cars.car.CarType;
-import com.reiko.cars.client.model.CarModel;
 import com.reiko.cars.config.CarsConfig;
 import com.reiko.cars.workbench.CarAssemblyRecipe;
 import com.reiko.cars.workbench.CarWorkbenchMenu;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -52,18 +43,18 @@ public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkben
     private static final int PREVIEW_TOP = 43;
     private static final int PREVIEW_RIGHT = 180;
     private static final int PREVIEW_BOTTOM = 113;
-    private static final int ARROW_X = 184;
-    private static final int ARROW_Y = 71;
+    /** Where the arrow is, which JEI makes a button for showing every workbench recipe. */
+    public static final int ARROW_X = 184;
+    public static final int ARROW_Y = 71;
+    public static final int ARROW_WIDTH = 22;
+    public static final int ARROW_HEIGHT = 15;
 
     private static final int LABEL_COLOR = 0x404040;
     private static final int GOLD = 0xFFFFC83D;
-    /** Parts not fitted yet: a see-through blueprint blue. */
-    private static final int GHOST = 0x608CC8FF;
     private static final ResourceLocation BUTTON = ResourceLocation.withDefaultNamespace("widget/button");
     private static final ResourceLocation BUTTON_HIGHLIGHTED = ResourceLocation.withDefaultNamespace("widget/button_highlighted");
     private static final String[] SLOT_NAMES = {"chassis", "body", "interior", "engine", "wheel_fl", "wheel_fr", "wheel_rl", "wheel_rr"};
 
-    private final Map<CarType, CarModel> models = new EnumMap<>(CarType.class);
     private int page;
     private int shownSelection = -1;
     private Button previousPage;
@@ -282,76 +273,20 @@ public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkben
         graphics.disableScissor();
     }
 
-    private CarModel model(CarType type) {
-        return models.computeIfAbsent(type, key -> new CarModel(minecraft.getEntityModels().bakeLayer(ReikoCarsClient.layer(key))));
-    }
-
     /** Whether part slot {@code slot} holds what {@code recipe} wants there. */
     private boolean fitted(CarAssemblyRecipe recipe, int slot) {
         ItemStack stack = menu.getSlot(slot).getItem();
         return !stack.isEmpty() && recipe.ingredient(slot).test(stack);
     }
 
-    /**
-     * Draws the car centred on (cx, cy): fitted parts as they look in the world, the rest as ghosts. The body stands
-     * for the body slot, the trim (seats, glass, bumpers) for the interior, and each wheel for its own slot.
-     */
+    /** The car with its fitted parts drawn as they look in the world, the rest as ghosts. */
     private void drawCar(GuiGraphics graphics, CarType type, CarAssemblyRecipe recipe, float cx, float cy) {
-        CarModel model = model(type);
-        ResourceLocation texture = ReikoCars.id("textures/entity/car/" + type.id() + ".png");
-        float scale = 18.0F;
-        PoseStack pose = graphics.pose();
-        pose.pushPose();
-        pose.translate(cx, cy, 150.0F);
-        pose.scale(scale, scale, -scale);
-        pose.mulPose(Axis.ZP.rotation((float) Math.PI));
-        pose.mulPose(Axis.XP.rotationDegrees(-22.0F));
-        pose.translate(0.0F, -type.height / 2.0F, 0.0F);
-        pose.mulPose(Axis.YP.rotationDegrees(180.0F - yaw));
-        pose.scale(-1.0F, -1.0F, 1.0F);
-        pose.translate(0.0F, -1.501F, 0.0F);
-        model.pose(0.0F, 0.0F);
-
-        Lighting.setupForEntityInInventory();
-        MultiBufferSource.BufferSource buffers = graphics.bufferSource();
-        int light = LightTexture.FULL_BRIGHT;
-        int overlay = OverlayTexture.NO_OVERLAY;
-        boolean body = fitted(recipe, CarAssemblyRecipe.BODY);
-        boolean interior = fitted(recipe, CarAssemblyRecipe.INTERIOR);
-        if (body) {
-            model.renderBody(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(texture)), light, overlay, 0xFF000000 | type.defaultColor);
-        }
-        graphics.flush();
-        RenderType solid = RenderType.entityTranslucent(texture);
-        if (interior) {
-            model.renderTrimOnly(pose, buffers.getBuffer(solid), light, overlay, -1);
-        }
+        boolean[] wheels = new boolean[4];
         for (int wheel = 0; wheel < 4; wheel++) {
-            if (fitted(recipe, CarAssemblyRecipe.FIRST_WHEEL + wheel)) {
-                model.renderWheel(wheel, pose, buffers.getBuffer(solid), light, overlay, -1);
-            }
+            wheels[wheel] = fitted(recipe, CarAssemblyRecipe.FIRST_WHEEL + wheel);
         }
-        if (body) {
-            model.renderLights(pose, buffers.getBuffer(solid), light, overlay, -1);
-        }
-        graphics.flush();
-        // The ghosts last, so the fitted parts show through them.
-        RenderType ghost = RenderType.entityTranslucent(texture);
-        if (!body) {
-            model.renderBody(pose, buffers.getBuffer(ghost), light, overlay, GHOST);
-            model.renderLights(pose, buffers.getBuffer(ghost), light, overlay, GHOST);
-        }
-        if (!interior) {
-            model.renderTrimOnly(pose, buffers.getBuffer(ghost), light, overlay, GHOST);
-        }
-        for (int wheel = 0; wheel < 4; wheel++) {
-            if (!fitted(recipe, CarAssemblyRecipe.FIRST_WHEEL + wheel)) {
-                model.renderWheel(wheel, pose, buffers.getBuffer(ghost), light, overlay, GHOST);
-            }
-        }
-        graphics.flush();
-        Lighting.setupFor3DItems();
-        pose.popPose();
+        CarPreview.draw(graphics, type, cx, cy, 18.0F, yaw, new CarPreview.Fitted(
+                fitted(recipe, CarAssemblyRecipe.BODY), fitted(recipe, CarAssemblyRecipe.INTERIOR), wheels));
     }
 
     // ---- labels and tooltips ----
@@ -412,7 +347,7 @@ public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkben
     private List<Component> carTooltip(CarAssemblyRecipe recipe) {
         List<Component> lines = new ArrayList<>();
         lines.add(recipe.result().getHoverName());
-        boolean[] have = partsAvailable(recipe);
+        boolean[] have = menu.partsAvailable(minecraft.player.getInventory(), recipe);
         for (int slot = 0; slot < CarAssemblyRecipe.FIRST_WHEEL; slot++) {
             lines.add(partLine(cycle(recipe.ingredient(slot)).getHoverName(), have[slot], 1, have[slot] ? 1 : 0));
         }
@@ -434,34 +369,12 @@ public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkben
     }
 
     private boolean allPartsAvailable(CarAssemblyRecipe recipe) {
-        for (boolean have : partsAvailable(recipe)) {
+        for (boolean have : menu.partsAvailable(minecraft.player.getInventory(), recipe)) {
             if (!have) {
                 return false;
             }
         }
         return true;
-    }
-
-    /** For each part slot, whether the parts in the workbench and the player's inventory cover it. */
-    private boolean[] partsAvailable(CarAssemblyRecipe recipe) {
-        List<ItemStack> pool = new ArrayList<>();
-        for (int slot = 0; slot < CarWorkbenchMenu.PARTS; slot++) {
-            pool.add(menu.getSlot(slot).getItem().copy());
-        }
-        for (ItemStack stack : minecraft.player.getInventory().items) {
-            pool.add(stack.copy());
-        }
-        boolean[] have = new boolean[CarAssemblyRecipe.SLOTS];
-        for (int slot = 0; slot < CarAssemblyRecipe.SLOTS; slot++) {
-            for (ItemStack stack : pool) {
-                if (!stack.isEmpty() && recipe.ingredient(slot).test(stack)) {
-                    stack.shrink(1);
-                    have[slot] = true;
-                    break;
-                }
-            }
-        }
-        return have;
     }
 
     // ---- input ----

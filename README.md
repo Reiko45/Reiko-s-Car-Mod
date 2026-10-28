@@ -10,6 +10,7 @@ Refine oil into fuel with BuildCraft, pipe it into a gas pump, set a price, and 
 - Minecraft 1.21.1, NeoForge 21.1.264 or newer (Reiko's Economy Mod 1.0.0 itself needs 21.1.265)
 - [BuildCraft Reborn](https://github.com/Reiko45/BuildCraft-Reborn) 2.1.0 or newer
 - [Reiko's Economy Mod](https://github.com/Reiko45/Reiko-s-Economy-Mod) 1.0.0 or newer
+- Optional: [JEI](https://www.curseforge.com/minecraft/mc-mods/jei) 19.21 or newer, for the recipe pages below
 
 ## The cars
 
@@ -58,6 +59,14 @@ Cars are put together at a **Car Workbench**. Each car has three parts of its ow
    everything for it.
 
 Parts left in the workbench go back to you when you close it.
+
+### With JEI
+
+If JEI is installed, it gets a **Car Workbench** recipe page for each car: the parts laid out as in the workbench, the
+car turning in 3D, and its seats, top speed and tank size. Look up a car's recipe (R), or what a part, tire or engine
+is used for (U). Clicking the arrow in the workbench's screen lists every car. With the workbench open, JEI's **+**
+button puts that car's parts in from your inventory, the same as clicking the car's button; if you're missing any,
+the button is greyed out and JEI marks the missing parts in red.
 
 ## Gas pumps
 
@@ -127,14 +136,16 @@ Each player can pick **mph** or **km/h**, and turn the dashboard off, in `config
 ## Building and testing
 
 You need JDK 21. The two mods it builds on are in `libs/`: replace those jars to build against newer versions
-(and update the names in `gradle.properties`).
+(and update the names in `gradle.properties`). JEI comes from its Maven repository: the build compiles against
+the API of `jei_version` in `gradle.properties` (19.21.2.313, so the plugin works with that and every newer 1.21.1
+JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
 ./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, locks, the workbench), then exit
 ./gradlew runClient         # start a dev client
 ./gradlew runClient -Pshowcase  # build a test scene, buy fuel, drive, save screenshots to run/screenshots/, quit
-./gradlew runClient -Pshowcase=workbench  # the same for the Car Workbench
+./gradlew runClient -Pshowcase=workbench  # the same for the Car Workbench and its JEI pages
 ```
 
 ## Editing the models
@@ -160,6 +171,7 @@ src/main/java/com/reiko/cars/
 ├── car/                  the car entity and its types, fuel (CarFuel, CarTank), the car item
 ├── pump/                 the gas pump block, its block entity, menu, protection, and PumpService (selling fuel)
 ├── workbench/            the Car Workbench block and menu, the car parts, and the car_assembly recipe type
+├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
 ├── network/              packets: pump actions, horn and lock
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings

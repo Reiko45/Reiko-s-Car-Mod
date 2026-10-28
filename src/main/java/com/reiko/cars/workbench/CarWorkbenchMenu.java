@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Container;
@@ -22,6 +23,7 @@ import net.minecraft.world.inventory.ResultContainer;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 
 /**
@@ -70,7 +72,7 @@ public final class CarWorkbenchMenu extends AbstractContainerMenu {
         super(ModMenus.CAR_WORKBENCH.get(), id);
         this.access = access;
         this.level = inventory.player.level();
-        this.recipes = sortedRecipes(level);
+        this.recipes = sortedRecipes(level.getRecipeManager());
         for (int slot = 0; slot < PARTS; slot++) {
             addSlot(new PartSlot(slot));
         }
@@ -90,8 +92,8 @@ public final class CarWorkbenchMenu extends AbstractContainerMenu {
      * Every car recipe, the mod's cars first in their usual order, then any others by name. The client and the
      * server sort the same list the same way, so a button number means the same car on both.
      */
-    private static List<RecipeHolder<CarAssemblyRecipe>> sortedRecipes(Level level) {
-        List<RecipeHolder<CarAssemblyRecipe>> list = new ArrayList<>(level.getRecipeManager().getAllRecipesFor(ModRecipes.CAR_ASSEMBLY.get()));
+    public static List<RecipeHolder<CarAssemblyRecipe>> sortedRecipes(RecipeManager recipeManager) {
+        List<RecipeHolder<CarAssemblyRecipe>> list = new ArrayList<>(recipeManager.getAllRecipesFor(ModRecipes.CAR_ASSEMBLY.get()));
         list.sort(Comparator.<RecipeHolder<CarAssemblyRecipe>>comparingInt(holder ->
                         holder.value().result().getItem() instanceof CarItem car ? car.carType().ordinal() : Integer.MAX_VALUE)
                 .thenComparing(holder -> holder.id().toString()));
@@ -110,6 +112,41 @@ public final class CarWorkbenchMenu extends AbstractContainerMenu {
     public Optional<CarAssemblyRecipe> selectedRecipe() {
         int index = selected.get();
         return index >= 0 && index < recipes.size() ? Optional.of(recipes.get(index).value()) : Optional.empty();
+    }
+
+    /** The index in {@link #recipes()} of the recipe called {@code id}, or -1. */
+    public int indexOf(ResourceLocation id) {
+        for (int index = 0; index < recipes.size(); index++) {
+            if (recipes.get(index).id().equals(id)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * For each part slot, whether {@code recipe}'s part for it is in the workbench or {@code inventory}. Shared
+     * parts (the four tires) are counted once each.
+     */
+    public boolean[] partsAvailable(Inventory inventory, CarAssemblyRecipe recipe) {
+        List<ItemStack> pool = new ArrayList<>();
+        for (int slot = 0; slot < PARTS; slot++) {
+            pool.add(parts.getItem(slot).copy());
+        }
+        for (ItemStack stack : inventory.items) {
+            pool.add(stack.copy());
+        }
+        boolean[] have = new boolean[PARTS];
+        for (int slot = 0; slot < PARTS; slot++) {
+            for (ItemStack stack : pool) {
+                if (!stack.isEmpty() && recipe.ingredient(slot).test(stack)) {
+                    stack.shrink(1);
+                    have[slot] = true;
+                    break;
+                }
+            }
+        }
+        return have;
     }
 
     /** Whether any car takes {@code stack} in part slot {@code slot}. */
@@ -145,10 +182,9 @@ public final class CarWorkbenchMenu extends AbstractContainerMenu {
         result.setRecipeUsed(match.orElse(null));
         result.setItem(0, match.map(holder -> holder.value().assemble(input, level.registryAccess())).orElse(ItemStack.EMPTY));
         match.ifPresent(holder -> {
-            for (int index = 0; index < recipes.size(); index++) {
-                if (recipes.get(index).id().equals(holder.id())) {
-                    selected.set(index);
-                }
+            int index = indexOf(holder.id());
+            if (index >= 0) {
+                selected.set(index);
             }
         });
     }

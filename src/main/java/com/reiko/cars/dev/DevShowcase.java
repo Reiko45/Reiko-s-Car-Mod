@@ -11,6 +11,11 @@ import com.reiko.cars.registry.ModBlocks;
 import com.reiko.cars.registry.ModEntities;
 import com.reiko.cars.registry.ModItems;
 import com.reiko.cars.client.CarWorkbenchScreen;
+import com.reiko.cars.compat.jei.ReikoCarsJeiPlugin;
+import mezz.jei.api.constants.VanillaTypes;
+import mezz.jei.api.recipe.RecipeIngredientRole;
+import mezz.jei.api.runtime.IJeiRuntime;
+import net.neoforged.fml.ModList;
 import com.reiko.cars.workbench.CarPart;
 import com.reiko.cars.workbench.CarWorkbenchBlock;
 import com.reiko.cars.workbench.CarWorkbenchMenu;
@@ -341,6 +346,53 @@ public final class DevShowcase {
         });
         at(305, mc -> shot(mc, "17_workbench_built"));
         at(310, mc -> mc.player.closeContainer());
-        at(320, mc -> mc.stop());
+        // JEI: the sedan's recipe, what a chassis is used for, and the "+" button's transfer.
+        at(320, mc -> jeiShow(RecipeIngredientRole.OUTPUT, new ItemStack(ModItems.car(CarType.SEDAN))));
+        at(350, mc -> shot(mc, "18_jei_sedan_recipe"));
+        at(355, mc -> jeiShow(RecipeIngredientRole.INPUT, new ItemStack(ModItems.part(CarType.OFF_ROADER, CarPart.CHASSIS))));
+        at(385, mc -> shot(mc, "19_jei_chassis_uses"));
+        at(390, mc -> {
+            mc.setScreen(null);
+            server(mc, player -> {
+                give(player, ModItems.CAR_ENGINE.get(), 1);
+                give(player, ModItems.TIRE.get(), 4);
+                player.openMenu(player.serverLevel().getBlockState(BENCH).getMenuProvider(player.serverLevel(), BENCH));
+            });
+        });
+        at(410, mc -> jeiTransfer(mc, CarType.SEDAN));    // the sedan still has no interior: refused
+        at(415, mc -> jeiTransfer(mc, CarType.PICKUP_TRUCK));
+        at(440, mc -> shot(mc, "20_jei_transfer_pickup"));
+        at(445, mc -> jeiShow(RecipeIngredientRole.OUTPUT, new ItemStack(ModItems.car(CarType.PICKUP_TRUCK))));
+        at(475, mc -> shot(mc, "21_jei_over_workbench"));
+        at(480, mc -> mc.player.closeContainer());
+        at(490, mc -> mc.stop());
+    }
+
+    private static void jeiShow(RecipeIngredientRole role, ItemStack stack) {
+        IJeiRuntime runtime = ModList.get().isLoaded("jei") ? ReikoCarsJeiPlugin.runtime() : null;
+        if (runtime == null) {
+            ReikoCars.LOGGER.warn("Showcase: JEI isn't running");
+            return;
+        }
+        runtime.getRecipesGui().show(runtime.getJeiHelpers().getFocusFactory().createFocus(role, VanillaTypes.ITEM_STACK, stack));
+    }
+
+    /** Does what JEI's "+" button does on a car's recipe while the workbench is open, logging whether JEI allows it. */
+    private static void jeiTransfer(Minecraft minecraft, CarType type) {
+        IJeiRuntime runtime = ModList.get().isLoaded("jei") ? ReikoCarsJeiPlugin.runtime() : null;
+        if (runtime == null || !(minecraft.player.containerMenu instanceof CarWorkbenchMenu menu)) {
+            ReikoCars.LOGGER.warn("Showcase: no JEI or no workbench open");
+            return;
+        }
+        var category = runtime.getRecipeManager().getRecipeCategory(ReikoCarsJeiPlugin.CAR_ASSEMBLY);
+        var recipe = menu.recipes().get(type.ordinal());
+        var layout = runtime.getRecipeManager().createRecipeLayoutDrawable(category, recipe,
+                runtime.getJeiHelpers().getFocusFactory().createFocusGroup(List.of())).orElseThrow();
+        var handler = runtime.getRecipeTransferManager().getRecipeTransferHandler(menu, category).orElseThrow();
+        var check = handler.transferRecipe(menu, recipe, layout.getRecipeSlotsView(), minecraft.player, false, false);
+        ReikoCars.LOGGER.info("Showcase: JEI transfer of the {}: {}", type.id(), check == null ? "allowed" : "refused (" + check.getType() + ")");
+        if (check == null) {
+            handler.transferRecipe(menu, recipe, layout.getRecipeSlotsView(), minecraft.player, false, true);
+        }
     }
 }

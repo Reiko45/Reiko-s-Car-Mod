@@ -76,6 +76,7 @@
   "gui.reikocars.price_label": "Price/bucket",
   "gui.reikocars.sold": "Sold %s B for %s",
   "gui.reikocars.workbench.stats": "%s seats · %s %s",
+  "gui.reikocars.workbench.jei_stats": "%s seats · %s %s · %s B tank",
   "gui.reikocars.workbench.no_cars": "Nothing to build",
   "gui.reikocars.workbench.needs": "Needs: %s",
   "gui.reikocars.workbench.count": "%s × %s",
