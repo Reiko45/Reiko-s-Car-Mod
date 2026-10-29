@@ -13,6 +13,9 @@ import com.reiko.cars.car.FuelType;
 import com.reiko.cars.fare.FareMenu;
 import com.reiko.cars.fare.FareService;
 import com.reiko.cars.key.CarKeys;
+import com.reiko.cars.sale.DealershipBlockEntity;
+import com.reiko.cars.sale.DealershipMenu;
+import com.reiko.cars.sale.SaleService;
 import com.reiko.cars.key.Keyed;
 import com.reiko.cars.mail.MailService;
 import com.reiko.cars.mail.MailboxBlock;
@@ -45,6 +48,7 @@ import com.reiko.economy.core.EconomyService;
 import com.reiko.economy.shop.Payment;
 import com.reiko.economy.shop.ShopActionResult;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.util.List;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -1715,6 +1719,110 @@ public final class CarGameTests {
             helper.assertValueEqual(ECO.getBalance(server, driver.getUUID()), driverBefore + 400 + brokePaid, "and the driver gets it");
         } finally {
             leave(helper, driver, rider, broke);
+        }
+        helper.succeed();
+    }
+
+    // ---- buying and selling ----
+
+    @GameTest(template = YARD)
+    public static void carsChangeHands(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer seller = join(helper);
+        ServerPlayer buyer = join(helper);
+        try {
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.0, 8.0);
+            car.setOwner(seller);
+            giveKey(seller, car);
+            long oldLock = car.lockCode();
+            buyer.moveTo(car.getX() + 2, car.getY(), car.getZ());
+            check(helper, !SaleService.setPrice(buyer, car, "1.00").success(), "only the owner sells it");
+            check(helper, SaleService.setPrice(seller, car, "150.00").success() && car.salePrice() == 15000, "up for sale at $150.00");
+            check(helper, !SaleService.buy(seller, car, 15000, Payment.cash()).success(), "you can't buy your own car");
+            check(helper, !SaleService.buy(buyer, car, 10000, Payment.cash()).success(), "an out-of-date price is caught");
+
+            Purse.give(buyer, 20_000);
+            long sellerBefore = ECO.getBalance(server, seller.getUUID());
+            ShopActionResult bought = SaleService.buy(buyer, car, 15000, Payment.cash());
+            check(helper, bought.success(), "buying it: " + bought.message().getString());
+            helper.assertValueEqual(Purse.value(buyer), 5_000L, "$150.00 cash spent");
+            helper.assertValueEqual(ECO.getBalance(server, seller.getUUID()), sellerBefore + 15000, "the seller is paid");
+            check(helper, car.isOwner(buyer) && !car.isForSale(), "it's the buyer's now, and off sale");
+            check(helper, car.lockCode() != oldLock && CarKeys.holds(buyer, car.lockCode()), "on new locks, with a key for the buyer");
+            check(helper, !CarKeys.holds(seller, car.lockCode()) && !car.canBeUsedBy(seller), "the seller's key doesn't fit any more");
+        } finally {
+            leave(helper, seller, buyer);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD)
+    public static void dealershipsSellAndTradeIn(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer dealer = join(helper);
+        ServerPlayer customer = join(helper);
+        try {
+            BlockPos desk = new BlockPos(5, 1, 2);
+            helper.setBlock(desk, ModBlocks.DEALERSHIP.get().defaultBlockState());
+            DealershipBlockEntity lot = (DealershipBlockEntity) helper.getBlockEntity(desk);
+            lot.setOwner(dealer);
+            ECO.deposit(server, dealer.getUUID(), 100_000, "test");
+
+            CarEntity taxi = vehicle(helper, CarType.TAXI, 5.0, 8.0);
+            taxi.setOwner(dealer);
+            CarEntity farAway = vehicle(helper, CarType.SEDAN, 5.0, 30.0);
+            farAway.setOwner(dealer);
+            check(helper, SaleService.setPrice(dealer, taxi, "100.00").success(), "the dealer prices the taxi");
+            SaleService.setPrice(dealer, farAway, "50.00");
+            check(helper, SaleService.forSale(lot).equals(List.of(taxi)), "only cars on the lot are on its books");
+
+            DealershipMenu browsing = DealershipMenu.create(0, customer, lot);
+            helper.assertValueEqual(browsing.carPrice(), 10000L, "the screen shows the price");
+            check(helper, browsing.carType() == CarType.TAXI && browsing.carCount() == 1, "and the car");
+
+            customer.moveTo(taxi.getX() + 2, taxi.getY(), taxi.getZ());
+            Purse.give(customer, 20_000);
+            check(helper, SaleService.buy(customer, taxi, 10000, Payment.cash()).success(), "the customer buys the taxi");
+            check(helper, lot.sold() == 1 && lot.earned() == 10000, "the dealership counts the sale");
+
+            // Trading in: the customer's sedan, a bit worn.
+            CarEntity sedan = vehicle(helper, CarType.SEDAN, 5.0, 12.0);
+            sedan.setOwner(customer);
+            giveKey(customer, sedan);
+            sedan.setCondition(new CarCondition(1.0F, 1.0F, 0.5F, 1.0F, 1.0F));
+            check(helper, SaleService.offerFor(lot, sedan) == 0 && !SaleService.tradeIn(customer, lot, sedan, 0).success(),
+                    "not taking sedans yet");
+            check(helper, !SaleService.setOffer(customer, lot, CarType.SEDAN, "80.00").success(), "only the dealer sets offers");
+            check(helper, SaleService.setOffer(dealer, lot, CarType.SEDAN, "80.00").success(), "the dealer will pay $80 for a sedan");
+            long offer = SaleService.offerFor(lot, sedan);
+            check(helper, offer < 8000 && offer > 8000 * SaleService.WORN_OUT_SHARE, "less for wear: " + offer);
+
+            DealershipMenu trading = DealershipMenu.create(0, customer, lot);
+            trading.clickMenuButton(customer, DealershipMenu.TAB_TRADE);
+            helper.assertValueEqual(trading.carCount(), 2, "the customer's taxi and sedan are on the lot");
+            for (int i = 0; i < 2 && trading.carType() != CarType.SEDAN; i++) {
+                trading.clickMenuButton(customer, DealershipMenu.NEXT);
+            }
+            helper.assertValueEqual(trading.carOffer(), offer, "the Trade in tab shows the sedan's offer");
+
+            long customerBefore = ECO.getBalance(server, customer.getUUID());
+            long dealerBefore = ECO.getBalance(server, dealer.getUUID());
+            ShopActionResult traded = SaleService.tradeIn(customer, lot, sedan, offer);
+            check(helper, traded.success(), "trading it in: " + traded.message().getString());
+            helper.assertValueEqual(ECO.getBalance(server, customer.getUUID()), customerBefore + offer, "paid the offer");
+            helper.assertValueEqual(ECO.getBalance(server, dealer.getUUID()), dealerBefore - offer, "from the dealer's account");
+            check(helper, dealer.getUUID().equals(sedan.owner()) && !CarKeys.holds(customer, sedan.lockCode()), "the sedan's the dealer's, on new locks");
+            check(helper, lot.bought() == 1, "the dealership counts the trade-in");
+            check(helper, !SaleService.tradeIn(dealer, lot, sedan, offer).success(), "the dealer can't trade in at their own lot");
+
+            // A dealer who can't pay doesn't buy.
+            CarEntity another = vehicle(helper, CarType.SEDAN, 7.0, 6.0);
+            another.setOwner(customer);
+            ECO.setBalance(server, dealer.getUUID(), 0, "test");
+            check(helper, !SaleService.tradeIn(customer, lot, another, SaleService.offerFor(lot, another)).success(), "no money, no trade-in");
+            check(helper, another.isOwner(customer), "so the customer keeps it");
+        } finally {
+            leave(helper, dealer, customer);
         }
         helper.succeed();
     }

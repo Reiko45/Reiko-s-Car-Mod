@@ -173,6 +173,8 @@ public final class ReikoCarsClient {
         event.register(ModMenus.MAILBOX.get(), MailboxScreen::new);
         event.register(ModMenus.FARE.get(), FareScreen::new);
         event.register(ModMenus.FARE_SETTINGS.get(), FareSettingsScreen::new);
+        event.register(ModMenus.CAR_SALE.get(), CarSaleScreen::new);
+        event.register(ModMenus.DEALERSHIP.get(), DealershipScreen::new);
     }
 
     private static void registerKeys(RegisterKeyMappingsEvent event) {

@@ -106,6 +106,29 @@ rides free.
 
 New buses charge $2.00 a ride, and new taxis $3.00 plus $1.00 per 100 blocks (see [Settings](#settings)).
 
+## Buying and selling cars
+
+Any car can change hands, with its keys: the buyer gets a key cut for **new locks**, so the seller's keys stop fitting.
+
+- **For Sale Signs:** right-click your own car with a For Sale Sign (it isn't used up) to put it up for sale at a
+  price, change the price, or take it off sale. A **FOR SALE** sign with the price floats over it.
+- **Buying:** right-click someone else's car that's for sale. The screen shows its condition, fuel, seller and price;
+  pay by **Card** with PIN or **Cash**, plus sales tax, and the money goes to the seller. Nobody can be in it.
+
+### Car dealerships
+
+Put down a **Car Dealership** (a sales desk under a CARS sign). Whoever places it owns it, and only they (or an
+admin) can break it. The cars its owner parks within **10 blocks** make up the lot.
+
+- **The owner's Lot tab:** pick each of your cars on the lot with the arrows, set its price or take it off sale.
+- **The owner's Trade-ins tab:** what the dealership pays for each kind of car (pick the kind with the arrows). That's
+  for one in perfect condition; worn ones fetch less, down to 40% for a wreck. 0 means it isn't taking that kind.
+  The tab also shows the books: cars sold and trade-ins bought.
+- **Customers' Buy tab:** browse the cars for sale on the lot, then **Buy this car...** for the paying screen (or
+  just right-click the car).
+- **Customers' Trade in tab:** park your own car on the lot and sell it to the dealership for its offer, paid from the
+  dealer's bank account. The car becomes the dealer's, ready for them to price.
+
 ## Motorcycles
 
 Four motorcycles ride like the cars (same keys, fuel, locks, paint and pumps), on gasoline:
@@ -321,6 +344,8 @@ driver's side.
 | Repair Bench | iron ingot, anvil, iron ingot on top, iron gear, chest, iron gear across the middle, iron legs |
 | Mailbox | iron ingot, blue dye, red dye on top, iron ingot, chest, iron ingot across the middle, a wooden fence below |
 | Blank Key ×2 | an iron ingot and a gold nugget (shapeless) |
+| Car Dealership | paper, any sign, paper on top, iron ingot, gold ingot, iron ingot across the middle, iron ingot, chest, iron ingot below |
+| For Sale Sign | any sign, red dye and paper (shapeless) |
 | Motor Oil ×3 | a BuildCraft **Oil** bucket and three glass bottles (shapeless) |
 | Engine Parts ×2 | iron ingot, piston, iron ingot over iron gear, iron ingot, iron gear |
 | Brake Pads ×2 | three iron ingots over three flint |
@@ -408,6 +433,7 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `fares.busFare` | `2.0` | The fare a new city bus charges each passenger (its owner can change it) |
 | `fares.taxiStartingFare` | `3.0` | What a new taxi's meter starts at |
 | `fares.taxiFarePer100Blocks` | `1.0` | What a new taxi's meter adds per 100 blocks |
+| `sales.dealershipReach` | `10.0` | How close a car must be to a dealership to be on its lot |
 
 Each player can pick **mph** or **km/h**, and turn the dashboard off, in `config/reikocars-client.toml`.
 
@@ -420,7 +446,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
-./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs, tow trucks, mail, keys, fares), then exit
+./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs, tow trucks, mail, keys, fares, buying and selling), then exit
 ./gradlew runClient         # start a dev client
 ./gradlew runClient -Pshowcase  # build a test scene, buy fuel, drive, save screenshots to run/screenshots/, quit
 ./gradlew runClient -Pshowcase=workbench  # the same for the Car Workbench and its JEI pages
@@ -432,6 +458,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 ./gradlew runClient -Pshowcase=tow        # the tow trucks loaded and towing, posting a parcel, the mail van's round, the inbox
 ./gradlew runClient -Pshowcase=keys       # no key, cutting one, its tooltip, driving with it, locking it from a distance
 ./gradlew runClient -Pshowcase=fares      # paying a bus fare, a taxi's meter running and paid, the owner's fare screen
+./gradlew runClient -Pshowcase=sales      # a dealership's lot, buying a car, trading one in, the dealer's tabs, a For Sale Sign
 ./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
 
@@ -490,6 +517,7 @@ src/main/java/com/reiko/cars/
 ├── workbench/            the Car Workbench block and menu, the car parts, and the car_assembly recipe type
 ├── repair/               the Repair Bench block, block entity, menu and protection, the jobs (RepairJobs), and RepairService (repairs and paying)
 ├── tow/                  the tow trucks' picking up, carrying and dropping off (Towing)
+├── sale/                 the For Sale Sign, a car's sale screen, the Car Dealership block, its lot and tabs, and SaleService (buying, selling, trade-ins)
 ├── fare/                 bus fares and the taxi meter (CarFares), the pay and fare screens' menus, and FareService
 ├── key/                  car keys: the key items, what a key fits (CarKey), and cutting, changing the locks and the key fob (CarKeys)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)

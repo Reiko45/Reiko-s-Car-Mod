@@ -5,6 +5,7 @@ import com.reiko.cars.car.FuelType;
 import com.reiko.cars.mail.MailboxBlock;
 import com.reiko.cars.pump.GasPumpBlock;
 import com.reiko.cars.repair.RepairBenchBlock;
+import com.reiko.cars.sale.DealershipBlock;
 import com.reiko.cars.workbench.CarWorkbenchBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -57,6 +58,15 @@ public final class ModBlocks {
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.METAL)
                     .strength(2.0F, 1200.0F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .pushReaction(PushReaction.BLOCK)));
+
+    /** A car dealership's sales desk. Blast-proof, like the shops. */
+    public static final DeferredBlock<DealershipBlock> DEALERSHIP = BLOCKS.register("dealership", () -> new DealershipBlock(
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_RED)
+                    .strength(3.0F, 1200.0F)
                     .sound(SoundType.METAL)
                     .noOcclusion()
                     .pushReaction(PushReaction.BLOCK)));

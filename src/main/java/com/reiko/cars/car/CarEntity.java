@@ -5,6 +5,8 @@ import com.reiko.cars.config.CarsConfig;
 import com.reiko.cars.fare.CarFares;
 import com.reiko.cars.fare.FareSettingsMenu;
 import com.reiko.cars.key.CarKeys;
+import com.reiko.cars.sale.CarSaleMenu;
+import com.reiko.cars.sale.ForSaleSignItem;
 import com.reiko.cars.key.Keyed;
 import com.reiko.cars.car.CarCondition.Part;
 import com.reiko.cars.registry.ModDataComponents;
@@ -98,6 +100,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private static final EntityDataAccessor<Long> DATA_LOCK_CODE = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** Whether the driver may start it: they carry its key, or it needs none. Worked out by the server. */
     private static final EntityDataAccessor<Boolean> DATA_KEYED = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
+    /** What its owner is selling it for, in cents: -1 when it isn't for sale. */
+    private static final EntityDataAccessor<Long> DATA_SALE_PRICE = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** A taxi's meter, in cents, for the dashboard: -1 when it isn't running. */
     private static final EntityDataAccessor<Long> DATA_METER = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** The entity event that flashes the lights, when it's locked or unlocked with a key. */
@@ -199,6 +203,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_LOCK_CODE, 0L);
         builder.define(DATA_KEYED, false);
         builder.define(DATA_METER, -1L);
+        builder.define(DATA_SALE_PRICE, -1L);
         builder.define(DATA_CONDITION, CarCondition.NEW);
     }
 
@@ -441,6 +446,28 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         ownerName = player == null ? "" : player.getGameProfile().getName();
     }
 
+    /** A new owner who may not be on (a dealership's, for a trade-in). */
+    public void setOwner(UUID id, String name) {
+        entityData.set(DATA_OWNER, Optional.of(id));
+        ownerName = name;
+    }
+
+    // ---- for sale ----
+
+    /** What its owner is selling it for, in cents, or -1 if it isn't for sale. */
+    public long salePrice() {
+        return entityData.get(DATA_SALE_PRICE);
+    }
+
+    public boolean isForSale() {
+        return salePrice() >= 0;
+    }
+
+    /** Puts it up for sale at {@code cents}, or takes it off sale with -1. */
+    public void setSalePrice(long cents) {
+        entityData.set(DATA_SALE_PRICE, cents < 0 ? -1L : cents);
+    }
+
     public boolean isOwner(Player player) {
         return player.getUUID().equals(owner());
     }
@@ -565,6 +592,23 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         InteractionResult keyed = CarKeys.useOn(this, player, hand);
         if (keyed != null) {
             return keyed;
+        }
+        if (held.getItem() instanceof ForSaleSignItem) {
+            // The owner sets a price on it (or takes it off sale).
+            if (!isOwner(player)) {
+                return refuse(player, Component.translatable("car.reikocars.not_yours", ownerName));
+            }
+            if (player instanceof ServerPlayer serverPlayer) {
+                CarSaleMenu.open(serverPlayer, this);
+            }
+            return InteractionResult.sidedSuccess(level().isClientSide);
+        }
+        if (isForSale() && !isOwner(player) && !player.isSecondaryUseActive() && !isPassenger() && !hasPassenger(player)) {
+            // For sale: anyone else gets the buying screen.
+            if (player instanceof ServerPlayer serverPlayer) {
+                CarSaleMenu.open(serverPlayer, this);
+            }
+            return InteractionResult.sidedSuccess(level().isClientSide);
         }
         if (player.isSecondaryUseActive()) {
             if (type.takesFares() && held.isEmpty()) {
@@ -1399,6 +1443,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             tag.putLong("LockCode", lockCode());
         }
         fares.save(tag);
+        if (isForSale()) {
+            tag.putLong("SalePrice", salePrice());
+        }
         if (type.storageRows > 0) {
             tag.put("Bed", bed.createTag(registryAccess()));
         }
@@ -1419,6 +1466,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         ownerName = tag.getString("OwnerName");
         setLockCode(tag.getLong("LockCode"));
         fares.load(tag);
+        setSalePrice(tag.contains("SalePrice") ? tag.getLong("SalePrice") : -1L);
         if (type.storageRows > 0 && tag.contains("Bed", Tag.TAG_LIST)) {
             bed.fromTag(tag.getList("Bed", Tag.TAG_COMPOUND), registryAccess());
         }

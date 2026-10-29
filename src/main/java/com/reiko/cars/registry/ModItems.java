@@ -6,6 +6,7 @@ import com.reiko.cars.car.CarType;
 import com.reiko.cars.key.BlankKeyItem;
 import com.reiko.cars.key.CarKeyItem;
 import com.reiko.cars.mail.ParcelItem;
+import com.reiko.cars.sale.ForSaleSignItem;
 import com.reiko.cars.trailer.TrailerItem;
 import com.reiko.cars.trailer.TrailerPartItem;
 import com.reiko.cars.trailer.TrailerType;
@@ -72,6 +73,11 @@ public final class ModItems {
     public static final DeferredItem<BlankKeyItem> BLANK_KEY = ITEMS.register("blank_key", () -> new BlankKeyItem(new Item.Properties()));
     /** A key cut for one car or trailer. Only made by cutting a blank. */
     public static final DeferredItem<CarKeyItem> CAR_KEY = ITEMS.register("car_key", () -> new CarKeyItem(new Item.Properties().stacksTo(1)));
+
+    public static final DeferredItem<BlockItem> DEALERSHIP = ITEMS.registerSimpleBlockItem(ModBlocks.DEALERSHIP);
+    /** Puts a car up for sale anywhere. A tool: it isn't used up. */
+    public static final DeferredItem<ForSaleSignItem> FOR_SALE_SIGN = ITEMS.register("for_sale_sign",
+            () -> new ForSaleSignItem(new Item.Properties().stacksTo(16)));
 
     // Repair parts, fitted at a repair bench (see RepairJobs). Tires are the same ones cars are built with.
     /** An oil change. */

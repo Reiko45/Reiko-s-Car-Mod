@@ -34,6 +34,8 @@ public final class CarsConfig {
     public static final ModConfigSpec.DoubleValue TAXI_START;
     public static final ModConfigSpec.DoubleValue TAXI_PER_100;
 
+    public static final ModConfigSpec.DoubleValue DEALERSHIP_REACH;
+
     public static final ModConfigSpec.DoubleValue POSTAGE;
     public static final ModConfigSpec.DoubleValue MAIL_REACH;
 
@@ -119,6 +121,12 @@ public final class CarsConfig {
         TAXI_PER_100 = builder
                 .comment("What a new taxi's meter adds for every 100 blocks driven. Its owner can change it.")
                 .defineInRange("taxiFarePer100Blocks", 1.0, 0.0, 1_000_000.0);
+        builder.pop();
+
+        builder.push("sales");
+        DEALERSHIP_REACH = builder
+                .comment("How close, in blocks, a car must be to a dealership to be on its lot: for sale there, or to trade in.")
+                .defineInRange("dealershipReach", 10.0, 2.0, 48.0);
         builder.pop();
 
         builder.push("mail");

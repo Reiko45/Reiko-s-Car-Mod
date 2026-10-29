@@ -4,6 +4,7 @@ import com.reiko.cars.ReikoCars;
 import com.reiko.cars.mail.MailboxBlockEntity;
 import com.reiko.cars.pump.GasPumpBlockEntity;
 import com.reiko.cars.repair.RepairBenchBlockEntity;
+import com.reiko.cars.sale.DealershipBlockEntity;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -22,6 +23,9 @@ public final class ModBlockEntities {
 
     public static final Supplier<BlockEntityType<MailboxBlockEntity>> MAILBOX = BLOCK_ENTITIES.register("mailbox",
             () -> BlockEntityType.Builder.of(MailboxBlockEntity::new, ModBlocks.MAILBOX.get()).build(null));
+
+    public static final Supplier<BlockEntityType<DealershipBlockEntity>> DEALERSHIP = BLOCK_ENTITIES.register("dealership",
+            () -> BlockEntityType.Builder.of(DealershipBlockEntity::new, ModBlocks.DEALERSHIP.get()).build(null));
 
     private ModBlockEntities() {
     }

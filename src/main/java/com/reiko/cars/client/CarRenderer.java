@@ -9,6 +9,7 @@ import com.reiko.cars.client.model.CarModel;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.network.chat.Component;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -57,6 +58,18 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         model.renderLights(poseStack, buffers.getBuffer(lit ? RenderType.entityTranslucentEmissive(texture) : RenderType.entityTranslucent(texture)),
                 lit ? LightTexture.FULL_BRIGHT : light, overlay);
         poseStack.popPose();
+        if (car.isForSale()) {
+            // A FOR SALE sign with the price floats over it, above its name if it has one.
+            poseStack.pushPose();
+            if (car.hasCustomName()) {
+                poseStack.translate(0.0F, 0.3F, 0.0F);
+            }
+            long price = car.salePrice();
+            Component sign = price == 0 ? Component.translatable("sale.reikocars.sign_free")
+                    : Component.translatable("sale.reikocars.sign", com.reiko.economy.api.EconomyApi.get().format(price));
+            renderNameTag(car, sign.copy().withStyle(net.minecraft.ChatFormatting.GOLD), poseStack, buffers, light, partialTick);
+            poseStack.popPose();
+        }
         super.render(car, entityYaw, partialTick, poseStack, buffers, light);
     }
 

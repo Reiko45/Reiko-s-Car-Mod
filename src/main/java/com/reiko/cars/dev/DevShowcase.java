@@ -113,7 +113,7 @@ public final class DevShowcase {
             rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false, null);
             rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, null);
             LevelSettings settings = new LevelSettings("showcase-" + System.currentTimeMillis(), GameType.CREATIVE, false,
-                    Difficulty.PEACEFUL, !MODE.equals("repair"), rules, WorldDataConfiguration.DEFAULT); // no cheats: a customer, not an admin
+                    Difficulty.PEACEFUL, !MODE.equals("repair") && !MODE.equals("sales"), rules, WorldDataConfiguration.DEFAULT); // no cheats: a customer, not an admin
             minecraft.createWorldOpenFlows().createFreshLevel(settings.levelName(), settings, new WorldOptions(1L, false, false),
                     registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT)
                             .value().createWorldDimensions(), new TitleScreen());
@@ -136,6 +136,8 @@ public final class DevShowcase {
             keysScript();
         } else if (MODE.equals("fares")) {
             faresScript();
+        } else if (MODE.equals("sales")) {
+            salesScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -1413,5 +1415,109 @@ public final class DevShowcase {
         }));
         at(225, mc -> shot(mc, "71_fare_settings"));
         at(230, mc -> mc.stop());
+    }
+
+    // ---- the car dealership, buying, trading in and For Sale Signs: ./gradlew runClient -Pshowcase=sales ----
+
+    private static final BlockPos DESK = new BlockPos(4, -60, 4);
+
+    private static com.reiko.cars.sale.DealershipBlockEntity desk(ServerPlayer player) {
+        return (com.reiko.cars.sale.DealershipBlockEntity) player.serverLevel().getBlockEntity(DESK);
+    }
+
+    private static void salesScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                for (int x = -10; x <= 24; x++) {
+                    for (int z = -10; z <= 24; z++) {
+                        boolean line = (x - 1) % 4 == 0 && z >= 8 && z <= 13;
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), (line ? Blocks.WHITE_CONCRETE : Blocks.GRAY_CONCRETE).defaultBlockState());
+                    }
+                }
+                level.setBlockAndUpdate(DESK, ModBlocks.DEALERSHIP.get().defaultBlockState()
+                        .setValue(com.reiko.cars.sale.DealershipBlock.FACING, Direction.NORTH));
+                ServerPlayer dee = extraPlayer(level.getServer(), "Dee");
+                EconomyService.INSTANCE.deposit(level.getServer(), dee.getUUID(), 500_000, "showcase");
+                com.reiko.cars.sale.DealershipBlockEntity lot = desk(player);
+                lot.setOwner(dee);
+                lot.setOffer(CarType.SEDAN, 8_000);
+                lot.setOffer(CarType.HATCHBACK, 6_000);
+                lot.setOffer(CarType.PICKUP_TRUCK, 9_000);
+                Object[][] stock = {{CarType.SEDAN, 3.0, 0xC62828, 12_000L}, {CarType.SPORTS_CAR, 7.0, 0x1E1E22, 25_000L},
+                        {CarType.PICKUP_TRUCK, 11.0, 0xF4F5F7, 9_500L}};
+                for (Object[] each : stock) {
+                    CarType type = (CarType) each[0];
+                    spawn(level, type, (Double) each[1], 11.0, 160.0F, 0.6);
+                    CarEntity car = car(level, type);
+                    car.setOwner(dee);
+                    car.setColor((Integer) each[2]);
+                    car.setSalePrice((Long) each[3]);
+                    car.setLocked(true);
+                }
+                spawn(level, CarType.HATCHBACK, -1.0, 11.0, 160.0F, 0.3);
+                CarEntity mine = car(level, CarType.HATCHBACK);
+                mine.setOwner(player);
+                mine.setCondition(new CarCondition(0.6F, 0.9F, 0.5F, 0.7F, 0.8F));
+                player.getInventory().clearContent();
+                Purse.give(player, 50_000);
+                player.setGameMode(GameType.SURVIVAL);
+            });
+        });
+        // The lot, FOR SALE signs up.
+        at(60, mc -> {
+            mc.options.hideGui = true;
+            aim(mc, 6.0, -58.5, 10.0, -3.0, 2.5, -8.5);
+        });
+        at(110, mc -> shot(mc, "72_dealer_lot"));
+        // A customer at the desk: browse, buy.
+        at(114, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                player.teleportTo(player.serverLevel(), 4.5, -60.0, 1.5, 0.0F, 30.0F);
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                com.reiko.cars.sale.DealershipMenu.open(player, desk(player));
+            });
+        });
+        at(135, mc -> shot(mc, "73_dealership_buy"));
+        at(137, mc -> clickAt(mc, 97, 82));
+        at(155, mc -> shot(mc, "74_buy_screen"));
+        at(157, mc -> clickAt(mc, 139, 100));
+        at(175, mc -> shot(mc, "75_bought"));
+        // Trading in the worn hatchback.
+        at(180, mc -> server(mc, player -> com.reiko.cars.sale.DealershipMenu.open(player, desk(player))));
+        at(190, mc -> clickAt(mc, 103, 22));
+        at(196, mc -> {
+            for (int i = 0; i < 3; i++) {
+                if (mc.player.containerMenu instanceof com.reiko.cars.sale.DealershipMenu menu && menu.carType() != CarType.HATCHBACK) {
+                    clickAt(mc, 180, 33);
+                }
+            }
+        });
+        at(215, mc -> shot(mc, "76_trade_in"));
+        at(217, mc -> clickAt(mc, 97, 82));
+        at(235, mc -> shot(mc, "77_traded"));
+        at(237, mc -> mc.player.closeContainer());
+        // The dealer's side: the lot and the trade-in offers.
+        at(240, mc -> server(mc, player -> {
+            desk(player).setOwner(player);
+            for (CarEntity car : player.serverLevel().getEntitiesOfClass(CarEntity.class, new net.minecraft.world.phys.AABB(-20, -70, -20, 40, -40, 40),
+                    car -> "Dee".equals(car.ownerName()))) {
+                car.setOwner(player);
+            }
+            com.reiko.cars.sale.DealershipMenu.open(player, desk(player));
+        }));
+        at(260, mc -> shot(mc, "78_dealer_lot_tab"));
+        at(262, mc -> clickAt(mc, 103, 22));
+        at(280, mc -> shot(mc, "79_dealer_offers"));
+        at(282, mc -> mc.player.closeContainer());
+        // A For Sale Sign on a car of your own, anywhere.
+        at(285, mc -> server(mc, player -> com.reiko.cars.sale.CarSaleMenu.open(player, car(player.serverLevel(), CarType.SEDAN))));
+        at(305, mc -> shot(mc, "80_sale_sign"));
+        at(310, mc -> mc.stop());
     }
 }

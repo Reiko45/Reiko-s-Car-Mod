@@ -79,7 +79,7 @@ public final class CarKeys {
         return key;
     }
 
-    private static long newCode() {
+    public static long newCode() {
         long code;
         do {
             code = ThreadLocalRandom.current().nextLong();

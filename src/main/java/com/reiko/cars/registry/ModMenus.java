@@ -6,6 +6,8 @@ import com.reiko.cars.fare.FareSettingsMenu;
 import com.reiko.cars.mail.MailboxMenu;
 import com.reiko.cars.pump.PumpMenu;
 import com.reiko.cars.repair.RepairBenchMenu;
+import com.reiko.cars.sale.CarSaleMenu;
+import com.reiko.cars.sale.DealershipMenu;
 import com.reiko.cars.workbench.CarWorkbenchMenu;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
@@ -30,6 +32,10 @@ public final class ModMenus {
     public static final Supplier<MenuType<FareMenu>> FARE = MENUS.register("fare", () -> IMenuTypeExtension.create(FareMenu::new));
     public static final Supplier<MenuType<FareSettingsMenu>> FARE_SETTINGS = MENUS.register("fare_settings",
             () -> IMenuTypeExtension.create(FareSettingsMenu::new));
+
+    public static final Supplier<MenuType<CarSaleMenu>> CAR_SALE = MENUS.register("car_sale", () -> IMenuTypeExtension.create(CarSaleMenu::new));
+    public static final Supplier<MenuType<DealershipMenu>> DEALERSHIP = MENUS.register("dealership",
+            () -> IMenuTypeExtension.create(DealershipMenu::new));
 
     private ModMenus() {
     }

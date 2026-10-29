@@ -4,6 +4,7 @@
     "reikocars:car_workbench",
     "reikocars:diesel_pump",
     "reikocars:repair_bench",
-    "reikocars:mailbox"
+    "reikocars:mailbox",
+    "reikocars:dealership"
   ]
 }

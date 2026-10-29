@@ -6,6 +6,10 @@ import com.reiko.cars.fare.FareMenu;
 import com.reiko.cars.fare.FareService;
 import com.reiko.cars.fare.FareSettingsMenu;
 import com.reiko.cars.mail.MailService;
+import com.reiko.cars.car.CarType;
+import com.reiko.cars.sale.CarSaleMenu;
+import com.reiko.cars.sale.DealershipMenu;
+import com.reiko.cars.sale.SaleService;
 import com.reiko.cars.mail.MailboxMenu;
 import com.reiko.cars.trailer.Hitching;
 import com.reiko.cars.trailer.TankerService;
@@ -47,6 +51,7 @@ public final class ModNetwork {
         registrar.playToServer(RepairActionPayload.TYPE, RepairActionPayload.STREAM_CODEC, ModNetwork::handleRepair);
         registrar.playToServer(MailActionPayload.TYPE, MailActionPayload.STREAM_CODEC, ModNetwork::handleMail);
         registrar.playToServer(FareActionPayload.TYPE, FareActionPayload.STREAM_CODEC, ModNetwork::handleFare);
+        registrar.playToServer(SaleActionPayload.TYPE, SaleActionPayload.STREAM_CODEC, ModNetwork::handleSale);
     }
 
     private static void handleWear(CarWearPayload payload, IPayloadContext context) {
@@ -55,6 +60,72 @@ public final class ModNetwork {
             return;
         }
         car.applyWearReport(player, Math.max(0.0F, payload.braked()), Math.max(0.0F, payload.skidded()), Math.max(0.0F, payload.impact()));
+    }
+
+    private static void handleSale(SaleActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || player.containerMenu.containerId != payload.containerId()
+                || !player.containerMenu.stillValid(player)) {
+            return;
+        }
+        if (player.containerMenu instanceof CarSaleMenu menu && menu.car() != null) {
+            CarEntity car = menu.car();
+            switch (payload.action()) {
+                case SaleActionPayload.BUY -> {
+                    ShopActionResult result = SaleService.buy(player, car, payload.expected(), payload.payment());
+                    if (result.success()) {
+                        player.closeContainer();
+                        player.sendSystemMessage(result.message());
+                    } else {
+                        ShopFeedback.send(player, result);
+                    }
+                }
+                case SaleActionPayload.SET_PRICE, SaleActionPayload.OFF_SALE -> {
+                    ShopActionResult result = payload.action() == SaleActionPayload.SET_PRICE
+                            ? SaleService.setPrice(player, car, payload.text()) : SaleService.takeOffSale(player, car);
+                    if (result.success()) {
+                        CarSaleMenu.open(player, car); // reopen to show it
+                    }
+                    ShopFeedback.send(player, result);
+                }
+                default -> {
+                }
+            }
+            return;
+        }
+        if (!(player.containerMenu instanceof DealershipMenu menu) || menu.lot() == null) {
+            return;
+        }
+        CarEntity car = menu.selected();
+        ShopActionResult result = switch (payload.action()) {
+            case SaleActionPayload.OPEN_BUY -> {
+                if (car != null && car.isForSale()) {
+                    CarSaleMenu.open(player, car);
+                    yield null;
+                }
+                yield ShopActionResult.fail(Component.translatable("sale.reikocars.nothing_picked"));
+            }
+            case SaleActionPayload.TRADE_IN -> car == null ? ShopActionResult.fail(Component.translatable("sale.reikocars.nothing_picked"))
+                    : SaleService.tradeIn(player, menu.lot(), car, payload.expected());
+            case SaleActionPayload.SET_PRICE -> car == null ? ShopActionResult.fail(Component.translatable("sale.reikocars.nothing_picked"))
+                    : SaleService.setPrice(player, car, payload.text());
+            case SaleActionPayload.OFF_SALE -> car == null ? ShopActionResult.fail(Component.translatable("sale.reikocars.nothing_picked"))
+                    : SaleService.takeOffSale(player, car);
+            case SaleActionPayload.SET_OFFER -> {
+                if (payload.carType() < 0 || payload.carType() >= CarType.values().length) {
+                    yield ShopActionResult.fail(Component.literal("?"));
+                }
+                ShopActionResult set = SaleService.setOffer(player, menu.lot(), CarType.values()[payload.carType()], payload.text());
+                if (set.success()) {
+                    DealershipMenu.open(player, menu.lot()); // reopen so the screen shows the new offers
+                }
+                yield set;
+            }
+            default -> ShopActionResult.fail(Component.literal("?"));
+        };
+        menu.refresh();
+        if (result != null) {
+            ShopFeedback.send(player, result);
+        }
     }
 
     private static void handleFare(FareActionPayload payload, IPayloadContext context) {

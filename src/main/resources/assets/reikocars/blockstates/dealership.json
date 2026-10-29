@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "reikocars:block/dealership"
+    },
+    "facing=east": {
+      "model": "reikocars:block/dealership",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "reikocars:block/dealership",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "reikocars:block/dealership",
+      "y": 270
+    }
+  }
+}
