@@ -68,6 +68,28 @@ public final class CarItem extends Item {
         return stack.getOrDefault(ModDataComponents.CONDITION.get(), CarCondition.NEW);
     }
 
+    /** "Condition: 73%", then each worn part, for a car or trailer item's tooltip. Nothing for a new one. */
+    public static void addConditionLines(List<Component> tooltip, CarCondition condition, java.util.function.Predicate<CarCondition.Part> has) {
+        if (condition.isNew()) {
+            return;
+        }
+        CarCondition.Level worst = CarCondition.Level.GOOD;
+        for (CarCondition.Part part : CarCondition.Part.values()) {
+            if (has.test(part) && condition.level(part).ordinal() > worst.ordinal()) {
+                worst = condition.level(part);
+            }
+        }
+        tooltip.add(Component.translatable("item.reikocars.car.condition", CarCondition.percent(condition.overall(has)))
+                .withStyle(worst == CarCondition.Level.GOOD ? ChatFormatting.GRAY : worst.color()));
+        for (CarCondition.Part part : CarCondition.Part.values()) {
+            CarCondition.Level level = condition.level(part);
+            if (has.test(part) && level != CarCondition.Level.GOOD) {
+                tooltip.add(Component.translatable("item.reikocars.car.worn", part.displayName(),
+                        CarCondition.percent(condition.get(part))).withStyle(level.color()));
+            }
+        }
+    }
+
     public static double fuelOf(ItemStack stack) {
         return stack.getOrDefault(ModDataComponents.FUEL.get(), 0.0);
     }
@@ -129,19 +151,7 @@ public final class CarItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         int percent = (int) Math.round(fuelOf(stack) / type.tankCapacity() * 100.0);
         tooltip.add(Component.translatable("item.reikocars.car.fuel", type.fuel().displayName(), percent).withStyle(ChatFormatting.GRAY));
-        CarCondition condition = conditionOf(stack);
-        if (!condition.isNew()) {
-            CarCondition.Level worst = condition.level(condition.worstPart());
-            tooltip.add(Component.translatable("item.reikocars.car.condition", CarCondition.percent(condition.overall()))
-                    .withStyle(worst == CarCondition.Level.GOOD ? ChatFormatting.GRAY : worst.color()));
-            for (CarCondition.Part part : CarCondition.Part.values()) {
-                CarCondition.Level level = condition.level(part);
-                if (level != CarCondition.Level.GOOD) {
-                    tooltip.add(Component.translatable("item.reikocars.car.worn", part.displayName(),
-                            CarCondition.percent(condition.get(part))).withStyle(level.color()));
-                }
-            }
-        }
+        addConditionLines(tooltip, conditionOf(stack), part -> true);
         CarsClientConfig.SpeedUnit unit = CarsClientConfig.speedUnit();
         tooltip.add(Component.translatable("item.reikocars.car.stats", type.seatsText(),
                 Math.round(type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * unit.perBlockPerTick),

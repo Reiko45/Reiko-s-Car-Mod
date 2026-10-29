@@ -1,10 +1,15 @@
 package com.reiko.cars.trailer;
 
+import com.reiko.cars.car.CarCondition;
+import com.reiko.cars.car.CarCondition.Part;
 import com.reiko.cars.car.CarEntity;
+import com.reiko.cars.car.CarItem;
 import com.reiko.cars.config.CarsConfig;
 import com.reiko.cars.registry.ModDataComponents;
+import com.reiko.cars.registry.ModDataSerializers;
 import com.reiko.cars.registry.ModItems;
 import com.reiko.cars.registry.ModSounds;
+import com.reiko.cars.repair.Repairable;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,13 +17,18 @@ import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
@@ -60,13 +70,23 @@ import org.jetbrains.annotations.Nullable;
  * its landing legs where it was left.
  *
  * <p>Cars ride a car hauler the same way, as its passengers, so they go wherever it goes.
+ *
+ * <p>Trailers wear out too, though they have no engine: their tires wear as they're towed (faster loaded and off the
+ * road), their brakes whenever the tractor brakes, and their body when the rig crashes or jackknifes. Worn trailer
+ * brakes and tires make the rig slower to stop, a battered trailer slows it down, and one with a part worn out can't
+ * be towed: the rig breaks down until it's unhitched or the trailer is repaired.
  */
-public class TrailerEntity extends VehicleEntity {
+public class TrailerEntity extends VehicleEntity implements Repairable {
     private static final EntityDataAccessor<Integer> DATA_COLOR = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> DATA_LOCKED = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Optional<UUID>> DATA_OWNER = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.OPTIONAL_UUID);
     private static final EntityDataAccessor<Integer> DATA_FLUID = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_FLUID_AMOUNT = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<CarCondition> DATA_CONDITION = SynchedEntityData.defineId(TrailerEntity.class, ModDataSerializers.CONDITION);
+    /** A trailer's two axles carry four wheels. */
+    public static final int WHEELS = 4;
+    /** The share of a crash the rig's trailer takes: its load shoves it into the cab. */
+    public static final double CRASH_SHARE = 0.5;
 
     /** Set by the client: opens the tanker's screen. */
     public static Consumer<TrailerEntity> openTankerScreen = trailer -> {
@@ -83,6 +103,9 @@ public class TrailerEntity extends VehicleEntity {
     /** Where the axles are, on the ground, while hitched. Null until the trailer has been placed behind a tractor. */
     @Nullable
     private Vec3 axle;
+    private CarCondition condition = CarCondition.NEW;
+    /** Swung all the way round against the tractor last tick. */
+    private boolean jackknifed;
 
     // Lerping toward the server's position, on clients, while parked
     private int lerpSteps;
@@ -125,6 +148,7 @@ public class TrailerEntity extends VehicleEntity {
         builder.define(DATA_OWNER, Optional.empty());
         builder.define(DATA_FLUID, 0);
         builder.define(DATA_FLUID_AMOUNT, 0);
+        builder.define(DATA_CONDITION, CarCondition.NEW);
     }
 
     public TrailerType trailerType() {
@@ -225,6 +249,129 @@ public class TrailerEntity extends VehicleEntity {
         return getPassengers().stream().filter(CarEntity.class::isInstance).map(CarEntity.class::cast).toList();
     }
 
+    // ---- wear and tear ----
+
+    @Override
+    public CarCondition condition() {
+        return level().isClientSide ? entityData.get(DATA_CONDITION) : condition;
+    }
+
+    /** Sets the trailer's wear and tear, telling the tractor's driver when a part runs low or gives out. Server side. */
+    @Override
+    public void setCondition(CarCondition newCondition) {
+        CarCondition before = condition;
+        condition = newCondition;
+        if (newCondition.differs(entityData.get(DATA_CONDITION), 0.005F) || newCondition.isNew()) {
+            entityData.set(DATA_CONDITION, newCondition);
+        }
+        if (level().isClientSide || tractor() == null) {
+            return;
+        }
+        Part brokeNow = CarsConfig.get(CarsConfig.BREAKDOWNS) ? newCondition.brokenPart() : null;
+        if (brokeNow != null && before.brokenPart() == null) {
+            if (brokeNow == Part.TIRES) {
+                playSound(SoundEvents.GENERIC_EXPLODE.value(), 0.35F, 1.9F); // a blowout
+            } else {
+                playSound(SoundEvents.ZOMBIE_ATTACK_IRON_DOOR, 0.8F, 0.6F);
+            }
+            tellDriver(Component.translatable("car.reikocars.trailer_broke_down." + brokeNow.id()));
+            return;
+        }
+        for (Part part : Part.values()) {
+            CarCondition.Level was = before.level(part);
+            CarCondition.Level now = newCondition.level(part);
+            if (now.ordinal() > was.ordinal() && now != CarCondition.Level.BROKEN) {
+                tellDriver(Component.translatable("car.reikocars.trailer_part_" + now.name().toLowerCase(java.util.Locale.ROOT),
+                        part.displayName(), CarCondition.percent(newCondition.get(part))));
+            }
+        }
+    }
+
+    /** Whether a worn-out part keeps the trailer from being towed. */
+    public boolean isBrokenDown() {
+        return CarsConfig.get(CarsConfig.BREAKDOWNS) && condition().brokenPart() != null;
+    }
+
+    private void tellDriver(Component message) {
+        CarEntity tractor = tractor();
+        if (tractor != null && tractor.getControllingPassenger() instanceof Player player) {
+            player.displayClientMessage(message, true);
+        }
+    }
+
+    /** A trailer has tires, brakes and a body, but no oil or engine. */
+    @Override
+    public boolean hasPart(Part part) {
+        return part == Part.TIRES || part == Part.BRAKES || part == Part.BODY;
+    }
+
+    @Override
+    public int wheelCount() {
+        return WHEELS;
+    }
+
+    @Override
+    public boolean isHeavy() {
+        return true;
+    }
+
+    @Override
+    public Component kindName() {
+        return Component.translatable("entity.reikocars." + type.id());
+    }
+
+    /** How full it is, 0 to 1: a loaded trailer is harder on its tires. */
+    public double fullness() {
+        if (type.cargoRows > 0) {
+            int used = 0;
+            for (int slot = 0; slot < cargo.getContainerSize(); slot++) {
+                if (!cargo.getItem(slot).isEmpty()) {
+                    used++;
+                }
+            }
+            return used / (double) cargo.getContainerSize();
+        }
+        if (type.tankBuckets > 0) {
+            return tank.getFluidAmount() / (double) tank.getCapacity();
+        }
+        return type.carSlots > 0 ? cars().size() / (double) type.carSlots : 0.0;
+    }
+
+    /** The tractor braked: the trailer's brakes did their share, and a skid scrubbed its tires. Server side. */
+    public void brakeWear(double braked, double skidded) {
+        setCondition(condition.afterBraking(braked, skidded, 1.0 + 0.4 * fullness(), CarsConfig.get(CarsConfig.WEAR)));
+    }
+
+    /** The trailer took a knock at {@code impact} blocks per tick, with a clang if {@code loud}. Server side. */
+    public void crash(double impact, boolean loud) {
+        if (impact <= CarCondition.CRASH_THRESHOLD) {
+            return;
+        }
+        double damage = CarsConfig.get(CarsConfig.CRASH_DAMAGE);
+        if (damage > 0.0) {
+            setCondition(condition.with(Part.BODY, condition.afterCrash(impact, damage).body()));
+        }
+        if (loud) {
+            level().playSound(null, getX(), getY(), getZ(), SoundEvents.ZOMBIE_ATTACK_IRON_DOOR, SoundSource.NEUTRAL,
+                    (float) Math.min(1.2, 0.4 + impact), 0.6F);
+            if (level() instanceof ServerLevel server) {
+                Vec3 nose = position().add(forward().scale(TrailerType.KINGPIN_FORWARD));
+                server.sendParticles(ParticleTypes.CRIT, nose.x, getY() + 1.5, nose.z, 10, 0.8, 0.4, 0.8, 0.2);
+            }
+        }
+    }
+
+    /** Wear from being towed {@code moved} blocks this tick. Server side. */
+    private void wearFromTowing(double moved) {
+        if (moved <= 0.0 || moved > 8.0) {
+            return; // standing still, or teleported
+        }
+        BlockPos under = BlockPos.containing(getX(), getY() - 0.2, getZ());
+        double tires = level().getBlockState(under).is(CarEntity.OFF_ROAD) || level().getBlockState(blockPosition()).is(CarEntity.OFF_ROAD)
+                ? 2.5 : 1.0;
+        setCondition(condition.afterRolling(moved, tires, 1.0 + 0.4 * fullness(), CarsConfig.get(CarsConfig.WEAR)));
+    }
+
     // ---- where its parts are ----
 
     /** The way the trailer faces, flat. */
@@ -266,9 +413,11 @@ public class TrailerEntity extends VehicleEntity {
         double dx = hitch.x - axle.x;
         double dz = hitch.z - axle.z;
         float yaw = dx * dx + dz * dz < 1.0E-6 ? getYRot() : (float) (Mth.atan2(-dx, dz) * Mth.RAD_TO_DEG);
-        // No folding back on itself: a trailer can only swing so far round.
+        // No folding back on itself: a trailer can only swing so far round. Getting there (usually backing up
+        // badly) jackknifes it: it slams into the cab.
         float relative = Mth.wrapDegrees(yaw - tractor.getYRot());
-        if (Math.abs(relative) > TrailerType.MAX_ARTICULATION) {
+        boolean folded = Math.abs(relative) > TrailerType.MAX_ARTICULATION;
+        if (folded) {
             yaw = tractor.getYRot() + Math.copySign(TrailerType.MAX_ARTICULATION, relative);
         }
         yaw = getYRot() + Mth.wrapDegrees(yaw - getYRot()); // keep turning smoothly, never jumping by 360
@@ -280,8 +429,16 @@ public class TrailerEntity extends VehicleEntity {
         setPos(hitch.x - direction.x * TrailerType.KINGPIN_FORWARD, hitch.y - TrailerType.KINGPIN_HEIGHT,
                 hitch.z - direction.z * TrailerType.KINGPIN_FORWARD);
         updateParts();
+        Vec3 moved = position().subtract(before);
         if (level().isClientSide) {
-            spinWheels(position().subtract(before));
+            spinWheels(moved);
+        } else {
+            double distance = moved.horizontalDistance();
+            wearFromTowing(distance);
+            if (folded && !jackknifed && distance > 0.03 && distance < 8.0) {
+                crash(CarCondition.CRASH_THRESHOLD + 0.1 + distance * 2.0, true);
+            }
+            jackknifed = folded;
         }
     }
 
@@ -538,9 +695,10 @@ public class TrailerEntity extends VehicleEntity {
         super.remove(reason);
     }
 
-    /** This trailer as an item, keeping its paint, name and (for a tanker) load. */
+    /** This trailer as an item, keeping its paint, name, wear and (for a tanker) load. */
     public ItemStack toItem() {
         ItemStack stack = new ItemStack(getDropItem());
+        CarItem.withCondition(stack, condition);
         if (color() != type.defaultColor) {
             stack.set(DataComponents.DYED_COLOR, new DyedItemColor(color(), false));
         }
@@ -562,6 +720,7 @@ public class TrailerEntity extends VehicleEntity {
             tank.setFluid(fluid.copy());
             syncFluid();
         }
+        setCondition(CarItem.conditionOf(stack));
         setOwner(player);
         setLocked(CarsConfig.get(CarsConfig.LOCK_NEW_CARS));
     }
@@ -592,6 +751,9 @@ public class TrailerEntity extends VehicleEntity {
         if (type.tankBuckets > 0) {
             tag.put("Tank", tank.writeToNBT(registryAccess(), new CompoundTag()));
         }
+        if (!condition.isNew()) {
+            CarCondition.CODEC.encodeStart(NbtOps.INSTANCE, condition).result().ifPresent(saved -> tag.put("Condition", saved));
+        }
     }
 
     @Override
@@ -609,5 +771,8 @@ public class TrailerEntity extends VehicleEntity {
             tank.readFromNBT(registryAccess(), tag.getCompound("Tank"));
             syncFluid();
         }
+        condition = tag.contains("Condition") ? CarCondition.CODEC.parse(NbtOps.INSTANCE, tag.get("Condition")).result().orElse(CarCondition.NEW)
+                : CarCondition.NEW;
+        entityData.set(DATA_CONDITION, condition);
     }
 }

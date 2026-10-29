@@ -194,17 +194,27 @@ Cars wear out like real ones. Each car has five parts, each from 100% (new) down
 When any part reaches **0%, the car breaks down**: the engine won't start or run until it's repaired (the brakes
 still work). Cars are never destroyed.
 
+**Trailers** wear too, though they have no oil or engine: their **tires** wear as they're towed (faster loaded or
+off-road), their **brakes** whenever the semi brakes, and their **body** when the rig crashes (the load shoves the
+trailer into the cab) or jackknifes (backing up until it folds against the cab). Worn trailer brakes and tires make
+the whole rig slower to stop, and a battered trailer slows it down. A trailer with a part at 0% can't be towed: the
+rig breaks down until you unhitch it (G), and it won't hitch again until it's fixed, so put a repair bench down
+beside it (or pick it up and set it down by one).
+
 **Seeing it:** the dashboard has five warning lights (oil can, engine, tire, brake, car). They come on amber when a
 part is worn (25%), orange when badly worn (10%), and flash red when it has given out, with **BROKEN DOWN** on
-the dashboard. A tired engine smokes from under the bonnet, and the action bar tells the driver as each part gets
-low. A car's item tooltip shows its condition, and a car picked up keeps its wear.
+the dashboard. Towing, a second row shows the trailer's tires, brakes and body. A tired engine smokes from under the bonnet, and the action bar tells the driver as each part gets
+low. A car's or trailer's item tooltip shows its condition, and one picked up keeps its wear.
 
-**The Repair Bench:** park within 6 blocks of it and right-click it. It shows the car part by part, with two ways
-to fix each:
+**The Repair Bench:** park within 6 blocks of it and right-click it. It works on any car or trailer there, locked
+or not (a repair only helps its owner, and whoever orders it pays). With several beside the bench, the **< >**
+arrows pick which; it starts on the one you're in, or else the nearest you can use. It shows the vehicle part by
+part, with two ways to fix each:
 
 - **Fit:** fits the parts you carry, for nothing. An oil change takes a Motor Oil, tires a full set (one per
-  wheel), brakes a set of Brake Pads (diesel trucks take two of each). Engine Parts each put back a quarter of the
-  engine and Body Panels a fifth of the body (half that on diesel trucks), so you can fix them a bit at a time.
+  wheel; four for a trailer), brakes a set of Brake Pads (diesel trucks and trailers take two of each). Engine Parts
+  each put back a quarter of the engine and Body Panels a fifth of the body (half that on diesel trucks and
+  trailers), so you can fix them a bit at a time.
 - **The price button:** has the bench fit parts from its own stock, at the owner's prices. Click the jobs you want,
   then pay the total by **Card** (with PIN) or **Cash**, as at a pump. Sales tax applies, and the money goes to the
   bench's owner.
@@ -319,7 +329,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 ./gradlew runClient -Pshowcase=semi       # the same for semis, hitching, driving a rig, trailers and the tanker
 ./gradlew runClient -Pshowcase=bikes      # the same for the motorcycles: parked, riding and leaning, saddlebags
 ./gradlew runClient -Pshowcase=cars2      # the same for the hatchback, muscle car, convertible, minivan, van, bus, 4x4, tractor
-./gradlew runClient -Pshowcase=repair     # the Repair Bench, paying for repairs, its owner's tabs, a worn car's dashboard and smoke
+./gradlew runClient -Pshowcase=repair     # the Repair Bench, paying for repairs, its owner's tabs, a worn car's dashboard and smoke, a worn trailer
 ./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
 

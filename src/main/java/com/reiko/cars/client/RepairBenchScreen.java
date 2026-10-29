@@ -2,7 +2,6 @@ package com.reiko.cars.client;
 
 import com.reiko.cars.car.CarCondition;
 import com.reiko.cars.car.CarCondition.Part;
-import com.reiko.cars.car.CarType;
 import com.reiko.cars.config.CarsConfig;
 import com.reiko.cars.network.RepairActionPayload;
 import com.reiko.cars.repair.RepairBenchMenu;
@@ -52,6 +51,10 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
     private final EditBox[] priceBoxes = new EditBox[PARTS.length];
     private final Button[] setButtons = new Button[PARTS.length];
     private Button[] tabs = new Button[0];
+    private Button previousButton;
+    private Button nextButton;
+    /** The vehicle shown last tick, to drop the picked jobs when it changes. */
+    private String shownTarget = "";
     private long shownTotal = -1;
     private EditBox pinBox;
     private Button cardButton;
@@ -95,6 +98,13 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
             tabs = addTabs(8, TABS_ROW, new String[] {"gui.reikocars.tab_repair", "gui.reikocars.tab_stock", "gui.reikocars.tab_prices"},
                     new int[] {58, 58, 58}, this::selectTab);
         }
+        // With several vehicles beside the bench, these pick which to work on.
+        previousButton = addRenderableWidget(Button.builder(Component.literal("<"), button -> pickVehicle(RepairBenchMenu.PREVIOUS))
+                .bounds(leftPos + imageWidth - 8 - 26, topPos + top - 2, 12, 11)
+                .tooltip(Tooltip.create(Component.translatable("gui.reikocars.previous_vehicle"))).build());
+        nextButton = addRenderableWidget(Button.builder(Component.literal(">"), button -> pickVehicle(RepairBenchMenu.NEXT))
+                .bounds(leftPos + imageWidth - 8 - 12, topPos + top - 2, 12, 11)
+                .tooltip(Tooltip.create(Component.translatable("gui.reikocars.next_vehicle"))).build());
         for (Part part : PARTS) {
             int i = part.ordinal();
             int y = topPos + partsRow() + i * ROW_HEIGHT;
@@ -186,6 +196,10 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
         return total;
     }
 
+    private void pickVehicle(int button) {
+        minecraft.gameMode.handleInventoryButtonClick(menu.containerId, button);
+    }
+
     private void fit(Part part) {
         PacketDistributor.sendToServer(RepairActionPayload.fit(menu.containerId, 1 << part.ordinal()));
     }
@@ -213,9 +227,26 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
     }
 
     private void updateButtons() {
-        boolean hasCar = menu.carType() != null;
+        boolean hasCar = menu.hasTarget();
+        String target = menu.targetName().getString() + "#" + menu.targetIndex();
+        if (!target.equals(shownTarget)) {
+            shownTarget = target;
+            java.util.Arrays.fill(chosen, false); // another vehicle: start the bill again
+        }
+        boolean several = menu.vehicleCount() > 1 && tab == RepairBenchMenu.TAB_REPAIR;
+        previousButton.visible = nextButton.visible = several;
         for (Part part : PARTS) {
             int i = part.ordinal();
+            if (hasCar && !menu.hasPart(part)) {
+                // A trailer has no oil or engine.
+                chosen[i] = false;
+                Tooltip none = Tooltip.create(Component.translatable("gui.reikocars.no_part", menu.targetName(), part.displayName()));
+                fitButtons[i].active = shopButtons[i].active = false;
+                fitButtons[i].setTooltip(none);
+                shopButtons[i].setTooltip(none);
+                shopButtons[i].setMessage(Component.literal("\u2014"));
+                continue;
+            }
             int needed = menu.needed(part);
             int bench = benchJob(part);
             if (bench <= 0) {
@@ -272,11 +303,11 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
         drawPanel(graphics, leftPos, topPos, imageWidth, imageHeight);
         if (tab == RepairBenchMenu.TAB_REPAIR) {
             CarCondition condition = menu.condition();
-            boolean hasCar = menu.carType() != null;
+            boolean hasCar = menu.hasTarget();
             for (Part part : PARTS) {
                 int y = topPos + partsRow() + part.ordinal() * ROW_HEIGHT;
                 drawSlot(graphics, leftPos + 8, y + 1);
-                if (hasCar) {
+                if (hasCar && menu.hasPart(part)) {
                     drawBar(graphics, leftPos + 28, y + 12, condition.get(part), barColor(condition.level(part)));
                 }
             }
@@ -291,6 +322,11 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
                 drawSlot(graphics, leftPos + 8, topPos + top + 15 + part.ordinal() * 22);
             }
         }
+    }
+
+    /** The average of the parts the vehicle has (a trailer's oil and engine don't count). */
+    private float overall(CarCondition condition) {
+        return condition.overall(menu::hasPart);
     }
 
     /** Darker than the bar colours, to read on the grey panel. */
@@ -334,22 +370,30 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
     }
 
     private void renderRepair(GuiGraphics graphics) {
-        CarType car = menu.carType();
+        boolean hasCar = menu.hasTarget();
         CarCondition condition = menu.condition();
-        if (car == null) {
+        if (!hasCar) {
             Component none = Component.translatable("gui.reikocars.repair_no_car", (int) CarsConfig.get(CarsConfig.BENCH_REACH));
             graphics.drawString(font, fit(none, imageWidth - 16), 8, top, 0xB3261E, false);
         } else {
-            Component name = Component.translatable("entity.reikocars." + car.id());
-            Component overall = Component.translatable("gui.reikocars.overall", CarCondition.percent(condition.overall()));
-            graphics.drawString(font, fit(name, imageWidth - 22 - font.width(overall)), 8, top, LABEL_COLOR, false);
-            graphics.drawString(font, overall, imageWidth - 8 - font.width(overall), top, MUTED_COLOR, false);
+            Component name = menu.vehicleCount() > 1
+                    ? Component.translatable("gui.reikocars.vehicle_of", menu.targetName(), menu.targetIndex() + 1, menu.vehicleCount())
+                    : menu.targetName();
+            // With the arrows showing, just the percentage, to leave room for the name.
+            String percent = CarCondition.percent(overall(condition));
+            Component overall = previousButton.visible ? Component.literal(percent) : Component.translatable("gui.reikocars.overall", percent);
+            int right = imageWidth - 8 - (previousButton.visible ? 30 : 0);
+            graphics.drawString(font, fit(name, right - 14 - font.width(overall)), 8, top, LABEL_COLOR, false);
+            graphics.drawString(font, overall, right - font.width(overall), top, MUTED_COLOR, false);
         }
         for (Part part : PARTS) {
             int y = partsRow() + part.ordinal() * ROW_HEIGHT;
             graphics.renderFakeItem(new ItemStack(RepairJobs.item(part)), 8, y + 1);
-            graphics.drawString(font, part.displayName(), 28, y + 2, LABEL_COLOR, false);
-            if (car != null) {
+            boolean present = !hasCar || menu.hasPart(part);
+            graphics.drawString(font, part.displayName(), 28, y + 2, present ? LABEL_COLOR : MUTED_COLOR, false);
+            if (hasCar && !present) {
+                graphics.drawString(font, Component.translatable("gui.reikocars.part_none"), 28, y + 11, MUTED_COLOR, false);
+            } else if (hasCar) {
                 CarCondition.Level level = condition.level(part);
                 String percent = CarCondition.percent(condition.get(part));
                 graphics.drawString(font, percent, 28 + BAR_WIDTH - font.width(percent), y + 2, textColor(level), false);

@@ -78,15 +78,15 @@ public final class CarsConfig {
 
         builder.push("wear");
         WEAR = builder
-                .comment("Multiplies wear and tear from driving: oil, engine, tires and brakes. At 1, a car needs an oil change about",
-                        "every 50,000 blocks, new tires every 80,000 and brakes after about 550 hard stops. 0 turns wear off.")
+                .comment("Multiplies wear and tear from driving: oil, engine, tires and brakes, cars' and trailers'. At 1, a car needs",
+                        "an oil change about every 50,000 blocks, new tires every 80,000 and brakes after about 550 hard stops. 0 turns wear off.")
                 .defineInRange("wearMultiplier", 1.0, 0.0, 100.0);
         CRASH_DAMAGE = builder
-                .comment("Multiplies the body damage cars take hitting walls, other vehicles and mobs. At 1, a sedan driven into a",
-                        "wall at full speed loses 45% of its body. 0 turns crash damage off.")
+                .comment("Multiplies the body damage cars take hitting walls, other vehicles and mobs (and trailers in crashes and",
+                        "jackknifes). At 1, a sedan driven into a wall at full speed loses 45% of its body. 0 turns crash damage off.")
                 .defineInRange("crashDamageMultiplier", 1.0, 0.0, 10.0);
         BREAKDOWNS = builder
-                .comment("Whether a car with a worn-out part (at 0%) breaks down and won't run until it's repaired.",
+                .comment("Whether a car with a worn-out part (at 0%) breaks down and won't run until it's repaired (and a trailer can't be towed).",
                         "If false, worn parts only make it slower, thirstier and worse at stopping.")
                 .define("breakdowns", true);
         BENCH_REACH = builder

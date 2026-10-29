@@ -1040,7 +1040,39 @@ public final class DevShowcase {
         at(395, mc -> shot(mc, "46_worn_car_driving"));
         at(400, mc -> server(mc, player -> car(player.serverLevel(), CarType.SEDAN).setCondition(new CarCondition(0.2F, 0.0F, 0.08F, 0.6F, 0.3F))));
         at(430, mc -> shot(mc, "47_broken_down"));
-        at(440, mc -> mc.stop());
+        // A semi with a worn trailer beside the bench: the arrows pick the trailer, which has no oil or engine.
+        at(435, mc -> server(mc, player -> {
+            player.stopRiding();
+            ServerLevel level = player.serverLevel();
+            CarEntity sedan = car(level, CarType.SEDAN);
+            sedan.setCondition(CarCondition.NEW);
+            sedan.moveTo(-1.5, -60.0, 4.0, 0.0F, 0.0F);
+            spawn(level, CarType.SEMI_TRUCK, 5.5, 10.5, 0.0F, 0.7);
+            CarEntity semi = car(level, CarType.SEMI_TRUCK);
+            semi.setOwner(player);
+            net.minecraft.world.phys.Vec3 fifthWheel = semi.fifthWheel();
+            TrailerEntity trailer = ModEntities.trailer(TrailerType.BOX_TRAILER).create(level);
+            trailer.moveTo(fifthWheel.x, -60.0, fifthWheel.z - com.reiko.cars.trailer.TrailerType.KINGPIN_FORWARD, 0.0F, 0.0F);
+            level.addFreshEntity(trailer);
+            trailer.setCondition(new CarCondition(1.0F, 1.0F, 0.15F, 0.08F, 0.4F));
+            trailer.startRiding(semi, true);
+            look(mc, 4.5, -59.5, 0.5, 60.0F, 25.0F);
+            RepairBenchMenu.open(player, repairBench(player));
+        }));
+        for (int t = 455; t <= 470; t += 5) {
+            at(t, mc -> {
+                if (mc.player.containerMenu instanceof RepairBenchMenu menu && !menu.targetName().getString().contains("Trailer")) {
+                    click(mc, 180, 33);
+                }
+            });
+        }
+        at(490, mc -> shot(mc, "48_repair_trailer"));
+        at(495, mc -> mc.player.closeContainer());
+        at(500, mc -> server(mc, player -> player.startRiding(car(player.serverLevel(), CarType.SEMI_TRUCK), true)));
+        at(505, mc -> mc.options.keyUp.setDown(true));
+        at(530, mc -> mc.options.keyUp.setDown(false));
+        at(560, mc -> shot(mc, "49_trailer_dashboard"));
+        at(570, mc -> mc.stop());
     }
 
 }

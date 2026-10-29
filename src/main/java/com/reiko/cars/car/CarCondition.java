@@ -168,6 +168,19 @@ public record CarCondition(float oil, float engine, float tires, float brakes, f
         return (oil + engine + tires + brakes + body) / 5.0F;
     }
 
+    /** The parts {@code has} picks, averaged (a trailer's, say, which has no oil or engine). */
+    public float overall(java.util.function.Predicate<Part> has) {
+        float sum = 0.0F;
+        int count = 0;
+        for (Part part : Part.values()) {
+            if (has.test(part)) {
+                sum += get(part);
+                count++;
+            }
+        }
+        return count == 0 ? 1.0F : sum / count;
+    }
+
     public boolean isNew() {
         return oil >= 1.0F && engine >= 1.0F && tires >= 1.0F && brakes >= 1.0F && body >= 1.0F;
     }
@@ -200,6 +213,14 @@ public record CarCondition(float oil, float engine, float tires, float brakes, f
         double newEngine = engine - blocks / ENGINE_LIFE * engineRate * load * rate;
         double newTires = tires - blocks / TIRE_LIFE * tireFactor * load * rate;
         return new CarCondition((float) newOil, (float) newEngine, (float) newTires, brakes, body);
+    }
+
+    /** A trailer's wear after being towed {@code blocks}: only its tires, as it has no engine. */
+    public CarCondition afterRolling(double blocks, double tireFactor, double load, double rate) {
+        if (blocks <= 0 || rate <= 0) {
+            return this;
+        }
+        return with(Part.TIRES, (float) (tires - blocks / TIRE_LIFE * tireFactor * load * rate));
     }
 
     /**

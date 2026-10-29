@@ -62,8 +62,8 @@ public final class ModNetwork {
             return;
         }
         ShopActionResult result = switch (payload.action()) {
-            case RepairActionPayload.FIT -> RepairService.fitOwn(player, bench, menu.car(), payload.parts());
-            case RepairActionPayload.BUY -> RepairService.buy(player, bench, menu.car(), payload.parts(), payload.expectedTotal(), payload.payment());
+            case RepairActionPayload.FIT -> RepairService.fitOwn(player, bench, menu.target(), payload.parts());
+            case RepairActionPayload.BUY -> RepairService.buy(player, bench, menu.target(), payload.parts(), payload.expectedTotal(), payload.payment());
             case RepairActionPayload.SET_PRICE -> {
                 ShopActionResult set = RepairService.setPrice(player, bench, payload.parts(), payload.priceText());
                 if (set.success()) {

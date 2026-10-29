@@ -1,5 +1,7 @@
 package com.reiko.cars.trailer;
 
+import com.reiko.cars.car.CarCondition;
+import com.reiko.cars.car.CarItem;
 import com.reiko.cars.registry.ModDataComponents;
 import com.reiko.cars.registry.ModEntities;
 import java.util.List;
@@ -86,6 +88,8 @@ public final class TrailerItem extends Item {
             tooltip.add(Component.translatable("item.reikocars.tanker_trailer.holds", fluid.getAmount() / 1000, fluid.copy().getHoverName())
                     .withStyle(ChatFormatting.DARK_GRAY));
         }
+        CarItem.addConditionLines(tooltip, CarItem.conditionOf(stack),
+                part -> part == CarCondition.Part.TIRES || part == CarCondition.Part.BRAKES || part == CarCondition.Part.BODY);
         tooltip.add(Component.translatable("item.reikocars.trailer.hitch_hint").withStyle(ChatFormatting.DARK_GRAY));
     }
 }

@@ -7,6 +7,7 @@ import com.reiko.cars.registry.ModDataComponents;
 import com.reiko.cars.registry.ModDataSerializers;
 import com.reiko.cars.registry.ModItems;
 import com.reiko.cars.registry.ModSounds;
+import com.reiko.cars.repair.Repairable;
 import com.reiko.cars.trailer.TrailerEntity;
 import java.util.List;
 import java.util.Optional;
@@ -79,7 +80,7 @@ import org.jetbrains.annotations.Nullable;
  * reports braking and crashes, and the server checks those against what the car could do. Worn parts change how the
  * car drives on the driver's client, from the condition the server sends with the rest of the car's data.
  */
-public class CarEntity extends VehicleEntity {
+public class CarEntity extends VehicleEntity implements Repairable {
     public static final ResourceKey<DamageType> RUN_OVER = ResourceKey.create(Registries.DAMAGE_TYPE, ReikoCars.id("car"));
     /** Grass, dirt, sand, snow and the like slow every car but the off-roader. */
     public static final TagKey<Block> OFF_ROAD = BlockTags.create(ReikoCars.id("off_road"));
@@ -226,6 +227,7 @@ public class CarEntity extends VehicleEntity {
     // ---- wear and tear ----
 
     /** The car's wear and tear. Exact on the server; on clients, to within half a percent. */
+    @Override
     public CarCondition condition() {
         return level().isClientSide ? entityData.get(DATA_CONDITION) : condition;
     }
@@ -233,6 +235,7 @@ public class CarEntity extends VehicleEntity {
     /**
      * Sets the car's wear and tear, telling the driver when a part runs low or gives out. Server side.
      */
+    @Override
     public void setCondition(CarCondition newCondition) {
         CarCondition before = condition;
         condition = newCondition;
@@ -258,9 +261,49 @@ public class CarEntity extends VehicleEntity {
         }
     }
 
-    /** Whether a worn-out part keeps the car from running (unless the server has breakdowns turned off). */
+    /**
+     * Whether a worn-out part keeps the car from running, or its trailer from being towed (unless the server has
+     * breakdowns turned off).
+     */
     public boolean isBrokenDown() {
-        return CarsConfig.get(CarsConfig.BREAKDOWNS) && condition().brokenPart() != null;
+        if (!CarsConfig.get(CarsConfig.BREAKDOWNS)) {
+            return false;
+        }
+        TrailerEntity towed = trailer();
+        return condition().brokenPart() != null || (towed != null && towed.isBrokenDown());
+    }
+
+    /** What's broken down, for the driver: one of the car's parts, or its trailer's. */
+    private Component brokenDownMessage() {
+        Part own = condition().brokenPart();
+        if (own != null) {
+            return Component.translatable("car.reikocars.broke_down." + own.id());
+        }
+        TrailerEntity towed = trailer();
+        Part trailers = towed == null ? null : towed.condition().brokenPart();
+        return Component.translatable("car.reikocars.trailer_broke_down." + (trailers == null ? Part.BODY : trailers).id());
+    }
+
+    /** A car has every part. */
+    @Override
+    public boolean hasPart(Part part) {
+        return true;
+    }
+
+    @Override
+    public int wheelCount() {
+        return type.wheels;
+    }
+
+    /** Diesel trucks are heavy-duty. */
+    @Override
+    public boolean isHeavy() {
+        return type.fuel() == FuelType.DIESEL;
+    }
+
+    @Override
+    public Component kindName() {
+        return Component.translatable("entity.reikocars." + type.id());
     }
 
     private void tellDriver(Component message) {
@@ -307,7 +350,11 @@ public class CarEntity extends VehicleEntity {
             double skidded = Mth.clamp(skidSpeed, 0.0, most);
             lastBrakeReport = tickCount;
             setCondition(condition.afterBraking(braked, skidded, load, rate));
-            if (condition.brakes() < 0.25F && braked > 0.1) {
+            TrailerEntity towed = trailer();
+            if (towed != null) {
+                towed.brakeWear(braked, skidded);
+            }
+            if ((condition.brakes() < 0.25F || (towed != null && towed.condition().brakes() < 0.25F)) && braked > 0.1) {
                 level().playSound(from, getX(), getY(), getZ(), ModSounds.BRAKE_SQUEAL.get(), SoundSource.NEUTRAL, 0.8F, 1.0F);
             }
         }
@@ -325,6 +372,10 @@ public class CarEntity extends VehicleEntity {
         double damage = CarsConfig.get(CarsConfig.CRASH_DAMAGE);
         if (damage > 0.0) {
             setCondition(condition.afterCrash(impact, damage));
+        }
+        TrailerEntity towed = trailer();
+        if (towed != null) {
+            towed.crash(impact * TrailerEntity.CRASH_SHARE, false); // the load shoves the trailer into the cab
         }
         level().playSound(null, getX(), getY(), getZ(), SoundEvents.ZOMBIE_ATTACK_IRON_DOOR, SoundSource.NEUTRAL,
                 (float) Math.min(1.2, 0.3 + impact), 0.7F + (float) Math.min(0.3, impact * 0.2));
@@ -545,7 +596,7 @@ public class CarEntity extends VehicleEntity {
         if (!level().isClientSide && !hadDriver && getControllingPassenger() != null && hasFuel()) {
             if (isBrokenDown()) {
                 playSound(ModSounds.BREAKDOWN.get(), 0.6F, 1.2F); // turns over, won't start
-                tellDriver(Component.translatable("car.reikocars.broke_down." + condition.brokenPart().id()));
+                tellDriver(brokenDownMessage());
             } else {
                 playSound(ModSounds.ENGINE_START.get(), 1.0F, 1.0F);
             }
@@ -700,9 +751,14 @@ public class CarEntity extends VehicleEntity {
         }
         double accel = type.acceleration * speedScale * wear.power() * tires;
         double brakes = type.braking * wear.braking() * tires;
-        if (trailer() != null) {
+        TrailerEntity towed = trailer();
+        if (towed != null) {
             top *= 0.9; // pulling a trailer: slower, and slower to get going
             accel *= 0.7;
+            // A trailer's worn brakes and bald tires don't help stop the rig; a battered one drags.
+            CarCondition trailerWear = towed.condition();
+            brakes *= 0.4 + 0.6 * trailerWear.braking() * trailerWear.grip();
+            top *= 0.5 + 0.5 * trailerWear.drag();
         }
         boolean engine = getControllingPassenger() != null && hasFuel() && !isBrokenDown();
         double before = speed;
@@ -766,7 +822,7 @@ public class CarEntity extends VehicleEntity {
         }
         if (squealCooldown > 0) {
             squealCooldown--;
-        } else if (wear.brakes() < 0.25F && Math.abs(speed) > 0.15) {
+        } else if ((wear.brakes() < 0.25F || (trailer() != null && trailer().condition().brakes() < 0.25F)) && Math.abs(speed) > 0.15) {
             squealCooldown = 30;
             level().playLocalSound(getX(), getY(), getZ(), ModSounds.BRAKE_SQUEAL.get(), SoundSource.NEUTRAL, 0.8F, 1.0F, false);
         }

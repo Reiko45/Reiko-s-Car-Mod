@@ -96,6 +96,12 @@ public final class Hitching {
                 player.displayClientMessage(Component.translatable("trailer.reikocars.nothing_to_hitch"), true);
                 return;
             }
+            if (trailer.isBrokenDown()) {
+                // A trailer with a part worn out can't be towed: it has to be fixed where it stands.
+                player.displayClientMessage(Component.translatable("trailer.reikocars.too_worn_to_hitch", trailer.getDisplayName(),
+                        trailer.condition().brokenPart().displayName()), true);
+                return;
+            }
             trailer.startRiding(car, true);
             clank(car, 1.1F);
             player.displayClientMessage(Component.translatable("trailer.reikocars.hitched", trailer.getDisplayName()), true);

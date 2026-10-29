@@ -5,6 +5,9 @@ import com.reiko.cars.car.CarCondition.Part;
 import com.reiko.cars.car.CarEntity;
 import com.reiko.cars.car.CarType;
 import com.reiko.cars.registry.ModMenus;
+import com.reiko.cars.trailer.TrailerEntity;
+import com.reiko.cars.trailer.TrailerType;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -24,9 +27,11 @@ import net.neoforged.neoforge.items.SlotItemHandler;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The repair bench screen's server side. Repairs and price changes go through {@code RepairActionPayload}; the car
- * beside the bench, its condition, what each job needs and what's in stock are kept live through data slots. The
- * bench's stock slots and the player's inventory are there for the owner's Stock tab, and only show on it.
+ * The repair bench screen's server side. Repairs and price changes go through {@code RepairActionPayload}; the vehicle
+ * being worked on, its condition, what each job needs and what's in stock are kept live through data slots. With
+ * several cars and trailers beside the bench, the screen's arrows (menu buttons {@link #PREVIOUS} and {@link #NEXT})
+ * pick which. The bench's stock slots and the player's inventory are there for the owner's Stock tab, and only show
+ * on it.
  */
 public final class RepairBenchMenu extends AbstractContainerMenu {
     public static final int TAB_REPAIR = 0;
@@ -36,15 +41,25 @@ public final class RepairBenchMenu extends AbstractContainerMenu {
     public static final int STOCK_X = 16;
     public static final int STOCK_Y = 44;
     public static final int INVENTORY_Y = 106;
+    /** Menu buttons: work on the previous or next vehicle beside the bench. */
+    public static final int PREVIOUS = 0;
+    public static final int NEXT = 1;
 
     private static final int PARTS = Part.values().length;
-    // Data slots (shorts): the car's type, then per part its condition in thousandths, the bench's stock, and how
-    // many items it'd take to make the part as new.
-    private static final int CAR_TYPE = 0;
-    private static final int CONDITION = 1;
+    // Data slots (shorts): the vehicle (its kind, 1 for a car or 2 for a trailer, and type), which of how many beside
+    // the bench it is, the parts it has (a bit each), then per part its condition in thousandths, the bench's
+    // stock, and how many items it'd take to make the part as new.
+    private static final int KIND = 0;
+    private static final int TYPE = 1;
+    private static final int INDEX = 2;
+    private static final int COUNT = 3;
+    private static final int HAS_PARTS = 4;
+    private static final int CONDITION = 5;
     private static final int STOCK = CONDITION + PARTS;
     private static final int NEEDED = STOCK + PARTS;
     private static final int SLOTS = NEEDED + PARTS;
+    private static final int KIND_CAR = 1;
+    private static final int KIND_TRAILER = 2;
 
     @Nullable
     private final RepairBenchBlockEntity bench; // null on the client
@@ -58,8 +73,11 @@ public final class RepairBenchMenu extends AbstractContainerMenu {
     private final ContainerData data;
     @Nullable
     private ServerPlayer viewer;
+    /** The vehicle being worked on, server side. */
     @Nullable
-    private CarEntity car;
+    private Repairable target;
+    /** Picked with the arrows, rather than the bench's own choice. */
+    private boolean picked;
     /** Client: the tab the screen shows, which decides whether the slots do. */
     private int tab = TAB_REPAIR;
 
@@ -130,13 +148,7 @@ public final class RepairBenchMenu extends AbstractContainerMenu {
         boolean manager = bench.canManage(player);
         boolean owner = bench.isOwner(player);
         long[] prices = bench.prices();
-        player.openMenu(new SimpleMenuProvider((id, inventory, p) -> {
-            RepairBenchMenu menu = new RepairBenchMenu(id, inventory, bench, bench.stock(), bench.getBlockPos(), bench.ownerName(), manager,
-                    owner, prices, bench.earned(), bench.repairs(), new SimpleContainerData(SLOTS));
-            menu.viewer = player;
-            menu.refresh();
-            return menu;
-        }, title), buf -> {
+        player.openMenu(new SimpleMenuProvider((id, inventory, p) -> create(id, player, bench), title), buf -> {
             buf.writeBlockPos(bench.getBlockPos());
             buf.writeUtf(bench.ownerName(), 64);
             buf.writeBoolean(manager);
@@ -147,23 +159,61 @@ public final class RepairBenchMenu extends AbstractContainerMenu {
         });
     }
 
-    /** Finds the car beside the bench again and updates the data slots. Server side, every tick. */
+    /** The server side of the screen for {@code player} at {@code bench} (opened with {@link #open}). */
+    public static RepairBenchMenu create(int containerId, ServerPlayer player, RepairBenchBlockEntity bench) {
+        RepairBenchMenu menu = new RepairBenchMenu(containerId, player.getInventory(), bench, bench.stock(), bench.getBlockPos(),
+                bench.ownerName(), bench.canManage(player), bench.isOwner(player), bench.prices(), bench.earned(), bench.repairs(),
+                new SimpleContainerData(SLOTS));
+        menu.viewer = player;
+        menu.refresh();
+        return menu;
+    }
+
+    /** Finds the vehicles beside the bench again and updates the data slots. Server side, every tick. */
     public void refresh() {
         if (bench == null || viewer == null) {
             return;
         }
-        if (car == null || !RepairService.inReach(bench, car) || !car.canBeUsedBy(viewer)
-                || (viewer.getVehicle() instanceof CarEntity riding && riding != car)) {
-            car = RepairService.findCar(bench, viewer);
+        List<Repairable> vehicles = RepairService.vehiclesInReach(bench);
+        if (target == null || !vehicles.contains(target) || (!picked && RepairService.defaultTarget(bench, viewer, vehicles) != target)) {
+            target = RepairService.defaultTarget(bench, viewer, vehicles);
+            picked = false;
         }
-        CarCondition condition = car == null ? CarCondition.NEW : car.condition();
-        data.set(CAR_TYPE, car == null ? -1 : car.carType().ordinal());
+        CarCondition condition = target == null ? CarCondition.NEW : target.condition();
+        data.set(KIND, target instanceof CarEntity ? KIND_CAR : target instanceof TrailerEntity ? KIND_TRAILER : 0);
+        data.set(TYPE, target instanceof CarEntity car ? car.carType().ordinal()
+                : target instanceof TrailerEntity trailer ? trailer.trailerType().ordinal() : 0);
+        data.set(INDEX, target == null ? 0 : vehicles.indexOf(target));
+        data.set(COUNT, vehicles.size());
+        int hasParts = 0;
         for (Part part : Part.values()) {
             int i = part.ordinal();
+            if (target != null && target.hasPart(part)) {
+                hasParts |= 1 << i;
+            }
             data.set(CONDITION + i, Math.round(condition.get(part) * 1000));
             data.set(STOCK + i, Math.min(Short.MAX_VALUE, bench.count(part)));
-            data.set(NEEDED + i, car == null ? 0 : RepairJobs.needed(part, car.carType(), condition));
+            data.set(NEEDED + i, target == null ? 0 : RepairJobs.needed(part, target, condition));
         }
+        data.set(HAS_PARTS, hasParts);
+    }
+
+    /** The arrows: work on the previous or next vehicle beside the bench. */
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        if (bench == null || (id != PREVIOUS && id != NEXT)) {
+            return false;
+        }
+        List<Repairable> vehicles = RepairService.vehiclesInReach(bench);
+        if (vehicles.isEmpty()) {
+            return false;
+        }
+        int index = target == null ? -1 : vehicles.indexOf(target);
+        int step = id == NEXT ? 1 : -1;
+        target = vehicles.get(Math.floorMod(index < 0 ? 0 : index + step, vehicles.size()));
+        picked = true;
+        refresh();
+        return true;
     }
 
     @Override
@@ -177,10 +227,10 @@ public final class RepairBenchMenu extends AbstractContainerMenu {
         return bench;
     }
 
-    /** The car beside the bench, server side. */
+    /** The vehicle being worked on, server side. */
     @Nullable
-    public CarEntity car() {
-        return car;
+    public Repairable target() {
+        return target;
     }
 
     public BlockPos pos() {
@@ -214,10 +264,35 @@ public final class RepairBenchMenu extends AbstractContainerMenu {
         return repairs;
     }
 
-    @Nullable
-    public CarType carType() {
-        int ordinal = data.get(CAR_TYPE);
-        return ordinal >= 0 && ordinal < CarType.values().length ? CarType.values()[ordinal] : null;
+    /** Whether there's a vehicle to work on. */
+    public boolean hasTarget() {
+        return data.get(KIND) != 0;
+    }
+
+    /** The kind of vehicle being worked on, like "Sedan" or "Box Trailer". */
+    public Component targetName() {
+        int type = data.get(TYPE);
+        if (data.get(KIND) == KIND_CAR && type >= 0 && type < CarType.values().length) {
+            return Component.translatable("entity.reikocars." + CarType.values()[type].id());
+        }
+        if (data.get(KIND) == KIND_TRAILER && type >= 0 && type < TrailerType.values().length) {
+            return Component.translatable("entity.reikocars." + TrailerType.values()[type].id());
+        }
+        return Component.empty();
+    }
+
+    /** Which of the vehicles beside the bench is being worked on (from 0), and how many there are. */
+    public int targetIndex() {
+        return data.get(INDEX);
+    }
+
+    public int vehicleCount() {
+        return data.get(COUNT);
+    }
+
+    /** Whether the vehicle has {@code part} (a trailer has no oil or engine). */
+    public boolean hasPart(Part part) {
+        return (data.get(HAS_PARTS) & (1 << part.ordinal())) != 0;
     }
 
     /** The car's condition, to a thousandth. */

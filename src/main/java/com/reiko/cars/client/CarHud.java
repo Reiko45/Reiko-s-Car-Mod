@@ -4,6 +4,7 @@ import com.reiko.cars.car.CarCondition;
 import com.reiko.cars.car.CarCondition.Part;
 import com.reiko.cars.car.CarEntity;
 import com.reiko.cars.trailer.Hitching;
+import com.reiko.cars.trailer.TrailerEntity;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -15,8 +16,8 @@ import net.minecraft.util.Mth;
 /**
  * The dashboard, bottom right while you're in a car: speed, a fuel gauge running from E to F, whether the car is
  * locked, and a row of warning lights for its oil, engine, tires, brakes and body, which come on amber when a part
- * is worn, orange when it's badly worn, and flash red when it has given out. Drawn in code, like the economy mod's
- * screens, so it needs no textures.
+ * is worn, orange when it's badly worn, and flash red when it has given out. Towing, a second row shows the
+ * trailer's tires, brakes and body. Drawn in code, like the economy mod's screens, so it needs no textures.
  */
 public final class CarHud implements LayeredDraw.Layer {
     private static final int WIDTH = 104;
@@ -30,7 +31,21 @@ public final class CarHud implements LayeredDraw.Layer {
             {".........", "..####...", ".#..#.#..", "#########", "#########", ".##...##.", "........."},
     };
     private static final int LIGHT_SPACING = 19;
+    /** A trailer, for the start of the trailer's row of lights. */
+    private static final String[] TRAILER = {".........", "#######..", "#######..", "#########", "#######..", ".##.##...", "........."};
+    /** The trailer's row of lights adds this much to the dashboard. */
+    private static final int TRAILER_ROW = 10;
     private static final int MARGIN = 6;
+
+    /** Off (dim) while good, amber when worn, orange when badly worn, flashing red when gone. */
+    private static int lightColor(CarCondition.Level level, boolean flash) {
+        return switch (level) {
+            case GOOD -> 0x38FFFFFF;
+            case LOW -> 0xFFF2C014;
+            case CRITICAL -> 0xFFFF7A1A;
+            case BROKEN -> flash ? 0xFFFF3B30 : 0x60FF3B30;
+        };
+    }
 
     private static void drawLight(GuiGraphics graphics, String[] glyph, int x, int y, int color) {
         for (int row = 0; row < glyph.length; row++) {
@@ -51,10 +66,12 @@ public final class CarHud implements LayeredDraw.Layer {
             return;
         }
         Font font = minecraft.font;
+        TrailerEntity towed = car.trailer();
+        int height = HEIGHT + (towed != null ? TRAILER_ROW : 0);
         int x = graphics.guiWidth() - WIDTH - MARGIN;
-        int y = graphics.guiHeight() - HEIGHT - MARGIN;
-        graphics.fill(x, y, x + WIDTH, y + HEIGHT, 0xA0101010);
-        graphics.renderOutline(x, y, WIDTH, HEIGHT, 0x60FFFFFF);
+        int y = graphics.guiHeight() - height - MARGIN;
+        graphics.fill(x, y, x + WIDTH, y + height, 0xA0101010);
+        graphics.renderOutline(x, y, WIDTH, height, 0x60FFFFFF);
 
         // Speed
         CarsClientConfig.SpeedUnit unit = CarsClientConfig.speedUnit();
@@ -109,13 +126,18 @@ public final class CarHud implements LayeredDraw.Layer {
         int lightsY = y + 38;
         boolean flash = (minecraft.player.tickCount / 5) % 2 == 0;
         for (Part part : Part.values()) {
-            int light = switch (condition.level(part)) {
-                case GOOD -> 0x38FFFFFF;
-                case LOW -> 0xFFF2C014;
-                case CRITICAL -> 0xFFFF7A1A;
-                case BROKEN -> flash ? 0xFFFF3B30 : 0x60FF3B30;
-            };
-            drawLight(graphics, LIGHTS[part.ordinal()], lightsX + part.ordinal() * LIGHT_SPACING, lightsY, light);
+            drawLight(graphics, LIGHTS[part.ordinal()], lightsX + part.ordinal() * LIGHT_SPACING, lightsY, lightColor(condition.level(part), flash));
+        }
+        if (towed != null) {
+            // The trailer's own row: a trailer, then its tires, brakes and body under the car's.
+            CarCondition trailerWear = towed.condition();
+            drawLight(graphics, TRAILER, lightsX, lightsY + TRAILER_ROW, 0x90FFFFFF);
+            for (Part part : Part.values()) {
+                if (towed.hasPart(part)) {
+                    drawLight(graphics, LIGHTS[part.ordinal()], lightsX + part.ordinal() * LIGHT_SPACING, lightsY + TRAILER_ROW,
+                            lightColor(trailerWear.level(part), flash));
+                }
+            }
         }
 
         // What the hitch key would do here, just above the dashboard.

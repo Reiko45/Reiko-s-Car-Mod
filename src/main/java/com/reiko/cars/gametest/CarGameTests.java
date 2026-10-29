@@ -18,6 +18,7 @@ import com.reiko.cars.registry.ModEntities;
 import com.reiko.cars.registry.ModItems;
 import com.reiko.cars.repair.RepairBenchBlock;
 import com.reiko.cars.repair.RepairBenchBlockEntity;
+import com.reiko.cars.repair.RepairBenchMenu;
 import com.reiko.cars.repair.RepairJobs;
 import com.reiko.cars.repair.RepairService;
 import com.reiko.cars.trailer.Hitching;
@@ -67,7 +68,8 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * In-world tests: selling fuel for cash and card through the economy mod, the owner's free fill-ups, pipes and
  * buckets, gasoline and diesel, selling into buckets, fuel burned by driving, BuildCraft's fuel values, car locks and
  * building cars at the Car Workbench, semis: diesel, hitching and towing trailers, tankers and car haulers, and wear and
- * tear: parts wearing out, breaking down, and repairs at the Repair Bench, free or paid for. Run them with
+ * tear: parts wearing out, trailers too, breaking down, and repairs at the Repair Bench, free or paid for, on any
+ * vehicle beside it. Run them with
  * {@code ./gradlew runGameTestServer}. The economy mod turns taxes off on the test server, so amounts are exact.
  */
 @GameTestHolder(ReikoCars.MODID)
@@ -1102,9 +1104,9 @@ public final class CarGameTests {
             CarEntity car = car(helper, CarType.SEDAN);
             car.setOwner(driver);
             car.setCondition(new CarCondition(0.1F, 0.4F, 0.2F, 1.0F, 1.0F));
-            check(helper, RepairService.findCar(bench, driver) == car, "the bench finds the car beside it");
-            helper.assertValueEqual(RepairJobs.needed(Part.TIRES, CarType.SEDAN, car.condition()), 4, "a sedan takes 4 tires");
-            helper.assertValueEqual(RepairJobs.needed(Part.ENGINE, CarType.SEDAN, car.condition()), 3, "and 3 engine parts");
+            check(helper, RepairService.defaultTarget(bench, driver) == car, "the bench finds the car beside it");
+            helper.assertValueEqual(RepairJobs.needed(Part.TIRES, car), 4, "a sedan takes 4 tires");
+            helper.assertValueEqual(RepairJobs.needed(Part.ENGINE, car), 3, "and 3 engine parts");
 
             driver.getInventory().add(new ItemStack(ModItems.TIRE.get(), 2));
             int tiresOnly = 1 << Part.TIRES.ordinal();
@@ -1186,6 +1188,125 @@ public final class CarGameTests {
             helper.assertValueEqual(ECO.getBalance(server, mechanic.getUUID()), before, "free for the owner");
             helper.assertValueEqual(bench.count(Part.BODY), 0, "panels used from stock");
             check(helper, !RepairService.buy(mechanic, bench, car, body, 0, Payment.cash()).success(), "out of panels");
+        } finally {
+            leave(helper, mechanic);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void lockedCarsCanBeRepaired(GameTestHelper helper) {
+        ServerPlayer mechanic = join(helper);
+        ServerPlayer owner = join(helper);
+        try {
+            RepairBenchBlockEntity bench = bench(helper, mechanic, 1500);
+            CarEntity car = car(helper, CarType.SEDAN);
+            car.setOwner(owner);
+            car.setLocked(true);
+            car.setCondition(CarCondition.NEW.with(Part.BRAKES, 0.1F));
+            check(helper, !car.canBeUsedBy(mechanic), "the car is locked to the mechanic");
+            check(helper, RepairService.defaultTarget(bench, mechanic) == car, "but the bench still finds it");
+            mechanic.getInventory().add(new ItemStack(ModItems.BRAKE_PADS.get(), 1));
+            ShopActionResult done = RepairService.fitOwn(mechanic, bench, car, 1 << Part.BRAKES.ordinal());
+            check(helper, done.success(), "and the mechanic can fix it: " + done.message().getString());
+            close(helper, car.condition().brakes(), 1.0, "new brakes");
+            check(helper, car.isLocked(), "it stays locked");
+        } finally {
+            leave(helper, mechanic, owner);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 60)
+    public static void trailersWearToo(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        CarEntity semi = vehicle(helper, CarType.SEMI_TRUCK, 5.0, 8.0);
+        semi.setFuel(CarType.SEMI_TRUCK.tankCapacity());
+        TrailerEntity trailer = readyToHitch(helper, TrailerType.BOX_TRAILER, semi);
+        driver.startRiding(semi, true);
+        Hitching.use(driver);
+        check(helper, semi.trailer() == trailer, "hitched");
+        Vec3 start = semi.position();
+        for (int tick = 1; tick <= 10; tick++) {
+            int step = tick;
+            helper.runAtTickTime(tick + 2, () -> semi.setPos(start.x, start.y, start.z + step));
+        }
+        helper.runAtTickTime(16, () -> {
+            try {
+                CarCondition wear = trailer.condition();
+                double tires = 1.0 - wear.tires();
+                double perBlock = 1.0 / 80_000;
+                helper.assertTrue(tires > 9 * perBlock && tires < 11 * perBlock * 2.5, "trailer tires after 10 blocks: " + tires);
+                check(helper, wear.oil() == 1.0F && wear.engine() == 1.0F, "a trailer has no oil or engine to wear");
+                check(helper, wear.brakes() == 1.0F && wear.body() == 1.0F, "no braking or crashes yet");
+
+                semi.applyWearReport(driver, 2.0F, 0.0F, 0.0F);
+                close(helper, trailer.condition().brakes(), 1 - 2 * 0.002, "the trailer's brakes wear when the semi brakes");
+                semi.crash(0.9);
+                close(helper, trailer.condition().body(), 1 - (0.9 * TrailerEntity.CRASH_SHARE - 0.15) * 0.6, "a crash dents the trailer too");
+
+                // Worn trailer parts hold the rig up; one worn out stops it.
+                check(helper, !semi.isBrokenDown(), "still going");
+                trailer.setCondition(trailer.condition().with(Part.TIRES, 0.0F));
+                check(helper, semi.isBrokenDown() && !semi.isEngineRunning(), "a trailer with bald-through tires stops the rig");
+                Hitching.use(driver);
+                check(helper, semi.trailer() == null && !semi.isBrokenDown(), "unhitched, the semi runs again");
+                Hitching.use(driver);
+                check(helper, semi.trailer() == null, "and the worn-out trailer won't hitch");
+
+                CarCondition worn = trailer.condition();
+                check(helper, CarItem.conditionOf(trailer.toItem()).equals(worn), "a picked-up trailer keeps its wear");
+                CompoundTag saved = new CompoundTag();
+                trailer.saveWithoutId(saved);
+                TrailerEntity loaded = ModEntities.trailer(TrailerType.BOX_TRAILER).create(helper.getLevel());
+                loaded.load(saved);
+                check(helper, loaded.condition().equals(worn), "and so does a saved one");
+                leave(helper, driver);
+                helper.succeed();
+            } catch (RuntimeException e) {
+                leave(helper, driver);
+                throw e;
+            }
+        });
+    }
+
+    @GameTest(template = YARD)
+    public static void theBenchFixesTrailersAndPicksBetweenVehicles(GameTestHelper helper) {
+        ServerPlayer mechanic = join(helper);
+        try {
+            helper.setBlock(new BlockPos(5, 1, 10), ModBlocks.REPAIR_BENCH.get().defaultBlockState());
+            RepairBenchBlockEntity bench = (RepairBenchBlockEntity) helper.getBlockEntity(new BlockPos(5, 1, 10));
+            bench.setOwner(mechanic);
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.5, 6.0);
+            TrailerEntity trailer = trailer(helper, TrailerType.BOX_TRAILER, new Vec3(5.0, 1.0, 15.5), 0.0F);
+            helper.assertValueEqual(RepairService.vehiclesInReach(bench).size(), 2, "a car and a trailer beside the bench");
+
+            RepairBenchMenu menu = RepairBenchMenu.create(1, mechanic, bench);
+            Object first = menu.target();
+            check(helper, first == car || first == trailer, "it starts on one of them");
+            menu.clickMenuButton(mechanic, RepairBenchMenu.NEXT);
+            check(helper, menu.target() != first && menu.target() != null, "the arrow moves to the other");
+            menu.clickMenuButton(mechanic, RepairBenchMenu.NEXT);
+            check(helper, menu.target() == first, "and round again");
+            if (menu.target() != trailer) {
+                menu.clickMenuButton(mechanic, RepairBenchMenu.PREVIOUS);
+            }
+            check(helper, menu.target() == trailer && !menu.hasPart(Part.ENGINE) && menu.hasPart(Part.TIRES),
+                    "on the trailer: tires, but no engine");
+
+            trailer.setCondition(new CarCondition(1.0F, 1.0F, 0.2F, 0.3F, 0.5F));
+            helper.assertValueEqual(RepairJobs.needed(Part.TIRES, trailer), 4, "a trailer takes 4 tires");
+            helper.assertValueEqual(RepairJobs.needed(Part.BRAKES, trailer), 2, "2 sets of brake pads");
+            helper.assertValueEqual(RepairJobs.needed(Part.BODY, trailer), 5, "and a tenth of its body a panel");
+            helper.assertValueEqual(RepairJobs.needed(Part.OIL, trailer), 0, "it has no oil to change");
+            check(helper, !RepairService.fitOwn(mechanic, bench, trailer, 1 << Part.OIL.ordinal()).success(), "so oil won't go in");
+            mechanic.getInventory().add(new ItemStack(ModItems.TIRE.get(), 4));
+            mechanic.getInventory().add(new ItemStack(ModItems.BRAKE_PADS.get(), 2));
+            mechanic.getInventory().add(new ItemStack(ModItems.BODY_PANEL.get(), 5));
+            int mask = 1 << Part.TIRES.ordinal() | 1 << Part.BRAKES.ordinal() | 1 << Part.BODY.ordinal();
+            ShopActionResult done = RepairService.fitOwn(mechanic, bench, trailer, mask);
+            check(helper, done.success(), "fixing the trailer: " + done.message().getString());
+            check(helper, trailer.condition().isNew(), "as good as new: " + trailer.condition());
         } finally {
             leave(helper, mechanic);
         }

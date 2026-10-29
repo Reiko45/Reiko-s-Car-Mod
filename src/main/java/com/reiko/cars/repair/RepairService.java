@@ -5,6 +5,8 @@ import com.reiko.cars.car.CarCondition.Part;
 import com.reiko.cars.car.CarEntity;
 import com.reiko.cars.config.CarsConfig;
 import com.reiko.cars.registry.ModSounds;
+import com.reiko.cars.trailer.TrailerEntity;
+import com.reiko.cars.trailer.TrailerType;
 import com.reiko.economy.api.EconomyApi;
 import com.reiko.economy.config.EconomyConfig;
 import com.reiko.economy.core.Money;
@@ -21,6 +23,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -29,40 +32,79 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Repairs at a repair bench. A player can fit parts they carry to a car beside the bench for nothing, or pay for the
- * bench to fit parts from its stock, at its owner's prices. Paying works as at a shop or pump in Reiko's Economy
- * Mod (a debit card with PIN, a credit card, or cash with change, plus sales tax), and the owner is paid into their
- * bank account. The owner repairs from their own stock for free.
+ * Repairs at a repair bench. A player can fit parts they carry to a car or trailer beside the bench for nothing, or
+ * pay for the bench to fit parts from its stock, at its owner's prices. Paying works as at a shop or pump in Reiko's
+ * Economy Mod (a debit card with PIN, a credit card, or cash with change, plus sales tax), and the owner is paid into
+ * their bank account. The owner repairs from their own stock for free.
+ *
+ * <p>Any vehicle beside the bench can be worked on, locked or not: a repair only ever helps its owner, and whoever
+ * asks for it pays.
  */
 public final class RepairService {
     private RepairService() {
     }
 
-    /** The car {@code player} would repair here: the one they're in, or else the nearest they may use. */
-    @Nullable
-    public static CarEntity findCar(RepairBenchBlockEntity bench, Player player) {
+    /** Every car and trailer within reach of the bench, nearest first (then oldest first, so the order holds still). */
+    public static List<Repairable> vehiclesInReach(RepairBenchBlockEntity bench) {
         Level level = bench.getLevel();
         if (level == null) {
-            return null;
-        }
-        if (player.getVehicle() instanceof CarEntity riding && inReach(bench, riding)) {
-            return riding;
+            return List.of();
         }
         double reach = CarsConfig.get(CarsConfig.BENCH_REACH);
         Vec3 center = bench.getBlockPos().getCenter();
-        List<CarEntity> cars = level.getEntitiesOfClass(CarEntity.class, new AABB(bench.getBlockPos()).inflate(reach + 2.0),
-                car -> car.canBeUsedBy(player) && inReach(bench, car));
-        return cars.stream().min(Comparator.comparingDouble(car -> distance(center, car))).orElse(null);
+        // A trailer is far longer than its hitbox, so look further out for those.
+        List<Entity> found = level.getEntities((Entity) null, new AABB(bench.getBlockPos()).inflate(reach + TrailerType.LENGTH / 2.0),
+                entity -> entity instanceof Repairable && inReach(bench, (Repairable) entity));
+        return found.stream()
+                .sorted(Comparator.<Entity>comparingDouble(entity -> distance(center, (Repairable) entity)).thenComparingInt(Entity::getId))
+                .map(Repairable.class::cast)
+                .toList();
     }
 
-    public static boolean inReach(RepairBenchBlockEntity bench, CarEntity car) {
-        return car.isAlive() && car.level() == bench.getLevel()
-                && distance(bench.getBlockPos().getCenter(), car) <= CarsConfig.get(CarsConfig.BENCH_REACH);
+    /**
+     * What {@code player} would repair here, until they pick another: the vehicle they're in, else the nearest they
+     * may use (their own, or an unlocked one), else the nearest of all.
+     */
+    @Nullable
+    public static Repairable defaultTarget(RepairBenchBlockEntity bench, Player player, List<Repairable> vehicles) {
+        for (Repairable vehicle : vehicles) {
+            if (player.getVehicle() == vehicle.entity()) {
+                return vehicle;
+            }
+        }
+        for (Repairable vehicle : vehicles) {
+            if (vehicle instanceof CarEntity car ? car.canBeUsedBy(player) : ((TrailerEntity) vehicle).canBeUsedBy(player)) {
+                return vehicle;
+            }
+        }
+        return vehicles.isEmpty() ? null : vehicles.getFirst();
     }
 
-    /** From the bench to the nearest point of the car. */
-    private static double distance(Vec3 from, CarEntity car) {
-        AABB box = car.getBoundingBox();
+    /** What {@code player} would repair here, if they don't pick. */
+    @Nullable
+    public static Repairable defaultTarget(RepairBenchBlockEntity bench, Player player) {
+        return defaultTarget(bench, player, vehiclesInReach(bench));
+    }
+
+    public static boolean inReach(RepairBenchBlockEntity bench, Repairable vehicle) {
+        Entity entity = vehicle.entity();
+        return entity.isAlive() && entity.level() == bench.getLevel()
+                && distance(bench.getBlockPos().getCenter(), vehicle) <= CarsConfig.get(CarsConfig.BENCH_REACH);
+    }
+
+    /** From the bench to the nearest point of the vehicle (all along a trailer, not just its hitbox). */
+    private static double distance(Vec3 from, Repairable vehicle) {
+        if (vehicle instanceof TrailerEntity trailer) {
+            double nearest = boxDistance(from, trailer.getBoundingBox());
+            for (var part : trailer.getParts()) {
+                nearest = Math.min(nearest, boxDistance(from, part.getBoundingBox()));
+            }
+            return nearest;
+        }
+        return boxDistance(from, vehicle.entity().getBoundingBox());
+    }
+
+    private static double boxDistance(Vec3 from, AABB box) {
         double dx = Math.max(Math.max(box.minX - from.x, 0.0), from.x - box.maxX);
         double dy = Math.max(Math.max(box.minY - from.y, 0.0), from.y - box.maxY);
         double dz = Math.max(Math.max(box.minZ - from.z, 0.0), from.z - box.maxZ);
@@ -115,7 +157,7 @@ public final class RepairService {
     }
 
     /** Fits the parts {@code player} carries, for the parts in {@code mask}, to {@code car}. */
-    public static ShopActionResult fitOwn(ServerPlayer player, RepairBenchBlockEntity bench, @Nullable CarEntity car, int mask) {
+    public static ShopActionResult fitOwn(ServerPlayer player, RepairBenchBlockEntity bench, @Nullable Repairable car, int mask) {
         if (car == null || !inReach(bench, car)) {
             return ShopActionResult.fail("repair.reikocars.no_car", (int) CarsConfig.get(CarsConfig.BENCH_REACH));
         }
@@ -126,7 +168,11 @@ public final class RepairService {
             if (!has(mask, part)) {
                 continue;
             }
-            int needed = RepairJobs.needed(part, car.carType(), condition);
+            if (!car.hasPart(part)) {
+                problem = ShopActionResult.fail("repair.reikocars.no_such_part", car.kindName(), part.displayName());
+                continue;
+            }
+            int needed = RepairJobs.needed(part, car, condition);
             int have = carried(player, part);
             int count = jobSize(part, needed, have);
             if (count <= 0) {
@@ -136,7 +182,7 @@ public final class RepairService {
                 continue;
             }
             takeCarried(player, part, count);
-            condition = RepairJobs.fit(part, car.carType(), condition, count);
+            condition = RepairJobs.fit(part, car, condition, count);
             done.add(jobName(part, count));
         }
         if (done.isEmpty()) {
@@ -145,7 +191,7 @@ public final class RepairService {
         car.setCondition(condition);
         player.inventoryMenu.broadcastChanges();
         finished(bench, car);
-        return ShopActionResult.ok(Component.translatable("repair.reikocars.fitted", list(done), car.getDisplayName()));
+        return ShopActionResult.ok(Component.translatable("repair.reikocars.fitted", list(done), car.entity().getDisplayName()));
     }
 
     /**
@@ -154,7 +200,7 @@ public final class RepairService {
      *
      * @param expectedTotal the bill the player saw, before tax, so a price or stock change in the meantime is caught
      */
-    public static ShopActionResult buy(ServerPlayer player, RepairBenchBlockEntity bench, @Nullable CarEntity car, int mask,
+    public static ShopActionResult buy(ServerPlayer player, RepairBenchBlockEntity bench, @Nullable Repairable car, int mask,
                                        long expectedTotal, Payment payment) {
         if (car == null || !inReach(bench, car)) {
             return ShopActionResult.fail("repair.reikocars.no_car", (int) CarsConfig.get(CarsConfig.BENCH_REACH));
@@ -167,7 +213,10 @@ public final class RepairService {
             if (!has(mask, part)) {
                 continue;
             }
-            int needed = RepairJobs.needed(part, car.carType(), condition);
+            if (!car.hasPart(part)) {
+                return ShopActionResult.fail("repair.reikocars.no_such_part", car.kindName(), part.displayName());
+            }
+            int needed = RepairJobs.needed(part, car, condition);
             int count = jobSize(part, needed, bench.count(part));
             if (count <= 0) {
                 return needed <= 0 ? ShopActionResult.fail("repair.reikocars.fine", part.displayName())
@@ -208,7 +257,7 @@ public final class RepairService {
             int count = counts[part.ordinal()];
             if (count > 0) {
                 int taken = bench.take(part, count);
-                condition = RepairJobs.fit(part, car.carType(), condition, taken);
+                condition = RepairJobs.fit(part, car, condition, taken);
             }
         }
         car.setCondition(condition);
@@ -227,7 +276,8 @@ public final class RepairService {
     }
 
     /** The clank of a job done, and a puff of sparkle over the car. */
-    private static void finished(RepairBenchBlockEntity bench, CarEntity car) {
+    private static void finished(RepairBenchBlockEntity bench, Repairable vehicle) {
+        Entity car = vehicle.entity();
         Level level = bench.getLevel();
         if (level == null) {
             return;
