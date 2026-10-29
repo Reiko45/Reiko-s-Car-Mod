@@ -30,6 +30,10 @@ public final class CarsConfig {
     public static final ModConfigSpec.DoubleValue BENCH_REACH;
     public static final ModConfigSpec.DoubleValue DEFAULT_PART_PRICE;
 
+    public static final ModConfigSpec.DoubleValue BUS_FARE;
+    public static final ModConfigSpec.DoubleValue TAXI_START;
+    public static final ModConfigSpec.DoubleValue TAXI_PER_100;
+
     public static final ModConfigSpec.DoubleValue POSTAGE;
     public static final ModConfigSpec.DoubleValue MAIL_REACH;
 
@@ -103,6 +107,18 @@ public final class CarsConfig {
         DEFAULT_PART_PRICE = builder
                 .comment("Price per part a newly placed repair bench charges for each kind of part. The owner can change them.")
                 .defineInRange("defaultPricePerPart", 20.0, 0.0, 1_000_000.0);
+        builder.pop();
+
+        builder.push("fares");
+        BUS_FARE = builder
+                .comment("The fare a new city bus charges each passenger who gets on (plus sales tax), paid to the driver. Its owner can change it.")
+                .defineInRange("busFare", 2.0, 0.0, 1_000_000.0);
+        TAXI_START = builder
+                .comment("What a new taxi's meter starts at for a ride. Its owner can change it.")
+                .defineInRange("taxiStartingFare", 3.0, 0.0, 1_000_000.0);
+        TAXI_PER_100 = builder
+                .comment("What a new taxi's meter adds for every 100 blocks driven. Its owner can change it.")
+                .defineInRange("taxiFarePer100Blocks", 1.0, 0.0, 1_000_000.0);
         builder.pop();
 
         builder.push("mail");

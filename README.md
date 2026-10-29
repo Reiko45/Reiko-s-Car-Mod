@@ -21,6 +21,7 @@ players for postage.
 | Car | Seats | Top speed | Tank | Notes |
 | --- | --- | --- | --- | --- |
 | Sedan | 4 | 40 mph | 8 buckets | All-rounder |
+| Taxi | 4 | 40 mph | 8 buckets | Runs a fare meter (see [Fares](#fares)); lit TAXI sign |
 | Sports Car | 2 | 58 mph | 6 buckets | Fast, quick to accelerate, thirsty |
 | Pickup Truck | 2 | 36 mph | 12 buckets | 27-slot truck bed (sneak + use) |
 | Off-Roader | 4 | 38 mph | 10 buckets | Keeps full speed on grass, sand and snow |
@@ -30,7 +31,7 @@ players for postage.
 | Minivan | 6 | 34 mph | 10 buckets | Three rows of seats, 9-slot trunk (sneak + use) |
 | Semi Truck | 2 | 38 mph | 12 buckets of diesel | Runs on diesel and pulls a trailer (see [Semis and trailers](#semis-and-trailers)) |
 | Delivery Van | 2 | 34 mph | 10 buckets of diesel | 54-slot cargo area (sneak + use) |
-| City Bus | 10 | 29 mph | 16 buckets of diesel | A driver and nine passengers; turns about its back axle, so swing wide |
+| City Bus | 10 | 29 mph | 16 buckets of diesel | A driver and nine passengers, who pay a fare (see [Fares](#fares)); turns about its back axle, so swing wide |
 | Heavy-Duty Pickup | 4 | 38 mph | 14 buckets of diesel | Lifted crew-cab 4x4: 27-slot truck bed, full speed off-road |
 | Farm Tractor | 1 | 20 mph | 6 buckets of diesel | Slow, but at home in a field: full speed on grass, dirt and farmland |
 | Flatbed Tow Truck | 2 | 36 mph | 14 buckets of diesel | Carries a car on its deck (see [Tow trucks](#tow-trucks)); 9-slot toolboxes |
@@ -87,6 +88,23 @@ the engine won't turn over and the dashboard says **NO KEY**.
 
 A server can set `driving.requireKeys` to `false`, so cars start without keys and keys only share locked cars.
 Cars from before 1.12.0 have no keys yet: cut one before driving.
+
+## Fares
+
+The **city bus** and the **taxi** take fares from their passengers, paid to whoever's driving. The vehicle's owner
+rides free.
+
+- **The bus:** sit down while someone's driving and a pay screen opens: the fare (plus sales tax), by **Card** with
+  PIN or **Cash**. Close it or press **Get off** and you're off the bus. Each time you get on is a new ride.
+- **The taxi:** get in while someone's driving and you've hired it. The **meter** starts at a starting fare and adds
+  so much for every 100 blocks driven; the dashboard shows it (**FARE $3.40**). When you get out, the fare comes out
+  of your **bank account** and goes to the driver. Get out within 5 blocks and it's free. If you can't cover it all,
+  you pay what you have. Other passengers ride along on the same hire.
+- **Setting fares:** the owner **sneak + right-clicks** the bus or taxi with an empty hand: a fare per ride for the
+  bus, or a starting fare and a rate per 100 blocks for the taxi, and what it's earned so far. 0 makes rides free.
+  Anyone else doing that is told the fares.
+
+New buses charge $2.00 a ride, and new taxis $3.00 plus $1.00 per 100 blocks (see [Settings](#settings)).
 
 ## Motorcycles
 
@@ -335,6 +353,10 @@ The second lot of cars' parts, the same way:
 
 The gasoline cars take a Car Engine, the diesel ones a Diesel Engine.
 
+The taxi's parts: **Chassis**, iron rails (`I I`) around a compass; **Body**, glass panes either side of glowstone
+dust (the roof sign) over yellow dye between iron, iron below; **Interior**, a clock over redstone between wool, a
+glass pane (the partition) between wool below. It takes a Car Engine.
+
 | Part | Flatbed Tow Truck | Wrecker Tow Truck | Mail Van |
 | --- | --- | --- | --- |
 | **Chassis**: iron rails (`I I`) around a middle | chain between iron blocks | tripwire hook between iron blocks | piston between iron blocks |
@@ -383,6 +405,9 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `wear.defaultPricePerPart` | `20.0` | Starting price of each part at a new repair bench |
 | `mail.postage` | `2.0` | Postage for a parcel sent by mail van, earned by whoever delivers it (hand delivery is always free) |
 | `mail.mailVanReach` | `3.0` | How close the mail van must be to a mailbox |
+| `fares.busFare` | `2.0` | The fare a new city bus charges each passenger (its owner can change it) |
+| `fares.taxiStartingFare` | `3.0` | What a new taxi's meter starts at |
+| `fares.taxiFarePer100Blocks` | `1.0` | What a new taxi's meter adds per 100 blocks |
 
 Each player can pick **mph** or **km/h**, and turn the dashboard off, in `config/reikocars-client.toml`.
 
@@ -395,7 +420,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
-./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs, tow trucks, mail, keys), then exit
+./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs, tow trucks, mail, keys, fares), then exit
 ./gradlew runClient         # start a dev client
 ./gradlew runClient -Pshowcase  # build a test scene, buy fuel, drive, save screenshots to run/screenshots/, quit
 ./gradlew runClient -Pshowcase=workbench  # the same for the Car Workbench and its JEI pages
@@ -406,6 +431,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 ./gradlew runClient -Pshowcase=repair     # the Repair Bench, paying for repairs, its owner's tabs, a worn car's dashboard and smoke, a worn trailer
 ./gradlew runClient -Pshowcase=tow        # the tow trucks loaded and towing, posting a parcel, the mail van's round, the inbox
 ./gradlew runClient -Pshowcase=keys       # no key, cutting one, its tooltip, driving with it, locking it from a distance
+./gradlew runClient -Pshowcase=fares      # paying a bus fare, a taxi's meter running and paid, the owner's fare screen
 ./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
 
@@ -464,6 +490,7 @@ src/main/java/com/reiko/cars/
 ├── workbench/            the Car Workbench block and menu, the car parts, and the car_assembly recipe type
 ├── repair/               the Repair Bench block, block entity, menu and protection, the jobs (RepairJobs), and RepairService (repairs and paying)
 ├── tow/                  the tow trucks' picking up, carrying and dropping off (Towing)
+├── fare/                 bus fares and the taxi meter (CarFares), the pay and fare screens' menus, and FareService
 ├── key/                  car keys: the key items, what a key fits (CarKey), and cutting, changing the locks and the key fob (CarKeys)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)

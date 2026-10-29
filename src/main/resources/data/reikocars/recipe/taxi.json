@@ -1,0 +1,22 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:taxi_chassis"
+  },
+  "body": {
+    "item": "reikocars:taxi_body"
+  },
+  "interior": {
+    "item": "reikocars:taxi_interior"
+  },
+  "engine": {
+    "item": "reikocars:car_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:taxi"
+  }
+}

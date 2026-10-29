@@ -2,6 +2,8 @@ package com.reiko.cars.car;
 
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.config.CarsConfig;
+import com.reiko.cars.fare.CarFares;
+import com.reiko.cars.fare.FareSettingsMenu;
 import com.reiko.cars.key.CarKeys;
 import com.reiko.cars.key.Keyed;
 import com.reiko.cars.car.CarCondition.Part;
@@ -96,6 +98,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private static final EntityDataAccessor<Long> DATA_LOCK_CODE = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** Whether the driver may start it: they carry its key, or it needs none. Worked out by the server. */
     private static final EntityDataAccessor<Boolean> DATA_KEYED = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
+    /** A taxi's meter, in cents, for the dashboard: -1 when it isn't running. */
+    private static final EntityDataAccessor<Long> DATA_METER = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** The entity event that flashes the lights, when it's locked or unlocked with a key. */
     private static final byte FLASH_EVENT = 101;
     private static final EntityDataAccessor<CarCondition> DATA_CONDITION = SynchedEntityData.defineId(CarEntity.class, ModDataSerializers.CONDITION);
@@ -169,6 +173,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private float leanO;
     /** Ticks left of the lights flashing for a key's lock or unlock. Client-side. */
     private int flashTicks;
+    /** A bus's or taxi's fares, on the server. */
+    private final CarFares fares = new CarFares(this);
 
     public CarEntity(EntityType<? extends CarEntity> entityType, Level level, CarType type) {
         super(entityType, level);
@@ -192,6 +198,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_OWNER, Optional.empty());
         builder.define(DATA_LOCK_CODE, 0L);
         builder.define(DATA_KEYED, false);
+        builder.define(DATA_METER, -1L);
         builder.define(DATA_CONDITION, CarCondition.NEW);
     }
 
@@ -489,6 +496,32 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return keyed;
     }
 
+    // ---- fares ----
+
+    /** The city bus's or taxi's fares and their passengers (the server's; the client's knows nothing). */
+    public CarFares fares() {
+        return fares;
+    }
+
+    /** The taxi's meter, in cents, or -1 when it isn't running. */
+    public long meterCents() {
+        return entityData.get(DATA_METER);
+    }
+
+    public void setMeter(long cents) {
+        if (entityData.get(DATA_METER) != cents) {
+            entityData.set(DATA_METER, cents);
+        }
+    }
+
+    @Override
+    protected void removePassenger(Entity passenger) {
+        super.removePassenger(passenger);
+        if (!level().isClientSide) {
+            fares.riderLeft(passenger);
+        }
+    }
+
     /** Checks the driver's pockets for the key now, rather than on the next tick (as after handing them one). */
     public boolean checkKey() {
         return updateKey(true);
@@ -534,6 +567,17 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             return keyed;
         }
         if (player.isSecondaryUseActive()) {
+            if (type.takesFares() && held.isEmpty()) {
+                // The owner sets the fares; anyone else is told them.
+                if (player instanceof ServerPlayer serverPlayer) {
+                    if (canManage(player) && owner() != null) {
+                        FareSettingsMenu.open(serverPlayer, this);
+                    } else {
+                        serverPlayer.displayClientMessage(fares.priceLine(), true);
+                    }
+                }
+                return InteractionResult.sidedSuccess(level().isClientSide);
+            }
             if (type.storageRows == 0) {
                 return InteractionResult.PASS;
             }
@@ -1042,6 +1086,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             lastFuelPos = null; // being carried, not driven: no fuel burned, nobody run over
             return;
         }
+        fares.tick();
         Vec3 pos = position();
         double moved = lastFuelPos == null ? 0.0 : Math.sqrt(Mth.square(pos.x - lastFuelPos.x) + Mth.square(pos.z - lastFuelPos.z));
         if (moved > 8.0) {
@@ -1353,6 +1398,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (lockCode() != 0L) {
             tag.putLong("LockCode", lockCode());
         }
+        fares.save(tag);
         if (type.storageRows > 0) {
             tag.put("Bed", bed.createTag(registryAccess()));
         }
@@ -1372,6 +1418,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         entityData.set(DATA_OWNER, tag.hasUUID("Owner") ? Optional.of(tag.getUUID("Owner")) : Optional.empty());
         ownerName = tag.getString("OwnerName");
         setLockCode(tag.getLong("LockCode"));
+        fares.load(tag);
         if (type.storageRows > 0 && tag.contains("Bed", Tag.TAG_LIST)) {
             bed.fromTag(tag.getList("Bed", Tag.TAG_COMPOUND), registryAccess());
         }

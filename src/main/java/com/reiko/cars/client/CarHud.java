@@ -85,7 +85,7 @@ public final class CarHud implements LayeredDraw.Layer {
         Component unitLabel = Component.translatable(unit.translationKey);
         // Broken down or out of fuel: in red, at the top right, where the unit gives way to it if need be.
         Component warning = car.isBrokenDown() ? Component.translatable("hud.reikocars.broken_down")
-                : !car.keyedIn() ? Component.translatable("hud.reikocars.no_key")
+                : car.getControllingPassenger() != null && !car.keyedIn() ? Component.translatable("hud.reikocars.no_key")
                 : car.fuelFraction() <= 0 ? Component.translatable("hud.reikocars.out_of_fuel") : null;
         int unitX = x + 8 + font.width(number) * 2;
         int warningX = warning == null ? x + WIDTH : x + WIDTH - 6 - font.width(warning);
@@ -98,7 +98,12 @@ public final class CarHud implements LayeredDraw.Layer {
         if (car.displaySpeed() < -0.01) {
             graphics.drawString(font, "R", x + WIDTH - 12, y + 6, 0xFFD54F, false);
         }
-        if (car.isLocked()) {
+        long meter = car.meterCents();
+        if (meter >= 0) {
+            // A taxi's meter, where the lock shows otherwise.
+            Component fare = Component.translatable("hud.reikocars.fare", com.reiko.economy.api.EconomyApi.get().format(meter));
+            graphics.drawString(font, fare, x + WIDTH - 6 - font.width(fare), y + 16, 0xFFD54F, false);
+        } else if (car.isLocked()) {
             Component locked = Component.translatable("hud.reikocars.locked");
             graphics.drawString(font, locked, x + WIDTH - 6 - font.width(locked), y + 16, 0x9E9E9E, false);
         }

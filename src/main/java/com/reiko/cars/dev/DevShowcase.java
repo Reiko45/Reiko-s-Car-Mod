@@ -134,6 +134,8 @@ public final class DevShowcase {
             towScript();
         } else if (MODE.equals("keys")) {
             keysScript();
+        } else if (MODE.equals("fares")) {
+            faresScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -1327,5 +1329,89 @@ public final class DevShowcase {
         at(205, mc -> shot(mc, "65_fob_lock_b"));
         at(212, mc -> shot(mc, "65_fob_lock_c"));
         at(220, mc -> mc.stop());
+    }
+
+    // ---- bus fares and the taxi meter: ./gradlew runClient -Pshowcase=fares ----
+
+    /** Another player, logged in on a dummy connection, to drive (as the game tests do). */
+    private static ServerPlayer extraPlayer(MinecraftServer server, String name) {
+        java.util.UUID id = java.util.UUID.nameUUIDFromBytes(name.getBytes());
+        com.mojang.authlib.GameProfile profile = new com.mojang.authlib.GameProfile(id, name);
+        net.minecraft.server.network.CommonListenerCookie cookie = net.minecraft.server.network.CommonListenerCookie.createInitial(profile, false);
+        ServerPlayer player = new ServerPlayer(server, server.overworld(), profile, cookie.clientInformation());
+        net.minecraft.network.Connection connection = new net.minecraft.network.Connection(net.minecraft.network.protocol.PacketFlow.SERVERBOUND);
+        new io.netty.channel.embedded.EmbeddedChannel(connection);
+        try {
+            server.getPlayerList().placeNewPlayer(connection, player, cookie);
+        } catch (RuntimeException e) {
+            // a mod's login packet the dummy connection can't take: the player's in by then
+        }
+        EconomyService.INSTANCE.ensureAccount(server, id, name);
+        return player;
+    }
+
+    private static void faresScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(5000);
+                for (int x = -10; x <= 30; x++) {
+                    for (int z = -10; z <= 70; z++) {
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), Blocks.GRAY_CONCRETE.defaultBlockState());
+                    }
+                }
+                spawn(level, CarType.CITY_BUS, 4.5, 8.5, 0.0F, 0.8);
+                spawn(level, CarType.TAXI, 16.5, 4.5, 0.0F, 0.8);
+                ServerPlayer bea = extraPlayer(level.getServer(), "Bea");
+                ServerPlayer tex = extraPlayer(level.getServer(), "Tex");
+                CarEntity bus = car(level, CarType.CITY_BUS);
+                bus.setOwner(bea);
+                bea.teleportTo(level, 4.5, -60.0, 8.5, 0.0F, 0.0F);
+                bea.startRiding(bus, true);
+                CarEntity taxi = car(level, CarType.TAXI);
+                taxi.setOwner(tex);
+                tex.teleportTo(level, 16.5, -60.0, 4.5, 0.0F, 0.0F);
+                tex.startRiding(taxi, true);
+                player.getInventory().clearContent();
+                Purse.give(player, 5_000);
+                player.setGameMode(GameType.SURVIVAL);
+            });
+        });
+        // Getting on the bus: pay the fare, or get off.
+        at(50, mc -> server(mc, player -> player.startRiding(car(player.serverLevel(), CarType.CITY_BUS), true)));
+        at(80, mc -> shot(mc, "66_bus_fare"));
+        at(82, mc -> clickAt(mc, 99 + 40, 78 + 10));
+        at(100, mc -> shot(mc, "67_bus_paid"));
+        // A taxi: the meter runs, and the fare comes out of the bank when you get out.
+        at(105, mc -> {
+            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+            server(mc, player -> {
+                player.stopRiding();
+                player.startRiding(car(player.serverLevel(), CarType.TAXI), true);
+            });
+        });
+        at(130, mc -> shot(mc, "68_taxi_meter"));
+        for (int t = 132; t < 160; t++) {
+            at(t, mc -> server(mc, player -> {
+                CarEntity taxi = car(player.serverLevel(), CarType.TAXI);
+                taxi.setPos(taxi.getX(), taxi.getY(), taxi.getZ() + 1.0);
+            }));
+        }
+        at(185, mc -> shot(mc, "69_taxi_meter_running"));
+        at(188, mc -> server(mc, ServerPlayer::stopRiding));
+        at(200, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            shot(mc, "70_taxi_paid");
+        });
+        // The owner's fares.
+        at(205, mc -> server(mc, player -> {
+            CarEntity taxi = car(player.serverLevel(), CarType.TAXI);
+            taxi.setOwner(player);
+            com.reiko.cars.fare.FareSettingsMenu.open(player, taxi);
+        }));
+        at(225, mc -> shot(mc, "71_fare_settings"));
+        at(230, mc -> mc.stop());
     }
 }

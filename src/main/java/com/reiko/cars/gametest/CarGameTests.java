@@ -10,6 +10,8 @@ import com.reiko.cars.car.CarFuel;
 import com.reiko.cars.car.CarTank;
 import com.reiko.cars.car.CarType;
 import com.reiko.cars.car.FuelType;
+import com.reiko.cars.fare.FareMenu;
+import com.reiko.cars.fare.FareService;
 import com.reiko.cars.key.CarKeys;
 import com.reiko.cars.key.Keyed;
 import com.reiko.cars.mail.MailService;
@@ -1613,6 +1615,106 @@ public final class CarGameTests {
                     .map(stack -> stack.getHoverName().getString()).filter(name -> name.equals("Box Trailer Key")).count(), 1L, "the Box Trailer Key");
         } finally {
             leave(helper, owner, friend);
+        }
+        helper.succeed();
+    }
+
+    // ---- fares ----
+
+    @GameTest(template = YARD)
+    public static void busRidersPayTheDriver(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer owner = join(helper);
+        ServerPlayer driver = join(helper);
+        ServerPlayer rider = join(helper);
+        ServerPlayer dodger = join(helper);
+        try {
+            CarEntity bus = vehicle(helper, CarType.CITY_BUS, 5.0, 10.0);
+            bus.setOwner(owner);
+            giveKey(driver, bus);
+            driver.startRiding(bus, true);
+            rider.startRiding(bus, true);
+            long fare = bus.fares().start();
+            check(helper, fare == 200, "a new bus charges $2.00, as the server's set");
+
+            check(helper, !FareService.payBusFare(rider, bus, 100, Payment.cash()).success(), "an out-of-date fare is caught");
+            Purse.give(rider, 1000);
+            long driverBefore = ECO.getBalance(server, driver.getUUID());
+            ShopActionResult paid = FareService.payBusFare(rider, bus, fare, Payment.cash());
+            check(helper, paid.success(), "paying the fare: " + paid.message().getString());
+            helper.assertValueEqual(Purse.value(rider), 800L, "$2.00 cash spent");
+            helper.assertValueEqual(ECO.getBalance(server, driver.getUUID()), driverBefore + fare, "the driver is paid");
+            check(helper, !FareService.payBusFare(rider, bus, fare, Payment.cash()).success(), "and nobody pays twice");
+            check(helper, bus.fares().rides() == 1 && bus.fares().earned() == fare, "the bus counts the ride");
+
+            dodger.startRiding(bus, true);
+            FareMenu screen = FareMenu.create(0, dodger, bus, driver.getGameProfile().getName());
+            screen.removed(dodger);
+            check(helper, !dodger.isPassenger(), "no fare, no ride");
+
+            check(helper, !FareService.setFares(rider, bus, "0.50", "").success(), "only the owner sets the fares");
+            check(helper, FareService.setFares(owner, bus, "3.50", "").success() && bus.fares().start() == 350, "the owner raises the fare");
+        } finally {
+            leave(helper, owner, driver, rider, dodger);
+        }
+        helper.succeed();
+    }
+
+    /** Drives {@code taxi} {@code blocks} blocks south, five at a time, running its meter. */
+    private static void drive(CarEntity taxi, int blocks) {
+        taxi.fares().tick();
+        for (int done = 0; done < blocks; done += 5) {
+            taxi.setPos(taxi.getX(), taxi.getY(), taxi.getZ() + 5);
+            taxi.fares().tick();
+        }
+    }
+
+    @GameTest(template = YARD)
+    public static void taxiMeterCharges(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer driver = join(helper);
+        ServerPlayer rider = join(helper);
+        ServerPlayer broke = join(helper);
+        try {
+            CarEntity taxi = vehicle(helper, CarType.TAXI, 5.0, 4.0);
+            taxi.setOwner(driver);
+            giveKey(driver, taxi);
+            driver.startRiding(taxi, true);
+            check(helper, taxi.meterCents() < 0, "no passenger, no meter");
+
+            rider.startRiding(taxi, true);
+            ECO.deposit(server, rider.getUUID(), 1000, "test");
+            long riderBefore = ECO.getBalance(server, rider.getUUID());
+            long driverBefore = ECO.getBalance(server, driver.getUUID());
+            taxi.fares().tick();
+            check(helper, rider.getUUID().equals(taxi.fares().hirer()), "the passenger hires the taxi");
+            helper.assertValueEqual(taxi.meterCents(), 300L, "the meter starts at $3.00");
+            drive(taxi, 100);
+            helper.assertValueEqual(taxi.meterCents(), 400L, "and adds $1.00 for 100 blocks");
+            rider.stopRiding();
+            helper.assertValueEqual(ECO.getBalance(server, rider.getUUID()), riderBefore - 400, "the fare comes out of the passenger's bank account");
+            helper.assertValueEqual(ECO.getBalance(server, driver.getUUID()), driverBefore + 400, "and goes to the driver");
+            check(helper, taxi.meterCents() < 0, "the meter's off");
+
+            // Getting out straight away costs nothing.
+            rider.startRiding(taxi, true);
+            drive(taxi, 0);
+            rider.stopRiding();
+            helper.assertValueEqual(ECO.getBalance(server, rider.getUUID()), riderBefore - 400, "a ride that never started is free");
+
+            // Someone who can't pay it all pays what they have.
+            ECO.setBalance(server, broke.getUUID(), 100, "test"); // $1.00 to their name
+            broke.startRiding(taxi, true);
+            long brokeBalance = ECO.getBalance(server, broke.getUUID());
+            drive(taxi, 50);
+            long owed = taxi.meterCents();
+            broke.stopRiding();
+            check(helper, owed > brokeBalance, "a fare they can't cover");
+            long brokePaid = brokeBalance;
+            helper.assertValueEqual(ECO.getBalance(server, broke.getUUID()), brokeBalance - brokePaid, "they pay what they can");
+            helper.assertValueEqual(ECO.getBalance(server, driver.getUUID()), driverBefore + 400 + brokePaid, "and the driver gets it");
+        } finally {
+            leave(helper, driver, rider, broke);
         }
         helper.succeed();
     }

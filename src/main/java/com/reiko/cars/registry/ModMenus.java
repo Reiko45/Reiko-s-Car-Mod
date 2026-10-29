@@ -1,6 +1,8 @@
 package com.reiko.cars.registry;
 
 import com.reiko.cars.ReikoCars;
+import com.reiko.cars.fare.FareMenu;
+import com.reiko.cars.fare.FareSettingsMenu;
 import com.reiko.cars.mail.MailboxMenu;
 import com.reiko.cars.pump.PumpMenu;
 import com.reiko.cars.repair.RepairBenchMenu;
@@ -24,6 +26,10 @@ public final class ModMenus {
 
     public static final Supplier<MenuType<MailboxMenu>> MAILBOX = MENUS.register("mailbox",
             () -> IMenuTypeExtension.create(MailboxMenu::new));
+
+    public static final Supplier<MenuType<FareMenu>> FARE = MENUS.register("fare", () -> IMenuTypeExtension.create(FareMenu::new));
+    public static final Supplier<MenuType<FareSettingsMenu>> FARE_SETTINGS = MENUS.register("fare_settings",
+            () -> IMenuTypeExtension.create(FareSettingsMenu::new));
 
     private ModMenus() {
     }

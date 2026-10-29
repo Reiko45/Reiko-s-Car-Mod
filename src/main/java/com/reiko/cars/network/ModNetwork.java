@@ -2,6 +2,9 @@ package com.reiko.cars.network;
 
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarEntity;
+import com.reiko.cars.fare.FareMenu;
+import com.reiko.cars.fare.FareService;
+import com.reiko.cars.fare.FareSettingsMenu;
 import com.reiko.cars.mail.MailService;
 import com.reiko.cars.mail.MailboxMenu;
 import com.reiko.cars.trailer.Hitching;
@@ -43,6 +46,7 @@ public final class ModNetwork {
         registrar.playToServer(CarWearPayload.TYPE, CarWearPayload.STREAM_CODEC, ModNetwork::handleWear);
         registrar.playToServer(RepairActionPayload.TYPE, RepairActionPayload.STREAM_CODEC, ModNetwork::handleRepair);
         registrar.playToServer(MailActionPayload.TYPE, MailActionPayload.STREAM_CODEC, ModNetwork::handleMail);
+        registrar.playToServer(FareActionPayload.TYPE, FareActionPayload.STREAM_CODEC, ModNetwork::handleFare);
     }
 
     private static void handleWear(CarWearPayload payload, IPayloadContext context) {
@@ -51,6 +55,24 @@ public final class ModNetwork {
             return;
         }
         car.applyWearReport(player, Math.max(0.0F, payload.braked()), Math.max(0.0F, payload.skidded()), Math.max(0.0F, payload.impact()));
+    }
+
+    private static void handleFare(FareActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || player.containerMenu.containerId != payload.containerId()
+                || !player.containerMenu.stillValid(player)) {
+            return;
+        }
+        if (payload.action() == FareActionPayload.PAY && player.containerMenu instanceof FareMenu menu && menu.bus() != null) {
+            ShopActionResult result = FareService.payBusFare(player, menu.bus(), payload.expected(), payload.payment());
+            if (result.success()) {
+                player.closeContainer();
+                player.displayClientMessage(result.message(), true);
+            } else {
+                ShopFeedback.send(player, result);
+            }
+        } else if (payload.action() == FareActionPayload.SET && player.containerMenu instanceof FareSettingsMenu menu && menu.car() != null) {
+            ShopFeedback.send(player, FareService.setFares(player, menu.car(), payload.start(), payload.per100()));
+        }
     }
 
     private static void handleMail(MailActionPayload payload, IPayloadContext context) {

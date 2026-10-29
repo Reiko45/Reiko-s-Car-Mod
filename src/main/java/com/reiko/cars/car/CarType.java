@@ -22,6 +22,8 @@ public enum CarType {
     //          width  height length wheel  top    accel   brake   reverse turn  tank MJ/block colour  seat off-road bed wheels fuel   fifth wheel
     SEDAN(       2.25f, 1.8f,  3.5f,  5,    0.90f, 0.012f, 0.040f, 0.25f, 4.0f,  8, 144, 0x2E5EAA,  7, false, 0, 4, GASOLINE, noFifthWheel(),
             seat(6, -2), seat(-6, -2), seat(6, 9), seat(-6, 9)),
+    TAXI(        2.25f, 2.2f,  3.5f,  5,    0.90f, 0.012f, 0.040f, 0.25f, 4.0f,  8, 144, 0xF5C518,  7, false, 0, 4, GASOLINE, noFifthWheel(),
+            seat(6, -2), seat(-6, -2), seat(6, 9), seat(-6, 9)),
     SPORTS_CAR(  2.25f, 1.6f,  3.5f,  5,    1.30f, 0.020f, 0.050f, 0.25f, 4.5f,  6, 216, 0xC0262D,  5, false, 0, 4, GASOLINE, noFifthWheel(),
             seat(6, 4), seat(-6, 4)),
     PICKUP_TRUCK(2.4f,  2.0f,  3.75f, 6,    0.80f, 0.010f, 0.035f, 0.22f, 3.5f, 12, 180, 0xE9E9E4, 10, false, 3, 4, GASOLINE, noFifthWheel(),
@@ -217,6 +219,16 @@ public enum CarType {
             return false;
         }
         return truck == FLATBED || !isBike();
+    }
+
+    /** Whether it takes fares from its passengers: the city bus (a flat fare) and the taxi (a meter). */
+    public boolean takesFares() {
+        return this == CITY_BUS || this == TAXI;
+    }
+
+    /** Whether its fare runs on a meter, by distance (the taxi), rather than a flat fare when boarding. */
+    public boolean isMetered() {
+        return this == TAXI;
     }
 
     /** The mail van: collects and delivers parcels at mailboxes with G. */

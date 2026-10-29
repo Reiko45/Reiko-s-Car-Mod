@@ -15,6 +15,7 @@ import com.reiko.cars.client.model.CarHaulerModel;
 import com.reiko.cars.client.model.OffRoaderModel;
 import com.reiko.cars.client.model.PickupTruckModel;
 import com.reiko.cars.client.model.SedanModel;
+import com.reiko.cars.client.model.TaxiModel;
 import com.reiko.cars.client.model.CityBusModel;
 import com.reiko.cars.client.model.ConvertibleModel;
 import com.reiko.cars.client.model.CruiserModel;
@@ -123,6 +124,7 @@ public final class ReikoCarsClient {
     private static Supplier<LayerDefinition> definition(CarType type) {
         return switch (type) {
             case SEDAN -> SedanModel::createBodyLayer;
+            case TAXI -> TaxiModel::createBodyLayer;
             case SPORTS_CAR -> SportsCarModel::createBodyLayer;
             case PICKUP_TRUCK -> PickupTruckModel::createBodyLayer;
             case OFF_ROADER -> OffRoaderModel::createBodyLayer;
@@ -169,6 +171,8 @@ public final class ReikoCarsClient {
         event.register(ModMenus.CAR_WORKBENCH.get(), CarWorkbenchScreen::new);
         event.register(ModMenus.REPAIR_BENCH.get(), RepairBenchScreen::new);
         event.register(ModMenus.MAILBOX.get(), MailboxScreen::new);
+        event.register(ModMenus.FARE.get(), FareScreen::new);
+        event.register(ModMenus.FARE_SETTINGS.get(), FareSettingsScreen::new);
     }
 
     private static void registerKeys(RegisterKeyMappingsEvent event) {
