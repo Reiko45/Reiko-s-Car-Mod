@@ -53,7 +53,7 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         int overlay = OverlayTexture.NO_OVERLAY;
         model.renderBody(poseStack, buffers.getBuffer(RenderType.entityCutoutNoCull(texture)), light, overlay, 0xFF000000 | car.color());
         model.renderTrim(poseStack, buffers.getBuffer(RenderType.entityTranslucent(texture)), light, overlay);
-        boolean lit = car.isEngineRunning();
+        boolean lit = car.isEngineRunning() || car.lightsFlashing();
         model.renderLights(poseStack, buffers.getBuffer(lit ? RenderType.entityTranslucentEmissive(texture) : RenderType.entityTranslucent(texture)),
                 lit ? LightTexture.FULL_BRIGHT : light, overlay);
         poseStack.popPose();

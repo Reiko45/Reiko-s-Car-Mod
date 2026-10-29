@@ -5,6 +5,8 @@ import com.reiko.cars.car.CarCondition.Part;
 import com.reiko.cars.car.CarEntity;
 import com.reiko.cars.car.CarItem;
 import com.reiko.cars.config.CarsConfig;
+import com.reiko.cars.key.CarKeys;
+import com.reiko.cars.key.Keyed;
 import com.reiko.cars.registry.ModDataComponents;
 import com.reiko.cars.registry.ModDataSerializers;
 import com.reiko.cars.registry.ModItems;
@@ -76,10 +78,13 @@ import org.jetbrains.annotations.Nullable;
  * brakes and tires make the rig slower to stop, a battered trailer slows it down, and one with a part worn out can't
  * be towed: the rig breaks down until it's unhitched or the trailer is repaired.
  */
-public class TrailerEntity extends VehicleEntity implements Repairable {
+public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
     private static final EntityDataAccessor<Integer> DATA_COLOR = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> DATA_LOCKED = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Optional<UUID>> DATA_OWNER = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.OPTIONAL_UUID);
+    /** The lock its keys fit (0 before any are cut). */
+    private static final EntityDataAccessor<Long> DATA_LOCK_CODE = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.LONG);
+    private static final byte FLASH_EVENT = 101;
     private static final EntityDataAccessor<Integer> DATA_FLUID = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_FLUID_AMOUNT = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<CarCondition> DATA_CONDITION = SynchedEntityData.defineId(TrailerEntity.class, ModDataSerializers.CONDITION);
@@ -100,6 +105,8 @@ public class TrailerEntity extends VehicleEntity implements Repairable {
     private final FluidTank tank;
     private final TrailerPart[] parts;
     private String ownerName = "";
+    /** Ticks left of the lights flashing for a key's lock or unlock. Client-side. */
+    private int flashTicks;
     /** Where the axles are, on the ground, while hitched. Null until the trailer has been placed behind a tractor. */
     @Nullable
     private Vec3 axle;
@@ -145,6 +152,7 @@ public class TrailerEntity extends VehicleEntity implements Repairable {
         super.defineSynchedData(builder);
         builder.define(DATA_COLOR, 0xFFFFFF);
         builder.define(DATA_LOCKED, false);
+        builder.define(DATA_LOCK_CODE, 0L);
         builder.define(DATA_OWNER, Optional.empty());
         builder.define(DATA_FLUID, 0);
         builder.define(DATA_FLUID_AMOUNT, 0);
@@ -209,9 +217,48 @@ public class TrailerEntity extends VehicleEntity implements Repairable {
         return player.getUUID().equals(owner());
     }
 
-    /** Who may open, hitch or load it: anyone unless it's locked, and then its owner and admins. */
+    /** Who may open, hitch or load it: anyone unless it's locked, and then its owner, admins and anyone with its key. */
     public boolean canBeUsedBy(Player player) {
-        return !isLocked() || owner() == null || isOwner(player) || player.hasPermissions(2);
+        return !isLocked() || owner() == null || isOwner(player) || player.hasPermissions(2) || CarKeys.holds(player, lockCode());
+    }
+
+    // ---- keys ----
+
+    @Override
+    public long lockCode() {
+        return entityData.get(DATA_LOCK_CODE);
+    }
+
+    @Override
+    public void setLockCode(long code) {
+        entityData.set(DATA_LOCK_CODE, code);
+    }
+
+    @Override
+    public String nameKey() {
+        return "entity.reikocars." + type.id();
+    }
+
+    /** Locks or unlocks it for its owner or someone with its key; false, changing nothing, for anyone else. */
+    @Override
+    public boolean toggleLock(ServerPlayer player) {
+        if (owner() == null || !(canManage(player) || CarKeys.holds(player, lockCode()))) {
+            return false;
+        }
+        setLocked(!isLocked());
+        playSound(ModSounds.LOCK.get(), 0.7F, isLocked() ? 1.0F : 1.3F);
+        level().broadcastEntityEvent(this, FLASH_EVENT);
+        player.displayClientMessage(Component.translatable(isLocked() ? "trailer.reikocars.now_locked" : "trailer.reikocars.now_unlocked"), true);
+        return true;
+    }
+
+    @Override
+    public void handleEntityEvent(byte id) {
+        if (id == FLASH_EVENT) {
+            flashTicks = 12;
+        } else {
+            super.handleEntityEvent(id);
+        }
     }
 
     /** Who may pick it up, repaint it or lock it: its owner, an admin, or anyone if nobody owns it. */
@@ -467,6 +514,9 @@ public class TrailerEntity extends VehicleEntity implements Repairable {
 
     @Override
     public void tick() {
+        if (flashTicks > 0) {
+            flashTicks--;
+        }
         if (getHurtTime() > 0) {
             setHurtTime(getHurtTime() - 1);
         }
@@ -537,7 +587,7 @@ public class TrailerEntity extends VehicleEntity implements Repairable {
     /** Lit while it's hitched to a tractor with its engine running. */
     public boolean lightsOn() {
         CarEntity tractor = tractor();
-        return tractor != null && tractor.isEngineRunning();
+        return (tractor != null && (tractor.isEngineRunning() || tractor.lightsFlashing())) || (flashTicks > 0 && (flashTicks / 3) % 2 == 1);
     }
 
     // ---- cars riding a car hauler ----
@@ -570,14 +620,16 @@ public class TrailerEntity extends VehicleEntity implements Repairable {
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
         ItemStack held = player.getItemInHand(hand);
+        InteractionResult keyed = CarKeys.useOn(this, player, hand);
+        if (keyed != null) {
+            return keyed;
+        }
         if (player.isSecondaryUseActive() && held.isEmpty()) {
-            if (owner() == null || !canManage(player)) {
+            if (owner() == null || !(canManage(player) || CarKeys.holds(player, lockCode()))) {
                 return refuse(player, Component.translatable("trailer.reikocars.not_yours", ownerName));
             }
-            if (!level().isClientSide) {
-                setLocked(!isLocked());
-                playSound(ModSounds.LOCK.get(), 0.7F, isLocked() ? 1.0F : 1.3F);
-                player.displayClientMessage(Component.translatable(isLocked() ? "trailer.reikocars.now_locked" : "trailer.reikocars.now_unlocked"), true);
+            if (player instanceof ServerPlayer serverPlayer) {
+                toggleLock(serverPlayer);
             }
             return InteractionResult.sidedSuccess(level().isClientSide);
         }
@@ -699,6 +751,9 @@ public class TrailerEntity extends VehicleEntity implements Repairable {
     public ItemStack toItem() {
         ItemStack stack = new ItemStack(getDropItem());
         CarItem.withCondition(stack, condition);
+        if (lockCode() != 0L) {
+            stack.set(ModDataComponents.LOCK.get(), lockCode()); // so the keys still fit when it's put down again
+        }
         if (color() != type.defaultColor) {
             stack.set(DataComponents.DYED_COLOR, new DyedItemColor(color(), false));
         }
@@ -721,6 +776,7 @@ public class TrailerEntity extends VehicleEntity implements Repairable {
             syncFluid();
         }
         setCondition(CarItem.conditionOf(stack));
+        setLockCode(stack.getOrDefault(ModDataComponents.LOCK.get(), 0L));
         setOwner(player);
         setLocked(CarsConfig.get(CarsConfig.LOCK_NEW_CARS));
     }
@@ -745,6 +801,9 @@ public class TrailerEntity extends VehicleEntity implements Repairable {
             tag.putUUID("Owner", owner());
             tag.putString("OwnerName", ownerName);
         }
+        if (lockCode() != 0L) {
+            tag.putLong("LockCode", lockCode());
+        }
         if (type.cargoRows > 0) {
             tag.put("Cargo", cargo.createTag(registryAccess()));
         }
@@ -764,6 +823,7 @@ public class TrailerEntity extends VehicleEntity implements Repairable {
         setLocked(tag.getBoolean("Locked"));
         entityData.set(DATA_OWNER, tag.hasUUID("Owner") ? Optional.of(tag.getUUID("Owner")) : Optional.empty());
         ownerName = tag.getString("OwnerName");
+        setLockCode(tag.getLong("LockCode"));
         if (type.cargoRows > 0 && tag.contains("Cargo", Tag.TAG_LIST)) {
             cargo.fromTag(tag.getList("Cargo", Tag.TAG_COMPOUND), registryAccess());
         }

@@ -3,6 +3,7 @@ package com.reiko.cars.registry;
 import com.mojang.serialization.Codec;
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarCondition;
+import com.reiko.cars.key.CarKey;
 import com.reiko.cars.mail.Parcel;
 import java.util.function.Supplier;
 import net.minecraft.core.component.DataComponentType;
@@ -42,6 +43,14 @@ public final class ModDataComponents {
     /** A parcel's addressee, sender, postage and contents. */
     public static final Supplier<DataComponentType<Parcel>> PARCEL = COMPONENTS.registerComponentType("parcel",
             builder -> builder.persistent(Parcel.CODEC).networkSynchronized(Parcel.STREAM_CODEC));
+
+    /** What a cut key fits. */
+    public static final Supplier<DataComponentType<CarKey>> CAR_KEY = COMPONENTS.registerComponentType("car_key",
+            builder -> builder.persistent(CarKey.CODEC).networkSynchronized(CarKey.STREAM_CODEC));
+
+    /** A picked-up car's or trailer's lock, so the keys cut for it still fit when it's put down again. */
+    public static final Supplier<DataComponentType<Long>> LOCK = COMPONENTS.registerComponentType("lock",
+            builder -> builder.persistent(Codec.LONG).networkSynchronized(ByteBufCodecs.VAR_LONG));
 
     private ModDataComponents() {
     }

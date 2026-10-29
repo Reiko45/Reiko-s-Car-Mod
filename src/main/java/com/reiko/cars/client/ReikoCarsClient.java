@@ -191,6 +191,11 @@ public final class ReikoCarsClient {
             event.register((stack, tintIndex) -> tintIndex == 0 ? FastColor.ARGB32.opaque(TrailerItem.colorOf(stack, type)) : -1,
                     ModItems.trailer(type));
         }
+        // A key's fob in its car's paint.
+        event.register((stack, tintIndex) -> {
+            com.reiko.cars.key.CarKey key = stack.get(com.reiko.cars.registry.ModDataComponents.CAR_KEY.get());
+            return tintIndex == 0 ? FastColor.ARGB32.opaque(key == null ? 0x808080 : key.color()) : -1;
+        }, ModItems.CAR_KEY.get());
     }
 
     /** Hands the driver's keys to their car before it ticks, and sends the horn and lock keys. */

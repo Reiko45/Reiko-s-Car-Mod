@@ -134,6 +134,7 @@ public final class CarItem extends Item {
             car.setFuel(fuelOf(stack));
             car.setCondition(conditionOf(stack));
             car.setColor(colorOf(stack, type));
+            car.setLockCode(stack.getOrDefault(ModDataComponents.LOCK.get(), 0L)); // the keys cut for it still fit
             car.setOwner(player);
             car.setLocked(CarsConfig.get(CarsConfig.LOCK_NEW_CARS));
             if (level instanceof ServerLevel serverLevel) {
@@ -165,6 +166,9 @@ public final class CarItem extends Item {
         }
         if (type.isTractor()) {
             tooltip.add(Component.translatable("item.reikocars.car.tractor").withStyle(ChatFormatting.DARK_GRAY));
+        }
+        if (stack.has(ModDataComponents.LOCK.get())) {
+            tooltip.add(Component.translatable("item.reikocars.car.keyed").withStyle(ChatFormatting.DARK_GRAY));
         }
     }
 }

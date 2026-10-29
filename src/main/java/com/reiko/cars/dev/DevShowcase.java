@@ -132,6 +132,8 @@ public final class DevShowcase {
             repairScript();
         } else if (MODE.equals("tow")) {
             towScript();
+        } else if (MODE.equals("keys")) {
+            keysScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -146,6 +148,10 @@ public final class DevShowcase {
             return;
         }
         tick++;
+        if (tick == 1 && !MODE.equals("keys")) {
+            // The older scripts drive their cars without cutting keys first.
+            minecraft.getSingleplayerServer().execute(() -> com.reiko.cars.config.CarsConfig.REQUIRE_KEYS.set(false));
+        }
         for (Step step : STEPS) {
             if (step.at == tick) {
                 try {
@@ -1243,5 +1249,83 @@ public final class DevShowcase {
         at(550, mc -> hoverOn(mc, 16 + 8, 50 + 8));
         at(570, mc -> shot(mc, "60_mailbox_inbox"));
         at(575, mc -> mc.stop());
+    }
+
+    // ---- car keys: ./gradlew runClient -Pshowcase=keys ----
+
+    private static void keysScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(12600);
+                for (int x = -10; x <= 30; x++) {
+                    for (int z = -10; z <= 30; z++) {
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), Blocks.SMOOTH_STONE.defaultBlockState());
+                    }
+                }
+                spawn(level, CarType.SEDAN, 4.5, 6.5, 30.0F, 0.8);
+                CarEntity sedan = car(level, CarType.SEDAN);
+                sedan.setOwner(player);
+                sedan.setColor(0xC62828);
+                sedan.setLocked(true);
+                player.getInventory().clearContent();
+                player.getInventory().setItem(0, new ItemStack(ModItems.BLANK_KEY.get(), 3));
+            });
+        });
+        // Even its owner can't start it without a key.
+        at(50, mc -> server(mc, player -> player.startRiding(car(player.serverLevel(), CarType.SEDAN), true)));
+        at(54, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        at(70, mc -> shot(mc, "61_no_key"));
+        // Cut a key: sneak and right-click the car with a blank.
+        at(75, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                player.stopRiding();
+                player.teleportTo(player.serverLevel(), 7.5, -60.0, 3.0, 50.0F, 22.0F);
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+            });
+        });
+        at(90, mc -> server(mc, player -> {
+            player.setShiftKeyDown(true);
+            car(player.serverLevel(), CarType.SEDAN).interact(player, net.minecraft.world.InteractionHand.MAIN_HAND);
+            player.setShiftKeyDown(false);
+        }));
+        at(100, mc -> shot(mc, "62_key_cut"));
+        // The key, and what it says.
+        at(102, mc -> server(mc, player -> player.setGameMode(GameType.SURVIVAL))); // the survival inventory, to see the key
+        at(110, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
+        at(114, mc -> hoverOn(mc, 8 + 18 + 8, 142 + 8));
+        at(125, mc -> shot(mc, "63_key_tooltip"));
+        at(127, mc -> {
+            mc.player.closeContainer();
+            server(mc, player -> player.setGameMode(GameType.CREATIVE));
+        });
+        // With the key, it starts.
+        at(130, mc -> server(mc, player -> player.startRiding(car(player.serverLevel(), CarType.SEDAN), true)));
+        at(134, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        at(140, mc -> mc.options.keyUp.setDown(true));
+        at(156, mc -> mc.options.keyUp.setDown(false));
+        at(175, mc -> shot(mc, "64_driving_with_key"));
+        // Walk away and lock it with the key: the lights flash.
+        at(180, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                CarEntity sedan = car(player.serverLevel(), CarType.SEDAN);
+                player.stopRiding();
+                sedan.setLocked(false);
+                net.minecraft.world.phys.Vec3 at = sedan.position();
+                player.teleportTo(player.serverLevel(), at.x + 6.0, at.y, at.z - 7.0, 40.0F, 12.0F);
+                player.getInventory().selected = 1;
+                player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(1));
+            });
+        });
+        at(200, mc -> server(mc, player -> com.reiko.cars.key.CarKeys.fob(player, player.getInventory().getItem(1))));
+        at(203, mc -> shot(mc, "65_fob_lock_a"));
+        at(205, mc -> shot(mc, "65_fob_lock_b"));
+        at(212, mc -> shot(mc, "65_fob_lock_c"));
+        at(220, mc -> mc.stop());
     }
 }

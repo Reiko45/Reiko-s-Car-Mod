@@ -85,6 +85,7 @@ public final class CarHud implements LayeredDraw.Layer {
         Component unitLabel = Component.translatable(unit.translationKey);
         // Broken down or out of fuel: in red, at the top right, where the unit gives way to it if need be.
         Component warning = car.isBrokenDown() ? Component.translatable("hud.reikocars.broken_down")
+                : !car.keyedIn() ? Component.translatable("hud.reikocars.no_key")
                 : car.fuelFraction() <= 0 ? Component.translatable("hud.reikocars.out_of_fuel") : null;
         int unitX = x + 8 + font.width(number) * 2;
         int warningX = warning == null ? x + WIDTH : x + WIDTH - 6 - font.width(warning);

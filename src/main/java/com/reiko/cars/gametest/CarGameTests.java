@@ -10,6 +10,8 @@ import com.reiko.cars.car.CarFuel;
 import com.reiko.cars.car.CarTank;
 import com.reiko.cars.car.CarType;
 import com.reiko.cars.car.FuelType;
+import com.reiko.cars.key.CarKeys;
+import com.reiko.cars.key.Keyed;
 import com.reiko.cars.mail.MailService;
 import com.reiko.cars.mail.MailboxBlock;
 import com.reiko.cars.mail.MailboxBlockEntity;
@@ -158,6 +160,14 @@ public final class CarGameTests {
         car.moveTo(at.x, at.y, at.z, 0.0F, 0.0F);
         helper.getLevel().addFreshEntity(car);
         return car;
+    }
+
+    /** Gives {@code player} a key for {@code vehicle}, as if its owner had cut one. */
+    private static void giveKey(ServerPlayer player, Keyed vehicle) {
+        if (vehicle.lockCode() == 0L) {
+            vehicle.setLockCode(new java.util.Random().nextLong() | 1L);
+        }
+        player.getInventory().add(CarKeys.keyFor(vehicle));
     }
 
     private static void check(GameTestHelper helper, boolean condition, String what) {
@@ -327,6 +337,7 @@ public final class CarGameTests {
         ServerPlayer driver = join(helper);
         CarEntity car = car(helper, CarType.SEDAN);
         car.setOwner(driver);
+        giveKey(driver, car);
         car.setFuel(100_000);
         driver.startRiding(car, true);
         Vec3 start = car.position();
@@ -1040,6 +1051,7 @@ public final class CarGameTests {
         ServerPlayer driver = join(helper);
         CarEntity car = car(helper, CarType.SEDAN);
         car.setOwner(driver);
+        giveKey(driver, car);
         car.setFuel(100_000);
         car.setCondition(CarCondition.NEW.with(Part.ENGINE, 0.0F));
         driver.startRiding(car, true);
@@ -1486,6 +1498,121 @@ public final class CarGameTests {
             check(helper, bob.getInventory().countItem(ModItems.PARCEL.get()) == 0, "and the box is gone");
         } finally {
             leave(helper, alice, bob, carrier);
+        }
+        helper.succeed();
+    }
+
+    // ---- keys ----
+
+    /** Sneak and right-click {@code vehicle} with {@code held}, as {@code player}. */
+    private static void sneakUse(ServerPlayer player, net.minecraft.world.entity.Entity vehicle, ItemStack held) {
+        player.setItemInHand(InteractionHand.MAIN_HAND, held);
+        player.setShiftKeyDown(true);
+        vehicle.interact(player, InteractionHand.MAIN_HAND);
+        player.setShiftKeyDown(false);
+    }
+
+    private static int keysFitting(ServerPlayer player, long code) {
+        int count = 0;
+        for (ItemStack stack : player.getInventory().items) {
+            count += CarKeys.fits(stack, code) ? 1 : 0;
+        }
+        return count;
+    }
+
+    @GameTest(template = EMPTY)
+    public static void keysStartTheCar(GameTestHelper helper) {
+        ServerPlayer owner = join(helper);
+        ServerPlayer stranger = join(helper);
+        try {
+            owner.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+            CarEntity car = car(helper, CarType.SEDAN);
+            car.setOwner(owner);
+            car.setFuel(100_000);
+            owner.startRiding(car, true);
+            check(helper, !car.keyedIn() && !car.isEngineRunning(), "even its owner can't start it without a key");
+            owner.stopRiding();
+
+            sneakUse(stranger, car, new ItemStack(ModItems.BLANK_KEY.get(), 2));
+            check(helper, car.lockCode() == 0L && stranger.getInventory().countItem(ModItems.CAR_KEY.get()) == 0, "only the owner cuts keys");
+
+            sneakUse(owner, car, new ItemStack(ModItems.BLANK_KEY.get(), 2));
+            check(helper, car.lockCode() != 0L, "cutting the first key gives the car its lock");
+            helper.assertValueEqual(keysFitting(owner, car.lockCode()), 1, "the owner has a key");
+            helper.assertValueEqual(owner.getMainHandItem().getCount(), 1, "one blank used");
+            check(helper, owner.getInventory().items.stream().anyMatch(stack -> stack.is(ModItems.CAR_KEY.get())
+                    && stack.getHoverName().getString().equals("Sedan Key")), "called the Sedan Key");
+
+            owner.startRiding(car, true);
+            check(helper, car.keyedIn() && car.isEngineRunning(), "with the key it starts");
+            owner.stopRiding();
+            ItemStack item = car.toItem();
+            helper.assertValueEqual(item.get(com.reiko.cars.registry.ModDataComponents.LOCK.get()), car.lockCode(),
+                    "picked up, it keeps its lock, so the keys still fit");
+        } finally {
+            leave(helper, owner, stranger);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD)
+    public static void keysShareLockedVehicles(GameTestHelper helper) {
+        ServerPlayer owner = join(helper);
+        ServerPlayer friend = join(helper);
+        try {
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.0, 6.0);
+            car.setOwner(owner);
+            car.setLocked(true);
+            car.setFuel(100_000);
+            check(helper, !car.canBeUsedBy(friend), "locked, a friend can't get in");
+            check(helper, !car.toggleLock(friend), "or unlock it");
+
+            sneakUse(owner, car, new ItemStack(ModItems.BLANK_KEY.get()));
+            sneakUse(owner, car, new ItemStack(ModItems.BLANK_KEY.get()));
+            helper.assertValueEqual(keysFitting(owner, car.lockCode()), 2, "two keys cut");
+            ItemStack spare = owner.getInventory().items.stream().filter(stack -> CarKeys.fits(stack, car.lockCode())).findFirst().orElseThrow();
+            friend.getInventory().add(spare.split(1));
+            check(helper, car.canBeUsedBy(friend), "with a key the friend can get in");
+            check(helper, car.toggleLock(friend) && !car.isLocked(), "and unlock it");
+            check(helper, car.toggleLock(friend) && car.isLocked(), "and lock it again");
+            friend.startRiding(car, true);
+            check(helper, car.isEngineRunning(), "and drive it");
+            friend.stopRiding();
+            check(helper, !car.canManage(friend), "but not pick it up");
+
+            // The owner's key locks and unlocks it from a distance.
+            Vec3 across = car.position().add(12.0, 0.0, 0.0);
+            owner.moveTo(across.x, across.y, across.z);
+            ItemStack ownersKey = owner.getInventory().items.stream().filter(stack -> CarKeys.fits(stack, car.lockCode())).findFirst().orElseThrow();
+            CarKeys.fob(owner, ownersKey);
+            check(helper, !car.isLocked(), "the key fob unlocks it");
+            CarKeys.fob(owner, ownersKey);
+            check(helper, car.isLocked(), "and locks it");
+
+            // Changing the locks: asked twice, then only the owner's key fits.
+            long before = car.lockCode();
+            int slot = owner.getInventory().findSlotMatchingItem(ownersKey);
+            ItemStack inHand = owner.getInventory().removeItemNoUpdate(slot);
+            sneakUse(owner, car, inHand);
+            helper.assertValueEqual(car.lockCode(), before, "asked once, the locks stay");
+            sneakUse(owner, car, owner.getMainHandItem());
+            check(helper, car.lockCode() != before, "asked twice, the locks change");
+            check(helper, CarKeys.fits(owner.getMainHandItem(), car.lockCode()), "the owner's key has the new lock");
+            check(helper, !CarKeys.holds(friend, car.lockCode()) && !car.canBeUsedBy(friend), "the friend's key doesn't fit any more");
+
+            // Trailers take keys too.
+            TrailerEntity trailer = trailer(helper, TrailerType.BOX_TRAILER, new Vec3(5.0, 1.0, 20.0), 0.0F);
+            trailer.setOwner(owner);
+            trailer.setLocked(true);
+            check(helper, !trailer.canBeUsedBy(friend), "a locked trailer keeps the friend out");
+            sneakUse(owner, trailer, new ItemStack(ModItems.BLANK_KEY.get()));
+            ItemStack trailerKey = owner.getInventory().items.stream().filter(stack -> CarKeys.fits(stack, trailer.lockCode())).findFirst().orElseThrow();
+            friend.getInventory().add(trailerKey.split(1));
+            check(helper, trailer.canBeUsedBy(friend), "until they have its key");
+            helper.assertValueEqual(friend.getInventory().items.stream().filter(stack -> stack.is(ModItems.CAR_KEY.get()))
+                    .map(stack -> stack.getHoverName().getString()).filter(name -> name.equals("Box Trailer Key")).count(), 1L, "the Box Trailer Key");
+        } finally {
+            leave(helper, owner, friend);
         }
         helper.succeed();
     }

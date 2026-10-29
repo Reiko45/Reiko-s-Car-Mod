@@ -2,6 +2,8 @@ package com.reiko.cars.car;
 
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.config.CarsConfig;
+import com.reiko.cars.key.CarKeys;
+import com.reiko.cars.key.Keyed;
 import com.reiko.cars.car.CarCondition.Part;
 import com.reiko.cars.registry.ModDataComponents;
 import com.reiko.cars.registry.ModDataSerializers;
@@ -81,7 +83,7 @@ import org.jetbrains.annotations.Nullable;
  * reports braking and crashes, and the server checks those against what the car could do. Worn parts change how the
  * car drives on the driver's client, from the condition the server sends with the rest of the car's data.
  */
-public class CarEntity extends VehicleEntity implements Repairable {
+public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     public static final ResourceKey<DamageType> RUN_OVER = ResourceKey.create(Registries.DAMAGE_TYPE, ReikoCars.id("car"));
     /** Grass, dirt, sand, snow and the like slow every car but the off-roader. */
     public static final TagKey<Block> OFF_ROAD = BlockTags.create(ReikoCars.id("off_road"));
@@ -90,6 +92,12 @@ public class CarEntity extends VehicleEntity implements Repairable {
     private static final EntityDataAccessor<Integer> DATA_COLOR = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> DATA_LOCKED = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Optional<UUID>> DATA_OWNER = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.OPTIONAL_UUID);
+    /** The lock its keys fit (0 before any are cut). */
+    private static final EntityDataAccessor<Long> DATA_LOCK_CODE = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
+    /** Whether the driver may start it: they carry its key, or it needs none. Worked out by the server. */
+    private static final EntityDataAccessor<Boolean> DATA_KEYED = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
+    /** The entity event that flashes the lights, when it's locked or unlocked with a key. */
+    private static final byte FLASH_EVENT = 101;
     private static final EntityDataAccessor<CarCondition> DATA_CONDITION = SynchedEntityData.defineId(CarEntity.class, ModDataSerializers.CONDITION);
     /** Wear smaller than this isn't sent to clients straight away (warning levels always are). */
     private static final float CONDITION_SYNC_STEP = 0.005F;
@@ -159,6 +167,8 @@ public class CarEntity extends VehicleEntity implements Repairable {
     /** A motorcycle's lean, in degrees: positive to its right. Client-side, for drawing. */
     private float lean;
     private float leanO;
+    /** Ticks left of the lights flashing for a key's lock or unlock. Client-side. */
+    private int flashTicks;
 
     public CarEntity(EntityType<? extends CarEntity> entityType, Level level, CarType type) {
         super(entityType, level);
@@ -180,6 +190,8 @@ public class CarEntity extends VehicleEntity implements Repairable {
         builder.define(DATA_COLOR, 0xFFFFFF);
         builder.define(DATA_LOCKED, false);
         builder.define(DATA_OWNER, Optional.empty());
+        builder.define(DATA_LOCK_CODE, 0L);
+        builder.define(DATA_KEYED, false);
         builder.define(DATA_CONDITION, CarCondition.NEW);
     }
 
@@ -426,12 +438,85 @@ public class CarEntity extends VehicleEntity implements Repairable {
         return player.getUUID().equals(owner());
     }
 
-    /** Owners and admins can always get in. Anyone can get into an unlocked or unowned car, or join its owner. */
+    /**
+     * Owners, admins and anyone carrying its key can always get in. Anyone can get into an unlocked or unowned car,
+     * or join someone inside who could open it.
+     */
     public boolean canBeUsedBy(Player player) {
-        if (!isLocked() || owner() == null || isOwner(player) || player.hasPermissions(2) || hasPassenger(player)) {
+        if (!isLocked() || owner() == null || opens(player) || hasPassenger(player)) {
             return true;
         }
-        return getPassengers().stream().anyMatch(passenger -> passenger instanceof Player p && isOwner(p));
+        return getPassengers().stream().anyMatch(passenger -> passenger instanceof Player p && opens(p));
+    }
+
+    /** Whether {@code player} can open it when it's locked: its owner, an admin, or someone with its key. */
+    private boolean opens(Player player) {
+        return isOwner(player) || player.hasPermissions(2) || CarKeys.holds(player, lockCode());
+    }
+
+    // ---- keys ----
+
+    @Override
+    public long lockCode() {
+        return entityData.get(DATA_LOCK_CODE);
+    }
+
+    @Override
+    public void setLockCode(long code) {
+        entityData.set(DATA_LOCK_CODE, code);
+    }
+
+    @Override
+    public String nameKey() {
+        return "entity.reikocars." + type.id();
+    }
+
+    /** Whether the driver may start it: they carry its key, or it needs none (see {@link CarKeys#required}). */
+    public boolean keyedIn() {
+        return entityData.get(DATA_KEYED);
+    }
+
+    /** Works out whether the driver has the key, on the server; with {@code announce}, starts the engine when they get it. */
+    private boolean updateKey(boolean announce) {
+        boolean keyed = getControllingPassenger() instanceof Player driver && (!CarKeys.required(this) || CarKeys.holds(driver, lockCode()));
+        boolean was = entityData.get(DATA_KEYED);
+        if (keyed != was) {
+            entityData.set(DATA_KEYED, keyed);
+            if (announce && keyed && hasFuel() && !isBrokenDown()) {
+                playSound(ModSounds.ENGINE_START.get(), 1.0F, 1.0F);
+            }
+        }
+        return keyed;
+    }
+
+    /** Checks the driver's pockets for the key now, rather than on the next tick (as after handing them one). */
+    public boolean checkKey() {
+        return updateKey(true);
+    }
+
+    /** Why the driver can't start it: no key. */
+    private Component noKeyMessage(Player driver) {
+        return canManage(driver) ? Component.translatable("key.reikocars.no_key_owner", kindName())
+                : Component.translatable("key.reikocars.no_key", kindName());
+    }
+
+    /** The lights flash twice: locked or unlocked with a key. */
+    private void flashLights() {
+        level().broadcastEntityEvent(this, FLASH_EVENT);
+    }
+
+    @Override
+    public void handleEntityEvent(byte id) {
+        if (id == FLASH_EVENT) {
+            flashTicks = 12;
+        } else {
+            super.handleEntityEvent(id);
+        }
+    }
+
+    /** Whether the lights are on for a key's flash. Client-side. */
+    public boolean lightsFlashing() {
+        return flashTicks > 0 && (flashTicks / 3) % 2 == 1;
     }
 
     /** Who may break the car to pick it up or repaint it: its owner, an admin, or anyone if nobody owns it. */
@@ -444,6 +529,10 @@ public class CarEntity extends VehicleEntity implements Repairable {
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
         ItemStack held = player.getItemInHand(hand);
+        InteractionResult keyed = CarKeys.useOn(this, player, hand);
+        if (keyed != null) {
+            return keyed;
+        }
         if (player.isSecondaryUseActive()) {
             if (type.storageRows == 0) {
                 return InteractionResult.PASS;
@@ -539,17 +628,22 @@ public class CarEntity extends VehicleEntity implements Repairable {
         }
     }
 
-    /** Locks or unlocks the car for its owner. Returns false, and changes nothing, for anyone else. */
+    /**
+     * Locks or unlocks the car for its owner or someone with its key. Returns false, and changes nothing, for anyone
+     * else.
+     */
+    @Override
     public boolean toggleLock(ServerPlayer player) {
-        if (!canManage(player) || owner() == null) {
+        if (owner() == null || !(canManage(player) || CarKeys.holds(player, lockCode()))) {
             return false;
         }
         setLocked(!isLocked());
         TrailerEntity trailer = trailer();
-        if (trailer != null && trailer.canManage(player)) {
+        if (trailer != null && (trailer.canManage(player) || CarKeys.holds(player, trailer.lockCode()))) {
             trailer.setLocked(isLocked()); // the rig locks as one
         }
         playSound(ModSounds.LOCK.get(), 0.7F, isLocked() ? 1.0F : 1.3F);
+        flashLights();
         player.displayClientMessage(Component.translatable(isLocked() ? "car.reikocars.now_locked" : "car.reikocars.now_unlocked"), true);
         return true;
     }
@@ -615,12 +709,17 @@ public class CarEntity extends VehicleEntity implements Repairable {
     protected void addPassenger(Entity passenger) {
         boolean hadDriver = getControllingPassenger() != null;
         super.addPassenger(passenger);
-        if (!level().isClientSide && !hadDriver && getControllingPassenger() != null && hasFuel()) {
-            if (isBrokenDown()) {
-                playSound(ModSounds.BREAKDOWN.get(), 0.6F, 1.2F); // turns over, won't start
-                tellDriver(brokenDownMessage());
-            } else {
-                playSound(ModSounds.ENGINE_START.get(), 1.0F, 1.0F);
+        if (!level().isClientSide && !hadDriver && getControllingPassenger() instanceof Player driver) {
+            if (!updateKey(false)) {
+                playSound(ModSounds.LOCK.get(), 0.4F, 0.6F); // no key: nothing happens
+                tellDriver(noKeyMessage(driver));
+            } else if (hasFuel()) {
+                if (isBrokenDown()) {
+                    playSound(ModSounds.BREAKDOWN.get(), 0.6F, 1.2F); // turns over, won't start
+                    tellDriver(brokenDownMessage());
+                } else {
+                    playSound(ModSounds.ENGINE_START.get(), 1.0F, 1.0F);
+                }
             }
         }
         if (level().isClientSide && passenger instanceof Player player && player.isLocalPlayer()) {
@@ -718,6 +817,9 @@ public class CarEntity extends VehicleEntity implements Repairable {
             setDamage(getDamage() - 1.0F);
         }
         float yawBefore = getYRot();
+        if (flashTicks > 0) {
+            flashTicks--;
+        }
         towPitchO = towPitch;
         if (!(getVehicle() instanceof CarEntity)) {
             towPitch = 0.0F;
@@ -794,7 +896,7 @@ public class CarEntity extends VehicleEntity implements Repairable {
             brakes *= 0.4 + 0.6 * trailerWear.braking() * trailerWear.grip();
             top *= 0.5 + 0.5 * trailerWear.drag();
         }
-        boolean engine = getControllingPassenger() != null && hasFuel() && !isBrokenDown();
+        boolean engine = getControllingPassenger() != null && hasFuel() && !isBrokenDown() && keyedIn();
         double before = speed;
         boolean braking = onGround() && ((inputForward && speed < 0) || (inputBack && speed > 0.001) || inputBrake);
 
@@ -935,6 +1037,7 @@ public class CarEntity extends VehicleEntity implements Repairable {
         if (hornCooldown > 0) {
             hornCooldown--;
         }
+        updateKey(true);
         if (isPassenger()) {
             lastFuelPos = null; // being carried, not driven: no fuel burned, nobody run over
             return;
@@ -947,7 +1050,7 @@ public class CarEntity extends VehicleEntity implements Repairable {
         lastFuelPos = pos;
         LivingEntity driver = getControllingPassenger();
         double load = trailer() != null ? 1.4 : towed() != null ? 1.3 : 1.0;
-        if (driver != null && fuel > 0 && !isBrokenDown()) {
+        if (driver != null && fuel > 0 && !isBrokenDown() && keyedIn()) {
             double burn = moved * type.fuelPerBlock * load * CarsConfig.get(CarsConfig.FUEL_USE) * condition.fuelUse()
                     + CarsConfig.get(CarsConfig.IDLE_FUEL_USE);
             setFuel(fuel - burn);
@@ -1067,7 +1170,7 @@ public class CarEntity extends VehicleEntity implements Repairable {
 
     /** Someone's driving, there's fuel and nothing's worn out. */
     public boolean isEngineRunning() {
-        return getControllingPassenger() != null && hasFuel() && !isBrokenDown();
+        return getControllingPassenger() != null && hasFuel() && !isBrokenDown() && keyedIn();
     }
 
     /** Speed along the heading in blocks per tick, as seen on this client. */
@@ -1214,6 +1317,9 @@ public class CarEntity extends VehicleEntity implements Repairable {
         ItemStack stack = new ItemStack(getDropItem());
         CarItem.withFuel(stack, fuel());
         CarItem.withCondition(stack, condition());
+        if (lockCode() != 0L) {
+            stack.set(ModDataComponents.LOCK.get(), lockCode()); // so the keys still fit when it's put down again
+        }
         if (color() != type.defaultColor) {
             stack.set(net.minecraft.core.component.DataComponents.DYED_COLOR, new DyedItemColor(color(), false));
         }
@@ -1244,6 +1350,9 @@ public class CarEntity extends VehicleEntity implements Repairable {
             tag.putUUID("Owner", owner());
             tag.putString("OwnerName", ownerName);
         }
+        if (lockCode() != 0L) {
+            tag.putLong("LockCode", lockCode());
+        }
         if (type.storageRows > 0) {
             tag.put("Bed", bed.createTag(registryAccess()));
         }
@@ -1262,6 +1371,7 @@ public class CarEntity extends VehicleEntity implements Repairable {
         setLocked(tag.getBoolean("Locked"));
         entityData.set(DATA_OWNER, tag.hasUUID("Owner") ? Optional.of(tag.getUUID("Owner")) : Optional.empty());
         ownerName = tag.getString("OwnerName");
+        setLockCode(tag.getLong("LockCode"));
         if (type.storageRows > 0 && tag.contains("Bed", Tag.TAG_LIST)) {
             bed.fromTag(tag.getList("Bed", Tag.TAG_COMPOUND), registryAccess());
         }

@@ -31,6 +31,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.DIESEL_PUMP.get());
                 output.accept(ModItems.REPAIR_BENCH.get());
                 output.accept(ModItems.MAILBOX.get());
+                output.accept(ModItems.BLANK_KEY.get());
                 for (TrailerType type : TrailerType.values()) {
                     output.accept(ModItems.trailer(type));
                 }

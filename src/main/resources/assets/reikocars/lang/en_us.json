@@ -413,5 +413,22 @@
   "hud.reikocars.hitch.drop": "[%s] Drop car",
   "hud.reikocars.hitch.mail": "[%s] Collect & deliver",
   "mail.reikocars.one_parcel": "1 parcel",
-  "mail.reikocars.parcels": "%s parcels"
+  "mail.reikocars.parcels": "%s parcels",
+  "item.reikocars.blank_key": "Blank Key",
+  "item.reikocars.blank_key.help": "Sneak and right-click your car or trailer with it to cut a key",
+  "item.reikocars.car_key": "Car Key",
+  "item.reikocars.car_key.of": "%s Key",
+  "item.reikocars.car_key.owner": "Owner: %s",
+  "item.reikocars.car_key.fob": "Right-click: lock or unlock it from up to %s blocks away",
+  "item.reikocars.car_key.rekey": "Owner: sneak and right-click it twice to change the locks",
+  "item.reikocars.car.keyed": "Keys cut for it still fit",
+  "key.reikocars.owner_only": "Only %s can cut keys for this %s.",
+  "key.reikocars.cut": "Cut a key for your %s.",
+  "key.reikocars.doesnt_fit": "That key doesn't fit this %s any more.",
+  "key.reikocars.rekey_confirm": "Sneak and right-click again to change the locks on your %s: every other key will stop fitting.",
+  "key.reikocars.rekeyed": "Changed the locks on your %s: only this key fits now.",
+  "key.reikocars.out_of_range": "Your %s isn't within %s blocks.",
+  "key.reikocars.no_key_owner": "No key: sneak and right-click your %s with a Blank Key to cut one.",
+  "key.reikocars.no_key": "You need the %s's key to start it.",
+  "hud.reikocars.no_key": "NO KEY"
 }

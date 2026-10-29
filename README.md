@@ -45,7 +45,8 @@ Tank sizes are in buckets of the car's own fuel: BuildCraft's **light fuel** for
 for the diesel ones (the semi, delivery van, city bus, heavy-duty pickup, farm tractor and tow trucks). A sedan goes about 600
 blocks on a bucket; a semi about 250, or 180 pulling a trailer; the bus about 300.
 
-**Driving:** right-click a car to get in (the first person in drives). The movement keys drive and steer, **jump**
+**Driving:** right-click a car to get in (the first person in drives), with one of its **keys** in your inventory
+(see [Car keys](#car-keys)). The movement keys drive and steer, **jump**
 is the handbrake and **sneak** gets out. **H** sounds the horn, **L** locks or unlocks the car and **G** hitches a
 trailer, loads a car onto a car hauler, picks up or drops a car in a tow truck, or stops the mail van for the mail. While you're
 in a car, a dashboard in the bottom right shows your speed and a fuel gauge.
@@ -58,15 +59,34 @@ in a car, a dashboard in the bottom right shows your speed and a fuel gauge.
   fuel is which, so a data pack can move fluids between them. A car's tooltip says what it runs on.
 - **Filling up:** buy gasoline at a gas pump and diesel at a diesel pump, or (if the server allows it) pour a bucket
   of the right fuel straight into the tank.
-- **Ownership:** whoever puts a car down owns it. New cars start **locked**, so only the owner can get in, though
-  anyone can ride along while the owner is inside. Only the owner (or an admin) can pick a car back up. Punch it a
-  few times and it drops as an item, keeping its fuel and paint. A pickup's bed spills its items.
+- **Ownership:** whoever puts a car down owns it. New cars start **locked**, so only the owner and anyone with its
+  key can get in, though anyone can ride along with them. Only the owner (or an admin) can pick a car back up. Punch
+  it a few times and it drops as an item, keeping its fuel, paint and locks. A pickup's bed spills its items.
 - **Paint:** right-click a car with any dye.
 - **Off-road:** grass, dirt, sand, snow and the like (the `reikocars:off_road` block tag) slow every car but the
   off-roader, the heavy-duty pickup, the farm tractor and the dirt bike. Ice is slippery.
 - **Running things over** hurts mobs and knocks them aside, more the faster you go. Players only get hurt with PvP
   on, and never your own pets.
 - Cars climb a full block, so curbs, slabs and stairs don't stop them. Cars can't be blown up or burned.
+
+## Car keys
+
+Every car, motorcycle and truck needs one of its keys to start, **even for its owner**. With no key in your inventory
+the engine won't turn over and the dashboard says **NO KEY**.
+
+- **Cutting keys:** craft **Blank Keys** (an iron ingot and a gold nugget make two), then **sneak + right-click**
+  your car with one to cut a key for it. Cut as many as you like and hand them out. Only the owner (or an admin) can
+  cut keys. A key is named for its car ("Sedan Key"), its fob is in the car's paint, and its tooltip names the owner.
+- **What a key does:** anyone carrying it can start and drive the car, get into it while it's locked, open its trunk
+  or bed, and lock or unlock it with **L**. They can't pick it up or cut more keys.
+- **Key fob:** right-click with a key to lock or unlock its car from up to 32 blocks away. The lights flash.
+- **Lost a key?** Changing the locks makes every other key stop fitting: the owner **sneak + right-clicks** the car
+  twice with one of its keys, and only that key fits from then on. (Lost every key? Cut a new one from a blank first.)
+- Picking a car up keeps its locks, so its keys still fit when you put it down again.
+- **Trailers** take keys too, cut the same way: a key lets someone open, hitch and lock a locked trailer.
+
+A server can set `driving.requireKeys` to `false`, so cars start without keys and keys only share locked cars.
+Cars from before 1.12.0 have no keys yet: cut one before driving.
 
 ## Motorcycles
 
@@ -121,8 +141,9 @@ Drive a car up to the hauler's back end, lined up with it, and press **G**: the 
 and stays on when you get out. With both spots full, nothing more goes on. Get in a car on the hauler and press **G**
 to drive it off the back. Hitch the hauler to a semi and its cars go wherever it goes.
 
-**Ownership and paint:** as with cars. **Sneak + right-click** with an empty hand locks or unlocks a trailer (only
-its owner can), and a locked trailer can only be opened, hitched or loaded by its owner. Right-click with a dye to
+**Ownership and paint:** as with cars. **Sneak + right-click** with an empty hand locks or unlocks a trailer (its
+owner, or anyone with its key), and a locked trailer can only be opened, hitched or loaded by its owner or someone
+with its key. Right-click with a dye to
 paint it. Punch it to pick it up. A box trailer spills its cargo.
 
 ## Building a car
@@ -281,6 +302,7 @@ driver's side.
 | Car Hauler Deck | iron bars in the corners, iron ingots across the middle |
 | Repair Bench | iron ingot, anvil, iron ingot on top, iron gear, chest, iron gear across the middle, iron legs |
 | Mailbox | iron ingot, blue dye, red dye on top, iron ingot, chest, iron ingot across the middle, a wooden fence below |
+| Blank Key ×2 | an iron ingot and a gold nugget (shapeless) |
 | Motor Oil ×3 | a BuildCraft **Oil** bucket and three glass bottles (shapeless) |
 | Engine Parts ×2 | iron ingot, piston, iron ingot over iron gear, iron ingot, iron gear |
 | Brake Pads ×2 | three iron ingots over three flint |
@@ -350,6 +372,7 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `driving.offRoadSpeedFactor` | `0.6` | Top speed off-road (1.0 turns it off) |
 | `driving.runOverDamage` | `6.0` | Damage per block-per-tick of speed (0 turns it off) |
 | `driving.lockNewCars` | `true` | New cars start locked |
+| `driving.requireKeys` | `true` | A car needs one of its keys to start, even for its owner. If false, keys only share locked cars |
 | `pumps.defaultPricePerBucket` | `4.0` | Starting price of a new pump |
 | `pumps.capacityBuckets` | `16` | Buckets a pump holds |
 | `pumps.hoseLength` | `6.0` | How close a car must be to a pump |
@@ -372,7 +395,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
-./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs, tow trucks, mail), then exit
+./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs, tow trucks, mail, keys), then exit
 ./gradlew runClient         # start a dev client
 ./gradlew runClient -Pshowcase  # build a test scene, buy fuel, drive, save screenshots to run/screenshots/, quit
 ./gradlew runClient -Pshowcase=workbench  # the same for the Car Workbench and its JEI pages
@@ -382,6 +405,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 ./gradlew runClient -Pshowcase=cars2      # the same for the hatchback, muscle car, convertible, minivan, van, bus, 4x4, tractor
 ./gradlew runClient -Pshowcase=repair     # the Repair Bench, paying for repairs, its owner's tabs, a worn car's dashboard and smoke, a worn trailer
 ./gradlew runClient -Pshowcase=tow        # the tow trucks loaded and towing, posting a parcel, the mail van's round, the inbox
+./gradlew runClient -Pshowcase=keys       # no key, cutting one, its tooltip, driving with it, locking it from a distance
 ./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
 
@@ -440,6 +464,7 @@ src/main/java/com/reiko/cars/
 ├── workbench/            the Car Workbench block and menu, the car parts, and the car_assembly recipe type
 ├── repair/               the Repair Bench block, block entity, menu and protection, the jobs (RepairJobs), and RepairService (repairs and paying)
 ├── tow/                  the tow trucks' picking up, carrying and dropping off (Towing)
+├── key/                  car keys: the key items, what a key fits (CarKey), and cutting, changing the locks and the key fob (CarKeys)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
 ├── network/              packets: pump, repair bench and mailbox actions, horn, lock and hitch, the driver's wear reports, tanker load and unload

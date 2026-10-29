@@ -3,6 +3,8 @@ package com.reiko.cars.registry;
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarItem;
 import com.reiko.cars.car.CarType;
+import com.reiko.cars.key.BlankKeyItem;
+import com.reiko.cars.key.CarKeyItem;
 import com.reiko.cars.mail.ParcelItem;
 import com.reiko.cars.trailer.TrailerItem;
 import com.reiko.cars.trailer.TrailerPartItem;
@@ -65,6 +67,11 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> MAILBOX = ITEMS.registerSimpleBlockItem(ModBlocks.MAILBOX);
     /** Items wrapped up for someone at a mailbox. Only made there. */
     public static final DeferredItem<ParcelItem> PARCEL = ITEMS.register("parcel", () -> new ParcelItem(new Item.Properties().stacksTo(1)));
+
+    /** An uncut key, cut for a car or trailer by its owner. */
+    public static final DeferredItem<BlankKeyItem> BLANK_KEY = ITEMS.register("blank_key", () -> new BlankKeyItem(new Item.Properties()));
+    /** A key cut for one car or trailer. Only made by cutting a blank. */
+    public static final DeferredItem<CarKeyItem> CAR_KEY = ITEMS.register("car_key", () -> new CarKeyItem(new Item.Properties().stacksTo(1)));
 
     // Repair parts, fitted at a repair bench (see RepairJobs). Tires are the same ones cars are built with.
     /** An oil change. */

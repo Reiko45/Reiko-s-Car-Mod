@@ -18,6 +18,7 @@ public final class CarsConfig {
     public static final ModConfigSpec.DoubleValue OFF_ROAD_SPEED;
     public static final ModConfigSpec.DoubleValue RUN_OVER_DAMAGE;
     public static final ModConfigSpec.BooleanValue LOCK_NEW_CARS;
+    public static final ModConfigSpec.BooleanValue REQUIRE_KEYS;
 
     public static final ModConfigSpec.DoubleValue DEFAULT_PUMP_PRICE;
     public static final ModConfigSpec.IntValue PUMP_CAPACITY;
@@ -65,6 +66,10 @@ public final class CarsConfig {
         LOCK_NEW_CARS = builder
                 .comment("Whether a newly placed car starts locked, so only its owner can get in until they unlock it.")
                 .define("lockNewCars", true);
+        REQUIRE_KEYS = builder
+                .comment("Whether a car needs one of its keys in the driver's inventory to start, even for its owner (who cuts keys",
+                        "from Blank Keys). If false, keys only let other players into locked cars and lock them.")
+                .define("requireKeys", true);
         builder.pop();
 
         builder.push("pumps");
