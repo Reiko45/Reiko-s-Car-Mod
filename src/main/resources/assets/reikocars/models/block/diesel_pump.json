@@ -1,7 +1,7 @@
 {
   "parent": "reikocars:block/gas_pump",
   "textures": {
-    "pump": "reikocars:block/diesel_pump",
+    "all": "reikocars:block/diesel_pump",
     "particle": "reikocars:block/diesel_pump"
   }
 }

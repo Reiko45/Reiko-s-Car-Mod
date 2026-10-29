@@ -121,6 +121,8 @@ public final class DevShowcase {
             bikeScript();
         } else if (MODE.equals("cars2")) {
             moreCarsScript();
+        } else if (MODE.startsWith("gallery")) {
+            galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
             script();
         }
@@ -825,5 +827,107 @@ public final class DevShowcase {
         at(480, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
         at(505, mc -> shot(mc, "79_items"));
         at(515, mc -> mc.stop());
+    }
+
+    // ---- every model from four sides: ./gradlew runClient -Pshowcase=gallery:sedan,box_trailer,pumps ----
+
+    private static final int GALLERY_SPAN = 150;
+
+    /** A camera at (dx, dy, dz) blocks from (tx, ty, tz), looking at it. */
+    private static void aim(Minecraft minecraft, double tx, double ty, double tz, double dx, double dy, double dz) {
+        double horizontal = Math.sqrt(dx * dx + dz * dz);
+        float yaw = (float) Math.toDegrees(Math.atan2(dx, -dz));
+        float pitch = (float) Math.toDegrees(Math.atan2(dy, horizontal));
+        look(minecraft, tx + dx, ty + dy - 1.62, tz + dz, yaw, pitch);
+    }
+
+    private static void galleryScript(String list) {
+        List<String> names = new ArrayList<>();
+        if (list.isEmpty()) {
+            for (CarType type : CarType.values()) {
+                names.add(type.id());
+            }
+            for (TrailerType type : TrailerType.values()) {
+                names.add(type.id());
+            }
+            names.add("pumps");
+        } else {
+            names.addAll(List.of(list.split(",")));
+        }
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                for (int x = -14; x <= 14; x++) {
+                    for (int z = -14; z <= 14; z++) {
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), (x + z & 1) == 0
+                                ? Blocks.LIGHT_GRAY_CONCRETE.defaultBlockState() : Blocks.SMOOTH_STONE.defaultBlockState());
+                    }
+                }
+                player.getInventory().clearContent();
+            });
+        });
+        for (int i = 0; i < names.size(); i++) {
+            String name = names.get(i);
+            int t = 60 + i * GALLERY_SPAN;
+            at(t, mc -> server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.getEntitiesOfClass(net.minecraft.world.entity.Entity.class, new net.minecraft.world.phys.AABB(-20, -70, -20, 20, -40, 20),
+                        e -> e instanceof CarEntity || e instanceof TrailerEntity).forEach(net.minecraft.world.entity.Entity::discard);
+                for (int x = -3; x <= 3; x++) {
+                    for (int y = -60; y <= -58; y++) {
+                        level.setBlockAndUpdate(new BlockPos(x, y, 0), Blocks.AIR.defaultBlockState());
+                    }
+                }
+                if (name.equals("pumps")) {
+                    placePump(level, new BlockPos(-2, -60, 0), player, "fuel_light", 8_000, 375);
+                    placePump(level, ModBlocks.DIESEL_PUMP.get(), new BlockPos(0, -60, 0), player, "fuel_dense", 4_000, 1450);
+                    level.setBlockAndUpdate(new BlockPos(2, -60, 0), ModBlocks.CAR_WORKBENCH.get().defaultBlockState()
+                            .setValue(CarWorkbenchBlock.FACING, Direction.NORTH));
+                    return;
+                }
+                for (CarType type : CarType.values()) {
+                    if (type.id().equals(name)) {
+                        spawned(level, type, 0.5, 0.5, 0.0F, 0.5);
+                    }
+                }
+                for (TrailerType type : TrailerType.values()) {
+                    if (type.id().equals(name)) {
+                        trailer(level, type, 0.5, 0.5, 0.0F);
+                    }
+                }
+            }));
+            // Sizes: how far back to stand, and the middle of the thing, in blocks.
+            double length = 3.0;
+            double height = 1.6;
+            for (CarType type : CarType.values()) {
+                if (type.id().equals(name)) {
+                    length = type.length;
+                    height = type.height;
+                }
+            }
+            for (TrailerType type : TrailerType.values()) {
+                if (type.id().equals(name)) {
+                    length = TrailerType.LENGTH;
+                    height = 3.0;
+                }
+            }
+            double far = Math.max(3.0, length * 0.8);
+            double cx = name.equals("pumps") ? 0.5 : 0.5;
+            double cy = -60.0 + height * 0.45;
+            double cz = name.equals("pumps") ? 0.5 : 0.5;
+            // Facing south (+z): its left is east (+x).
+            at(t + 10, mc -> aim(mc, cx, cy, cz, far * 0.62, far * 0.38, far * 0.78));
+            at(t + 45, mc -> shot(mc, "gallery_" + name + "_1front"));
+            at(t + 50, mc -> aim(mc, cx, cy, cz, -far * 0.62, far * 0.36, -far * 0.78));
+            at(t + 80, mc -> shot(mc, "gallery_" + name + "_2rear"));
+            at(t + 85, mc -> aim(mc, cx, cy, cz, far * 1.02, far * 0.12, 0.0));
+            at(t + 110, mc -> shot(mc, "gallery_" + name + "_3side"));
+            at(t + 115, mc -> aim(mc, cx, cy, cz, far * 0.18, far * 0.9, far * 0.2));
+            at(t + 145, mc -> shot(mc, "gallery_" + name + "_4above"));
+        }
+        at(60 + names.size() * GALLERY_SPAN + 10, mc -> mc.stop());
     }
 }

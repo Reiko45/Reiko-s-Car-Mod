@@ -272,12 +272,16 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 ./gradlew runClient -Pshowcase=semi       # the same for semis, hitching, driving a rig, trailers and the tanker
 ./gradlew runClient -Pshowcase=bikes      # the same for the motorcycles: parked, riding and leaning, saddlebags
 ./gradlew runClient -Pshowcase=cars2      # the same for the hatchback, muscle car, convertible, minivan, van, bus, 4x4, tractor
+./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
 
 ## Editing the models
 
-The cars are Blockbench projects in `blockbench/` (format: Modded Entity, box UV). Each has the same bones, which
-the mod relies on:
+The cars are Blockbench projects in `blockbench/` (format: Modded Entity, box UV), built at Minecraft's own scale:
+one texture pixel to one model pixel. They have real wheel arches with dark wells, tyres with recessed rims and a
+hub, raked windscreens and rear windows, furnished cabins (seats, dashboards with lit gauges, steering wheels, door
+panels), and detailed lights, grilles, bumpers, mirrors and trim. Each has the same top-level bones, which the mod
+relies on:
 
 - `body`: the paintwork. Paint it light grey: the game tints it the car's colour.
 - `trim`: glass (may be see-through), seats, bumpers, grille and so on, drawn as painted.
@@ -293,10 +297,21 @@ two axles of wheels, `wheel_l1`, `wheel_r1`, `wheel_l2` and `wheel_r2`. Their te
 `textures/entity/trailer/`. The front faces north, and the kingpin (which sits on the semi's fifth wheel) must stay
 56 pixels ahead of the middle and 18 up, as set in `trailer/TrailerType.java`.
 
+These bones can hold child bones of their own, turned at an angle: the windscreens, rear windows and pillars, the
+steering wheels, a motorcycle's raked fork legs (`fork_legs`, inside `fork`, so they steer with it), the semi's roof
+fairing, the tanker's tank. A child is drawn the way its parent is (tinted under `body`, lit under `lights`). Some
+textures aren't square (512×256, say); Blockbench and the game both take that.
+
 The car's front faces north (−Z), and the driver's side is **−X** in Blockbench. To change a car, edit its
 `.bbmodel`, save the texture over `src/main/resources/assets/reikocars/textures/entity/car/<car>.png`, use
 **File > Export > Export Java Entity**, and paste the exported `createBodyLayer()` into
 `client/model/<Car>Model.java`. If you move the seats, update the seat table at the top of `car/CarType.java`.
+
+The pumps and the Car Workbench are block models: `models/block/gas_pump.json` (the diesel pump uses the same model
+with `textures/block/diesel_pump.png`) and `models/block/car_workbench.json`, each with one 128×128 texture. The
+pump's model is two blocks tall and faces north. Its screen's face must stay at z = 3, 19 to 26 pixels up, and its
+sign's face at z = 3, 28 to 32 up, because that's where the lit price and the fuel's name are drawn. The screen and
+sign glow (`neoforge_data` light on those elements).
 
 ## Project layout
 
@@ -314,7 +329,7 @@ src/main/java/com/reiko/cars/
 ├── client/               car and trailer renderers and models, dashboard, pump, workbench and tanker screens, pump display, engine sound, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
-blockbench/               the car, motorcycle, semi and trailer models
+blockbench/               the car, motorcycle, semi and trailer models (Blockbench projects)
 ```
 
 ## License

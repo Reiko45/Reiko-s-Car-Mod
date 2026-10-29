@@ -38,7 +38,8 @@ public final class ModBlocks {
                     .mapColor(MapColor.COLOR_RED)
                     .strength(3.0F, 6.0F)
                     .requiresCorrectToolForDrops()
-                    .sound(SoundType.METAL)));
+                    .sound(SoundType.METAL)
+                    .noOcclusion())); // a bench on legs, open underneath: don't hide the faces behind it
 
     private ModBlocks() {
     }
