@@ -29,8 +29,8 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * A parked-away car. Use it on the ground to put the car down facing the way you look; it keeps the fuel and paint
- * it had when it was picked up. Whoever puts it down owns it.
+ * A parked-away car. Use it on the ground to put the car down facing the way you look; it keeps the fuel, wear and
+ * paint it had when it was picked up. Whoever puts it down owns it.
  */
 public final class CarItem extends Item {
     private final CarType type;
@@ -52,6 +52,20 @@ public final class CarItem extends Item {
             stack.remove(ModDataComponents.FUEL.get());
         }
         return stack;
+    }
+
+    /** Sets a car item's wear and tear (a new car's is left off) and returns the stack. */
+    public static ItemStack withCondition(ItemStack stack, CarCondition condition) {
+        if (condition.isNew()) {
+            stack.remove(ModDataComponents.CONDITION.get());
+        } else {
+            stack.set(ModDataComponents.CONDITION.get(), condition);
+        }
+        return stack;
+    }
+
+    public static CarCondition conditionOf(ItemStack stack) {
+        return stack.getOrDefault(ModDataComponents.CONDITION.get(), CarCondition.NEW);
     }
 
     public static double fuelOf(ItemStack stack) {
@@ -96,6 +110,7 @@ public final class CarItem extends Item {
         }
         if (!level.isClientSide) {
             car.setFuel(fuelOf(stack));
+            car.setCondition(conditionOf(stack));
             car.setColor(colorOf(stack, type));
             car.setOwner(player);
             car.setLocked(CarsConfig.get(CarsConfig.LOCK_NEW_CARS));
@@ -114,6 +129,19 @@ public final class CarItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         int percent = (int) Math.round(fuelOf(stack) / type.tankCapacity() * 100.0);
         tooltip.add(Component.translatable("item.reikocars.car.fuel", type.fuel().displayName(), percent).withStyle(ChatFormatting.GRAY));
+        CarCondition condition = conditionOf(stack);
+        if (!condition.isNew()) {
+            CarCondition.Level worst = condition.level(condition.worstPart());
+            tooltip.add(Component.translatable("item.reikocars.car.condition", CarCondition.percent(condition.overall()))
+                    .withStyle(worst == CarCondition.Level.GOOD ? ChatFormatting.GRAY : worst.color()));
+            for (CarCondition.Part part : CarCondition.Part.values()) {
+                CarCondition.Level level = condition.level(part);
+                if (level != CarCondition.Level.GOOD) {
+                    tooltip.add(Component.translatable("item.reikocars.car.worn", part.displayName(),
+                            CarCondition.percent(condition.get(part))).withStyle(level.color()));
+                }
+            }
+        }
         CarsClientConfig.SpeedUnit unit = CarsClientConfig.speedUnit();
         tooltip.add(Component.translatable("item.reikocars.car.stats", type.seatsText(),
                 Math.round(type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * unit.perBlockPerTick),

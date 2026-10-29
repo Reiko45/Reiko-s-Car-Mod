@@ -2,6 +2,9 @@ package com.reiko.cars.car;
 
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.config.CarsConfig;
+import com.reiko.cars.car.CarCondition.Part;
+import com.reiko.cars.registry.ModDataComponents;
+import com.reiko.cars.registry.ModDataSerializers;
 import com.reiko.cars.registry.ModItems;
 import com.reiko.cars.registry.ModSounds;
 import com.reiko.cars.trailer.TrailerEntity;
@@ -12,13 +15,16 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
@@ -67,6 +73,11 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>A semi tractor pulls a {@link TrailerEntity}, which rides it as a passenger (without taking a seat), so it's
  * moved straight after the tractor every tick. A car can ride a car hauler the same way, and doesn't drive while it does.
+ *
+ * <p>Cars wear out as they're driven (see {@link CarCondition}). The server wears the oil, engine and tires by the
+ * distance covered; the driver's client, which alone knows when the brakes are on and when the car hits something,
+ * reports braking and crashes, and the server checks those against what the car could do. Worn parts change how the
+ * car drives on the driver's client, from the condition the server sends with the rest of the car's data.
  */
 public class CarEntity extends VehicleEntity {
     public static final ResourceKey<DamageType> RUN_OVER = ResourceKey.create(Registries.DAMAGE_TYPE, ReikoCars.id("car"));
@@ -77,6 +88,11 @@ public class CarEntity extends VehicleEntity {
     private static final EntityDataAccessor<Integer> DATA_COLOR = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> DATA_LOCKED = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Optional<UUID>> DATA_OWNER = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<CarCondition> DATA_CONDITION = SynchedEntityData.defineId(CarEntity.class, ModDataSerializers.CONDITION);
+    /** Wear smaller than this isn't sent to clients straight away (warning levels always are). */
+    private static final float CONDITION_SYNC_STEP = 0.005F;
+    /** The fewest ticks between a driver's wear reports, so a client can't flood the server. */
+    private static final int REPORT_INTERVAL = 5;
 
     /** Fuel changes smaller than this (in MJ) aren't sent to clients straight away, so driving doesn't send a packet every tick. */
     private static final float FUEL_SYNC_STEP = 250;
@@ -95,6 +111,9 @@ public class CarEntity extends VehicleEntity {
     @Nullable
     private Vec3 lastFuelPos;
     private int hornCooldown;
+    private CarCondition condition = CarCondition.NEW;
+    private int lastBrakeReport = -REPORT_INTERVAL;
+    private int lastCrashReport = -REPORT_INTERVAL;
 
     // Driving state, on whichever side simulates the car
     private boolean inputForward;
@@ -110,6 +129,13 @@ public class CarEntity extends VehicleEntity {
     private float deltaRotation;
     /** This tick's sideways shift from turning about a point behind the middle (see {@link CarType#pivotBack}). */
     private Vec3 pivotShift = Vec3.ZERO;
+
+    // What the driver's client has to tell the server: speed taken off by the brakes, and by skidding on the
+    // handbrake, in blocks per tick, and the hardest hit since the last report.
+    private double brakeWork;
+    private double skidWork;
+    private double crashImpact;
+    private int squealCooldown;
 
     // Lerping toward the server's position, on clients that don't drive it
     private int lerpSteps;
@@ -149,6 +175,7 @@ public class CarEntity extends VehicleEntity {
         builder.define(DATA_COLOR, 0xFFFFFF);
         builder.define(DATA_LOCKED, false);
         builder.define(DATA_OWNER, Optional.empty());
+        builder.define(DATA_CONDITION, CarCondition.NEW);
     }
 
     public CarType carType() {
@@ -194,6 +221,118 @@ public class CarEntity extends VehicleEntity {
             entityData.set(DATA_FUEL, (float) fuel); // fills always show straight away
         }
         return added;
+    }
+
+    // ---- wear and tear ----
+
+    /** The car's wear and tear. Exact on the server; on clients, to within half a percent. */
+    public CarCondition condition() {
+        return level().isClientSide ? entityData.get(DATA_CONDITION) : condition;
+    }
+
+    /**
+     * Sets the car's wear and tear, telling the driver when a part runs low or gives out. Server side.
+     */
+    public void setCondition(CarCondition newCondition) {
+        CarCondition before = condition;
+        condition = newCondition;
+        if (newCondition.differs(entityData.get(DATA_CONDITION), CONDITION_SYNC_STEP) || newCondition.isNew()) {
+            entityData.set(DATA_CONDITION, newCondition);
+        }
+        if (level().isClientSide) {
+            return;
+        }
+        Part brokeNow = CarsConfig.get(CarsConfig.BREAKDOWNS) ? newCondition.brokenPart() : null;
+        if (brokeNow != null && before.brokenPart() == null && getControllingPassenger() != null) {
+            playSound(ModSounds.BREAKDOWN.get(), 1.0F, 1.0F);
+            tellDriver(Component.translatable("car.reikocars.broke_down." + brokeNow.id()));
+            return;
+        }
+        for (Part part : Part.values()) {
+            CarCondition.Level was = before.level(part);
+            CarCondition.Level now = newCondition.level(part);
+            if (now.ordinal() > was.ordinal() && now != CarCondition.Level.BROKEN) {
+                tellDriver(Component.translatable("car.reikocars.part_" + now.name().toLowerCase(java.util.Locale.ROOT),
+                        part.displayName(), CarCondition.percent(newCondition.get(part))));
+            }
+        }
+    }
+
+    /** Whether a worn-out part keeps the car from running (unless the server has breakdowns turned off). */
+    public boolean isBrokenDown() {
+        return CarsConfig.get(CarsConfig.BREAKDOWNS) && condition().brokenPart() != null;
+    }
+
+    private void tellDriver(Component message) {
+        if (getControllingPassenger() instanceof Player player) {
+            player.displayClientMessage(message, true);
+        }
+    }
+
+    /**
+     * What the driver's client has seen since it last reported: braking, handbrake skids and the hardest crash, or
+     * null if there's nothing to tell. Clears what it returns. A crash is reported straight away; braking every
+     * second or so.
+     */
+    @Nullable
+    public float[] takeWearReport() {
+        boolean crash = crashImpact > CarCondition.CRASH_THRESHOLD;
+        if (!crash && (tickCount % 20 != 0 || (brakeWork <= 0.0 && skidWork <= 0.0))) {
+            return null;
+        }
+        float[] report = {(float) brakeWork, (float) skidWork, (float) (crash ? crashImpact : 0.0)};
+        brakeWork = 0.0;
+        skidWork = 0.0;
+        crashImpact = 0.0;
+        return report;
+    }
+
+    /**
+     * Applies what the driver's client reported, within what the car could really have done. Server side.
+     *
+     * @param brakeSpeed speed the brakes took off, in blocks per tick, summed
+     * @param skidSpeed speed taken off with the wheels locked
+     * @param impact the hardest crash, in blocks per tick (0 for none)
+     */
+    public void applyWearReport(ServerPlayer from, float brakeSpeed, float skidSpeed, float impact) {
+        if (getControllingPassenger() != from || isPassenger()) {
+            return;
+        }
+        double rate = CarsConfig.get(CarsConfig.WEAR);
+        double load = trailer() != null ? 1.4 : 1.0;
+        if ((brakeSpeed > 0.0F || skidSpeed > 0.0F) && tickCount - lastBrakeReport >= REPORT_INTERVAL) {
+            // At most what the brakes could take off in two seconds.
+            double most = type.braking * 1.5 * 40;
+            double braked = Mth.clamp(brakeSpeed, 0.0, most);
+            double skidded = Mth.clamp(skidSpeed, 0.0, most);
+            lastBrakeReport = tickCount;
+            setCondition(condition.afterBraking(braked, skidded, load, rate));
+            if (condition.brakes() < 0.25F && braked > 0.1) {
+                level().playSound(from, getX(), getY(), getZ(), ModSounds.BRAKE_SQUEAL.get(), SoundSource.NEUTRAL, 0.8F, 1.0F);
+            }
+        }
+        if (impact > 0.0F && tickCount - lastCrashReport >= REPORT_INTERVAL) {
+            lastCrashReport = tickCount;
+            crash(Math.min(impact, type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * 1.6));
+        }
+    }
+
+    /** The car hit something at {@code impact} blocks per tick: dents its body (and its engine, if hard), with a bang. */
+    public void crash(double impact) {
+        if (impact <= CarCondition.CRASH_THRESHOLD) {
+            return;
+        }
+        double damage = CarsConfig.get(CarsConfig.CRASH_DAMAGE);
+        if (damage > 0.0) {
+            setCondition(condition.afterCrash(impact, damage));
+        }
+        level().playSound(null, getX(), getY(), getZ(), SoundEvents.ZOMBIE_ATTACK_IRON_DOOR, SoundSource.NEUTRAL,
+                (float) Math.min(1.2, 0.3 + impact), 0.7F + (float) Math.min(0.3, impact * 0.2));
+        if (level() instanceof ServerLevel server) {
+            Vec3 nose = position().add(forward().scale(Math.signum(speed == 0 ? 1 : speed) * type.length * 0.45));
+            server.sendParticles(ParticleTypes.CRIT, nose.x, getY() + type.height * 0.4, nose.z, (int) (6 + impact * 12),
+                    type.width * 0.3, 0.2, type.width * 0.3, 0.2);
+        }
     }
 
     // ---- paint, owner, lock ----
@@ -404,7 +543,12 @@ public class CarEntity extends VehicleEntity {
         boolean hadDriver = getControllingPassenger() != null;
         super.addPassenger(passenger);
         if (!level().isClientSide && !hadDriver && getControllingPassenger() != null && hasFuel()) {
-            playSound(ModSounds.ENGINE_START.get(), 1.0F, 1.0F);
+            if (isBrokenDown()) {
+                playSound(ModSounds.BREAKDOWN.get(), 0.6F, 1.2F); // turns over, won't start
+                tellDriver(Component.translatable("car.reikocars.broke_down." + condition.brokenPart().id()));
+            } else {
+                playSound(ModSounds.ENGINE_START.get(), 1.0F, 1.0F);
+            }
         }
         if (level().isClientSide && passenger instanceof Player player && player.isLocalPlayer()) {
             // Getting in, you face the windscreen (your client owns your view, so it's set here).
@@ -512,6 +656,7 @@ public class CarEntity extends VehicleEntity {
             move(MoverType.SELF, getDeltaMovement().add(pivotShift));
             if (endsWereClear && endsBlocked()) {
                 // A long vehicle's nose or tail ran into a wall: stop it there, as its hitbox alone wouldn't.
+                noteImpact(Math.abs(speed));
                 setPos(before.x, getY(), before.z);
                 setYRot(yawBefore);
                 speed = 0.0;
@@ -547,23 +692,28 @@ public class CarEntity extends VehicleEntity {
         BlockState ground = level().getBlockState(getBlockPosBelowThatAffectsMyMovement());
         float friction = ground.getFriction(level(), getBlockPosBelowThatAffectsMyMovement(), this);
         double grip = onGround() ? Mth.clamp((1.0 - friction) / 0.4, 0.1, 1.0) : 0.0;
-        double top = type.topSpeed * speedScale * surfaceFactor();
+        CarCondition wear = condition();
+        double tires = wear.grip();
+        double top = type.topSpeed * speedScale * surfaceFactor() * wear.power() * wear.drag();
         if (isInWater()) {
             top = Math.min(top, 0.1);
         }
-        double accel = type.acceleration * speedScale;
+        double accel = type.acceleration * speedScale * wear.power() * tires;
+        double brakes = type.braking * wear.braking() * tires;
         if (trailer() != null) {
             top *= 0.9; // pulling a trailer: slower, and slower to get going
             accel *= 0.7;
         }
-        boolean engine = getControllingPassenger() != null && hasFuel();
+        boolean engine = getControllingPassenger() != null && hasFuel() && !isBrokenDown();
+        double before = speed;
+        boolean braking = onGround() && ((inputForward && speed < 0) || (inputBack && speed > 0.001) || inputBrake);
 
         if (onGround()) {
             if (inputForward && engine) {
-                speed = speed < 0 ? approach(speed, 0, type.braking * grip) : speed + accel * grip * (1.0 - 0.5 * speed / top);
+                speed = speed < 0 ? approach(speed, 0, brakes * grip) : speed + accel * grip * (1.0 - 0.5 * speed / top);
             } else if (inputBack) {
                 if (speed > 0.001) {
-                    speed = approach(speed, 0, type.braking * grip);
+                    speed = approach(speed, 0, brakes * grip);
                 } else if (engine) {
                     speed = Math.max(-type.reverseSpeed * speedScale, speed - accel * 0.8 * grip);
                 }
@@ -571,7 +721,7 @@ public class CarEntity extends VehicleEntity {
                 speed = approach(speed * 0.992, 0, 0.003 * Math.max(grip, 0.3));
             }
             if (inputBrake) {
-                speed = approach(speed, 0, type.braking * 1.5 * grip);
+                speed = approach(speed, 0, brakes * 1.5 * grip);
             }
             if (Math.abs(speed) > top) {
                 speed = approach(speed, Math.copySign(top, speed), 0.03);
@@ -579,12 +729,16 @@ public class CarEntity extends VehicleEntity {
         } else {
             speed *= 0.995;
         }
+        if (braking && level().isClientSide) {
+            noteBraking(Math.abs(before) - Math.abs(speed), wear);
+        }
 
         float steerTarget = (inputLeft ? 1.0F : 0.0F) - (inputRight ? 1.0F : 0.0F);
         steering += (steerTarget - steering) * 0.3F;
         double pace = Math.abs(speed);
         double turnFactor = Mth.clamp(pace / 0.15, 0.0, 1.0) * (1.0 - 0.35 * Math.min(1.0, pace / type.topSpeed));
-        float turn = (float) (steering * type.turnRate * turnFactor * Math.signum(speed) * (onGround() ? 1.0 : 0.2));
+        float turn = (float) (steering * type.turnRate * turnFactor * Math.signum(speed) * (onGround() ? 1.0 : 0.2)
+                * (0.75 + 0.25 * tires)); // bald tires don't bite into the turn
         Vec3 pivotBefore = forward().scale(-type.pivotBack());
         setYRot(getYRot() - turn);
         pivotShift = type.pivotBack() > 0.0 ? pivotBefore.subtract(forward().scale(-type.pivotBack())) : Vec3.ZERO;
@@ -599,6 +753,30 @@ public class CarEntity extends VehicleEntity {
         double vx = Mth.lerp(onGround() ? grip : 0.02, current.x, forward.x * speed);
         double vz = Mth.lerp(onGround() ? grip : 0.02, current.z, forward.z * speed);
         setDeltaMovement(vx, vy, vz);
+    }
+
+    /** Counts speed the brakes took off, for the wear report, and squeals if they're worn. Driver's client only. */
+    private void noteBraking(double lost, CarCondition wear) {
+        if (lost <= 0.0) {
+            return;
+        }
+        brakeWork += lost;
+        if (inputBrake) {
+            skidWork += lost;
+        }
+        if (squealCooldown > 0) {
+            squealCooldown--;
+        } else if (wear.brakes() < 0.25F && Math.abs(speed) > 0.15) {
+            squealCooldown = 30;
+            level().playLocalSound(getX(), getY(), getZ(), ModSounds.BRAKE_SQUEAL.get(), SoundSource.NEUTRAL, 0.8F, 1.0F, false);
+        }
+    }
+
+    /** The car ran into something this tick at {@code impact} blocks per tick: reported to the server. */
+    private void noteImpact(double impact) {
+        if (level().isClientSide && getControllingPassenger() instanceof Player) {
+            crashImpact = Math.max(crashImpact, impact);
+        }
     }
 
     /** Stops the car where it is, for when it's carried or moved. */
@@ -635,6 +813,7 @@ public class CarEntity extends VehicleEntity {
         if (horizontalCollision) {
             double along = position().subtract(before).dot(forward());
             if (Math.abs(along) < Math.abs(speed)) {
+                noteImpact(Math.abs(speed) - Math.abs(along));
                 speed = along;
             }
         }
@@ -644,9 +823,12 @@ public class CarEntity extends VehicleEntity {
         if (type.offRoad) {
             return 1.0;
         }
-        BlockState on = level().getBlockState(getOnPos());
-        BlockState feet = level().getBlockState(blockPosition());
-        return on.is(OFF_ROAD) || feet.is(OFF_ROAD) ? CarsConfig.get(CarsConfig.OFF_ROAD_SPEED) : 1.0;
+        return isOffRoad() ? CarsConfig.get(CarsConfig.OFF_ROAD_SPEED) : 1.0;
+    }
+
+    /** On grass, dirt, sand, snow or the like, rather than a road. */
+    private boolean isOffRoad() {
+        return level().getBlockState(getOnPos()).is(OFF_ROAD) || level().getBlockState(blockPosition()).is(OFF_ROAD);
     }
 
     private static double approach(double value, double target, double step) {
@@ -674,13 +856,18 @@ public class CarEntity extends VehicleEntity {
         }
         lastFuelPos = pos;
         LivingEntity driver = getControllingPassenger();
-        if (driver != null && fuel > 0) {
-            double load = trailer() != null ? 1.4 : 1.0;
-            double burn = moved * type.fuelPerBlock * load * CarsConfig.get(CarsConfig.FUEL_USE) + CarsConfig.get(CarsConfig.IDLE_FUEL_USE);
+        double load = trailer() != null ? 1.4 : 1.0;
+        if (driver != null && fuel > 0 && !isBrokenDown()) {
+            double burn = moved * type.fuelPerBlock * load * CarsConfig.get(CarsConfig.FUEL_USE) * condition.fuelUse()
+                    + CarsConfig.get(CarsConfig.IDLE_FUEL_USE);
             setFuel(fuel - burn);
             if (fuel <= 0 && driver instanceof Player player) {
                 player.displayClientMessage(Component.translatable("car.reikocars.out_of_fuel"), true);
             }
+        }
+        if (driver != null && moved > 0.0) {
+            double tires = isOffRoad() ? (type.offRoad ? 1.5 : 2.5) : 1.0;
+            setCondition(condition.afterDriving(moved, tires, load, CarsConfig.get(CarsConfig.WEAR)));
         }
         if (moved > 0.3) {
             runOver(driver, moved);
@@ -712,6 +899,7 @@ public class CarEntity extends VehicleEntity {
             if (entity.hurt(source, (float) (moved * perSpeed))) {
                 entity.push(heading.x * moved * 0.8, 0.25 + moved * 0.2, heading.z * moved * 0.8);
                 entity.hurtMarked = true;
+                setCondition(condition.afterHitting(moved, CarsConfig.get(CarsConfig.CRASH_DAMAGE)));
             }
         }
     }
@@ -745,6 +933,7 @@ public class CarEntity extends VehicleEntity {
             lean += (leanTarget - lean) * 0.25F;
         }
 
+        engineSmoke();
         if (isEngineRunning() && tickCount % 3 == 0) {
             if (!type.exhaustStacks().isEmpty()) {
                 // Out of the tops of its exhaust stacks (the semi's behind the cab, the tractor's on the hood).
@@ -761,9 +950,34 @@ public class CarEntity extends VehicleEntity {
         }
     }
 
-    /** Someone's driving and there's fuel. */
+    /**
+     * A tired engine smokes from under the bonnet while it runs, more as it gets worse; one run dry of oil smokes
+     * too, and so does a broken-down one with somebody at the wheel.
+     */
+    private void engineSmoke() {
+        CarCondition wear = condition();
+        boolean running = isEngineRunning();
+        boolean dead = getControllingPassenger() != null && isBrokenDown() && wear.engine() <= 0.0F;
+        if (!(running && (wear.engine() < 0.3F || wear.oil() <= 0.0F)) && !dead) {
+            return;
+        }
+        boolean bad = wear.engine() < 0.1F;
+        if (tickCount % (dead ? 8 : bad ? 2 : 5) != 0) {
+            return;
+        }
+        // Over the engine: under the bonnet, the bus's at its back, a motorcycle's low in the middle.
+        double along = type.isBike() ? 0.05 : type == CarType.CITY_BUS ? -type.length * 0.42 : type.length * 0.32;
+        Vec3 at = forward().scale(along);
+        double up = type.isBike() ? 0.55 : Math.min(type.height * 0.55, 1.4);
+        var random = level().getRandom();
+        level().addParticle(bad || dead ? ParticleTypes.LARGE_SMOKE : ParticleTypes.SMOKE,
+                getX() + at.x + (random.nextDouble() - 0.5) * type.width * 0.5, getY() + up,
+                getZ() + at.z + (random.nextDouble() - 0.5) * type.width * 0.5, 0.0, 0.04 + random.nextDouble() * 0.03, 0.0);
+    }
+
+    /** Someone's driving, there's fuel and nothing's worn out. */
     public boolean isEngineRunning() {
-        return getControllingPassenger() != null && hasFuel();
+        return getControllingPassenger() != null && hasFuel() && !isBrokenDown();
     }
 
     /** Speed along the heading in blocks per tick, as seen on this client. */
@@ -905,10 +1119,11 @@ public class CarEntity extends VehicleEntity {
         super.remove(reason);
     }
 
-    /** This car as an item, keeping its fuel, paint and name. */
+    /** This car as an item, keeping its fuel, wear, paint and name. */
     public ItemStack toItem() {
         ItemStack stack = new ItemStack(getDropItem());
         CarItem.withFuel(stack, fuel());
+        CarItem.withCondition(stack, condition());
         if (color() != type.defaultColor) {
             stack.set(net.minecraft.core.component.DataComponents.DYED_COLOR, new DyedItemColor(color(), false));
         }
@@ -942,6 +1157,9 @@ public class CarEntity extends VehicleEntity {
         if (type.storageRows > 0) {
             tag.put("Bed", bed.createTag(registryAccess()));
         }
+        if (!condition.isNew()) {
+            CarCondition.CODEC.encodeStart(NbtOps.INSTANCE, condition).result().ifPresent(saved -> tag.put("Condition", saved));
+        }
     }
 
     @Override
@@ -957,5 +1175,8 @@ public class CarEntity extends VehicleEntity {
         if (type.storageRows > 0 && tag.contains("Bed", Tag.TAG_LIST)) {
             bed.fromTag(tag.getList("Bed", Tag.TAG_COMPOUND), registryAccess());
         }
+        condition = tag.contains("Condition") ? CarCondition.CODEC.parse(NbtOps.INSTANCE, tag.get("Condition")).result().orElse(CarCondition.NEW)
+                : CarCondition.NEW;
+        entityData.set(DATA_CONDITION, condition);
     }
 }

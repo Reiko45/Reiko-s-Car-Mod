@@ -2,7 +2,10 @@ package com.reiko.cars.gametest;
 
 import com.mojang.authlib.GameProfile;
 import com.reiko.cars.ReikoCars;
+import com.reiko.cars.car.CarCondition;
+import com.reiko.cars.car.CarCondition.Part;
 import com.reiko.cars.car.CarEntity;
+import com.reiko.cars.car.CarItem;
 import com.reiko.cars.car.CarFuel;
 import com.reiko.cars.car.CarTank;
 import com.reiko.cars.car.CarType;
@@ -13,6 +16,10 @@ import com.reiko.cars.pump.PumpService;
 import com.reiko.cars.registry.ModBlocks;
 import com.reiko.cars.registry.ModEntities;
 import com.reiko.cars.registry.ModItems;
+import com.reiko.cars.repair.RepairBenchBlock;
+import com.reiko.cars.repair.RepairBenchBlockEntity;
+import com.reiko.cars.repair.RepairJobs;
+import com.reiko.cars.repair.RepairService;
 import com.reiko.cars.trailer.Hitching;
 import com.reiko.cars.trailer.TankerService;
 import com.reiko.cars.trailer.TrailerEntity;
@@ -30,6 +37,7 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.Connection;
@@ -58,7 +66,8 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 /**
  * In-world tests: selling fuel for cash and card through the economy mod, the owner's free fill-ups, pipes and
  * buckets, gasoline and diesel, selling into buckets, fuel burned by driving, BuildCraft's fuel values, car locks and
- * building cars at the Car Workbench, and semis: diesel, hitching and towing trailers, tankers and car haulers. Run them with
+ * building cars at the Car Workbench, semis: diesel, hitching and towing trailers, tankers and car haulers, and wear and
+ * tear: parts wearing out, breaking down, and repairs at the Repair Bench, free or paid for. Run them with
  * {@code ./gradlew runGameTestServer}. The economy mod turns taxes off on the test server, so amounts are exact.
  */
 @GameTestHolder(ReikoCars.MODID)
@@ -303,7 +312,7 @@ public final class CarGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = EMPTY, timeoutTicks = 60)
+    @GameTest(template = YARD, timeoutTicks = 60)
     public static void drivingBurnsFuel(GameTestHelper helper) {
         ServerPlayer driver = join(helper);
         CarEntity car = car(helper, CarType.SEDAN);
@@ -311,11 +320,12 @@ public final class CarGameTests {
         car.setFuel(100_000);
         driver.startRiding(car, true);
         Vec3 start = car.position();
-        // Drive 10 blocks east, one block a tick, as the driver's client would report it. Start a couple of ticks
-        // in, so the car has ticked where it stands first and the first block counts.
+        // Drive 10 blocks south, one block a tick, as the driver's client would report it. Start a couple of ticks
+        // in, so the car has ticked where it stands first and the first block counts. (Down the yard: a car that
+        // leaves the test's area stops ticking.)
         for (int tick = 1; tick <= 10; tick++) {
             int step = tick;
-            helper.runAtTickTime(tick + 2, () -> car.setPos(start.x + step, start.y, start.z));
+            helper.runAtTickTime(tick + 2, () -> car.setPos(start.x, start.y, start.z + step));
         }
         helper.runAtTickTime(16, () -> {
             try {
@@ -324,7 +334,7 @@ public final class CarGameTests {
                 helper.assertTrue(burned >= expected && burned < expected + 20, "burned " + burned + " MJ for 10 blocks");
                 driver.stopRiding();
                 double parked = car.fuel();
-                car.setPos(start.x + 30, start.y, start.z);
+                car.setPos(start.x, start.y, start.z + 20);
                 helper.runAfterDelay(2, () -> {
                     near(helper, car.fuel(), parked, "a car with nobody in it burns nothing");
                     leave(helper, driver);
@@ -930,6 +940,255 @@ public final class CarGameTests {
         CarTank tank = new CarTank(car(helper, CarType.CITY_BUS));
         helper.assertValueEqual(tank.fill(new FluidStack(bc("fuel_light"), 1000), IFluidHandler.FluidAction.SIMULATE), 0, "no gasoline in a bus");
         helper.assertValueEqual(tank.fill(new FluidStack(bc("fuel_dense"), 1000), IFluidHandler.FluidAction.SIMULATE), 1000, "diesel goes in");
+        helper.succeed();
+    }
+
+    // ---- wear and repairs ----
+
+    private static final BlockPos BENCH = new BlockPos(1, 1, 1);
+
+    /** A repair bench owned by {@code owner}, every part at {@code price} cents. */
+    private static RepairBenchBlockEntity bench(GameTestHelper helper, ServerPlayer owner, long price) {
+        helper.setBlock(BENCH, ModBlocks.REPAIR_BENCH.get().defaultBlockState().setValue(RepairBenchBlock.FACING, Direction.NORTH));
+        RepairBenchBlockEntity bench = (RepairBenchBlockEntity) helper.getBlockEntity(BENCH);
+        bench.setOwner(owner);
+        for (Part part : Part.values()) {
+            bench.setPrice(part, price);
+        }
+        return bench;
+    }
+
+    private static void close(GameTestHelper helper, double actual, double expected, String what) {
+        helper.assertTrue(Math.abs(actual - expected) < 1.0E-5, what + ": expected " + expected + " but was " + actual);
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 60)
+    public static void drivingWearsTheCar(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        CarEntity car = car(helper, CarType.SEDAN);
+        car.setOwner(driver);
+        car.setFuel(100_000);
+        driver.startRiding(car, true);
+        Vec3 start = car.position();
+        for (int tick = 1; tick <= 10; tick++) {
+            int step = tick;
+            helper.runAtTickTime(tick + 2, () -> car.setPos(start.x, start.y, start.z + step));
+        }
+        helper.runAtTickTime(16, () -> {
+            try {
+                CarCondition wear = car.condition();
+                boolean offRoad = car.level().getBlockState(car.getOnPos()).is(CarEntity.OFF_ROAD)
+                        || car.level().getBlockState(car.blockPosition()).is(CarEntity.OFF_ROAD);
+                close(helper, wear.oil(), 1.0 - 10.0 / 50_000, "oil after 10 blocks");
+                close(helper, wear.engine(), 1.0 - 10.0 / 400_000, "engine after 10 blocks");
+                close(helper, wear.tires(), 1.0 - 10.0 / 80_000 * (offRoad ? 2.5 : 1.0), "tires after 10 blocks on the test floor");
+                close(helper, wear.brakes(), 1.0, "no braking, no brake wear");
+                close(helper, wear.body(), 1.0, "no crash, no dents");
+                driver.stopRiding();
+                CarCondition parked = car.condition();
+                car.setPos(start.x, start.y, start.z + 20);
+                helper.runAfterDelay(2, () -> {
+                    check(helper, car.condition().equals(parked), "a car with nobody in it doesn't wear");
+                    leave(helper, driver);
+                    helper.succeed();
+                });
+            } catch (RuntimeException e) {
+                leave(helper, driver);
+                throw e;
+            }
+        });
+    }
+
+    @GameTest(template = EMPTY)
+    public static void lowOilWearsTheEngineFaster(GameTestHelper helper) {
+        double full = CarCondition.NEW.afterDriving(1000, 1, 1, 1).engine();
+        double low = CarCondition.NEW.with(Part.OIL, 0.2F).afterDriving(1000, 1, 1, 1).engine();
+        double dry = CarCondition.NEW.with(Part.OIL, 0.0F).afterDriving(1000, 1, 1, 1).engine();
+        close(helper, 1 - full, 1000.0 / 400_000, "engine wear with good oil");
+        close(helper, 1 - low, 4 * 1000.0 / 400_000, "four times as fast on low oil");
+        close(helper, 1 - dry, 20 * 1000.0 / 400_000, "twenty times as fast with none");
+        CarCondition offRoad = CarCondition.NEW.afterDriving(1000, 2.5, 1.4, 1);
+        close(helper, 1 - offRoad.tires(), 1000.0 / 80_000 * 2.5 * 1.4, "tires wear faster off-road, towing");
+        check(helper, CarCondition.NEW.afterDriving(1000, 1, 1, 0).isNew(), "wear off: nothing wears");
+        CarCondition braked = CarCondition.NEW.afterBraking(10, 2, 1, 1);
+        close(helper, braked.brakes(), 1 - 10 * 0.002, "brakes wear with the speed they take off");
+        close(helper, braked.tires(), 1 - (10 + 3 * 2) * 0.0003, "skids are hard on tires");
+        // The effects: worn parts make the car slower, thirstier and worse at stopping.
+        CarCondition tired = new CarCondition(1, 0.25F, 0.15F, 0.2F, 0.25F);
+        close(helper, tired.power(), 0.8, "a tired engine has less power");
+        close(helper, tired.fuelUse(), 1.375, "and burns more fuel");
+        close(helper, tired.grip(), 0.775, "bald tires grip less");
+        close(helper, tired.braking(), 0.675, "worn brakes stop slower");
+        close(helper, tired.drag(), 0.875, "a battered body is slower");
+        check(helper, CarCondition.NEW.power() == 1 && CarCondition.NEW.braking() == 1 && CarCondition.NEW.grip() == 1,
+                "a new car drives as it always did");
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 60)
+    public static void brokenDownCarsDontRun(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        CarEntity car = car(helper, CarType.SEDAN);
+        car.setOwner(driver);
+        car.setFuel(100_000);
+        car.setCondition(CarCondition.NEW.with(Part.ENGINE, 0.0F));
+        driver.startRiding(car, true);
+        check(helper, car.isBrokenDown(), "an engine at 0% breaks the car down");
+        check(helper, !car.isEngineRunning(), "its engine won't run");
+        Vec3 start = car.position();
+        helper.runAtTickTime(3, () -> car.setPos(start.x, start.y, start.z + 2));
+        helper.runAtTickTime(6, () -> {
+            try {
+                near(helper, car.fuel(), 100_000, "a broken-down car burns no fuel");
+                car.setCondition(CarCondition.NEW);
+                check(helper, !car.isBrokenDown() && car.isEngineRunning(), "repaired, it runs again");
+            } finally {
+                leave(helper, driver);
+            }
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = EMPTY)
+    public static void crashesDentTheBody(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        ServerPlayer passenger = join(helper);
+        try {
+            CarEntity car = car(helper, CarType.SEDAN);
+            car.crash(0.1);
+            check(helper, car.condition().isNew(), "a bump leaves no mark");
+            car.crash(0.9);
+            close(helper, car.condition().body(), 1 - (0.9 - 0.15) * 0.6, "a hard crash dents the body");
+            close(helper, car.condition().engine(), 1 - (0.9 - 0.6) * 0.25, "and knocks the engine about");
+
+            car.setCondition(CarCondition.NEW);
+            car.setOwner(driver);
+            driver.startRiding(car, true);
+            passenger.startRiding(car, true);
+            car.applyWearReport(passenger, 0, 0, 0.9F);
+            check(helper, car.condition().isNew(), "only the driver's reports count");
+            car.applyWearReport(driver, 0, 0, 50.0F);
+            double most = CarType.SEDAN.topSpeed * 1.6;
+            close(helper, car.condition().body(), 1 - (most - 0.15) * 0.6, "a crash can't be harder than the car can go");
+        } finally {
+            leave(helper, driver, passenger);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void carsKeepTheirWear(GameTestHelper helper) {
+        CarEntity car = car(helper, CarType.HATCHBACK);
+        CarCondition worn = new CarCondition(0.4F, 0.8F, 0.3F, 0.6F, 0.7F);
+        car.setCondition(worn);
+        ItemStack item = car.toItem();
+        check(helper, CarItem.conditionOf(item).equals(worn), "picked up, the item keeps the wear");
+        check(helper, !new ItemStack(ModItems.car(CarType.HATCHBACK)).has(com.reiko.cars.registry.ModDataComponents.CONDITION.get()),
+                "a new car item carries none");
+        CompoundTag saved = new CompoundTag();
+        car.saveWithoutId(saved);
+        CarEntity loaded = ModEntities.car(CarType.HATCHBACK).create(helper.getLevel());
+        loaded.load(saved);
+        check(helper, loaded.condition().equals(worn), "saved and loaded, the car keeps the wear: " + loaded.condition());
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void fitYourOwnParts(GameTestHelper helper) {
+        ServerPlayer mechanic = join(helper);
+        ServerPlayer driver = join(helper);
+        try {
+            RepairBenchBlockEntity bench = bench(helper, mechanic, 1500);
+            CarEntity car = car(helper, CarType.SEDAN);
+            car.setOwner(driver);
+            car.setCondition(new CarCondition(0.1F, 0.4F, 0.2F, 1.0F, 1.0F));
+            check(helper, RepairService.findCar(bench, driver) == car, "the bench finds the car beside it");
+            helper.assertValueEqual(RepairJobs.needed(Part.TIRES, CarType.SEDAN, car.condition()), 4, "a sedan takes 4 tires");
+            helper.assertValueEqual(RepairJobs.needed(Part.ENGINE, CarType.SEDAN, car.condition()), 3, "and 3 engine parts");
+
+            driver.getInventory().add(new ItemStack(ModItems.TIRE.get(), 2));
+            int tiresOnly = 1 << Part.TIRES.ordinal();
+            ShopActionResult half = RepairService.fitOwn(driver, bench, car, tiresOnly);
+            check(helper, !half.success(), "two tires aren't a set: " + half.message().getString());
+            helper.assertValueEqual(count(driver, ModItems.TIRE.get()), 2, "and none are used");
+
+            driver.getInventory().add(new ItemStack(ModItems.TIRE.get(), 2));
+            driver.getInventory().add(new ItemStack(ModItems.MOTOR_OIL.get(), 1));
+            driver.getInventory().add(new ItemStack(ModItems.ENGINE_PARTS.get(), 2));
+            int mask = tiresOnly | 1 << Part.OIL.ordinal() | 1 << Part.ENGINE.ordinal();
+            ShopActionResult done = RepairService.fitOwn(driver, bench, car, mask);
+            check(helper, done.success(), "fitting your own parts: " + done.message().getString());
+            CarCondition after = car.condition();
+            close(helper, after.tires(), 1.0, "new tires");
+            close(helper, after.oil(), 1.0, "fresh oil");
+            close(helper, after.engine(), 0.9, "two engine parts, half the engine back");
+            helper.assertValueEqual(count(driver, ModItems.TIRE.get()) + count(driver, ModItems.MOTOR_OIL.get())
+                    + count(driver, ModItems.ENGINE_PARTS.get()), 0, "every part used");
+            check(helper, !RepairService.fitOwn(driver, bench, car, tiresOnly).success(), "the tires don't need doing again");
+        } finally {
+            leave(helper, mechanic, driver);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void theMechanicGetsPaid(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer mechanic = join(helper);
+        ServerPlayer driver = join(helper);
+        try {
+            RepairBenchBlockEntity bench = bench(helper, mechanic, 1500); // $15.00 a part
+            check(helper, bench.pipeInput().insertItem(0, new ItemStack(ModItems.TIRE.get(), 4), false).isEmpty(), "a hopper stocks tires");
+            check(helper, !bench.pipeInput().insertItem(1, new ItemStack(Items.DIRT), false).isEmpty(), "but not dirt");
+            check(helper, bench.pipeInput().extractItem(0, 4, false).isEmpty(), "and nothing comes out by pipe");
+            bench.stock().insertItem(1, new ItemStack(ModItems.BRAKE_PADS.get(), 1), false);
+
+            CarEntity car = car(helper, CarType.SEDAN);
+            car.setOwner(driver);
+            car.setCondition(new CarCondition(1.0F, 1.0F, 0.2F, 0.3F, 1.0F));
+            long mechanicBefore = ECO.getBalance(server, mechanic.getUUID());
+            Purse.give(driver, 10_000); // $100.00 in cash
+            int mask = 1 << Part.TIRES.ordinal() | 1 << Part.BRAKES.ordinal();
+
+            ShopActionResult stale = RepairService.buy(driver, bench, car, mask, 6000, Payment.cash());
+            check(helper, !stale.success(), "a bill that's out of date is caught");
+            ShopActionResult paid = RepairService.buy(driver, bench, car, mask, 7500, Payment.cash());
+            check(helper, paid.success(), "paying for repairs: " + paid.message().getString());
+            close(helper, car.condition().tires(), 1.0, "the bench fitted tires");
+            close(helper, car.condition().brakes(), 1.0, "and brake pads");
+            helper.assertValueEqual(Purse.value(driver), 2500L, "$75.00 cash spent");
+            helper.assertValueEqual(ECO.getBalance(server, mechanic.getUUID()), mechanicBefore + 7500, "the mechanic paid $75.00");
+            helper.assertValueEqual(bench.count(Part.TIRES) + bench.count(Part.BRAKES), 0, "stock used");
+        } finally {
+            leave(helper, mechanic, driver);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void ownersRepairFreeFromStock(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer mechanic = join(helper);
+        try {
+            RepairBenchBlockEntity bench = bench(helper, mechanic, 1500);
+            bench.stock().insertItem(0, new ItemStack(ModItems.BODY_PANEL.get(), 2), false);
+            CarEntity car = car(helper, CarType.SEDAN);
+            car.setOwner(mechanic);
+            car.setCondition(CarCondition.NEW.with(Part.BODY, 0.0F));
+            int body = 1 << Part.BODY.ordinal();
+            check(helper, !RepairService.buy(mechanic, bench, car, 1 << Part.OIL.ordinal(), 0, Payment.cash()).success(),
+                    "nothing to do on the oil");
+            long before = ECO.getBalance(server, mechanic.getUUID());
+            ShopActionResult done = RepairService.buy(mechanic, bench, car, body, 3000, Payment.cash());
+            check(helper, done.success(), "the owner's own repair: " + done.message().getString());
+            close(helper, car.condition().body(), 0.4, "two body panels mend 40%");
+            check(helper, !car.isBrokenDown(), "and it runs again");
+            helper.assertValueEqual(ECO.getBalance(server, mechanic.getUUID()), before, "free for the owner");
+            helper.assertValueEqual(bench.count(Part.BODY), 0, "panels used from stock");
+            check(helper, !RepairService.buy(mechanic, bench, car, body, 0, Payment.cash()).success(), "out of panels");
+        } finally {
+            leave(helper, mechanic);
+        }
         helper.succeed();
     }
 }

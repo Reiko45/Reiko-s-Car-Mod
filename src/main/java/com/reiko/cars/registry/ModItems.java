@@ -59,6 +59,17 @@ public final class ModItems {
     public static final DeferredItem<DoubleHighBlockItem> DIESEL_PUMP = ITEMS.register("diesel_pump",
             () -> new DoubleHighBlockItem(ModBlocks.DIESEL_PUMP.get(), new Item.Properties()));
     public static final DeferredItem<BlockItem> CAR_WORKBENCH = ITEMS.registerSimpleBlockItem(ModBlocks.CAR_WORKBENCH);
+    public static final DeferredItem<BlockItem> REPAIR_BENCH = ITEMS.registerSimpleBlockItem(ModBlocks.REPAIR_BENCH);
+
+    // Repair parts, fitted at a repair bench (see RepairJobs). Tires are the same ones cars are built with.
+    /** An oil change. */
+    public static final DeferredItem<Item> MOTOR_OIL = ITEMS.registerSimpleItem("motor_oil", new Item.Properties().stacksTo(16));
+    /** A quarter of an engine rebuild. */
+    public static final DeferredItem<Item> ENGINE_PARTS = ITEMS.registerSimpleItem("engine_parts");
+    /** A set of brakes. */
+    public static final DeferredItem<Item> BRAKE_PADS = ITEMS.registerSimpleItem("brake_pads", new Item.Properties().stacksTo(16));
+    /** A fifth of a body repair. */
+    public static final DeferredItem<Item> BODY_PANEL = ITEMS.registerSimpleItem("body_panel");
 
     private ModItems() {
     }

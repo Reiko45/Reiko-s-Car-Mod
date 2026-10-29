@@ -13,6 +13,7 @@ logoBlur=false
 description='''
 Drivable cars that run on BuildCraft Reborn's fuel, and gas pumps that sell it for cash or card through Reiko's Economy Mod.
 Pipe fuel from your refinery into a pump, set a price, and other players pay you to fill up.
+Cars wear out as they're driven; fix them at a Repair Bench, with your own parts or at a mechanic's prices.
 '''
 
 [[dependencies.${mod_id}]]

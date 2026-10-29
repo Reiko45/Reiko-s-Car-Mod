@@ -8,6 +8,9 @@ import com.reiko.cars.trailer.TrailerEntity;
 import com.reiko.cars.pump.GasPumpBlockEntity;
 import com.reiko.cars.pump.PumpMenu;
 import com.reiko.cars.pump.PumpService;
+import com.reiko.cars.repair.RepairBenchBlockEntity;
+import com.reiko.cars.repair.RepairBenchMenu;
+import com.reiko.cars.repair.RepairService;
 import com.reiko.economy.network.ShopFeedback;
 import com.reiko.economy.shop.ShopActionResult;
 import net.minecraft.network.chat.Component;
@@ -35,6 +38,43 @@ public final class ModNetwork {
         registrar.playToServer(PumpActionPayload.TYPE, PumpActionPayload.STREAM_CODEC, ModNetwork::handlePump);
         registrar.playToServer(CarActionPayload.TYPE, CarActionPayload.STREAM_CODEC, ModNetwork::handleCar);
         registrar.playToServer(TrailerActionPayload.TYPE, TrailerActionPayload.STREAM_CODEC, ModNetwork::handleTrailer);
+        registrar.playToServer(CarWearPayload.TYPE, CarWearPayload.STREAM_CODEC, ModNetwork::handleWear);
+        registrar.playToServer(RepairActionPayload.TYPE, RepairActionPayload.STREAM_CODEC, ModNetwork::handleRepair);
+    }
+
+    private static void handleWear(CarWearPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || !(player.getVehicle() instanceof CarEntity car)
+                || !Float.isFinite(payload.braked()) || !Float.isFinite(payload.skidded()) || !Float.isFinite(payload.impact())) {
+            return;
+        }
+        car.applyWearReport(player, Math.max(0.0F, payload.braked()), Math.max(0.0F, payload.skidded()), Math.max(0.0F, payload.impact()));
+    }
+
+    private static void handleRepair(RepairActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player)
+                || !(player.containerMenu instanceof RepairBenchMenu menu)
+                || menu.containerId != payload.containerId()
+                || !menu.stillValid(player)) {
+            return;
+        }
+        RepairBenchBlockEntity bench = menu.bench();
+        if (bench == null) {
+            return;
+        }
+        ShopActionResult result = switch (payload.action()) {
+            case RepairActionPayload.FIT -> RepairService.fitOwn(player, bench, menu.car(), payload.parts());
+            case RepairActionPayload.BUY -> RepairService.buy(player, bench, menu.car(), payload.parts(), payload.expectedTotal(), payload.payment());
+            case RepairActionPayload.SET_PRICE -> {
+                ShopActionResult set = RepairService.setPrice(player, bench, payload.parts(), payload.priceText());
+                if (set.success()) {
+                    RepairBenchMenu.open(player, bench); // reopen so the screen shows the new price
+                }
+                yield set;
+            }
+            default -> ShopActionResult.fail(Component.literal("?"));
+        };
+        menu.refresh();
+        ShopFeedback.send(player, result);
     }
 
     private static void handlePump(PumpActionPayload payload, IPayloadContext context) {

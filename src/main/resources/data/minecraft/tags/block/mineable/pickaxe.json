@@ -2,6 +2,7 @@
   "values": [
     "reikocars:gas_pump",
     "reikocars:car_workbench",
-    "reikocars:diesel_pump"
+    "reikocars:diesel_pump",
+    "reikocars:repair_bench"
   ]
 }

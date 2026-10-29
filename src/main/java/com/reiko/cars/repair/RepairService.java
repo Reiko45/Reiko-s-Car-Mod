@@ -1,0 +1,286 @@
+package com.reiko.cars.repair;
+
+import com.reiko.cars.car.CarCondition;
+import com.reiko.cars.car.CarCondition.Part;
+import com.reiko.cars.car.CarEntity;
+import com.reiko.cars.config.CarsConfig;
+import com.reiko.cars.registry.ModSounds;
+import com.reiko.economy.api.EconomyApi;
+import com.reiko.economy.config.EconomyConfig;
+import com.reiko.economy.core.Money;
+import com.reiko.economy.shop.Payment;
+import com.reiko.economy.shop.ShopActionResult;
+import com.reiko.economy.shop.ShopPayments;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.OptionalLong;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Repairs at a repair bench. A player can fit parts they carry to a car beside the bench for nothing, or pay for the
+ * bench to fit parts from its stock, at its owner's prices. Paying works as at a shop or pump in Reiko's Economy
+ * Mod (a debit card with PIN, a credit card, or cash with change, plus sales tax), and the owner is paid into their
+ * bank account. The owner repairs from their own stock for free.
+ */
+public final class RepairService {
+    private RepairService() {
+    }
+
+    /** The car {@code player} would repair here: the one they're in, or else the nearest they may use. */
+    @Nullable
+    public static CarEntity findCar(RepairBenchBlockEntity bench, Player player) {
+        Level level = bench.getLevel();
+        if (level == null) {
+            return null;
+        }
+        if (player.getVehicle() instanceof CarEntity riding && inReach(bench, riding)) {
+            return riding;
+        }
+        double reach = CarsConfig.get(CarsConfig.BENCH_REACH);
+        Vec3 center = bench.getBlockPos().getCenter();
+        List<CarEntity> cars = level.getEntitiesOfClass(CarEntity.class, new AABB(bench.getBlockPos()).inflate(reach + 2.0),
+                car -> car.canBeUsedBy(player) && inReach(bench, car));
+        return cars.stream().min(Comparator.comparingDouble(car -> distance(center, car))).orElse(null);
+    }
+
+    public static boolean inReach(RepairBenchBlockEntity bench, CarEntity car) {
+        return car.isAlive() && car.level() == bench.getLevel()
+                && distance(bench.getBlockPos().getCenter(), car) <= CarsConfig.get(CarsConfig.BENCH_REACH);
+    }
+
+    /** From the bench to the nearest point of the car. */
+    private static double distance(Vec3 from, CarEntity car) {
+        AABB box = car.getBoundingBox();
+        double dx = Math.max(Math.max(box.minX - from.x, 0.0), from.x - box.maxX);
+        double dy = Math.max(Math.max(box.minY - from.y, 0.0), from.y - box.maxY);
+        double dz = Math.max(Math.max(box.minZ - from.z, 0.0), from.z - box.maxZ);
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    /**
+     * How many items a job on {@code part} uses, given that it needs {@code needed} to be as new and {@code available}
+     * are to hand: an oil change, tires and brakes need the whole set, engine and body work can be done in part. 0
+     * means the job can't be done (or doesn't need doing).
+     */
+    public static int jobSize(Part part, int needed, int available) {
+        if (needed <= 0 || available <= 0) {
+            return 0;
+        }
+        if (RepairJobs.allAtOnce(part)) {
+            return available >= needed ? needed : 0;
+        }
+        return Math.min(needed, available);
+    }
+
+    /** Whether bit {@code part} is set in {@code mask}. */
+    public static boolean has(int mask, Part part) {
+        return (mask & (1 << part.ordinal())) != 0;
+    }
+
+    /** How many of {@code part}'s items {@code player} carries. */
+    public static int carried(Player player, Part part) {
+        int count = 0;
+        for (ItemStack stack : player.getInventory().items) {
+            if (RepairJobs.partFor(stack) == part) {
+                count += stack.getCount();
+            }
+        }
+        return count;
+    }
+
+    private static void takeCarried(Player player, Part part, int count) {
+        for (ItemStack stack : player.getInventory().items) {
+            if (count <= 0) {
+                break;
+            }
+            if (RepairJobs.partFor(stack) == part) {
+                int taken = Math.min(count, stack.getCount());
+                stack.shrink(taken);
+                count -= taken;
+            }
+        }
+        player.getInventory().setChanged();
+    }
+
+    /** Fits the parts {@code player} carries, for the parts in {@code mask}, to {@code car}. */
+    public static ShopActionResult fitOwn(ServerPlayer player, RepairBenchBlockEntity bench, @Nullable CarEntity car, int mask) {
+        if (car == null || !inReach(bench, car)) {
+            return ShopActionResult.fail("repair.reikocars.no_car", (int) CarsConfig.get(CarsConfig.BENCH_REACH));
+        }
+        CarCondition condition = car.condition();
+        List<Component> done = new ArrayList<>();
+        ShopActionResult problem = null;
+        for (Part part : Part.values()) {
+            if (!has(mask, part)) {
+                continue;
+            }
+            int needed = RepairJobs.needed(part, car.carType(), condition);
+            int have = carried(player, part);
+            int count = jobSize(part, needed, have);
+            if (count <= 0) {
+                problem = needed <= 0 ? ShopActionResult.fail("repair.reikocars.fine", part.displayName())
+                        : have <= 0 ? ShopActionResult.fail("repair.reikocars.none_carried", itemName(part))
+                        : ShopActionResult.fail("repair.reikocars.need_set", needed, itemName(part), have);
+                continue;
+            }
+            takeCarried(player, part, count);
+            condition = RepairJobs.fit(part, car.carType(), condition, count);
+            done.add(jobName(part, count));
+        }
+        if (done.isEmpty()) {
+            return problem != null ? problem : ShopActionResult.fail("repair.reikocars.nothing_selected");
+        }
+        car.setCondition(condition);
+        player.inventoryMenu.broadcastChanges();
+        finished(bench, car);
+        return ShopActionResult.ok(Component.translatable("repair.reikocars.fitted", list(done), car.getDisplayName()));
+    }
+
+    /**
+     * Has the bench fit parts from its stock, for the parts in {@code mask}, and charges {@code player} for them.
+     * Nothing is fitted unless the payment goes through.
+     *
+     * @param expectedTotal the bill the player saw, before tax, so a price or stock change in the meantime is caught
+     */
+    public static ShopActionResult buy(ServerPlayer player, RepairBenchBlockEntity bench, @Nullable CarEntity car, int mask,
+                                       long expectedTotal, Payment payment) {
+        if (car == null || !inReach(bench, car)) {
+            return ShopActionResult.fail("repair.reikocars.no_car", (int) CarsConfig.get(CarsConfig.BENCH_REACH));
+        }
+        CarCondition condition = car.condition();
+        int[] counts = new int[Part.values().length];
+        long total = 0;
+        boolean any = false;
+        for (Part part : Part.values()) {
+            if (!has(mask, part)) {
+                continue;
+            }
+            int needed = RepairJobs.needed(part, car.carType(), condition);
+            int count = jobSize(part, needed, bench.count(part));
+            if (count <= 0) {
+                return needed <= 0 ? ShopActionResult.fail("repair.reikocars.fine", part.displayName())
+                        : ShopActionResult.fail("repair.reikocars.out_of_stock", itemName(part));
+            }
+            counts[part.ordinal()] = count;
+            total += count * bench.price(part);
+            any = true;
+        }
+        if (!any) {
+            return ShopActionResult.fail("repair.reikocars.nothing_selected");
+        }
+        if (total != expectedTotal) {
+            return ShopActionResult.fail("repair.reikocars.total_changed", EconomyApi.get().format(total + EconomyConfig.taxRates().salesTax(total)));
+        }
+
+        boolean free = bench.isOwner(player) || total == 0;
+        long tax = free ? 0 : EconomyConfig.taxRates().salesTax(total);
+        ShopPayments.Charge charge = null;
+        List<Component> jobs = new ArrayList<>();
+        for (Part part : Part.values()) {
+            if (counts[part.ordinal()] > 0) {
+                jobs.add(jobName(part, counts[part.ordinal()]));
+            }
+        }
+        if (!free) {
+            if (total + tax > Money.MAX_BALANCE) {
+                return ShopActionResult.fail("repair.reikocars.too_expensive");
+            }
+            Component description = Component.translatable("repair.reikocars.bill_line", list(jobs), bench.ownerName());
+            charge = ShopPayments.charge(player, payment, total, tax, bench.owner(), "reikocars.repair", description);
+            if (!charge.success()) {
+                return ShopActionResult.fail(charge.message());
+            }
+        }
+
+        for (Part part : Part.values()) {
+            int count = counts[part.ordinal()];
+            if (count > 0) {
+                int taken = bench.take(part, count);
+                condition = RepairJobs.fit(part, car.carType(), condition, taken);
+            }
+        }
+        car.setCondition(condition);
+        if (!free) {
+            bench.recordJob(total);
+        }
+        finished(bench, car);
+        Component jobList = list(jobs);
+        if (free) {
+            return ShopActionResult.ok(Component.translatable("repair.reikocars.repaired_free", jobList));
+        }
+        Component line = tax > 0
+                ? Component.translatable("repair.reikocars.repaired_tax", jobList, EconomyApi.get().format(total + tax), EconomyApi.get().format(tax))
+                : Component.translatable("repair.reikocars.repaired", jobList, EconomyApi.get().format(total));
+        return ShopActionResult.ok(ShopPayments.receipt(line, payment, charge));
+    }
+
+    /** The clank of a job done, and a puff of sparkle over the car. */
+    private static void finished(RepairBenchBlockEntity bench, CarEntity car) {
+        Level level = bench.getLevel();
+        if (level == null) {
+            return;
+        }
+        level.playSound(null, bench.getBlockPos(), ModSounds.REPAIR.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
+        if (level instanceof ServerLevel server) {
+            server.sendParticles(ParticleTypes.HAPPY_VILLAGER, car.getX(), car.getY() + car.getBbHeight() * 0.7, car.getZ(), 12,
+                    car.getBbWidth() * 0.4, 0.3, car.getBbWidth() * 0.4, 0.0);
+        }
+    }
+
+    /** "an oil change", "4 Tires", "2 Engine Parts". */
+    private static Component jobName(Part part, int count) {
+        return part == Part.OIL ? Component.translatable("repair.reikocars.job_oil")
+                : Component.translatable("repair.reikocars.job", count, itemName(part));
+    }
+
+    private static Component itemName(Part part) {
+        return new ItemStack(RepairJobs.item(part)).getHoverName();
+    }
+
+    /** "a, b and c". */
+    private static Component list(List<Component> parts) {
+        MutableComponent out = Component.empty();
+        for (int i = 0; i < parts.size(); i++) {
+            if (i > 0) {
+                out.append(i == parts.size() - 1 ? Component.translatable("repair.reikocars.and") : Component.literal(", "));
+            }
+            out.append(parts.get(i));
+        }
+        return out;
+    }
+
+    /** Sets the price of one of {@code part}'s items from typed text like {@code 12.50}. Owner or admin only. */
+    public static ShopActionResult setPrice(ServerPlayer player, RepairBenchBlockEntity bench, int mask, String text) {
+        if (!bench.canManage(player)) {
+            return ShopActionResult.fail("repair.reikocars.owner_only_price", bench.ownerName());
+        }
+        Part part = null;
+        for (Part candidate : Part.values()) {
+            if (has(mask, candidate)) {
+                part = candidate;
+                break;
+            }
+        }
+        if (part == null) {
+            return ShopActionResult.fail("repair.reikocars.nothing_selected");
+        }
+        OptionalLong parsed = EconomyApi.get().parse(text.isBlank() ? "0" : text.trim());
+        if (parsed.isEmpty() || parsed.getAsLong() < 0 || parsed.getAsLong() > Money.MAX_BALANCE / 100) {
+            return ShopActionResult.fail("repair.reikocars.bad_price");
+        }
+        bench.setPrice(part, parsed.getAsLong());
+        return ShopActionResult.ok(Component.translatable("repair.reikocars.price_set", itemName(part), EconomyApi.get().format(parsed.getAsLong())));
+    }
+}

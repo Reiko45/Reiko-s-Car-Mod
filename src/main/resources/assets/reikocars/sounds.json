@@ -36,5 +36,29 @@
       "reikocars:pump"
     ],
     "subtitle": "subtitles.reikocars.gas_pump.pump"
+  },
+  "car.brake_squeal": {
+    "sounds": [
+      {
+        "name": "reikocars:brake_squeal",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.reikocars.car.brake_squeal"
+  },
+  "car.breakdown": {
+    "sounds": [
+      {
+        "name": "reikocars:breakdown",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.reikocars.car.breakdown"
+  },
+  "repair_bench.repair": {
+    "sounds": [
+      "reikocars:repair"
+    ],
+    "subtitle": "subtitles.reikocars.repair_bench.repair"
   }
 }

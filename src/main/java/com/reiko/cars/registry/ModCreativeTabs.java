@@ -29,6 +29,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.CAR_WORKBENCH.get());
                 output.accept(ModItems.GAS_PUMP.get());
                 output.accept(ModItems.DIESEL_PUMP.get());
+                output.accept(ModItems.REPAIR_BENCH.get());
                 for (TrailerType type : TrailerType.values()) {
                     output.accept(ModItems.trailer(type));
                 }
@@ -36,6 +37,10 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.DIESEL_ENGINE.get());
                 output.accept(ModItems.MOTORCYCLE_ENGINE.get());
                 output.accept(ModItems.TIRE.get());
+                output.accept(ModItems.MOTOR_OIL.get());
+                output.accept(ModItems.ENGINE_PARTS.get());
+                output.accept(ModItems.BRAKE_PADS.get());
+                output.accept(ModItems.BODY_PANEL.get());
                 for (CarType type : CarType.values()) {
                     for (CarPart part : CarPart.values()) {
                         output.accept(ModItems.part(type, part));

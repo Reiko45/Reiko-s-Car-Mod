@@ -15,6 +15,12 @@ public final class ModSounds {
     public static final Supplier<SoundEvent> HORN = register("car.horn");
     public static final Supplier<SoundEvent> LOCK = register("car.lock");
     public static final Supplier<SoundEvent> PUMP = register("gas_pump.pump");
+    /** Worn brakes grinding. */
+    public static final Supplier<SoundEvent> BRAKE_SQUEAL = register("car.brake_squeal");
+    /** The engine sputtering out when a part gives up. */
+    public static final Supplier<SoundEvent> BREAKDOWN = register("car.breakdown");
+    /** Spanners at work, as parts go on at a repair bench. */
+    public static final Supplier<SoundEvent> REPAIR = register("repair_bench.repair");
 
     private ModSounds() {
     }

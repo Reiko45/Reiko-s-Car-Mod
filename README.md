@@ -4,6 +4,8 @@ Drivable cars, motorcycles and semi trucks for Minecraft 1.21.1 (NeoForge) that 
 trailers for the semis to pull, and gas and diesel pumps that sell the fuel for **cash or card** through **Reiko's Economy Mod**.
 
 Refine oil into fuel with BuildCraft, pipe it into a pump, set a price, and other players pay you to fill up.
+Cars wear out as they're driven, and a **Repair Bench** fixes them: fit your own parts, or run a mechanic's shop and
+charge for repairs.
 
 ## Requirements
 
@@ -177,6 +179,41 @@ of their own pump in buckets.
 **Setting the price:** the owner sees a price row at the bottom of the screen. Type a price per bucket and press
 **Set**. The lit display on the front of the pump shows the price, or EMPTY.
 
+## Wear and repairs
+
+Cars wear out like real ones. Each car has five parts, each from 100% (new) down to 0%:
+
+| Part | Wears from | When it's worn |
+| --- | --- | --- |
+| **Oil** | distance: an oil change every 50,000 blocks or so | Below 25% the engine wears four times as fast, and twenty times as fast with none |
+| **Engine** | distance, slowly (about 400,000 blocks), and hard crashes | Below 50%, less power: slower and slower to pick up speed. Any wear burns more fuel, up to half as much again |
+| **Tires** | distance (80,000 blocks on a road), faster off-road and towing, and hard braking and handbrake skids | Below 30%, less grip: worse acceleration, braking and cornering |
+| **Brakes** | every stop, by how fast you were going (about 550 hard stops) | Below 40%, the car takes longer to stop. Worn pads squeal |
+| **Body** | crashes, by how hard you hit (a wall, another car or a mob) | Below 50%, slower. Bumps under about 7 mph leave no mark |
+
+When any part reaches **0%, the car breaks down**: the engine won't start or run until it's repaired (the brakes
+still work). Cars are never destroyed.
+
+**Seeing it:** the dashboard has five warning lights (oil can, engine, tire, brake, car). They come on amber when a
+part is worn (25%), orange when badly worn (10%), and flash red when it has given out, with **BROKEN DOWN** on
+the dashboard. A tired engine smokes from under the bonnet, and the action bar tells the driver as each part gets
+low. A car's item tooltip shows its condition, and a car picked up keeps its wear.
+
+**The Repair Bench:** park within 6 blocks of it and right-click it. It shows the car part by part, with two ways
+to fix each:
+
+- **Fit:** fits the parts you carry, for nothing. An oil change takes a Motor Oil, tires a full set (one per
+  wheel), brakes a set of Brake Pads (diesel trucks take two of each). Engine Parts each put back a quarter of the
+  engine and Body Panels a fifth of the body (half that on diesel trucks), so you can fix them a bit at a time.
+- **The price button:** has the bench fit parts from its own stock, at the owner's prices. Click the jobs you want,
+  then pay the total by **Card** (with PIN) or **Cash**, as at a pump. Sales tax applies, and the money goes to the
+  bench's owner.
+
+Whoever places the bench owns it, and only they (or an admin) can break it. The owner gets two more tabs: **Stock**,
+to load the bench with parts (hoppers and pipes can fill it too, but nothing comes back out), and **Prices**, to set
+the price of each part. The owner repairs from their own stock for free, so a bench works as a garage at home or a
+mechanic's shop for other players.
+
 ## Recipes
 
 | Item | Recipe |
@@ -192,6 +229,11 @@ of their own pump in buckets.
 | Box Trailer Body | iron ingots top and bottom, chests in the outer middle slots |
 | Tanker Trailer Tank | four BuildCraft **Tanks** around an empty middle, iron ingots in the corners |
 | Car Hauler Deck | iron bars in the corners, iron ingots across the middle |
+| Repair Bench | iron ingot, anvil, iron ingot on top, iron gear, chest, iron gear across the middle, iron legs |
+| Motor Oil ×3 | a BuildCraft **Oil** bucket and three glass bottles (shapeless) |
+| Engine Parts ×2 | iron ingot, piston, iron ingot over iron gear, iron ingot, iron gear |
+| Brake Pads ×2 | three iron ingots over three flint |
+| Body Panel ×2 | four iron ingots in a square |
 
 The car parts, crafted on an ordinary crafting table:
 
@@ -252,6 +294,11 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `pumps.defaultPricePerBucket` | `4.0` | Starting price of a new pump |
 | `pumps.capacityBuckets` | `16` | Buckets a pump holds |
 | `pumps.hoseLength` | `6.0` | How close a car must be to a pump |
+| `wear.wearMultiplier` | `1.0` | How fast oil, engines, tires and brakes wear (0 turns wear off) |
+| `wear.crashDamageMultiplier` | `1.0` | Body damage from crashes (0 turns it off) |
+| `wear.breakdowns` | `true` | A part at 0% breaks the car down. If false, worn parts only make it drive worse |
+| `wear.repairBenchReach` | `6.0` | How close a car must be to a repair bench |
+| `wear.defaultPricePerPart` | `20.0` | Starting price of each part at a new repair bench |
 
 Each player can pick **mph** or **km/h**, and turn the dashboard off, in `config/reikocars-client.toml`.
 
@@ -264,7 +311,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
-./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles), then exit
+./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs), then exit
 ./gradlew runClient         # start a dev client
 ./gradlew runClient -Pshowcase  # build a test scene, buy fuel, drive, save screenshots to run/screenshots/, quit
 ./gradlew runClient -Pshowcase=workbench  # the same for the Car Workbench and its JEI pages
@@ -272,6 +319,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 ./gradlew runClient -Pshowcase=semi       # the same for semis, hitching, driving a rig, trailers and the tanker
 ./gradlew runClient -Pshowcase=bikes      # the same for the motorcycles: parked, riding and leaning, saddlebags
 ./gradlew runClient -Pshowcase=cars2      # the same for the hatchback, muscle car, convertible, minivan, van, bus, 4x4, tractor
+./gradlew runClient -Pshowcase=repair     # the Repair Bench, paying for repairs, its owner's tabs, a worn car's dashboard and smoke
 ./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
 
@@ -307,8 +355,9 @@ The car's front faces north (−Z), and the driver's side is **−X** in Blockbe
 **File > Export > Export Java Entity**, and paste the exported `createBodyLayer()` into
 `client/model/<Car>Model.java`. If you move the seats, update the seat table at the top of `car/CarType.java`.
 
-The pumps and the Car Workbench are block models: `models/block/gas_pump.json` (the diesel pump uses the same model
-with `textures/block/diesel_pump.png`) and `models/block/car_workbench.json`, each with one 128×128 texture. The
+The pumps, the Car Workbench and the Repair Bench are block models: `models/block/gas_pump.json` (the diesel pump uses
+the same model with `textures/block/diesel_pump.png`), `models/block/car_workbench.json` and
+`models/block/repair_bench.json`, each with one 128×128 texture. The
 pump's model is two blocks tall and faces north. Its screen's face must stay at z = 3, 19 to 26 pixels up, and its
 sign's face at z = 3, 28 to 32 up, because that's where the lit price and the fuel's name are drawn. The screen and
 sign glow (`neoforge_data` light on those elements).
@@ -318,15 +367,16 @@ sign glow (`neoforge_data` light on those elements).
 ```text
 src/main/java/com/reiko/cars/
 ├── ReikoCars.java        mod entry point
-├── car/                  the car entity and its types, fuel (CarFuel, CarTank), the car item
+├── car/                  the car entity and its types, fuel (CarFuel, CarTank), wear and tear (CarCondition), the car item
 ├── pump/                 the gas and diesel pump block, its block entity, menu, protection, and PumpService (selling fuel)
 ├── trailer/              the trailers, their item, hitching and car hauling (Hitching), and the tanker (TankerService)
 ├── workbench/            the Car Workbench block and menu, the car parts, and the car_assembly recipe type
+├── repair/               the Repair Bench block, block entity, menu and protection, the jobs (RepairJobs), and RepairService (repairs and paying)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
-├── network/              packets: pump actions, horn, lock and hitch, tanker load and unload
+├── network/              packets: pump and repair bench actions, horn, lock and hitch, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models, dashboard, pump, workbench and tanker screens, pump display, engine sound, keys
+├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench and tanker screens, pump display, engine sound, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, semi and trailer models (Blockbench projects)

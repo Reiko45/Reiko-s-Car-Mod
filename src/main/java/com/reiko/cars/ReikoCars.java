@@ -6,6 +6,7 @@ import com.reiko.cars.registry.ModBlockEntities;
 import com.reiko.cars.registry.ModBlocks;
 import com.reiko.cars.registry.ModCreativeTabs;
 import com.reiko.cars.registry.ModDataComponents;
+import com.reiko.cars.registry.ModDataSerializers;
 import com.reiko.cars.registry.ModEntities;
 import com.reiko.cars.registry.ModItems;
 import com.reiko.cars.registry.ModMenus;
@@ -29,6 +30,7 @@ public final class ReikoCars {
 
     public ReikoCars(IEventBus modBus, ModContainer container) {
         ModDataComponents.COMPONENTS.register(modBus);
+        ModDataSerializers.SERIALIZERS.register(modBus);
         ModBlocks.BLOCKS.register(modBus);
         ModItems.ITEMS.register(modBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modBus);

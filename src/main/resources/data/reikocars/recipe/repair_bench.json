@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "tag": "c:gears/iron"
+    },
+    "A": {
+      "item": "minecraft:anvil"
+    },
+    "C": {
+      "tag": "c:chests/wooden"
+    }
+  },
+  "pattern": [
+    "IAI",
+    "GCG",
+    "I I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:repair_bench"
+  }
+}

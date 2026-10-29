@@ -2,6 +2,7 @@ package com.reiko.cars.registry;
 
 import com.mojang.serialization.Codec;
 import com.reiko.cars.ReikoCars;
+import com.reiko.cars.car.CarCondition;
 import java.util.function.Supplier;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
@@ -10,7 +11,7 @@ import net.neoforged.neoforge.fluids.SimpleFluidContent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
- * Data items carry: a picked-up car's fuel (its paint uses vanilla's dyed colour), a picked-up tanker's load, and a
+ * Data items carry: a picked-up car's fuel and wear (its paint uses vanilla's dyed colour), a picked-up tanker's load, and a
  * broken gas pump's fuel and price, so nothing is lost when they're moved.
  */
 public final class ModDataComponents {
@@ -32,6 +33,10 @@ public final class ModDataComponents {
     /** A gas pump's price per bucket, in cents. */
     public static final Supplier<DataComponentType<Long>> PUMP_PRICE = COMPONENTS.registerComponentType("pump_price",
             builder -> builder.persistent(Codec.LONG).networkSynchronized(ByteBufCodecs.VAR_LONG));
+
+    /** A picked-up car's wear and tear. Missing means as new. */
+    public static final Supplier<DataComponentType<CarCondition>> CONDITION = COMPONENTS.registerComponentType("condition",
+            builder -> builder.persistent(CarCondition.CODEC).networkSynchronized(CarCondition.STREAM_CODEC));
 
     private ModDataComponents() {
     }

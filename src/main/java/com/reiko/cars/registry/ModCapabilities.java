@@ -11,8 +11,8 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 
 /**
- * Pipes (BuildCraft's or any other mod's) can push fuel into either half of a gas pump, from any side. Cars expose
- * their tank too, for mods that fill entities.
+ * Pipes (BuildCraft's or any other mod's) can push fuel into either half of a gas pump, from any side, and repair
+ * parts into a repair bench. Cars expose their tank too, for mods that fill entities.
  */
 @EventBusSubscriber(modid = ReikoCars.MODID)
 public final class ModCapabilities {
@@ -25,6 +25,8 @@ public final class ModCapabilities {
             GasPumpBlockEntity pump = GasPumpBlock.pumpAt(level, pos, state);
             return pump == null ? null : pump.pipeInput();
         }, ModBlocks.GAS_PUMP.get(), ModBlocks.DIESEL_PUMP.get());
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.REPAIR_BENCH.get(),
+                (bench, side) -> bench.pipeInput());
 
         for (CarType type : CarType.values()) {
             event.registerEntity(Capabilities.FluidHandler.ENTITY, ModEntities.car(type), (car, context) -> new CarTank(car));

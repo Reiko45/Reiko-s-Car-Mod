@@ -2,6 +2,7 @@ package com.reiko.cars.registry;
 
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.pump.GasPumpBlockEntity;
+import com.reiko.cars.repair.RepairBenchBlockEntity;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -14,6 +15,9 @@ public final class ModBlockEntities {
     /** Gas and diesel pumps share it. Only the bottom half of a pump has one. */
     public static final Supplier<BlockEntityType<GasPumpBlockEntity>> GAS_PUMP = BLOCK_ENTITIES.register("gas_pump",
             () -> BlockEntityType.Builder.of(GasPumpBlockEntity::new, ModBlocks.GAS_PUMP.get(), ModBlocks.DIESEL_PUMP.get()).build(null));
+
+    public static final Supplier<BlockEntityType<RepairBenchBlockEntity>> REPAIR_BENCH = BLOCK_ENTITIES.register("repair_bench",
+            () -> BlockEntityType.Builder.of(RepairBenchBlockEntity::new, ModBlocks.REPAIR_BENCH.get()).build(null));
 
     private ModBlockEntities() {
     }

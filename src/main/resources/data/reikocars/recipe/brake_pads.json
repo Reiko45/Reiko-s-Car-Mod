@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "F": {
+      "item": "minecraft:flint"
+    }
+  },
+  "pattern": [
+    "III",
+    "FFF"
+  ],
+  "result": {
+    "count": 2,
+    "id": "reikocars:brake_pads"
+  }
+}

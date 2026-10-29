@@ -2,6 +2,7 @@ package com.reiko.cars.registry;
 
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.pump.PumpMenu;
+import com.reiko.cars.repair.RepairBenchMenu;
 import com.reiko.cars.workbench.CarWorkbenchMenu;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
@@ -16,6 +17,9 @@ public final class ModMenus {
     public static final Supplier<MenuType<PumpMenu>> PUMP = MENUS.register("gas_pump", () -> IMenuTypeExtension.create(PumpMenu::new));
     public static final Supplier<MenuType<CarWorkbenchMenu>> CAR_WORKBENCH = MENUS.register("car_workbench",
             () -> new MenuType<>(CarWorkbenchMenu::new, FeatureFlags.DEFAULT_FLAGS));
+
+    public static final Supplier<MenuType<RepairBenchMenu>> REPAIR_BENCH = MENUS.register("repair_bench",
+            () -> IMenuTypeExtension.create(RepairBenchMenu::new));
 
     private ModMenus() {
     }

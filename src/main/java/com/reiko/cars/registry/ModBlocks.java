@@ -3,6 +3,7 @@ package com.reiko.cars.registry;
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.FuelType;
 import com.reiko.cars.pump.GasPumpBlock;
+import com.reiko.cars.repair.RepairBenchBlock;
 import com.reiko.cars.workbench.CarWorkbenchBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -40,6 +41,15 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL)
                     .noOcclusion())); // a bench on legs, open underneath: don't hide the faces behind it
+
+    /** Where cars are serviced and repaired: by their drivers with their own parts, or by the bench's owner for money. */
+    public static final DeferredBlock<RepairBenchBlock> REPAIR_BENCH = BLOCKS.register("repair_bench", () -> new RepairBenchBlock(
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLUE)
+                    .strength(3.0F, 6.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .noOcclusion()));
 
     private ModBlocks() {
     }

@@ -1,7 +1,13 @@
 package com.reiko.cars.dev;
 
 import com.reiko.cars.ReikoCars;
+import com.reiko.cars.car.CarCondition;
+import com.reiko.cars.car.CarCondition.Part;
 import com.reiko.cars.car.CarEntity;
+import com.reiko.cars.client.RepairBenchScreen;
+import com.reiko.cars.repair.RepairBenchBlock;
+import com.reiko.cars.repair.RepairBenchBlockEntity;
+import com.reiko.cars.repair.RepairBenchMenu;
 import com.reiko.cars.car.CarType;
 import com.reiko.cars.network.CarActionPayload;
 import com.reiko.cars.network.PumpActionPayload;
@@ -72,7 +78,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public final class DevShowcase {
     /**
      * "true" for the cars and pumps, "workbench" for the Car Workbench, "diesel" for the diesel pump, "semi" for semis
-     * and trailers, "bikes" for the motorcycles, "cars2" for the second wave of cars, "false" for none.
+     * and trailers, "bikes" for the motorcycles, "cars2" for the second wave of cars, "repair" for wear and the Repair
+     * Bench, "false" for none.
      */
     private static final String MODE = System.getProperty("reikocars.showcase", "false");
     private static final boolean ENABLED = !MODE.equals("false");
@@ -106,7 +113,7 @@ public final class DevShowcase {
             rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false, null);
             rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, null);
             LevelSettings settings = new LevelSettings("showcase-" + System.currentTimeMillis(), GameType.CREATIVE, false,
-                    Difficulty.PEACEFUL, true, rules, WorldDataConfiguration.DEFAULT);
+                    Difficulty.PEACEFUL, !MODE.equals("repair"), rules, WorldDataConfiguration.DEFAULT); // no cheats: a customer, not an admin
             minecraft.createWorldOpenFlows().createFreshLevel(settings.levelName(), settings, new WorldOptions(1L, false, false),
                     registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT)
                             .value().createWorldDimensions(), new TitleScreen());
@@ -121,6 +128,8 @@ public final class DevShowcase {
             bikeScript();
         } else if (MODE.equals("cars2")) {
             moreCarsScript();
+        } else if (MODE.equals("repair")) {
+            repairScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -930,4 +939,108 @@ public final class DevShowcase {
         }
         at(60 + names.size() * GALLERY_SPAN + 10, mc -> mc.stop());
     }
+
+    // ---- wear and tear and the Repair Bench: ./gradlew runClient -Pshowcase=repair ----
+
+    private static final BlockPos REPAIR = new BlockPos(2, -60, 3);
+    private static final CarCondition WORN = new CarCondition(0.18F, 0.22F, 0.12F, 0.3F, 0.45F);
+
+    /** Clicks the open screen at a point in its own coordinates (from its top left corner). */
+    private static void click(Minecraft minecraft, int x, int y) {
+        if (minecraft.screen instanceof RepairBenchScreen screen) {
+            screen.mouseClicked(screen.getGuiLeft() + x, screen.getGuiTop() + y, 0);
+        }
+    }
+
+    private static void hoverAt(Minecraft minecraft, int x, int y) {
+        if (minecraft.screen instanceof RepairBenchScreen screen) {
+            hover(minecraft, screen.getGuiLeft() + x, screen.getGuiTop() + y);
+        }
+    }
+
+    private static RepairBenchBlockEntity repairBench(ServerPlayer player) {
+        return (RepairBenchBlockEntity) player.serverLevel().getBlockEntity(REPAIR);
+    }
+
+    private static void repairScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                for (int x = -6; x <= 14; x++) {
+                    for (int z = -2; z <= 22; z++) {
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), Blocks.SMOOTH_STONE.defaultBlockState());
+                    }
+                }
+                level.setBlockAndUpdate(REPAIR, ModBlocks.REPAIR_BENCH.get().defaultBlockState().setValue(RepairBenchBlock.FACING, Direction.SOUTH));
+                RepairBenchBlockEntity bench = repairBench(player);
+                java.util.UUID mo = java.util.UUID.nameUUIDFromBytes("mechanic".getBytes());
+                EconomyService.INSTANCE.ensureAccount(level.getServer(), mo, "Mo");
+                bench.setOwner(mo, "Mo");
+                long[] prices = {1200, 3500, 1800, 2200, 2500};
+                for (Part part : Part.values()) {
+                    bench.setPrice(part, prices[part.ordinal()]);
+                }
+                bench.stock().insertItem(0, new ItemStack(ModItems.TIRE.get(), 12), false);
+                bench.stock().insertItem(1, new ItemStack(ModItems.MOTOR_OIL.get(), 6), false);
+                bench.stock().insertItem(2, new ItemStack(ModItems.ENGINE_PARTS.get(), 8), false);
+                bench.stock().insertItem(3, new ItemStack(ModItems.BRAKE_PADS.get(), 5), false);
+                bench.stock().insertItem(4, new ItemStack(ModItems.BODY_PANEL.get(), 9), false);
+                spawn(level, CarType.SEDAN, 5.2, 3.5, 180, 0.6);
+                CarEntity car = car(level, CarType.SEDAN);
+                car.setOwner(player);
+                car.setCondition(WORN);
+                player.getInventory().clearContent();
+                give(player, ModItems.ENGINE_PARTS.get(), 2);
+                give(player, ModItems.MOTOR_OIL.get(), 1);
+                Purse.give(player, 20_000);
+            });
+        });
+        at(70, mc -> {
+            mc.options.hideGui = true;
+            look(mc, 3.9, -59.6, 5.9, 150.0F, 32.0F);
+        });
+        at(120, mc -> shot(mc, "40_repair_bench"));
+        at(122, mc -> mc.options.hideGui = false);
+        at(125, mc -> server(mc, player -> RepairBenchMenu.open(player, repairBench(player))));
+        at(160, mc -> shot(mc, "41_repair_screen"));
+        // Pick tires and brakes from the bench's stock, and see what the tires cost.
+        at(165, mc -> click(mc, 140, 30 + 2 * 18 + 6));
+        at(167, mc -> click(mc, 140, 30 + 3 * 18 + 6));
+        at(170, mc -> hoverAt(mc, 150, 30 + 2 * 18 + 6));
+        at(195, mc -> shot(mc, "42_repair_bill"));
+        // Fit your own oil, then pay cash for the rest.
+        at(200, mc -> click(mc, 106, 30 + 6));
+        at(215, mc -> hoverAt(mc, 4, 4));
+        at(220, mc -> click(mc, 140, 30 + 5 * 18 + 3 + 12 + 12 + 20 + 6));
+        at(250, mc -> shot(mc, "43_repair_paid"));
+        at(255, mc -> mc.player.closeContainer());
+        // The owner's tabs.
+        at(260, mc -> server(mc, player -> {
+            repairBench(player).setOwner(player);
+            RepairBenchMenu.open(player, repairBench(player));
+        }));
+        at(275, mc -> click(mc, 95, 16 + 6));
+        at(300, mc -> shot(mc, "44_repair_stock"));
+        at(305, mc -> click(mc, 155, 16 + 6));
+        at(330, mc -> shot(mc, "45_repair_prices"));
+        at(335, mc -> mc.player.closeContainer());
+        // Driving a tired car: warning lights on the dashboard, smoke from under the bonnet.
+        at(340, mc -> server(mc, player -> {
+            CarEntity car = car(player.serverLevel(), CarType.SEDAN);
+            car.setCondition(new CarCondition(0.2F, 0.15F, 0.08F, 0.6F, 0.3F));
+            car.moveTo(5.5, -60.0, 6.0, 0.0F, 0.0F);
+            player.startRiding(car, true);
+        }));
+        at(345, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        at(350, mc -> mc.options.keyUp.setDown(true));
+        at(372, mc -> mc.options.keyUp.setDown(false));
+        at(395, mc -> shot(mc, "46_worn_car_driving"));
+        at(400, mc -> server(mc, player -> car(player.serverLevel(), CarType.SEDAN).setCondition(new CarCondition(0.2F, 0.0F, 0.08F, 0.6F, 0.3F))));
+        at(430, mc -> shot(mc, "47_broken_down"));
+        at(440, mc -> mc.stop());
+    }
+
 }

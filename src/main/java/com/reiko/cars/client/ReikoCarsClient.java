@@ -31,6 +31,7 @@ import com.reiko.cars.client.model.SportBikeModel;
 import com.reiko.cars.client.model.SportsCarModel;
 import com.reiko.cars.client.model.TankerTrailerModel;
 import com.reiko.cars.network.CarActionPayload;
+import com.reiko.cars.network.CarWearPayload;
 import com.reiko.cars.registry.ModBlockEntities;
 import com.reiko.cars.registry.ModEntities;
 import com.reiko.cars.registry.ModItems;
@@ -160,6 +161,7 @@ public final class ReikoCarsClient {
     private static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenus.PUMP.get(), PumpScreen::new);
         event.register(ModMenus.CAR_WORKBENCH.get(), CarWorkbenchScreen::new);
+        event.register(ModMenus.REPAIR_BENCH.get(), RepairBenchScreen::new);
     }
 
     private static void registerKeys(RegisterKeyMappingsEvent event) {
@@ -199,6 +201,10 @@ public final class ReikoCarsClient {
             boolean typing = minecraft.screen != null;
             car.setInput(!typing && input.up, !typing && input.down, !typing && input.left, !typing && input.right,
                     !typing && input.jumping);
+            float[] wear = car.takeWearReport();
+            if (wear != null) {
+                PacketDistributor.sendToServer(new CarWearPayload(wear[0], wear[1], wear[2]));
+            }
         }
         while (HORN.consumeClick()) {
             PacketDistributor.sendToServer(new CarActionPayload(CarActionPayload.HORN));
