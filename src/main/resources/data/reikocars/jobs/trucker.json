@@ -1,0 +1,43 @@
+{
+  "name": "Trucker",
+  "icon": "reikocars:semi_truck",
+  "order": 23,
+  "work": [
+    {
+      "action": "reikocars:fuel_delivered",
+      "label": "Bucket of fuel to a pump",
+      "pay": 0.4,
+      "xp": 3
+    },
+    {
+      "action": "reikocars:haul_distance",
+      "label": "100 blocks with a load",
+      "pay": 0.5,
+      "xp": 4
+    }
+  ],
+  "contracts": [
+    {
+      "work": "reikocars:fuel_delivered",
+      "label": "Buckets of Fuel to Pumps",
+      "icon": "reikocars:tanker_trailer",
+      "count": [
+        8,
+        24
+      ],
+      "pay": 0.6,
+      "xp": 2
+    },
+    {
+      "work": "reikocars:haul_distance",
+      "label": "Loaded 100-Block Hauls",
+      "icon": "reikocars:box_trailer",
+      "count": [
+        5,
+        15
+      ],
+      "pay": 1.0,
+      "xp": 4
+    }
+  ]
+}

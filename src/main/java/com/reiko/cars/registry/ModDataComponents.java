@@ -52,6 +52,10 @@ public final class ModDataComponents {
     public static final Supplier<DataComponentType<Long>> LOCK = COMPONENTS.registerComponentType("lock",
             builder -> builder.persistent(Codec.LONG).networkSynchronized(ByteBufCodecs.VAR_LONG));
 
+    /** A picked-up car's insurance, so its cover carries on when it's put down again. */
+    public static final Supplier<DataComponentType<com.reiko.cars.insurance.Policy>> INSURANCE = COMPONENTS.registerComponentType("insurance",
+            builder -> builder.persistent(com.reiko.cars.insurance.Policy.CODEC).networkSynchronized(com.reiko.cars.insurance.Policy.STREAM_CODEC));
+
     private ModDataComponents() {
     }
 }

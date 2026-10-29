@@ -113,7 +113,7 @@ public final class DevShowcase {
             rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false, null);
             rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, null);
             LevelSettings settings = new LevelSettings("showcase-" + System.currentTimeMillis(), GameType.CREATIVE, false,
-                    Difficulty.PEACEFUL, !MODE.equals("repair") && !MODE.equals("sales") && !MODE.equals("tolls"), rules, WorldDataConfiguration.DEFAULT); // no cheats: a customer, not an admin
+                    Difficulty.PEACEFUL, !MODE.equals("repair") && !MODE.equals("sales") && !MODE.equals("tolls") && !MODE.equals("insurance"), rules, WorldDataConfiguration.DEFAULT); // no cheats: a customer, not an admin
             minecraft.createWorldOpenFlows().createFreshLevel(settings.levelName(), settings, new WorldOptions(1L, false, false),
                     registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT)
                             .value().createWorldDimensions(), new TitleScreen());
@@ -140,6 +140,8 @@ public final class DevShowcase {
             salesScript();
         } else if (MODE.equals("tolls")) {
             tollsScript();
+        } else if (MODE.equals("insurance")) {
+            insuranceScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -1660,5 +1662,117 @@ public final class DevShowcase {
         }));
         at(505, mc -> shot(mc, "93_items"));
         at(510, mc -> mc.stop());
+    }
+
+    // ---- insurance and the job board ----
+
+    private static final BlockPos OFFICE = new BlockPos(2, -60, 6);
+    private static final BlockPos CLAIM_BENCH = new BlockPos(11, -60, 7);
+    private static final BlockPos JOB_BOARD = new BlockPos(-3, -60, 6);
+
+    private static com.reiko.cars.insurance.InsuranceOfficeBlockEntity office(ServerPlayer player) {
+        return (com.reiko.cars.insurance.InsuranceOfficeBlockEntity) player.serverLevel().getBlockEntity(OFFICE);
+    }
+
+    private static void insuranceScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                for (int x = -10; x <= 20; x++) {
+                    for (int z = -10; z <= 20; z++) {
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), (z >= 5 && x >= -6 ? Blocks.SMOOTH_STONE : Blocks.GRASS_BLOCK).defaultBlockState());
+                    }
+                }
+                ServerPlayer ivy = extraPlayer(level.getServer(), "Ivy");
+                ServerPlayer mo = extraPlayer(level.getServer(), "Mo");
+                EconomyService.INSTANCE.deposit(level.getServer(), ivy.getUUID(), 100_000, "showcase");
+                level.setBlockAndUpdate(OFFICE, ModBlocks.INSURANCE_OFFICE.get().defaultBlockState()
+                        .setValue(com.reiko.cars.insurance.InsuranceOfficeBlock.FACING, Direction.NORTH));
+                office(player).setOwner(ivy);
+                level.setBlockAndUpdate(CLAIM_BENCH, ModBlocks.REPAIR_BENCH.get().defaultBlockState().setValue(RepairBenchBlock.FACING, Direction.WEST));
+                com.reiko.cars.repair.RepairBenchBlockEntity bench = (com.reiko.cars.repair.RepairBenchBlockEntity) level.getBlockEntity(CLAIM_BENCH);
+                bench.setOwner(mo);
+                for (CarCondition.Part part : CarCondition.Part.values()) {
+                    bench.setPrice(part, 2000);
+                }
+                bench.stock().insertItem(CarCondition.Part.BODY.ordinal(), new ItemStack(ModItems.BODY_PANEL.get(), 32), false);
+                level.setBlockAndUpdate(JOB_BOARD, net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                        .get(ResourceLocation.fromNamespaceAndPath("reikoeconomy", "job_board")).defaultBlockState());
+                spawn(level, CarType.SEDAN, 7.5, 7.5, 90.0F, 0.6);
+                CarEntity mine = car(level, CarType.SEDAN);
+                mine.setOwner(player);
+                mine.setColor(0xC62828);
+                mine.setCondition(new CarCondition(0.9F, 0.9F, 0.8F, 0.8F, 0.35F));
+                player.getInventory().clearContent();
+                Purse.give(player, 20_000);
+                player.getInventory().selected = 8;
+            });
+        });
+        // The office, the car out front.
+        at(60, mc -> {
+            mc.options.hideGui = true;
+            mc.player.getInventory().selected = 8;
+            aim(mc, 5.0, -59.4, 6.5, -1.5, 1.8, -4.8);
+        });
+        at(110, mc -> shot(mc, "94_insurance_office"));
+        // Insuring the car.
+        at(112, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                player.teleportTo(player.serverLevel(), 2.5, -60.0, 3.5, 0.0F, 30.0F);
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                com.reiko.cars.insurance.InsuranceMenu.open(player, office(player));
+            });
+        });
+        at(135, mc -> shot(mc, "95_insure_screen"));
+        at(137, mc -> clickAt(mc, 140, 136));
+        at(155, mc -> shot(mc, "96_insured"));
+        at(157, mc -> mc.player.closeContainer());
+        // The crash damage, paid for at Mo's bench and claimed back.
+        at(160, mc -> server(mc, player -> com.reiko.cars.repair.RepairBenchMenu.open(player,
+                (com.reiko.cars.repair.RepairBenchBlockEntity) player.serverLevel().getBlockEntity(CLAIM_BENCH))));
+        at(178, mc -> clickAt(mc, 158, 110));
+        at(180, mc -> hoverOn(mc, -60, 10));
+        at(195, mc -> shot(mc, "97_bench_insured"));
+        at(197, mc -> clickAt(mc, 140, 177));
+        at(215, mc -> shot(mc, "98_claim_paid"));
+        at(217, mc -> mc.player.closeContainer());
+        at(222, mc -> shot(mc, "99_claim_chat"));
+        // The insurer's side.
+        at(225, mc -> server(mc, player -> {
+            office(player).setOwner(player);
+            com.reiko.cars.insurance.InsuranceMenu.open(player, office(player));
+        }));
+        at(245, mc -> shot(mc, "100_insurer_settings"));
+        at(247, mc -> mc.player.closeContainer());
+        // The job board, with the car jobs.
+        at(250, mc -> server(mc, player -> {
+            player.setGameMode(GameType.SURVIVAL);
+            for (String job : new String[] {"driver", "mechanic", "trucker"}) {
+                com.reiko.economy.jobs.JobService.join(player, ReikoCars.id(job));
+            }
+            BlockState board = player.serverLevel().getBlockState(JOB_BOARD);
+            board.useWithoutItem(player.serverLevel(), player, new net.minecraft.world.phys.BlockHitResult(JOB_BOARD.getCenter(), Direction.SOUTH, JOB_BOARD, false));
+        }));
+        at(268, mc -> {
+            if (mc.screen != null) {
+                for (int i = 0; i < 4; i++) {
+                    mc.screen.mouseScrolled(0, 0, 0, -1);
+                }
+            }
+        });
+        at(272, mc -> hoverOn(mc, 70, 18 + 2 * 26 + 12));
+        at(290, mc -> shot(mc, "101_car_jobs"));
+        at(292, mc -> clickAt(mc, 120, 10));
+        at(296, mc -> hoverOn(mc, 300, 300));
+        at(312, mc -> shot(mc, "102_car_contracts"));
+        at(314, mc -> mc.player.closeContainer());
+        at(316, mc -> server(mc, player -> give(player, ModItems.INSURANCE_OFFICE.get(), 1)));
+        at(335, mc -> shot(mc, "103_office_item"));
+        at(340, mc -> mc.stop());
     }
 }

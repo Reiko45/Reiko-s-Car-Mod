@@ -367,6 +367,19 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
         return Component.translatable("entity.reikocars." + type.id());
     }
 
+    /** Fuel delivered to pumps not yet paid as a whole bucket, in millibuckets (not saved). */
+    private int deliveredRemainder;
+
+    /**
+     * Adds {@code millibuckets} delivered to pumps, and takes the whole buckets back out for paying: returns them,
+     * in millibuckets, keeping the rest for next time.
+     */
+    public int addDelivered(int millibuckets) {
+        int total = deliveredRemainder + millibuckets;
+        deliveredRemainder = total % 1000;
+        return total - deliveredRemainder;
+    }
+
     /** How full it is, 0 to 1: a loaded trailer is harder on its tires. */
     public double fullness() {
         if (type.cargoRows > 0) {

@@ -199,6 +199,7 @@ public final class MailService {
         MinecraftServer server = driver.server;
         MailRegistry registry = MailRegistry.get(server);
         int delivered = 0;
+        int paidParcels = 0;
         long earned = 0;
         boolean boxFull = false;
         for (int slot = 0; slot < bag.getContainerSize(); slot++) {
@@ -229,12 +230,16 @@ public final class MailService {
                 bag.setItem(slot, stack.copyWithCount(count - done));
                 delivered += done;
                 earned += parcel.postage() * done;
+                if (parcel.postage() > 0) {
+                    paidParcels += done;
+                }
                 notifyRecipient(server, target.owner(), target.getBlockPos(), returned ? parcel.toName() : parcel.fromName(), returned);
             }
         }
         if (earned > 0) {
             EconomyApi.get().deposit(server, driver.getUUID(), earned, "reikocars.mail_delivery");
         }
+        com.reiko.cars.job.CarJobs.work(driver, com.reiko.cars.job.CarJobs.PARCEL_DELIVERED, paidParcels);
         bag.setChanged();
 
         if (collected == 0 && delivered == 0) {

@@ -7,13 +7,14 @@ card** through **Reiko's Economy Mod**.
 Refine oil into fuel with BuildCraft, pipe it into a pump, set a price, and other players pay you to fill up.
 Cars wear out as they're driven, and a **Repair Bench** fixes them: fit your own parts, or run a mechanic's shop and
 charge for repairs. Tow trucks haul broken-down cars to it, and mailboxes and the mail van carry parcels between
-players for postage. Parking meters ticket cars that overstay, and toll gates lift for drivers who pay.
+players for postage. Parking meters ticket cars that overstay, toll gates lift for drivers who pay, insurance offices
+cover crash repairs, and the job board pays drivers, mail carriers, mechanics and truckers.
 
 ## Requirements
 
-- Minecraft 1.21.1, NeoForge 21.1.264 or newer (Reiko's Economy Mod 1.0.0 itself needs 21.1.265)
+- Minecraft 1.21.1, NeoForge 21.1.265 or newer (as Reiko's Economy Mod needs)
 - [BuildCraft Reborn](https://github.com/Reiko45/BuildCraft-Reborn) 2.1.0 or newer
-- [Reiko's Economy Mod](https://github.com/Reiko45/Reiko-s-Economy-Mod) 1.0.0 or newer
+- [Reiko's Economy Mod](https://github.com/Reiko45/Reiko-s-Economy-Mod) 1.1.0 or newer (for the car jobs)
 - Optional: [JEI](https://www.curseforge.com/minecraft/mc-mods/jei) 19.21 or newer, for the recipe pages below
 
 ## The cars
@@ -359,6 +360,41 @@ wall cars can't get past.
 
 New meters charge $0.50 per 10 minutes with a $10.00 fine, and new booths a $2.00 toll (see [Settings](#settings)).
 
+## Insurance
+
+**Insurance Offices** sell car insurance. Whoever puts one up owns it (only they or an admin can break it): they're
+the insurer, and they pay the claims from their bank account.
+
+- **Buying cover:** park your car within **10 blocks** of an office and right-click the desk. Pick the car with the
+  arrows (if you've parked more than one), and pay the premium ($10.00 for **7 Minecraft days** of cover, plus sales
+  tax, by **Card** with PIN or **Cash**) to the office's owner. Buying again at the same office adds another term, up
+  to four ahead. Buying at another office replaces the old cover. A car's tooltip shows who insures it and how long
+  is left, and cover goes with the car when it's picked up.
+- **Claims:** insurance covers **crash damage**. When an insured car's **body repairs** are paid for at someone's
+  Repair Bench, the insurer pays back what they cost over the **deductible** ($10.00), up to the **claim limit**
+  ($100.00 a claim), straight to whoever paid the bill. The bench's screen shows what'll come back. Wear (oil,
+  engine, tires and brakes) isn't covered, and an insurer who can't afford a claim doesn't pay it.
+- **Lapsing:** cover runs out at the end of its term, and stops if the car changes hands.
+- **The owner's side:** the owner's screen sets the premium, deductible and claim limit, and shows the books:
+  policies sold and claims paid. The owner can't insure their own cars at their own office.
+
+## Car jobs
+
+With Reiko's Economy Mod 1.1.0 or newer, the **job board** has four car jobs. Join them like any other job: they pay
+as you work, level up, and hand out daily contracts.
+
+| Job | Gets paid for |
+| --- | --- |
+| Driver | Each taxi ride a rider pays for ($1.50), and each bus passenger who pays the fare ($0.50) |
+| Mail Carrier | Each parcel delivered by mail van ($0.75) |
+| Mechanic | Each part fitted to someone else's vehicle at a Repair Bench ($0.60), whether from the bench's stock (paid to the bench's owner) or from your own pocket, and each of someone else's broken-down cars towed in to a Repair Bench from at least 24 blocks away ($4.00, once per breakdown) |
+| Trucker | Each bucket of fuel unloaded from a tanker into a pump ($0.40), and every 100 blocks driven towing a trailer at least a quarter full ($0.50) |
+
+Their contracts ask for taxi rides, bus passengers, parcels, parts fitted, tow-ins, fuel delivered, loaded hauls, or
+deliveries of tires, brake pads, motor oil and paper. The job files are in `data/reikocars/jobs`, so a datapack can
+change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`, `parcel_delivered`, `repair_part`,
+`tow`, `fuel_delivered` and `haul_distance`.
+
 ## Recipes
 
 | Item | Recipe |
@@ -382,6 +418,7 @@ New meters charge $0.50 per 10 minutes with a $10.00 fine, and new booths a $2.0
 | Parking Meter | iron ingot, glass pane, iron ingot on top, gold nugget, redstone, gold nugget across the middle, an iron ingot below |
 | Toll Booth | yellow dye, glass pane, yellow dye on top, iron ingot, redstone, iron ingot across the middle, three smooth stone below |
 | Toll Gate | stick, red dye, stick on top, yellow dye, piston, yellow dye across the middle, iron ingots in the bottom corners |
+| Insurance Office | paper, book, paper on top, gold ingot, shield, gold ingot across the middle, three iron ingots below |
 | Motor Oil ×3 | a BuildCraft **Oil** bucket and three glass bottles (shapeless) |
 | Engine Parts ×2 | iron ingot, piston, iron ingot over iron gear, iron ingot, iron gear |
 | Brake Pads ×2 | three iron ingots over three flint |
@@ -475,6 +512,11 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `parking.graceSeconds` | `60` | How long a car can stand at a meter unpaid, or after its time runs out, before it's ticketed |
 | `parking.fineEverySeconds` | `900` | How often a car that stays is ticketed again |
 | `tolls.toll` | `2.0` | The toll a new toll booth charges (its owner can change it) |
+| `insurance.premium` | `10.0` | What a new insurance office charges for a term of cover (its owner can change it) |
+| `insurance.deductible` | `10.0` | A new office's deductible: the part of each claim the car's owner pays |
+| `insurance.claimLimit` | `100.0` | The most a new office pays out on one claim |
+| `insurance.termDays` | `7` | How many Minecraft days a term of cover lasts |
+| `insurance.officeReach` | `10.0` | How close a car must be parked to an insurance office to be insured there |
 
 Each player can pick **mph** or **km/h**, and turn the dashboard off, in `config/reikocars-client.toml`.
 
@@ -561,14 +603,16 @@ src/main/java/com/reiko/cars/
 ├── sale/                 the For Sale Sign, a car's sale screen, the Car Dealership block, its lot and tabs, and SaleService (buying, selling, trade-ins)
 ├── fare/                 bus fares and the taxi meter (CarFares), the pay and fare screens' menus, and FareService
 ├── key/                  car keys: the key items, what a key fits (CarKey), and cutting, changing the locks and the key fob (CarKeys)
+├── insurance/            the Insurance Office block, block entity, menu and protection, policies (kept on cars and their items), and InsuranceService (cover and claims)
+├── job/                  CarJobs: the car work reported to the economy mod's job board
 ├── parking/              the parking meter block, block entity and menu, and MeterService (paying and tickets)
 ├── toll/                 the toll booth and toll gate blocks, their block entities and menus, protection, and TollService (paying and the gate)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
-├── network/              packets: pump, repair bench, mailbox, parking meter and toll actions, horn, lock and hitch, the driver's wear reports, tanker load and unload
+├── network/              packets: pump, repair bench, mailbox, parking meter, toll and insurance actions, horn, lock and hitch, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox, meter, toll and tanker screens, the toll gate's arm, pump display, engine sound, keys
+├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance and tanker screens, the toll gate's arm, pump display, engine sound, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)

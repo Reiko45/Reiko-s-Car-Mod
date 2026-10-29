@@ -2,6 +2,8 @@ package com.reiko.cars.tow;
 
 import com.reiko.cars.car.CarEntity;
 import com.reiko.cars.car.CarType;
+import com.reiko.cars.job.CarJobs;
+import com.reiko.cars.repair.RepairService;
 import java.util.Comparator;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -105,7 +107,9 @@ public final class Towing {
     public static void use(ServerPlayer driver, CarEntity truck) {
         CarEntity carried = towed(truck);
         if (carried != null) {
-            drop(driver, truck, carried);
+            if (drop(driver, truck, carried)) {
+                towedIn(driver, carried);
+            }
             return;
         }
         CarEntity car = towable(truck, driver);
@@ -119,8 +123,24 @@ public final class Towing {
             driver.displayClientMessage(Component.translatable("tow.reikocars.cant_tow", car.getDisplayName()), true);
             return;
         }
+        car.setTowedFrom(car.position());
         sound(truck, true);
         driver.displayClientMessage(Component.translatable("tow.reikocars.towing", car.getDisplayName()), true);
+    }
+
+    /**
+     * A tow that pays the Mechanic job: someone else's broken-down car, brought at least {@link CarJobs#MIN_TOW_BLOCKS}
+     * and put down where a repair bench can reach it. Once per breakdown.
+     */
+    static void towedIn(ServerPlayer driver, CarEntity car) {
+        Vec3 from = car.towedFrom();
+        car.setTowedFrom(null);
+        if (from == null || car.towPaid() || car.condition().brokenPart() == null || driver.getUUID().equals(car.owner())
+                || horizontal(from, car.position()) < CarJobs.MIN_TOW_BLOCKS || RepairService.benchNear(car) == null) {
+            return;
+        }
+        car.setTowPaid(true);
+        CarJobs.work(driver, CarJobs.TOW, 1);
     }
 
     /** Puts the towed car down: rolled off the back of the flatbed, or let down off the wheel-lift where it is. */

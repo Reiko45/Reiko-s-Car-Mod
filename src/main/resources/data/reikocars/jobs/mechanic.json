@@ -1,0 +1,70 @@
+{
+  "name": "Mechanic",
+  "icon": "reikocars:engine_parts",
+  "order": 22,
+  "work": [
+    {
+      "action": "reikocars:repair_part",
+      "label": "Part fitted",
+      "pay": 0.6,
+      "xp": 5
+    },
+    {
+      "action": "reikocars:tow",
+      "label": "Breakdown towed in",
+      "pay": 4.0,
+      "xp": 20
+    }
+  ],
+  "contracts": [
+    {
+      "work": "reikocars:repair_part",
+      "label": "Parts Fitted",
+      "icon": "reikocars:repair_bench",
+      "count": [
+        6,
+        16
+      ],
+      "pay": 0.75,
+      "xp": 3
+    },
+    {
+      "work": "reikocars:tow",
+      "label": "Breakdowns Towed In",
+      "icon": "reikocars:wrecker",
+      "count": [
+        1,
+        2
+      ],
+      "pay": 6.0,
+      "xp": 15
+    },
+    {
+      "deliver": "reikocars:tire",
+      "count": [
+        4,
+        8
+      ],
+      "pay": 1.5,
+      "xp": 3
+    },
+    {
+      "deliver": "reikocars:brake_pads",
+      "count": [
+        2,
+        6
+      ],
+      "pay": 1.5,
+      "xp": 3
+    },
+    {
+      "deliver": "reikocars:motor_oil",
+      "count": [
+        3,
+        6
+      ],
+      "pay": 1.25,
+      "xp": 3
+    }
+  ]
+}

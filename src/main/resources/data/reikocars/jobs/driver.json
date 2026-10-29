@@ -1,0 +1,43 @@
+{
+  "name": "Driver",
+  "icon": "reikocars:taxi",
+  "order": 20,
+  "work": [
+    {
+      "action": "reikocars:taxi_ride",
+      "label": "Taxi ride",
+      "pay": 1.5,
+      "xp": 12
+    },
+    {
+      "action": "reikocars:bus_rider",
+      "label": "Bus passenger",
+      "pay": 0.5,
+      "xp": 5
+    }
+  ],
+  "contracts": [
+    {
+      "work": "reikocars:taxi_ride",
+      "label": "Taxi Rides",
+      "icon": "reikocars:taxi",
+      "count": [
+        2,
+        5
+      ],
+      "pay": 3.0,
+      "xp": 10
+    },
+    {
+      "work": "reikocars:bus_rider",
+      "label": "Bus Passengers",
+      "icon": "reikocars:city_bus",
+      "count": [
+        4,
+        10
+      ],
+      "pay": 1.0,
+      "xp": 4
+    }
+  ]
+}

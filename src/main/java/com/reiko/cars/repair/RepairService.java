@@ -4,6 +4,7 @@ import com.reiko.cars.car.CarCondition;
 import com.reiko.cars.car.CarCondition.Part;
 import com.reiko.cars.car.CarEntity;
 import com.reiko.cars.config.CarsConfig;
+import com.reiko.cars.job.CarJobs;
 import com.reiko.cars.registry.ModSounds;
 import com.reiko.cars.trailer.TrailerEntity;
 import com.reiko.cars.trailer.TrailerType;
@@ -86,6 +87,20 @@ public final class RepairService {
         return defaultTarget(bench, player, vehiclesInReach(bench));
     }
 
+    /** A repair bench that has {@code vehicle} in reach, if there's one. */
+    @Nullable
+    public static RepairBenchBlockEntity benchNear(Repairable vehicle) {
+        Entity entity = vehicle.entity();
+        int reach = (int) Math.ceil(CarsConfig.get(CarsConfig.BENCH_REACH) + entity.getBbWidth()) + 4;
+        net.minecraft.core.BlockPos at = entity.blockPosition();
+        for (net.minecraft.core.BlockPos pos : net.minecraft.core.BlockPos.betweenClosed(at.offset(-reach, -2, -reach), at.offset(reach, 2, reach))) {
+            if (entity.level().getBlockEntity(pos) instanceof RepairBenchBlockEntity bench && inReach(bench, vehicle)) {
+                return bench;
+            }
+        }
+        return null;
+    }
+
     public static boolean inReach(RepairBenchBlockEntity bench, Repairable vehicle) {
         Entity entity = vehicle.entity();
         return entity.isAlive() && entity.level() == bench.getLevel()
@@ -163,6 +178,7 @@ public final class RepairService {
         }
         CarCondition condition = car.condition();
         List<Component> done = new ArrayList<>();
+        int fitted = 0;
         ShopActionResult problem = null;
         for (Part part : Part.values()) {
             if (!has(mask, part)) {
@@ -184,6 +200,7 @@ public final class RepairService {
             takeCarried(player, part, count);
             condition = RepairJobs.fit(part, car, condition, count);
             done.add(jobName(part, count));
+            fitted += count;
         }
         if (done.isEmpty()) {
             return problem != null ? problem : ShopActionResult.fail("repair.reikocars.nothing_selected");
@@ -191,6 +208,9 @@ public final class RepairService {
         car.setCondition(condition);
         player.inventoryMenu.broadcastChanges();
         finished(bench, car);
+        if (!ownedBy(car, player.getUUID())) {
+            CarJobs.work(player, CarJobs.REPAIR_PART, fitted); // fitting your own parts to someone else's car is a mechanic's work
+        }
         return ShopActionResult.ok(Component.translatable("repair.reikocars.fitted", list(done), car.entity().getDisplayName()));
     }
 
@@ -253,16 +273,30 @@ public final class RepairService {
             }
         }
 
+        int fitted = 0;
+        int bodyWork = 0;
         for (Part part : Part.values()) {
             int count = counts[part.ordinal()];
             if (count > 0) {
                 int taken = bench.take(part, count);
                 condition = RepairJobs.fit(part, car, condition, taken);
+                fitted += taken;
+                if (part == Part.BODY) {
+                    bodyWork = taken;
+                }
             }
         }
         car.setCondition(condition);
+        // The bench's stock, fitted to someone else's vehicle: its owner's work as a mechanic, if they're on.
+        if (bench.owner() != null && !ownedBy(car, bench.owner())) {
+            CarJobs.work(player.server.getPlayerList().getPlayer(bench.owner()), CarJobs.REPAIR_PART, fitted);
+        }
         if (!free) {
             bench.recordJob(total);
+            if (bodyWork > 0 && car instanceof CarEntity insured) {
+                // Crash damage: an insurance claim, paid back to whoever paid the bill.
+                com.reiko.cars.insurance.InsuranceService.claim(player, insured, bodyWork * bench.price(Part.BODY));
+            }
         }
         finished(bench, car);
         Component jobList = list(jobs);
@@ -273,6 +307,11 @@ public final class RepairService {
                 ? Component.translatable("repair.reikocars.repaired_tax", jobList, EconomyApi.get().format(total + tax), EconomyApi.get().format(tax))
                 : Component.translatable("repair.reikocars.repaired", jobList, EconomyApi.get().format(total));
         return ShopActionResult.ok(ShopPayments.receipt(line, payment, charge));
+    }
+
+    /** Whether {@code owner} owns {@code vehicle}. */
+    private static boolean ownedBy(Repairable vehicle, java.util.UUID owner) {
+        return vehicle.entity() instanceof com.reiko.cars.key.Keyed keyed && owner.equals(keyed.owner());
     }
 
     /** The clank of a job done, and a puff of sparkle over the car. */

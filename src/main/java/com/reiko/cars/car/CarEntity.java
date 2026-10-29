@@ -273,6 +273,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (level().isClientSide) {
             return;
         }
+        if (newCondition.brokenPart() == null) {
+            towPaid = false; // fixed: its next breakdown's tow pays again
+        }
         Part brokeNow = CarsConfig.get(CarsConfig.BREAKDOWNS) ? newCondition.brokenPart() : null;
         if (brokeNow != null && before.brokenPart() == null && getControllingPassenger() != null) {
             playSound(ModSounds.BREAKDOWN.get(), 1.0F, 1.0F);
@@ -293,6 +296,29 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
      * Whether a worn-out part keeps the car from running, or its trailer from being towed (unless the server has
      * breakdowns turned off).
      */
+    /** Where a tow truck picked this car up (not saved): a tow pays the Mechanic job once it's come far enough. */
+    @Nullable
+    private Vec3 towedFrom;
+    /** Whether this breakdown's tow has been paid for already (not saved; a repair clears it). */
+    private boolean towPaid;
+
+    @Nullable
+    public Vec3 towedFrom() {
+        return towedFrom;
+    }
+
+    public void setTowedFrom(@Nullable Vec3 from) {
+        towedFrom = from;
+    }
+
+    public boolean towPaid() {
+        return towPaid;
+    }
+
+    public void setTowPaid(boolean paid) {
+        towPaid = paid;
+    }
+
     public boolean isBrokenDown() {
         if (!CarsConfig.get(CarsConfig.BREAKDOWNS)) {
             return false;
@@ -470,6 +496,26 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
 
     public boolean isOwner(Player player) {
         return player.getUUID().equals(owner());
+    }
+
+    /** Its insurance, if it was ever insured (it may have run out, or be its last owner's). Server side. */
+    @Nullable
+    private com.reiko.cars.insurance.Policy policy;
+
+    @Nullable
+    public com.reiko.cars.insurance.Policy policy() {
+        return policy;
+    }
+
+    public void setPolicy(@Nullable com.reiko.cars.insurance.Policy policy) {
+        this.policy = policy;
+    }
+
+    /** Its cover now, if it's insured for its current owner. */
+    @Nullable
+    public com.reiko.cars.insurance.Policy activePolicy() {
+        UUID owner = owner();
+        return policy != null && owner != null && policy.covers(owner, level().getGameTime()) ? policy : null;
     }
 
     /**
@@ -1140,6 +1186,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         LivingEntity driver = getControllingPassenger();
         double load = trailer() != null ? 1.4 : towed() != null ? 1.3 : 1.0;
         if (driver != null && fuel > 0 && !isBrokenDown() && keyedIn()) {
+            haul(driver, moved);
             double burn = moved * type.fuelPerBlock * load * CarsConfig.get(CarsConfig.FUEL_USE) * condition.fuelUse()
                     + CarsConfig.get(CarsConfig.IDLE_FUEL_USE);
             setFuel(fuel - burn);
@@ -1153,6 +1200,23 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
         if (moved > 0.3) {
             runOver(driver, moved);
+        }
+    }
+
+    /** Blocks driven with a loaded trailer since the last Trucker pay (not saved). */
+    private double haulBlocks;
+
+    /** Driving on with a loaded trailer: every 100 blocks pays the Trucker job. */
+    private void haul(LivingEntity driver, double moved) {
+        TrailerEntity hauled = trailer();
+        if (moved <= 0.0 || hauled == null || !(driver instanceof ServerPlayer player) || hauled.fullness() < com.reiko.cars.job.CarJobs.LOADED) {
+            return;
+        }
+        haulBlocks += moved;
+        if (haulBlocks >= 100.0) {
+            int hundreds = (int) (haulBlocks / 100.0);
+            haulBlocks -= hundreds * 100.0;
+            com.reiko.cars.job.CarJobs.work(player, com.reiko.cars.job.CarJobs.HAUL_DISTANCE, hundreds);
         }
     }
 
@@ -1415,6 +1479,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (hasCustomName()) {
             stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, getCustomName());
         }
+        if (policy != null) {
+            stack.set(ModDataComponents.INSURANCE.get(), policy);
+        }
         return stack;
     }
 
@@ -1446,6 +1513,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (isForSale()) {
             tag.putLong("SalePrice", salePrice());
         }
+        if (policy != null) {
+            com.reiko.cars.insurance.Policy.CODEC.encodeStart(NbtOps.INSTANCE, policy).result().ifPresent(saved -> tag.put("Insurance", saved));
+        }
         if (type.storageRows > 0) {
             tag.put("Bed", bed.createTag(registryAccess()));
         }
@@ -1467,6 +1537,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         setLockCode(tag.getLong("LockCode"));
         fares.load(tag);
         setSalePrice(tag.contains("SalePrice") ? tag.getLong("SalePrice") : -1L);
+        policy = tag.contains("Insurance") ? com.reiko.cars.insurance.Policy.CODEC.parse(NbtOps.INSTANCE, tag.get("Insurance")).result().orElse(null) : null;
         if (type.storageRows > 0 && tag.contains("Bed", Tag.TAG_LIST)) {
             bed.fromTag(tag.getList("Bed", Tag.TAG_COMPOUND), registryAccess());
         }

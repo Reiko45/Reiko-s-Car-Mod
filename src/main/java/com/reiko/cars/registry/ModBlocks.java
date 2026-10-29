@@ -84,6 +84,13 @@ public final class ModBlocks {
                     .pushReaction(PushReaction.BLOCK)));
 
     /** A toll booth: the toll for its owner's gates nearby. */
+    public static final DeferredBlock<com.reiko.cars.insurance.InsuranceOfficeBlock> INSURANCE_OFFICE = BLOCKS.register("insurance_office",
+            () -> new com.reiko.cars.insurance.InsuranceOfficeBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLUE)
+                    .strength(3.0F, 1200.0F)
+                    .sound(SoundType.WOOD)
+                    .noOcclusion()
+                    .pushReaction(PushReaction.BLOCK)));
     public static final DeferredBlock<TollBoothBlock> TOLL_BOOTH = BLOCKS.register("toll_booth", () -> new TollBoothBlock(
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_YELLOW)

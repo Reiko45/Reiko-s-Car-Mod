@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "P": {
+      "item": "minecraft:paper"
+    },
+    "B": {
+      "item": "minecraft:book"
+    },
+    "S": {
+      "item": "minecraft:shield"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "tag": "c:ingots/gold"
+    }
+  },
+  "pattern": [
+    "PBP",
+    "GSG",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:insurance_office"
+  }
+}

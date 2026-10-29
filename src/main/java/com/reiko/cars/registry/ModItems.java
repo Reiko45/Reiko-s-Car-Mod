@@ -81,6 +81,7 @@ public final class ModItems {
 
     public static final DeferredItem<BlockItem> PARKING_METER = ITEMS.registerSimpleBlockItem(ModBlocks.PARKING_METER);
     public static final DeferredItem<BlockItem> TOLL_BOOTH = ITEMS.registerSimpleBlockItem(ModBlocks.TOLL_BOOTH);
+    public static final DeferredItem<BlockItem> INSURANCE_OFFICE = ITEMS.registerSimpleBlockItem(ModBlocks.INSURANCE_OFFICE);
     public static final DeferredItem<BlockItem> TOLL_GATE = ITEMS.registerSimpleBlockItem(ModBlocks.TOLL_GATE);
 
     // Repair parts, fitted at a repair bench (see RepairJobs). Tires are the same ones cars are built with.

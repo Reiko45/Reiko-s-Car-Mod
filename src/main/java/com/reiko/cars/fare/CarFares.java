@@ -246,6 +246,7 @@ public final class CarFares {
         if (pay > 0) {
             earned += pay;
             rides++;
+            com.reiko.cars.job.CarJobs.work(driver, com.reiko.cars.job.CarJobs.TAXI_RIDE, 1);
         }
         int dist = (int) Math.round(distance);
         if (rider != null) {

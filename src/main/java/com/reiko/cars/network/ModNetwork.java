@@ -59,6 +59,7 @@ public final class ModNetwork {
         registrar.playToServer(SaleActionPayload.TYPE, SaleActionPayload.STREAM_CODEC, ModNetwork::handleSale);
         registrar.playToServer(MeterActionPayload.TYPE, MeterActionPayload.STREAM_CODEC, ModNetwork::handleMeter);
         registrar.playToServer(TollActionPayload.TYPE, TollActionPayload.STREAM_CODEC, ModNetwork::handleToll);
+        registrar.playToServer(InsuranceActionPayload.TYPE, InsuranceActionPayload.STREAM_CODEC, ModNetwork::handleInsurance);
     }
 
     private static void handleWear(CarWearPayload payload, IPayloadContext context) {
@@ -107,6 +108,24 @@ public final class ModNetwork {
             }
             ShopFeedback.send(player, result);
         }
+    }
+
+    private static void handleInsurance(InsuranceActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || !(player.containerMenu instanceof com.reiko.cars.insurance.InsuranceMenu menu)
+                || menu.containerId != payload.containerId() || !menu.stillValid(player) || menu.office() == null) {
+            return;
+        }
+        ShopActionResult result;
+        if (payload.action() == InsuranceActionPayload.BUY) {
+            result = com.reiko.cars.insurance.InsuranceService.buy(player, menu.office(), menu.selected(), payload.expected(), payload.payment());
+        } else {
+            result = com.reiko.cars.insurance.InsuranceService.setTerms(player, menu.office(), payload.premium(), payload.deductible(), payload.limit());
+            if (result.success()) {
+                com.reiko.cars.insurance.InsuranceMenu.open(player, menu.office()); // reopen to show the new terms
+            }
+        }
+        menu.refresh();
+        ShopFeedback.send(player, result);
     }
 
     private static void handleSale(SaleActionPayload payload, IPayloadContext context) {

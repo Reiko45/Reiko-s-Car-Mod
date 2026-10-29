@@ -18,6 +18,10 @@ import com.reiko.cars.sale.DealershipMenu;
 import com.reiko.cars.sale.SaleService;
 import com.reiko.cars.key.Keyed;
 import com.reiko.cars.mail.MailService;
+import com.reiko.cars.insurance.InsuranceMenu;
+import com.reiko.cars.insurance.InsuranceOfficeBlockEntity;
+import com.reiko.cars.insurance.InsuranceService;
+import com.reiko.cars.job.CarJobs;
 import com.reiko.cars.parking.MeterService;
 import com.reiko.cars.parking.ParkingMeterBlock;
 import com.reiko.cars.parking.ParkingMeterBlockEntity;
@@ -1994,6 +1998,182 @@ public final class CarGameTests {
             helper.assertValueEqual(gates, 1, "one toll gate dropped");
         } finally {
             leave(helper, owner, driver);
+        }
+        helper.succeed();
+    }
+
+    // ---- jobs and insurance ----
+
+    private static ResourceLocation carJob(String name) {
+        return ReikoCars.id(name);
+    }
+
+    /** {@code player}'s XP in a job. */
+    private static long jobXp(ServerPlayer player, ResourceLocation job) {
+        return com.reiko.economy.jobs.JobsData.get(player.server).progress(player.getUUID(), job).xp();
+    }
+
+    private static ServerPlayer worker(GameTestHelper helper, String... jobs) {
+        ServerPlayer player = join(helper);
+        player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+        for (String job : jobs) {
+            helper.assertTrue(com.reiko.economy.jobs.JobService.join(player, carJob(job)).success(), "joining the " + job + " job");
+        }
+        return player;
+    }
+
+    @GameTest(template = YARD)
+    public static void carJobsPayForCarWork(GameTestHelper helper) {
+        ServerPlayer worker = worker(helper, "mechanic", "trucker");
+        ServerPlayer customer = join(helper);
+        ResourceLocation mechanic = carJob("mechanic");
+        ResourceLocation trucker = carJob("trucker");
+        try {
+            check(helper, com.reiko.economy.jobs.JobDefinitions.get(carJob("driver")).isPresent()
+                    && com.reiko.economy.jobs.JobDefinitions.get(carJob("mail_carrier")).isPresent(), "the car jobs are on the job board");
+            check(helper, CarJobs.paid(CarJobs.TAXI_RIDE) && CarJobs.paid(CarJobs.HAUL_DISTANCE), "and pay for car work");
+
+            // Mechanic: the bench's stock on a customer's car, and the worker's own parts on it.
+            RepairBenchBlockEntity bench = bench(helper, worker, 1500);
+            bench.stock().insertItem(0, new ItemStack(ModItems.TIRE.get(), 4), false);
+            CarEntity customers = car(helper, CarType.SEDAN);
+            customers.setOwner(customer);
+            customers.setCondition(new CarCondition(1.0F, 1.0F, 0.2F, 0.3F, 1.0F));
+            ShopActionResult fitted = RepairService.buy(worker, bench, customers, 1 << Part.TIRES.ordinal(), 6000, Payment.cash());
+            check(helper, fitted.success(), "the mechanic fits tires from stock: " + fitted.message().getString());
+            helper.assertValueEqual(jobXp(worker, mechanic), 20L, "4 parts at 5 XP");
+            worker.getInventory().add(new ItemStack(ModItems.BRAKE_PADS.get(), 1));
+            check(helper, RepairService.fitOwn(worker, bench, customers, 1 << Part.BRAKES.ordinal()).success(), "and fits their own brake pads");
+            helper.assertValueEqual(jobXp(worker, mechanic), 25L, "one more part");
+            CarEntity own = vehicle(helper, CarType.HATCHBACK, 3.0, 4.0);
+            own.setOwner(worker);
+            own.setCondition(new CarCondition(1.0F, 1.0F, 0.2F, 1.0F, 1.0F));
+            bench.stock().insertItem(0, new ItemStack(ModItems.TIRE.get(), 4), false);
+            RepairService.buy(worker, bench, own, 1 << Part.TIRES.ordinal(), 6000, Payment.cash());
+            helper.assertValueEqual(jobXp(worker, mechanic), 25L, "their own car isn't paid work");
+            own.discard();
+            customers.discard();
+
+            // Mechanic: towing a breakdown in to the bench, once it's come far enough.
+            CarEntity truck = vehicle(helper, CarType.FLATBED, 5.0, 9.0);
+            CarEntity broken = behind(helper, truck, CarType.SEDAN, 0.3);
+            broken.setOwner(customer);
+            broken.setCondition(new CarCondition(1.0F, 0.0F, 1.0F, 1.0F, 1.0F));
+            worker.startRiding(truck, true);
+            Hitching.use(worker);
+            check(helper, Towing.towed(truck) == broken, "the flatbed picks it up");
+            Hitching.use(worker);
+            check(helper, !broken.isPassenger() && RepairService.benchNear(broken) != null, "and puts it down by the bench");
+            helper.assertValueEqual(jobXp(worker, mechanic), 25L, "a tow of a few blocks doesn't pay");
+            Hitching.use(worker);
+            broken.setTowedFrom(broken.position().add(0, 0, -40)); // as if it came from 40 blocks away
+            Hitching.use(worker);
+            helper.assertValueEqual(jobXp(worker, mechanic), 45L, "a real tow-in pays");
+            Hitching.use(worker);
+            broken.setTowedFrom(broken.position().add(0, 0, -40));
+            Hitching.use(worker);
+            helper.assertValueEqual(jobXp(worker, mechanic), 45L, "but only once per breakdown");
+            worker.stopRiding();
+            truck.discard();
+            broken.discard();
+
+            // Trucker: fuel from a tanker into a pump, a bucket at a time.
+            BlockPos pumpAt = new BlockPos(8, 1, 6);
+            BlockState lower = ModBlocks.GAS_PUMP.get().defaultBlockState().setValue(GasPumpBlock.FACING, Direction.WEST);
+            helper.setBlock(pumpAt, lower);
+            helper.setBlock(pumpAt.above(), lower.setValue(GasPumpBlock.HALF, DoubleBlockHalf.UPPER));
+            ((GasPumpBlockEntity) helper.getBlockEntity(pumpAt)).setOwner(customer);
+            TrailerEntity tanker = trailer(helper, TrailerType.TANKER_TRAILER, new Vec3(5.5, 1.0, 6.0), 0.0F);
+            tanker.tank().fill(new FluidStack(bc("fuel_light"), 3500), IFluidHandler.FluidAction.EXECUTE);
+            TankerService.unload(worker, tanker);
+            helper.assertValueEqual(tanker.tank().getFluidAmount(), 0, "the pump takes it all");
+            helper.assertValueEqual(jobXp(worker, trucker), 9L, "3 whole buckets at 3 XP");
+            tanker.tank().fill(new FluidStack(bc("fuel_light"), 500), IFluidHandler.FluidAction.EXECUTE);
+            TankerService.unload(worker, tanker);
+            helper.assertValueEqual(jobXp(worker, trucker), 12L, "the half bucket left over makes a fourth");
+        } finally {
+            leave(helper, worker, customer);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD)
+    public static void insuranceCoversCrashRepairs(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer insurer = join(helper);
+        ServerPlayer customer = join(helper);
+        ServerPlayer mechanicOwner = join(helper);
+        try {
+            BlockPos officeAt = new BlockPos(8, 1, 12);
+            helper.setBlock(officeAt, ModBlocks.INSURANCE_OFFICE.get().defaultBlockState());
+            InsuranceOfficeBlockEntity office = (InsuranceOfficeBlockEntity) helper.getBlockEntity(officeAt);
+            office.setOwner(insurer);
+            check(helper, office.premium() == 1000 && office.deductible() == 1000 && office.limit() == 10_000, "default terms: $10, $10, $100");
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.0, 10.0);
+            car.setOwner(customer);
+            CarEntity insurers = vehicle(helper, CarType.HATCHBACK, 5.0, 16.0);
+            insurers.setOwner(insurer);
+
+            InsuranceMenu screen = InsuranceMenu.create(0, customer, office);
+            check(helper, screen.hasCar() && screen.carType() == CarType.SEDAN && screen.status() == InsuranceMenu.UNINSURED,
+                    "the customer's sedan, not insured");
+            check(helper, !InsuranceService.buy(insurer, office, insurers, 1000, Payment.cash()).success(), "no insuring at your own office");
+            check(helper, !InsuranceService.buy(customer, office, car, 500, Payment.cash()).success(), "an out-of-date premium is caught");
+
+            Purse.give(customer, 10_000);
+            ECO.setBalance(server, insurer.getUUID(), 0, "test");
+            long tax = com.reiko.economy.config.EconomyConfig.taxRates().salesTax(1000);
+            ShopActionResult bought = InsuranceService.buy(customer, office, car, 1000, Payment.cash());
+            check(helper, bought.success(), "buying cover: " + bought.message().getString());
+            helper.assertValueEqual(Purse.value(customer), 10_000 - 1000 - tax, "$10 and tax in cash");
+            helper.assertValueEqual(ECO.getBalance(server, insurer.getUUID()), 1000L, "to the insurer");
+            check(helper, car.activePolicy() != null && car.activePolicy().daysLeft(helper.getLevel().getGameTime()) == 7, "7 days of cover");
+            screen.refresh();
+            check(helper, screen.status() == InsuranceMenu.INSURED_HERE && screen.daysLeft() == 7, "the screen shows it");
+            for (int i = 0; i < 3; i++) {
+                check(helper, InsuranceService.buy(customer, office, car, 1000, Payment.cash()).success(), "extending, term " + (i + 2));
+            }
+            helper.assertValueEqual(car.activePolicy().daysLeft(helper.getLevel().getGameTime()), 28, "four terms ahead");
+            check(helper, !InsuranceService.buy(customer, office, car, 1000, Payment.cash()).success(), "but no further");
+            check(helper, office.policies() == 4 && office.premiums() == 4000, "the office's books");
+            check(helper, car.toItem().has(com.reiko.cars.registry.ModDataComponents.INSURANCE.get()), "a picked-up car keeps its cover");
+
+            // A crash: the body repairs, paid for at a mechanic's bench, are claimed back above the deductible.
+            RepairBenchBlockEntity bench = bench(helper, mechanicOwner, 2000);
+            bench.stock().insertItem(Part.BODY.ordinal(), new ItemStack(ModItems.BODY_PANEL.get(), 16), false);
+            bench.stock().insertItem(Part.TIRES.ordinal(), new ItemStack(ModItems.TIRE.get(), 4), false);
+            car.moveTo(helper.absoluteVec(new Vec3(4.5, 1.0, 2.5)));
+            car.setCondition(new CarCondition(1.0F, 1.0F, 1.0F, 1.0F, 0.5F));
+            int panels = RepairService.jobSize(Part.BODY, com.reiko.cars.repair.RepairJobs.needed(Part.BODY, car, car.condition()), 16);
+            long bodyCost = panels * 2000L;
+            long payout = Math.min(10_000, bodyCost - 1000);
+            check(helper, payout > 0, "a claim worth making: " + panels + " panels");
+            ECO.setBalance(server, insurer.getUUID(), 50_000, "test");
+            ECO.setBalance(server, customer.getUUID(), 0, "test");
+            Purse.give(customer, 50_000);
+            ShopActionResult repaired = RepairService.buy(customer, bench, car, 1 << Part.BODY.ordinal(), bodyCost, Payment.cash());
+            check(helper, repaired.success(), "paying for the body work: " + repaired.message().getString());
+            helper.assertValueEqual(ECO.getBalance(server, customer.getUUID()), payout, "the insurer pays back the cost above the deductible");
+            helper.assertValueEqual(ECO.getBalance(server, insurer.getUUID()), 50_000 - payout, "from their bank");
+            check(helper, office.claims() == 1 && office.paidOut() == payout, "the office counts the claim");
+
+            // Wear isn't covered.
+            car.setCondition(new CarCondition(1.0F, 1.0F, 0.2F, 1.0F, 1.0F));
+            RepairService.buy(customer, bench, car, 1 << Part.TIRES.ordinal(), 8000, Payment.cash());
+            helper.assertValueEqual(ECO.getBalance(server, insurer.getUUID()), 50_000 - payout, "tires are the owner's cost");
+
+            // An insurer who can't pay doesn't.
+            ECO.setBalance(server, insurer.getUUID(), 0, "test");
+            long customerBank = ECO.getBalance(server, customer.getUUID());
+            car.setCondition(new CarCondition(1.0F, 1.0F, 1.0F, 1.0F, 0.5F));
+            RepairService.buy(customer, bench, car, 1 << Part.BODY.ordinal(), bodyCost, Payment.cash());
+            helper.assertValueEqual(ECO.getBalance(server, customer.getUUID()), customerBank, "no money, no claim");
+
+            // Sold: the cover was the old owner's.
+            car.setOwner(mechanicOwner);
+            check(helper, car.activePolicy() == null, "a sold car's cover lapses");
+        } finally {
+            leave(helper, insurer, customer, mechanicOwner);
         }
         helper.succeed();
     }

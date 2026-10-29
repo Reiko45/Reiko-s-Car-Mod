@@ -179,6 +179,7 @@ public final class ReikoCarsClient {
         event.register(ModMenus.PARKING_METER.get(), ParkingMeterScreen::new);
         event.register(ModMenus.TOLL.get(), TollScreen::new);
         event.register(ModMenus.TOLL_BOOTH.get(), TollBoothScreen::new);
+        event.register(ModMenus.INSURANCE.get(), InsuranceScreen::new);
     }
 
     private static void registerKeys(RegisterKeyMappingsEvent event) {

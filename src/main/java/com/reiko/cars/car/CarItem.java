@@ -136,6 +136,7 @@ public final class CarItem extends Item {
             car.setColor(colorOf(stack, type));
             car.setLockCode(stack.getOrDefault(ModDataComponents.LOCK.get(), 0L)); // the keys cut for it still fit
             car.setOwner(player);
+            car.setPolicy(stack.get(ModDataComponents.INSURANCE.get())); // cover only counts while it's still the policyholder's
             car.setLocked(CarsConfig.get(CarsConfig.LOCK_NEW_CARS));
             if (level instanceof ServerLevel serverLevel) {
                 EntityType.<CarEntity>createDefaultStackConfig(serverLevel, stack, player).accept(car); // name tag, entity data
@@ -172,6 +173,12 @@ public final class CarItem extends Item {
         }
         if (stack.has(ModDataComponents.LOCK.get())) {
             tooltip.add(Component.translatable("item.reikocars.car.keyed").withStyle(ChatFormatting.DARK_GRAY));
+        }
+        com.reiko.cars.insurance.Policy policy = stack.get(ModDataComponents.INSURANCE.get());
+        if (policy != null && context.level() != null) {
+            int days = policy.daysLeft(context.level().getGameTime());
+            tooltip.add((days > 0 ? Component.translatable("item.reikocars.car.insured", policy.insurerName(), days)
+                    : Component.translatable("item.reikocars.car.insurance_lapsed", policy.insurerName())).withStyle(ChatFormatting.DARK_GRAY));
         }
     }
 }

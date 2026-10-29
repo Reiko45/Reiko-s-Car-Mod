@@ -411,6 +411,13 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
                 ? Component.translatable("gui.reikocars.repair_total_free")
                 : Component.translatable("gui.reikocars.total", format(total + salesTax(total)));
         graphics.drawString(font, totalLine, 8, totalRow(), LABEL_COLOR, false);
+        if (!menu.isOwner() && menu.insured()) {
+            // Crash damage is claimed back from the car's insurance once it's paid for.
+            long back = chosen[Part.BODY.ordinal()] ? menu.insurancePayout(benchJob(Part.BODY) * menu.price(Part.BODY)) : 0;
+            Component claim = back > 0 ? Component.translatable("gui.reikocars.insurance_pays", format(back))
+                    : Component.translatable("gui.reikocars.insured_car");
+            graphics.drawString(font, claim, imageWidth - 8 - font.width(claim), totalRow(), 0x1B7A2B, false);
+        }
         if (!menu.isOwner()) {
             drawCardLine(graphics, 8, cardRow(), imageWidth - 16);
             Component pin = Component.translatable("gui.reikoeconomy.pin");

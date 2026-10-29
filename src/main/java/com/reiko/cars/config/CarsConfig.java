@@ -41,6 +41,11 @@ public final class CarsConfig {
     public static final ModConfigSpec.IntValue PARKING_GRACE;
     public static final ModConfigSpec.IntValue PARKING_FINE_EVERY;
     public static final ModConfigSpec.DoubleValue TOLL;
+    public static final ModConfigSpec.DoubleValue INSURANCE_PREMIUM;
+    public static final ModConfigSpec.DoubleValue INSURANCE_DEDUCTIBLE;
+    public static final ModConfigSpec.DoubleValue INSURANCE_LIMIT;
+    public static final ModConfigSpec.IntValue INSURANCE_TERM_DAYS;
+    public static final ModConfigSpec.DoubleValue INSURANCE_REACH;
 
     public static final ModConfigSpec.DoubleValue POSTAGE;
     public static final ModConfigSpec.DoubleValue MAIL_REACH;
@@ -154,6 +159,24 @@ public final class CarsConfig {
         TOLL = builder
                 .comment("The toll a new toll booth charges to lift its gates. Its owner can change it.")
                 .defineInRange("toll", 2.0, 0.0, 1_000_000.0);
+        builder.pop();
+
+        builder.push("insurance");
+        INSURANCE_PREMIUM = builder
+                .comment("What a new insurance office charges for one term of cover on a car. Its owner can change it.")
+                .defineInRange("premium", 10.0, 0.0, 1_000_000.0);
+        INSURANCE_DEDUCTIBLE = builder
+                .comment("A new insurance office's deductible: the part of each claim the car's owner pays themselves.")
+                .defineInRange("deductible", 10.0, 0.0, 1_000_000.0);
+        INSURANCE_LIMIT = builder
+                .comment("The most a new insurance office pays out on one claim.")
+                .defineInRange("claimLimit", 100.0, 0.0, 1_000_000.0);
+        INSURANCE_TERM_DAYS = builder
+                .comment("How many Minecraft days one term of cover lasts.")
+                .defineInRange("termDays", 7, 1, 365);
+        INSURANCE_REACH = builder
+                .comment("How close, in blocks, a car must be parked to an insurance office to be insured there.")
+                .defineInRange("officeReach", 10.0, 2.0, 64.0);
         builder.pop();
 
         builder.push("mail");

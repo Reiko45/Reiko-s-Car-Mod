@@ -1,0 +1,35 @@
+{
+  "name": "Mail Carrier",
+  "icon": "reikocars:parcel",
+  "order": 21,
+  "work": [
+    {
+      "action": "reikocars:parcel_delivered",
+      "label": "Parcel delivered",
+      "pay": 0.75,
+      "xp": 8
+    }
+  ],
+  "contracts": [
+    {
+      "work": "reikocars:parcel_delivered",
+      "label": "Parcels Delivered",
+      "icon": "reikocars:mail_van",
+      "count": [
+        3,
+        8
+      ],
+      "pay": 1.5,
+      "xp": 6
+    },
+    {
+      "deliver": "minecraft:paper",
+      "count": [
+        16,
+        32
+      ],
+      "pay": 0.1,
+      "xp": 1
+    }
+  ]
+}

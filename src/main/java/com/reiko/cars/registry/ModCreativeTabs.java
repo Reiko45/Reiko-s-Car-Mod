@@ -37,6 +37,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.PARKING_METER.get());
                 output.accept(ModItems.TOLL_BOOTH.get());
                 output.accept(ModItems.TOLL_GATE.get());
+                output.accept(ModItems.INSURANCE_OFFICE.get());
                 for (TrailerType type : TrailerType.values()) {
                     output.accept(ModItems.trailer(type));
                 }

@@ -1,5 +1,6 @@
 package com.reiko.cars.trailer;
 
+import com.reiko.cars.job.CarJobs;
 import com.reiko.cars.registry.ModSounds;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,6 +38,14 @@ public final class TankerService {
      * reach in and use (not inside spawn protection, for one).
      */
     public static List<IFluidHandler> nearbyTanks(TrailerEntity tanker, ServerPlayer player) {
+        return nearby(tanker, player).stream().map(Tank::handler).toList();
+    }
+
+    /** A fluid handler near the tanker, and whether it's a gas or diesel pump. */
+    private record Tank(IFluidHandler handler, boolean pump) {
+    }
+
+    private static List<Tank> nearby(TrailerEntity tanker, ServerPlayer player) {
         Level level = tanker.level();
         double half = TrailerType.LENGTH / 2.0 + REACH;
         AABB area = new AABB(tanker.getX() - half, tanker.getY() - 1, tanker.getZ() - half,
@@ -51,11 +60,11 @@ public final class TankerService {
         });
         positions.sort(Comparator.comparingDouble(pos -> pos.getCenter().distanceToSqr(middle)));
         Set<IFluidHandler> seen = Collections.newSetFromMap(new IdentityHashMap<>());
-        List<IFluidHandler> handlers = new ArrayList<>();
+        List<Tank> handlers = new ArrayList<>();
         for (BlockPos pos : positions) {
             IFluidHandler handler = level.getCapability(Capabilities.FluidHandler.BLOCK, pos, null);
             if (handler != null && seen.add(handler)) {
-                handlers.add(handler);
+                handlers.add(new Tank(handler, level.getBlockState(pos).getBlock() instanceof com.reiko.cars.pump.GasPumpBlock));
             }
         }
         return handlers;
@@ -104,14 +113,23 @@ public final class TankerService {
         FluidStack carried = tank.getFluid().copy();
         int before = tank.getFluidAmount();
         int targets = 0;
-        for (IFluidHandler handler : nearbyTanks(tanker, player)) {
+        int toPumps = 0;
+        for (Tank target : nearby(tanker, player)) {
             if (tank.isEmpty()) {
                 break;
             }
-            FluidStack moved = FluidUtil.tryFluidTransfer(handler, tank, tank.getFluidAmount(), true);
+            FluidStack moved = FluidUtil.tryFluidTransfer(target.handler(), tank, tank.getFluidAmount(), true);
             if (!moved.isEmpty()) {
                 targets++;
+                if (target.pump()) {
+                    toPumps += moved.getAmount();
+                }
             }
+        }
+        // Fuel into a pump is a trucker's delivery (pumps don't give it back, so each bucket only pays once).
+        if (toPumps > 0) {
+            int millibuckets = tanker.addDelivered(toPumps);
+            CarJobs.work(player, CarJobs.FUEL_DELIVERED, millibuckets / 1000);
         }
         int unloaded = before - tank.getFluidAmount();
         if (unloaded <= 0) {

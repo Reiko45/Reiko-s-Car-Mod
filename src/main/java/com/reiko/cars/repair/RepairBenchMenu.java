@@ -57,7 +57,11 @@ public final class RepairBenchMenu extends AbstractContainerMenu {
     private static final int CONDITION = 5;
     private static final int STOCK = CONDITION + PARTS;
     private static final int NEEDED = STOCK + PARTS;
-    private static final int SLOTS = NEEDED + PARTS;
+    // The car's insurance, if it has cover: 1, then its deductible and claim limit (four slots each).
+    private static final int INSURED = NEEDED + PARTS;
+    private static final int DEDUCTIBLE = INSURED + 1;
+    private static final int LIMIT = DEDUCTIBLE + 4;
+    private static final int SLOTS = LIMIT + 4;
     private static final int KIND_CAR = 1;
     private static final int KIND_TRAILER = 2;
 
@@ -196,6 +200,34 @@ public final class RepairBenchMenu extends AbstractContainerMenu {
             data.set(NEEDED + i, target == null ? 0 : RepairJobs.needed(part, target, condition));
         }
         data.set(HAS_PARTS, hasParts);
+        com.reiko.cars.insurance.Policy policy = target instanceof CarEntity car ? car.activePolicy() : null;
+        data.set(INSURED, policy == null ? 0 : 1);
+        putLong(DEDUCTIBLE, policy == null ? 0 : policy.deductible());
+        putLong(LIMIT, policy == null ? 0 : policy.limit());
+    }
+
+    private void putLong(int slot, long value) {
+        for (int i = 0; i < 4; i++) {
+            data.set(slot + i, (int) ((value >> (16 * i)) & 0xFFFF));
+        }
+    }
+
+    private long getLong(int slot) {
+        long value = 0;
+        for (int i = 0; i < 4; i++) {
+            value |= ((long) (data.get(slot + i) & 0xFFFF)) << (16 * i);
+        }
+        return value;
+    }
+
+    /** Whether the car being worked on is insured: body work paid for here is claimed back. */
+    public boolean insured() {
+        return data.get(INSURED) != 0;
+    }
+
+    /** What its insurance pays back of {@code bodyCost}: the cost above the deductible, up to the limit. */
+    public long insurancePayout(long bodyCost) {
+        return insured() ? Math.max(0, Math.min(getLong(LIMIT), bodyCost - getLong(DEDUCTIBLE))) : 0;
     }
 
     /** The arrows: work on the previous or next vehicle beside the bench. */

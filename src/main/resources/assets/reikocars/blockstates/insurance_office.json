@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "reikocars:block/insurance_office"
+    },
+    "facing=east": {
+      "model": "reikocars:block/insurance_office",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "reikocars:block/insurance_office",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "reikocars:block/insurance_office",
+      "y": 270
+    }
+  }
+}

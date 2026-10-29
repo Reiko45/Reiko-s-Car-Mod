@@ -45,6 +45,9 @@ public final class FareService {
             return ShopActionResult.fail(charge.message());
         }
         fares.markPaid(rider.getUUID(), fare);
+        if (fare > 0 && driver instanceof ServerPlayer paidDriver) {
+            com.reiko.cars.job.CarJobs.work(paidDriver, com.reiko.cars.job.CarJobs.BUS_RIDER, 1);
+        }
         driver.displayClientMessage(Component.translatable("fare.reikocars.driver_got_fare", rider.getGameProfile().getName(), eco.format(fare)), true);
         Component line = tax > 0
                 ? Component.translatable("fare.reikocars.paid_tax", eco.format(fare + tax), eco.format(tax))
