@@ -104,6 +104,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private static final EntityDataAccessor<Long> DATA_SALE_PRICE = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** A taxi's meter, in cents, for the dashboard: -1 when it isn't running. */
     private static final EntityDataAccessor<Long> DATA_METER = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
+    /** Whether a police car's or ambulance's lights and siren are on. */
+    private static final EntityDataAccessor<Boolean> DATA_SIREN = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
+    /** When a dump truck started tipping its bed, in game time: -1 when it isn't. */
+    private static final EntityDataAccessor<Long> DATA_TIP_START = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** The entity event that flashes the lights, when it's locked or unlocked with a key. */
     private static final byte FLASH_EVENT = 101;
     private static final EntityDataAccessor<CarCondition> DATA_CONDITION = SynchedEntityData.defineId(CarEntity.class, ModDataSerializers.CONDITION);
@@ -204,6 +208,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_KEYED, false);
         builder.define(DATA_METER, -1L);
         builder.define(DATA_SALE_PRICE, -1L);
+        builder.define(DATA_SIREN, false);
+        builder.define(DATA_TIP_START, -1L);
         builder.define(DATA_CONDITION, CarCondition.NEW);
     }
 
@@ -498,6 +504,45 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return player.getUUID().equals(owner());
     }
 
+    // ---- the work vehicles (see WorkVehicles) ----
+
+    /** What an ice cream truck sells each item in its freezer for, in cents: unpriced items aren't for sale. */
+    private final java.util.Map<Item, Long> shopPrices = new java.util.LinkedHashMap<>();
+    /** The mixer's drum's turn, client side, in radians. */
+    private float drumSpin;
+    private float drumSpinO;
+
+    public boolean sirenOn() {
+        return entityData.get(DATA_SIREN);
+    }
+
+    public void setSiren(boolean on) {
+        entityData.set(DATA_SIREN, on && type.hasSiren());
+    }
+
+    public long tipStart() {
+        return entityData.get(DATA_TIP_START);
+    }
+
+    public void setTipStart(long gameTime) {
+        entityData.set(DATA_TIP_START, gameTime);
+    }
+
+    /** How far the dump truck's bed is tipped up, 0 to 1, for drawing. */
+    public float bedTilt(float partialTick) {
+        long start = tipStart();
+        return start < 0 ? 0.0F : WorkVehicles.tilt(level().getGameTime() - start + partialTick);
+    }
+
+    /** The mixer's drum's turn, in radians, for drawing. */
+    public float drumSpin(float partialTick) {
+        return Mth.lerp(partialTick, drumSpinO, drumSpin);
+    }
+
+    public java.util.Map<Item, Long> shopPrices() {
+        return shopPrices;
+    }
+
     /** Its insurance, if it was ever insured (it may have run out, or be its last owner's). Server side. */
     @Nullable
     private com.reiko.cars.insurance.Policy policy;
@@ -632,6 +677,21 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
 
     // ---- interaction ----
 
+    /** Right-clicking an ice cream truck's serving hatch: its shop. */
+    @Override
+    public InteractionResult interactAt(Player player, Vec3 at, InteractionHand hand) {
+        Item held = player.getItemInHand(hand).getItem();
+        boolean tool = held instanceof ForSaleSignItem || held instanceof com.reiko.cars.key.BlankKeyItem || held instanceof com.reiko.cars.key.CarKeyItem;
+        if (type == CarType.ICE_CREAM_TRUCK && !player.isSecondaryUseActive() && !hasPassenger(player) && !isForSale() && !tool
+                && (WorkVehicles.atHatch(this, at) || !canBeUsedBy(player))) {
+            if (player instanceof ServerPlayer serverPlayer) {
+                com.reiko.cars.icecream.IceCreamMenu.open(serverPlayer, this);
+            }
+            return InteractionResult.sidedSuccess(level().isClientSide);
+        }
+        return super.interactAt(player, at, hand);
+    }
+
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
         ItemStack held = player.getItemInHand(hand);
@@ -756,6 +816,11 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     /** The horn, sent from the driver's key. */
     public void honk() {
         if (hornCooldown <= 0) {
+            if (type == CarType.ICE_CREAM_TRUCK) {
+                hornCooldown = WorkVehicles.JINGLE_TICKS; // the horn plays the jingle, right through
+                level().playSound(null, getX(), getY(), getZ(), ModSounds.ICE_CREAM_JINGLE.get(), SoundSource.NEUTRAL, 2.0F, 1.0F);
+                return;
+            }
             hornCooldown = HORN_COOLDOWN;
             level().playSound(null, getX(), getY(), getZ(), ModSounds.HORN.get(), SoundSource.NEUTRAL, 2.0F,
                     type.hornPitch());
@@ -953,6 +1018,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         float yawBefore = getYRot();
         if (flashTicks > 0) {
             flashTicks--;
+        }
+        drumSpinO = drumSpin;
+        if (type == CarType.CEMENT_MIXER && isEngineRunning()) {
+            drumSpin += 0.12F; // the drum turns slowly whenever the engine runs
         }
         towPitchO = towPitch;
         if (!(getVehicle() instanceof CarEntity)) {
@@ -1172,6 +1241,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             hornCooldown--;
         }
         updateKey(true);
+        WorkVehicles.serverTick(this);
         if (isPassenger()) {
             lastFuelPos = null; // being carried, not driven: no fuel burned, nobody run over
             return;
@@ -1516,6 +1586,14 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (policy != null) {
             com.reiko.cars.insurance.Policy.CODEC.encodeStart(NbtOps.INSTANCE, policy).result().ifPresent(saved -> tag.put("Insurance", saved));
         }
+        if (sirenOn()) {
+            tag.putBoolean("Siren", true);
+        }
+        if (!shopPrices.isEmpty()) {
+            CompoundTag prices = new CompoundTag();
+            shopPrices.forEach((item, cents) -> prices.putLong(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item).toString(), cents));
+            tag.put("ShopPrices", prices);
+        }
         if (type.storageRows > 0) {
             tag.put("Bed", bed.createTag(registryAccess()));
         }
@@ -1538,6 +1616,13 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         fares.load(tag);
         setSalePrice(tag.contains("SalePrice") ? tag.getLong("SalePrice") : -1L);
         policy = tag.contains("Insurance") ? com.reiko.cars.insurance.Policy.CODEC.parse(NbtOps.INSTANCE, tag.get("Insurance")).result().orElse(null) : null;
+        setSiren(tag.getBoolean("Siren"));
+        shopPrices.clear();
+        CompoundTag prices = tag.getCompound("ShopPrices");
+        for (String id : prices.getAllKeys()) {
+            net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(net.minecraft.resources.ResourceLocation.tryParse(id))
+                    .ifPresent(item -> shopPrices.put(item, prices.getLong(id)));
+        }
         if (type.storageRows > 0 && tag.contains("Bed", Tag.TAG_LIST)) {
             bed.fromTag(tag.getList("Bed", Tag.TAG_COMPOUND), registryAccess());
         }

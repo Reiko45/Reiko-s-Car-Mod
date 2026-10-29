@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "tag": "c:storage_blocks/iron"
+    },
+    "X": {
+      "item": "minecraft:sticky_piston"
+    }
+  },
+  "pattern": [
+    "I I",
+    "BXB",
+    "I I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:dump_truck_chassis"
+  }
+}

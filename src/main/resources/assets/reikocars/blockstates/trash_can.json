@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "reikocars:block/trash_can"
+    },
+    "facing=east": {
+      "model": "reikocars:block/trash_can",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "reikocars:block/trash_can",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "reikocars:block/trash_can",
+      "y": 270
+    }
+  }
+}

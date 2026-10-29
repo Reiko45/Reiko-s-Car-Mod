@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "D": {
+      "tag": "c:dyes/green"
+    },
+    "C": {
+      "item": "minecraft:composter"
+    }
+  },
+  "pattern": [
+    "GGG",
+    "IDI",
+    "ICI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:garbage_truck_body"
+  }
+}

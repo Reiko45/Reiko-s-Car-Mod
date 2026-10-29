@@ -82,6 +82,7 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> PARKING_METER = ITEMS.registerSimpleBlockItem(ModBlocks.PARKING_METER);
     public static final DeferredItem<BlockItem> TOLL_BOOTH = ITEMS.registerSimpleBlockItem(ModBlocks.TOLL_BOOTH);
     public static final DeferredItem<BlockItem> INSURANCE_OFFICE = ITEMS.registerSimpleBlockItem(ModBlocks.INSURANCE_OFFICE);
+    public static final DeferredItem<BlockItem> TRASH_CAN = ITEMS.registerSimpleBlockItem(ModBlocks.TRASH_CAN);
     public static final DeferredItem<BlockItem> TOLL_GATE = ITEMS.registerSimpleBlockItem(ModBlocks.TOLL_GATE);
 
     // Repair parts, fitted at a repair bench (see RepairJobs). Tires are the same ones cars are built with.
@@ -93,6 +94,13 @@ public final class ModItems {
     public static final DeferredItem<Item> BRAKE_PADS = ITEMS.registerSimpleItem("brake_pads", new Item.Properties().stacksTo(16));
     /** A fifth of a body repair. */
     public static final DeferredItem<Item> BODY_PANEL = ITEMS.registerSimpleItem("body_panel");
+
+    // Ice cream, for the ice cream truck's freezer: a quick snack.
+    private static final net.minecraft.world.food.FoodProperties ICE_CREAM_FOOD = new net.minecraft.world.food.FoodProperties.Builder()
+            .nutrition(3).saturationModifier(0.3F).fast().alwaysEdible().build();
+    public static final DeferredItem<Item> VANILLA_ICE_CREAM = ITEMS.registerSimpleItem("vanilla_ice_cream", new Item.Properties().food(ICE_CREAM_FOOD));
+    public static final DeferredItem<Item> CHOCOLATE_ICE_CREAM = ITEMS.registerSimpleItem("chocolate_ice_cream", new Item.Properties().food(ICE_CREAM_FOOD));
+    public static final DeferredItem<Item> STRAWBERRY_ICE_CREAM = ITEMS.registerSimpleItem("strawberry_ice_cream", new Item.Properties().food(ICE_CREAM_FOOD));
 
     private ModItems() {
     }

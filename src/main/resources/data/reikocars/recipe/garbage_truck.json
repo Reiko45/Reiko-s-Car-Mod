@@ -1,0 +1,22 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:garbage_truck_chassis"
+  },
+  "body": {
+    "item": "reikocars:garbage_truck_body"
+  },
+  "interior": {
+    "item": "reikocars:garbage_truck_interior"
+  },
+  "engine": {
+    "item": "reikocars:diesel_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:garbage_truck"
+  }
+}

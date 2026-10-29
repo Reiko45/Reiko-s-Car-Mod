@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "R": {
+      "tag": "c:dyes/red"
+    },
+    "D": {
+      "tag": "c:dyes/black"
+    },
+    "B": {
+      "tag": "c:dyes/blue"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "pattern": [
+    "GGG",
+    "RDB",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:police_car_body"
+  }
+}

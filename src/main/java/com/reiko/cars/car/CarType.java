@@ -67,6 +67,24 @@ public enum CarType {
     /** A tall walk-in mail van, driven from the right-hand seat, with a mail compartment in the back. */
     MAIL_VAN(    2.35f, 3.05f, 4.75f, 6,    0.78f, 0.012f, 0.038f, 0.22f, 3.9f,  9, 150, 0xF4F5F7, 15, false, 4, 4, GASOLINE, noFifthWheel(),
             seat(-7, -16), seat(7, -16)),
+    /** The sedan as a police car: quicker, with a light bar and siren (K). */
+    POLICE_CAR(  2.25f, 2.0f,  3.75f, 5,    1.05f, 0.016f, 0.046f, 0.25f, 4.1f,  9, 160, 0x16181C,  7, false, 1, 4, GASOLINE, noFifthWheel(),
+            seat(6, -2), seat(-6, -2), seat(6, 9), seat(-6, 9)),
+    /** A box ambulance: lights and siren (K), and it slowly heals whoever rides in the back. */
+    AMBULANCE(   2.4f,  2.75f, 4.6f,  6,    0.85f, 0.012f, 0.038f, 0.22f, 3.5f, 10, 900, 0xF4F5F7, 16, false, 1, 4, DIESEL, noFifthWheel(),
+            seat(7, -15), seat(-7, -15), seat(6, 14), seat(-9, 6), seat(-9, 18)),
+    /** A rear-loading garbage truck: empties trash cans with G. */
+    GARBAGE_TRUCK(2.5f, 3.15f, 7.8f,  7,    0.70f, 0.009f, 0.033f, 0.18f, 2.9f, 14, 1000, 0x388E3C, 26, false, 0, 4, DIESEL, noFifthWheel(),
+            seat(8, -17), seat(-8, -17)),
+    /** An ice cream van: sells what's in its freezer from the serving hatch, and the horn plays a jingle. */
+    ICE_CREAM_TRUCK(2.35f, 3.1f, 4.75f, 6,  0.72f, 0.011f, 0.036f, 0.22f, 3.8f,  9, 150, 0xFFF3E0, 15, false, 3, 4, GASOLINE, noFifthWheel(),
+            seat(-7, -16), seat(7, -16)),
+    /** A dump truck: a 54-slot bed that tips its load out behind with G. */
+    DUMP_TRUCK(  2.5f,  3.15f, 7.4f,  7,    0.72f, 0.009f, 0.034f, 0.18f, 2.9f, 16, 1100, 0xF57C00, 26, true,  6, 4, DIESEL, noFifthWheel(),
+            seat(8, -17), seat(-8, -17)),
+    /** A cement mixer: its drum turns concrete powder into concrete while the engine runs; G pours it out. */
+    CEMENT_MIXER(2.5f,  3.4f,  7.9f,  7,    0.68f, 0.009f, 0.033f, 0.18f, 2.9f, 16, 1150, 0xF4F5F7, 26, false, 2, 4, DIESEL, noFifthWheel(),
+            seat(8, -17), seat(-8, -17)),
 
     // Motorcycles: two wheels, lean into turns, a rider and maybe a passenger behind.
     /** The fastest thing on the road, and quick off the line. */
@@ -200,6 +218,11 @@ public enum CarType {
             case DELIVERY_VAN -> "container.reikocars.cargo_area";
             case FLATBED, WRECKER -> "container.reikocars.toolboxes";
             case MAIL_VAN -> "container.reikocars.mail_compartment";
+            case POLICE_CAR -> "container.reikocars.trunk";
+            case AMBULANCE -> "container.reikocars.medical_cabinet";
+            case ICE_CREAM_TRUCK -> "container.reikocars.freezer";
+            case DUMP_TRUCK -> "container.reikocars.dump_bed";
+            case CEMENT_MIXER -> "container.reikocars.drum";
             default -> "container.reikocars.truck_bed";
         };
     }
@@ -231,6 +254,11 @@ public enum CarType {
         return this == TAXI;
     }
 
+    /** The police car and the ambulance: a light bar and siren, switched with K. */
+    public boolean hasSiren() {
+        return this == POLICE_CAR || this == AMBULANCE;
+    }
+
     /** The mail van: collects and delivers parcels at mailboxes with G. */
     public boolean isMailVan() {
         return this == MAIL_VAN;
@@ -249,7 +277,7 @@ public enum CarType {
         return switch (this) {
             case SEMI_TRUCK -> List.of(new Vec3(1.19, 4.3, -0.94), new Vec3(-1.19, 4.3, -0.94));
             case FARM_TRACTOR -> List.of(new Vec3(-0.375, 2.6, 0.81));
-            case FLATBED, WRECKER -> List.of(new Vec3(-1.03, 3.31, 0.375));
+            case FLATBED, WRECKER, GARBAGE_TRUCK, DUMP_TRUCK, CEMENT_MIXER -> List.of(new Vec3(-1.03, 3.31, 0.375));
             default -> List.of();
         };
     }
@@ -269,6 +297,9 @@ public enum CarType {
             case SCOOTER -> 1.6F;
             case FLATBED, WRECKER -> 0.7F;
             case MAIL_VAN -> 1.1F;
+            case POLICE_CAR -> 1.05F;
+            case AMBULANCE -> 0.95F;
+            case GARBAGE_TRUCK, DUMP_TRUCK, CEMENT_MIXER -> 0.68F;
             default -> 1.0F;
         };
     }
@@ -287,7 +318,10 @@ public enum CarType {
             case DIRT_BIKE -> 1.4F;
             case SCOOTER -> 1.6F;
             case FLATBED, WRECKER -> 0.75F;
-            case MAIL_VAN -> 1.05F;
+            case MAIL_VAN, ICE_CREAM_TRUCK -> 1.05F;
+            case POLICE_CAR -> 0.92F;
+            case AMBULANCE -> 0.85F;
+            case GARBAGE_TRUCK, DUMP_TRUCK, CEMENT_MIXER -> 0.72F;
             default -> 1.0F;
         };
     }
@@ -316,6 +350,15 @@ public enum CarType {
         }
         if (this == WRECKER) {
             return 20 / 16.0;
+        }
+        if (this == GARBAGE_TRUCK) {
+            return 30 / 16.0;
+        }
+        if (this == DUMP_TRUCK) {
+            return 32 / 16.0; // between its two back axles
+        }
+        if (this == CEMENT_MIXER) {
+            return 34 / 16.0;
         }
         return fifthWheel == null ? 0.0 : fifthWheel[0] / 16.0;
     }

@@ -5,6 +5,7 @@ import com.mojang.math.Axis;
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarEntity;
 import com.reiko.cars.car.CarType;
+import com.reiko.cars.car.WorkVehicles;
 import com.reiko.cars.client.model.CarModel;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.renderer.LightTexture;
@@ -51,12 +52,22 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         poseStack.translate(0.0F, -1.501F, 0.0F);
 
         model.pose(car.wheelAngle(partialTick), car.steerAngle(partialTick));
+        model.poseWork(car.bedTilt(partialTick) * WorkVehicles.TIP_DEGREES * Mth.DEG_TO_RAD, car.drumSpin(partialTick));
         int overlay = OverlayTexture.NO_OVERLAY;
         model.renderBody(poseStack, buffers.getBuffer(RenderType.entityCutoutNoCull(texture)), light, overlay, 0xFF000000 | car.color());
         model.renderTrim(poseStack, buffers.getBuffer(RenderType.entityTranslucent(texture)), light, overlay);
         boolean lit = car.isEngineRunning() || car.lightsFlashing();
         model.renderLights(poseStack, buffers.getBuffer(lit ? RenderType.entityTranslucentEmissive(texture) : RenderType.entityTranslucent(texture)),
                 lit ? LightTexture.FULL_BRIGHT : light, overlay);
+        if (model.hasBeacons()) {
+            // With the siren on, the two sets of beacons flash in turn, a few times a second.
+            boolean firstOn = (car.level().getGameTime() + car.getId()) / 4 % 2 == 0;
+            for (boolean first : new boolean[] {true, false}) {
+                boolean flashing = car.sirenOn() && first == firstOn;
+                model.renderBeacons(first, poseStack, buffers.getBuffer(flashing ? RenderType.entityTranslucentEmissive(texture) : RenderType.entityTranslucent(texture)),
+                        flashing ? LightTexture.FULL_BRIGHT : light, overlay);
+            }
+        }
         poseStack.popPose();
         if (car.isForSale()) {
             // A FOR SALE sign with the price floats over it, above its name if it has one.

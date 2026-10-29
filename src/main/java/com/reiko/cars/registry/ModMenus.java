@@ -44,6 +44,8 @@ public final class ModMenus {
             () -> IMenuTypeExtension.create(ParkingMeterMenu::new));
     public static final Supplier<MenuType<TollMenu>> TOLL = MENUS.register("toll", () -> IMenuTypeExtension.create(TollMenu::new));
     public static final Supplier<MenuType<TollBoothMenu>> TOLL_BOOTH = MENUS.register("toll_booth", () -> IMenuTypeExtension.create(TollBoothMenu::new));
+    public static final Supplier<MenuType<com.reiko.cars.icecream.IceCreamMenu>> ICE_CREAM = MENUS.register("ice_cream",
+            () -> IMenuTypeExtension.create(com.reiko.cars.icecream.IceCreamMenu::new));
     public static final Supplier<MenuType<com.reiko.cars.insurance.InsuranceMenu>> INSURANCE = MENUS.register("insurance",
             () -> IMenuTypeExtension.create(com.reiko.cars.insurance.InsuranceMenu::new));
 

@@ -21,6 +21,14 @@ public final class ModSounds {
     public static final Supplier<SoundEvent> BREAKDOWN = register("car.breakdown");
     /** Spanners at work, as parts go on at a repair bench. */
     public static final Supplier<SoundEvent> REPAIR = register("repair_bench.repair");
+    /** A police car's or ambulance's siren: a wail, looped. */
+    public static final Supplier<SoundEvent> SIREN = register("car.siren");
+    /** The ice cream truck's jingle (Greensleeves). */
+    public static final Supplier<SoundEvent> ICE_CREAM_JINGLE = register("car.ice_cream_jingle");
+    /** The dump truck's bed going up or down. */
+    public static final Supplier<SoundEvent> HYDRAULIC = register("car.hydraulic");
+    /** The garbage truck's packer crushing a load. */
+    public static final Supplier<SoundEvent> COMPACTOR = register("car.compactor");
 
     private ModSounds() {
     }

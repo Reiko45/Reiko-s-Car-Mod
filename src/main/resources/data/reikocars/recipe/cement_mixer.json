@@ -1,0 +1,22 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:cement_mixer_chassis"
+  },
+  "body": {
+    "item": "reikocars:cement_mixer_body"
+  },
+  "interior": {
+    "item": "reikocars:cement_mixer_interior"
+  },
+  "engine": {
+    "item": "reikocars:diesel_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:cement_mixer"
+  }
+}

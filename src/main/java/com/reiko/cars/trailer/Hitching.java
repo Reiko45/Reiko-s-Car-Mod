@@ -39,7 +39,10 @@ public final class Hitching {
         TOW,
         DROP,
         MAIL,
-        TOLL
+        TOLL,
+        TRASH,
+        DUMP,
+        POUR
     }
 
     private Hitching() {
@@ -56,6 +59,19 @@ public final class Hitching {
         }
         if (car.carType().isMailVan() && MailService.mailboxesNear(car).size() > 0) {
             return Action.MAIL;
+        }
+        switch (car.carType()) {
+            case GARBAGE_TRUCK -> {
+                return com.reiko.cars.garbage.GarbageService.cansNear(car).isEmpty() ? null : Action.TRASH;
+            }
+            case DUMP_TRUCK -> {
+                return car.tipStart() >= 0 ? null : Action.DUMP;
+            }
+            case CEMENT_MIXER -> {
+                return Action.POUR;
+            }
+            default -> {
+            }
         }
         if (car.carType().isTractor()) {
             return car.trailer() != null ? Action.UNHITCH : hitchable(car, driver) != null ? Action.HITCH : null;
@@ -111,6 +127,22 @@ public final class Hitching {
         if (car.carType().isMailVan() && !MailService.mailboxesNear(car).isEmpty()) {
             MailService.serve(player, car);
             return;
+        }
+        switch (car.carType()) {
+            case GARBAGE_TRUCK -> {
+                com.reiko.cars.garbage.GarbageService.collect(player, car);
+                return;
+            }
+            case DUMP_TRUCK -> {
+                com.reiko.cars.car.WorkVehicles.dump(player, car);
+                return;
+            }
+            case CEMENT_MIXER -> {
+                com.reiko.cars.car.WorkVehicles.pour(player, car);
+                return;
+            }
+            default -> {
+            }
         }
         if (car.carType().isTractor()) {
             TrailerEntity hitched = car.trailer();

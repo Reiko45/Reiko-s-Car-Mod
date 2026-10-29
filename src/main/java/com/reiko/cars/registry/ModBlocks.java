@@ -91,6 +91,12 @@ public final class ModBlocks {
                     .sound(SoundType.WOOD)
                     .noOcclusion()
                     .pushReaction(PushReaction.BLOCK)));
+    public static final DeferredBlock<com.reiko.cars.garbage.TrashCanBlock> TRASH_CAN = BLOCKS.register("trash_can",
+            () -> new com.reiko.cars.garbage.TrashCanBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GREEN)
+                    .strength(2.0F, 6.0F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()));
     public static final DeferredBlock<TollBoothBlock> TOLL_BOOTH = BLOCKS.register("toll_booth", () -> new TollBoothBlock(
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_YELLOW)

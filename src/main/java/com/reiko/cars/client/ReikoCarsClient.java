@@ -87,6 +87,8 @@ public final class ReikoCarsClient {
             InputConstants.Type.KEYSYM, InputConstants.KEY_L, "key.categories.reikocars");
     public static final KeyMapping HITCH = new KeyMapping("key.reikocars.hitch", KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM, InputConstants.KEY_G, "key.categories.reikocars");
+    public static final KeyMapping SIREN = new KeyMapping("key.reikocars.siren", KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM, InputConstants.KEY_K, "key.categories.reikocars");
 
     public ReikoCarsClient(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.CLIENT, CarsClientConfig.SPEC);
@@ -102,6 +104,8 @@ public final class ReikoCarsClient {
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, ReikoCarsClient::leanRider);
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, ReikoCarsClient::unleanRider);
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::rollCamera);
+        NeoForge.EVENT_BUS.addListener(ReikoCarsClient::raiseActionBar);
+        NeoForge.EVENT_BUS.addListener(ReikoCarsClient::lowerActionBar);
         TrailerEntity.openTankerScreen = tanker -> Minecraft.getInstance().setScreen(new TankerScreen(tanker));
     }
 
@@ -140,6 +144,12 @@ public final class ReikoCarsClient {
             case FLATBED -> FlatbedModel::createBodyLayer;
             case WRECKER -> WreckerModel::createBodyLayer;
             case MAIL_VAN -> MailVanModel::createBodyLayer;
+            case POLICE_CAR -> com.reiko.cars.client.model.PoliceCarModel::createBodyLayer;
+            case AMBULANCE -> com.reiko.cars.client.model.AmbulanceModel::createBodyLayer;
+            case GARBAGE_TRUCK -> com.reiko.cars.client.model.GarbageTruckModel::createBodyLayer;
+            case ICE_CREAM_TRUCK -> com.reiko.cars.client.model.IceCreamTruckModel::createBodyLayer;
+            case DUMP_TRUCK -> com.reiko.cars.client.model.DumpTruckModel::createBodyLayer;
+            case CEMENT_MIXER -> com.reiko.cars.client.model.CementMixerModel::createBodyLayer;
             case SPORT_BIKE -> SportBikeModel::createBodyLayer;
             case CRUISER -> CruiserModel::createBodyLayer;
             case DIRT_BIKE -> DirtBikeModel::createBodyLayer;
@@ -180,12 +190,14 @@ public final class ReikoCarsClient {
         event.register(ModMenus.TOLL.get(), TollScreen::new);
         event.register(ModMenus.TOLL_BOOTH.get(), TollBoothScreen::new);
         event.register(ModMenus.INSURANCE.get(), InsuranceScreen::new);
+        event.register(ModMenus.ICE_CREAM.get(), IceCreamScreen::new);
     }
 
     private static void registerKeys(RegisterKeyMappingsEvent event) {
         event.register(HORN);
         event.register(LOCK);
         event.register(HITCH);
+        event.register(SIREN);
     }
 
     private static void registerHud(RegisterGuiLayersEvent event) {
@@ -217,6 +229,7 @@ public final class ReikoCarsClient {
             HORN.consumeClick();
             LOCK.consumeClick();
             HITCH.consumeClick();
+            SIREN.consumeClick();
             return;
         }
         if (car.getControllingPassenger() == player) {
@@ -238,10 +251,14 @@ public final class ReikoCarsClient {
         while (HITCH.consumeClick()) {
             PacketDistributor.sendToServer(new CarActionPayload(CarActionPayload.HITCH));
         }
+        while (SIREN.consumeClick()) {
+            PacketDistributor.sendToServer(new CarActionPayload(CarActionPayload.SIREN));
+        }
     }
 
     /** The engine sound playing for each nearby car. Weak keys, so cars that unload are forgotten. */
     private static final Map<CarEntity, EngineSound> ENGINES = new WeakHashMap<>();
+    private static final Map<CarEntity, SirenSound> SIRENS = new WeakHashMap<>();
 
     /**
      * Once a second, gives every nearby car with its engine running an engine sound, and restarts any that the
@@ -302,7 +319,13 @@ public final class ReikoCarsClient {
 
     private static void keepEnginesRunning(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level == null || minecraft.player == null || minecraft.isPaused() || minecraft.level.getGameTime() % 20 != 0) {
+        if (minecraft.level == null || minecraft.player == null || minecraft.isPaused()) {
+            return;
+        }
+        if (minecraft.level.getGameTime() % 5 == 0) {
+            keepSirensGoing(minecraft);
+        }
+        if (minecraft.level.getGameTime() % 20 != 0) {
             return;
         }
         SoundManager sounds = minecraft.getSoundManager();
@@ -317,6 +340,47 @@ public final class ReikoCarsClient {
                 ENGINES.put(car, fresh);
                 sounds.play(fresh);
             }
+        }
+    }
+
+    /** Starts the siren of every police car and ambulance nearby that has its lights and siren on. */
+    private static void keepSirensGoing(Minecraft minecraft) {
+        SoundManager sounds = minecraft.getSoundManager();
+        SIRENS.values().removeIf(sound -> sound.isStopped());
+        for (CarEntity car : minecraft.level.getEntitiesOfClass(CarEntity.class, minecraft.player.getBoundingBox().inflate(64.0), CarEntity::sirenOn)) {
+            SirenSound sound = SIRENS.get(car);
+            if (sound == null || !sounds.isActive(sound)) {
+                if (sound != null) {
+                    sounds.stop(sound);
+                }
+                SirenSound fresh = new SirenSound(car);
+                SIRENS.put(car, fresh);
+                sounds.play(fresh);
+            }
+        }
+    }
+
+    /** Whether the action bar message is drawn raised this frame. */
+    private static boolean actionBarRaised;
+
+    /**
+     * While the dashboard's up, the action bar message (the ones cars send, and "Press Shift to Dismount") is drawn
+     * a little higher, clear of the key hints over the dashboard.
+     */
+    private static void raiseActionBar(net.neoforged.neoforge.client.event.RenderGuiLayerEvent.Pre event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (event.getName().equals(VanillaGuiLayers.OVERLAY_MESSAGE) && minecraft.player != null
+                && minecraft.player.getVehicle() instanceof CarEntity && CarsClientConfig.showHud()) {
+            event.getGuiGraphics().pose().pushPose();
+            event.getGuiGraphics().pose().translate(0.0F, -14.0F, 0.0F);
+            actionBarRaised = true;
+        }
+    }
+
+    private static void lowerActionBar(net.neoforged.neoforge.client.event.RenderGuiLayerEvent.Post event) {
+        if (actionBarRaised && event.getName().equals(VanillaGuiLayers.OVERLAY_MESSAGE)) {
+            event.getGuiGraphics().pose().popPose();
+            actionBarRaised = false;
         }
     }
 }

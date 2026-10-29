@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "X": {
+      "item": "minecraft:snow_block"
+    }
+  },
+  "pattern": [
+    "I I",
+    "IXI",
+    "I I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:ice_cream_truck_chassis"
+  }
+}

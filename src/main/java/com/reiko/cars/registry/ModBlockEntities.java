@@ -35,6 +35,8 @@ public final class ModBlockEntities {
     public static final Supplier<BlockEntityType<com.reiko.cars.insurance.InsuranceOfficeBlockEntity>> INSURANCE_OFFICE = BLOCK_ENTITIES.register(
             "insurance_office", () -> BlockEntityType.Builder.of(com.reiko.cars.insurance.InsuranceOfficeBlockEntity::new,
                     ModBlocks.INSURANCE_OFFICE.get()).build(null));
+    public static final Supplier<BlockEntityType<com.reiko.cars.garbage.TrashCanBlockEntity>> TRASH_CAN = BLOCK_ENTITIES.register(
+            "trash_can", () -> BlockEntityType.Builder.of(com.reiko.cars.garbage.TrashCanBlockEntity::new, ModBlocks.TRASH_CAN.get()).build(null));
     public static final Supplier<BlockEntityType<TollBoothBlockEntity>> TOLL_BOOTH = BLOCK_ENTITIES.register("toll_booth",
             () -> BlockEntityType.Builder.of(TollBoothBlockEntity::new, ModBlocks.TOLL_BOOTH.get()).build(null));
     public static final Supplier<BlockEntityType<TollGateBlockEntity>> TOLL_GATE = BLOCK_ENTITIES.register("toll_gate",

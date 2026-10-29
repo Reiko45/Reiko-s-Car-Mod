@@ -25,6 +25,9 @@ public final class ModCapabilities {
             GasPumpBlockEntity pump = GasPumpBlock.pumpAt(level, pos, state);
             return pump == null ? null : pump.pipeInput();
         }, ModBlocks.GAS_PUMP.get(), ModBlocks.DIESEL_PUMP.get());
+        // Hoppers and pipes can fill a trash can.
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.TRASH_CAN.get(),
+                (can, side) -> new net.neoforged.neoforge.items.wrapper.InvWrapper(can));
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.REPAIR_BENCH.get(),
                 (bench, side) -> bench.pipeInput());
 

@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "reikocars:item/ice_cream_truck_paint",
+    "layer1": "reikocars:item/ice_cream_truck_trim"
+  }
+}

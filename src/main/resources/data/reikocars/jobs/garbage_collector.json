@@ -1,0 +1,35 @@
+{
+  "name": "Garbage Collector",
+  "icon": "reikocars:trash_can",
+  "order": 24,
+  "work": [
+    {
+      "action": "reikocars:trash_collected",
+      "label": "Trash can emptied",
+      "pay": 1.5,
+      "xp": 10
+    }
+  ],
+  "contracts": [
+    {
+      "work": "reikocars:trash_collected",
+      "label": "Trash Cans Emptied",
+      "icon": "reikocars:garbage_truck",
+      "count": [
+        3,
+        8
+      ],
+      "pay": 2.0,
+      "xp": 6
+    },
+    {
+      "deliver": "minecraft:rotten_flesh",
+      "count": [
+        16,
+        32
+      ],
+      "pay": 0.1,
+      "xp": 1
+    }
+  ]
+}

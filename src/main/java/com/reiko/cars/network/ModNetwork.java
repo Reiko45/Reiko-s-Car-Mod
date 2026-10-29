@@ -60,6 +60,7 @@ public final class ModNetwork {
         registrar.playToServer(MeterActionPayload.TYPE, MeterActionPayload.STREAM_CODEC, ModNetwork::handleMeter);
         registrar.playToServer(TollActionPayload.TYPE, TollActionPayload.STREAM_CODEC, ModNetwork::handleToll);
         registrar.playToServer(InsuranceActionPayload.TYPE, InsuranceActionPayload.STREAM_CODEC, ModNetwork::handleInsurance);
+        registrar.playToServer(IceCreamActionPayload.TYPE, IceCreamActionPayload.STREAM_CODEC, ModNetwork::handleIceCream);
     }
 
     private static void handleWear(CarWearPayload payload, IPayloadContext context) {
@@ -124,6 +125,18 @@ public final class ModNetwork {
                 com.reiko.cars.insurance.InsuranceMenu.open(player, menu.office()); // reopen to show the new terms
             }
         }
+        menu.refresh();
+        ShopFeedback.send(player, result);
+    }
+
+    private static void handleIceCream(IceCreamActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || !(player.containerMenu instanceof com.reiko.cars.icecream.IceCreamMenu menu)
+                || menu.containerId != payload.containerId() || !menu.stillValid(player) || menu.truck() == null || menu.selected() == null) {
+            return;
+        }
+        ShopActionResult result = payload.action() == IceCreamActionPayload.BUY
+                ? com.reiko.cars.icecream.IceCreamService.buy(player, menu.truck(), menu.selected(), payload.expected(), payload.payment())
+                : com.reiko.cars.icecream.IceCreamService.setPrice(player, menu.truck(), menu.selected(), payload.text());
         menu.refresh();
         ShopFeedback.send(player, result);
     }
@@ -293,6 +306,7 @@ public final class ModNetwork {
                 }
             }
             case CarActionPayload.HITCH -> Hitching.use(player);
+            case CarActionPayload.SIREN -> com.reiko.cars.car.WorkVehicles.toggleSiren(player, car);
             default -> {
             }
         }

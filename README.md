@@ -1,6 +1,7 @@
 # Reiko's Car Mod
 
-Drivable cars, motorcycles, semi trucks, tow trucks and a mail van for Minecraft 1.21.1 (NeoForge) that run on
+Drivable cars, motorcycles, semi trucks, tow trucks, a mail van and work vehicles (a police car, an ambulance, a
+garbage truck, an ice cream truck, a dump truck and a cement mixer) for Minecraft 1.21.1 (NeoForge) that run on
 **BuildCraft Reborn**'s fuel, trailers for the semis to pull, and gas and diesel pumps that sell the fuel for **cash or
 card** through **Reiko's Economy Mod**.
 
@@ -8,7 +9,7 @@ Refine oil into fuel with BuildCraft, pipe it into a pump, set a price, and othe
 Cars wear out as they're driven, and a **Repair Bench** fixes them: fit your own parts, or run a mechanic's shop and
 charge for repairs. Tow trucks haul broken-down cars to it, and mailboxes and the mail van carry parcels between
 players for postage. Parking meters ticket cars that overstay, toll gates lift for drivers who pay, insurance offices
-cover crash repairs, and the job board pays drivers, mail carriers, mechanics and truckers.
+cover crash repairs, and the job board pays drivers, mail carriers, mechanics, truckers and garbage collectors.
 
 ## Requirements
 
@@ -38,24 +39,33 @@ cover crash repairs, and the job board pays drivers, mail carriers, mechanics an
 | Flatbed Tow Truck | 2 | 36 mph | 14 buckets of diesel | Carries a car on its deck (see [Tow trucks](#tow-trucks)); 9-slot toolboxes |
 | Wrecker Tow Truck | 2 | 38 mph | 12 buckets of diesel | Tows a car on its wheel-lift by the front wheels; 18-slot toolboxes |
 | Mail Van | 2 | 35 mph | 9 buckets | Right-hand drive; collects and delivers parcels (see [Mail](#mail)); 36-slot mail compartment |
+| Police Car | 4 | 47 mph | 9 buckets | Light bar and siren (see [Work vehicles](#work-vehicles)); 9-slot trunk |
+| Ambulance | 5 | 38 mph | 10 buckets of diesel | Light bar and siren; heals whoever rides in the back; 9-slot medical cabinet |
+| Garbage Truck | 2 | 31 mph | 14 buckets of diesel | Empties trash cans |
+| Ice Cream Truck | 2 | 32 mph | 9 buckets | A shop on wheels: sells from its 27-slot freezer; its horn plays a jingle |
+| Dump Truck | 2 | 32 mph | 16 buckets of diesel | 54-slot bed that tips to dump its load |
+| Cement Mixer | 2 | 30 mph | 16 buckets of diesel | 18-slot drum that sets concrete powder into concrete, and pours it |
 | Sport Bike | 2 | 65 mph | 4 buckets | The fastest thing on the road (see [Motorcycles](#motorcycles)) |
 | Cruiser | 2 | 45 mph | 5 buckets | 9-slot saddlebags (sneak + use) |
 | Dirt Bike | 1 | 42 mph | 3 buckets | Keeps full speed on grass, sand and snow |
 | Scooter | 1 | 27 mph | 2 buckets | Slow, but about 2,500 blocks to a bucket |
 
 Tank sizes are in buckets of the car's own fuel: BuildCraft's **light fuel** for the gasoline cars, **dense fuel**
-for the diesel ones (the semi, delivery van, city bus, heavy-duty pickup, farm tractor and tow trucks). A sedan goes about 600
+for the diesel ones (the semi, delivery van, city bus, heavy-duty pickup, farm tractor, tow trucks and the big work
+vehicles). A sedan goes about 600
 blocks on a bucket; a semi about 250, or 180 pulling a trailer; the bus about 300.
 
 **Driving:** right-click a car to get in (the first person in drives), with one of its **keys** in your inventory
 (see [Car keys](#car-keys)). The movement keys drive and steer, **jump**
 is the handbrake and **sneak** gets out. **H** sounds the horn, **L** locks or unlocks the car and **G** hitches a
-trailer, loads a car onto a car hauler, picks up or drops a car in a tow truck, or stops the mail van for the mail. While you're
+trailer, loads a car onto a car hauler, picks up or drops a car in a tow truck, stops the mail van for the mail, or
+does a work vehicle's job. **K** works a police car's or ambulance's lights and siren. While you're
 in a car, a dashboard in the bottom right shows your speed and a fuel gauge.
 
 - **Fuel:** cars burn fuel for every block they cover, and a little while idling with someone at the wheel. The cars
   run on **gasoline**: BuildCraft's Light Fuel (and the Mixed Light and Gaseous Fuels), or other mods' gasoline,
-  ethanol, kerosene and LPG. The semi, delivery van, city bus, heavy-duty pickup, farm tractor and tow trucks run on **diesel**:
+  ethanol, kerosene and LPG. The semi, delivery van, city bus, heavy-duty pickup, farm tractor, tow trucks, ambulance,
+  garbage truck, dump truck and cement mixer run on **diesel**:
   BuildCraft's Dense Fuel and Mixed Heavy Fuels, or other mods' diesel and biodiesel. Neither takes the other's fuel, and nothing runs on crude oil. How far a bucket goes
   comes from BuildCraft's own fuel values. The `reikocars:gasoline` and `reikocars:diesel` fluid tags decide which
   fuel is which, so a data pack can move fluids between them. A car's tooltip says what it runs on.
@@ -327,6 +337,27 @@ driver **earns each parcel's postage** on delivery, so running a mail route pays
 has a mailbox goes back to the sender's mailbox instead. The van is right-hand drive, so the mailboxes are on the
 driver's side.
 
+## Work vehicles
+
+- **Police car and ambulance:** the driver's **K** turns on the **light bar and siren**: the beacons flash red and
+  blue (the ambulance's red and white) and the siren wails until **K** turns them off. The **ambulance** heals
+  everyone riding in it except the driver, half a heart every two and a half seconds.
+- **Garbage truck:** put **Trash Cans** out by the road (anyone can throw things in them; they hold 27 stacks). Back
+  the truck's hopper up to them (within 3.5 blocks of its back end) and press **G**: every can in reach is emptied
+  and the trash is crushed and gone. Each can with anything in it pays the **Garbage Collector** job, at most once a
+  Minecraft day per can.
+- **Ice cream truck:** a shop on wheels. Its owner (or anyone with its key) stocks the **freezer** (sneak +
+  right-click) with whatever they like to sell, then right-clicks the **serving hatch** (on the truck's left side) to
+  price each kind; clearing a price takes it off the menu. Everyone else right-clicks the truck to see the menu, picks
+  a treat with the arrows and buys one at a time by **Card** with PIN or **Cash**, plus sales tax, paid to the owner.
+  The horn (**H**) plays the ice cream jingle. **Vanilla, Chocolate and Strawberry Ice Cream** are quick snacks to
+  stock it with.
+- **Dump truck:** load the **bed** (sneak + right-click) and press **G**: the bed tips up and everything in it slides
+  out behind the truck, then it comes back down.
+- **Cement mixer:** fill the **drum** (sneak + right-click) with concrete powder. While the engine runs (someone at
+  the wheel, with fuel), the drum turns and sets a block of powder into concrete every half second. **G** pours
+  everything in the drum out of the chute at the back.
+
 ## Parking meters and tolls
 
 **Parking meters** charge cars parked beside them. Whoever puts one up owns it (only they or an admin can break it).
@@ -380,7 +411,7 @@ the insurer, and they pay the claims from their bank account.
 
 ## Car jobs
 
-With Reiko's Economy Mod 1.1.0 or newer, the **job board** has four car jobs. Join them like any other job: they pay
+With Reiko's Economy Mod 1.1.0 or newer, the **job board** has five car jobs. Join them like any other job: they pay
 as you work, level up, and hand out daily contracts.
 
 | Job | Gets paid for |
@@ -389,11 +420,12 @@ as you work, level up, and hand out daily contracts.
 | Mail Carrier | Each parcel delivered by mail van ($0.75) |
 | Mechanic | Each part fitted to someone else's vehicle at a Repair Bench ($0.60), whether from the bench's stock (paid to the bench's owner) or from your own pocket, and each of someone else's broken-down cars towed in to a Repair Bench from at least 24 blocks away ($4.00, once per breakdown) |
 | Trucker | Each bucket of fuel unloaded from a tanker into a pump ($0.40), and every 100 blocks driven towing a trailer at least a quarter full ($0.50) |
+| Garbage Collector | Each trash can with something in it emptied by garbage truck ($1.50, once a day per can) |
 
-Their contracts ask for taxi rides, bus passengers, parcels, parts fitted, tow-ins, fuel delivered, loaded hauls, or
-deliveries of tires, brake pads, motor oil and paper. The job files are in `data/reikocars/jobs`, so a datapack can
+Their contracts ask for taxi rides, bus passengers, parcels, parts fitted, tow-ins, fuel delivered, loaded hauls,
+trash cans emptied, or deliveries of tires, brake pads, motor oil, paper and rotten flesh. The job files are in `data/reikocars/jobs`, so a datapack can
 change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`, `parcel_delivered`, `repair_part`,
-`tow`, `fuel_delivered` and `haul_distance`.
+`tow`, `fuel_delivered`, `haul_distance` and `trash_collected`.
 
 ## Recipes
 
@@ -419,6 +451,10 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | Toll Booth | yellow dye, glass pane, yellow dye on top, iron ingot, redstone, iron ingot across the middle, three smooth stone below |
 | Toll Gate | stick, red dye, stick on top, yellow dye, piston, yellow dye across the middle, iron ingots in the bottom corners |
 | Insurance Office | paper, book, paper on top, gold ingot, shield, gold ingot across the middle, three iron ingots below |
+| Trash Can | iron ingot, iron trapdoor, iron ingot on top, iron ingot, green dye, iron ingot across the middle, three iron ingots below |
+| Vanilla Ice Cream ×3 | a milk bucket, sugar, a snowball and wheat (shapeless; the bucket comes back) |
+| Chocolate Ice Cream ×3 | as Vanilla, with cocoa beans |
+| Strawberry Ice Cream ×3 | as Vanilla, with sweet berries |
 | Motor Oil ×3 | a BuildCraft **Oil** bucket and three glass bottles (shapeless) |
 | Engine Parts ×2 | iron ingot, piston, iron ingot over iron gear, iron ingot, iron gear |
 | Brake Pads ×2 | three iron ingots over three flint |
@@ -462,6 +498,17 @@ glass pane (the partition) between wool below. It takes a Car Engine.
 | **Interior** | clock, redstone between leather, a lever between iron | clock, redstone between leather, a chain between iron | clock, redstone between wool, paper between iron |
 
 The tow trucks take a Diesel Engine, the mail van a Car Engine.
+
+The work vehicles' parts. Every chassis is iron rails (`I I`) around a middle row; every body is glass panes on top;
+every interior is a clock on top over leather, redstone, leather, with iron ingots either side of something below:
+
+| Part | Police Car | Ambulance | Garbage Truck | Ice Cream Truck | Dump Truck | Cement Mixer |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Chassis** middle | iron, redstone torch, iron | iron block, glistering melon slice, iron block | iron block, hopper, iron block | iron, snow block, iron | iron block, sticky piston, iron block | iron block, cauldron, iron block |
+| **Body** below the glass | red, black and blue dye over iron | red dye between white dye over iron | green dye between iron over iron, a composter, iron | pink dye between white dye over iron | orange dye between iron over three iron trapdoors | light grey dye between iron over iron, a cauldron, iron |
+| **Interior** bottom middle | iron bars | white bed | hopper | packed ice | gravel | water bucket |
+
+The police car and ice cream truck take a Car Engine; the rest take a Diesel Engine.
 
 The motorcycles' parts:
 
@@ -594,7 +641,9 @@ sign glow (`neoforge_data` light on those elements).
 ```text
 src/main/java/com/reiko/cars/
 ├── ReikoCars.java        mod entry point
-├── car/                  the car entity and its types, fuel (CarFuel, CarTank), wear and tear (CarCondition), the car item
+├── car/                  the car entity and its types, fuel (CarFuel, CarTank), wear and tear (CarCondition), the car item, and WorkVehicles (sirens, healing, tipping, mixing)
+├── garbage/              the Trash Can block and block entity, and GarbageService (the garbage truck's round)
+├── icecream/             the ice cream truck's shop: its menu and IceCreamService (pricing and selling)
 ├── pump/                 the gas and diesel pump block, its block entity, menu, protection, and PumpService (selling fuel)
 ├── trailer/              the trailers, their item, hitching and car hauling (Hitching), and the tanker (TankerService)
 ├── workbench/            the Car Workbench block and menu, the car parts, and the car_assembly recipe type
@@ -609,10 +658,10 @@ src/main/java/com/reiko/cars/
 ├── toll/                 the toll booth and toll gate blocks, their block entities and menus, protection, and TollService (paying and the gate)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
-├── network/              packets: pump, repair bench, mailbox, parking meter, toll and insurance actions, horn, lock and hitch, the driver's wear reports, tanker load and unload
+├── network/              packets: pump, repair bench, mailbox, parking meter, toll, insurance and ice cream actions, horn, lock, hitch and siren, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance and tanker screens, the toll gate's arm, pump display, engine sound, keys
+├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, ice cream and tanker screens, the toll gate's arm, pump display, engine and siren sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)

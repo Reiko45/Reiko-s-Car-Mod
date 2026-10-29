@@ -60,5 +60,43 @@
       "reikocars:repair"
     ],
     "subtitle": "subtitles.reikocars.repair_bench.repair"
+  },
+  "car.siren": {
+    "sounds": [
+      {
+        "name": "reikocars:siren",
+        "attenuation_distance": 64,
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.reikocars.car.siren"
+  },
+  "car.ice_cream_jingle": {
+    "sounds": [
+      {
+        "name": "reikocars:ice_cream_jingle",
+        "attenuation_distance": 48,
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.reikocars.car.ice_cream_jingle"
+  },
+  "car.hydraulic": {
+    "sounds": [
+      {
+        "name": "reikocars:hydraulic",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.reikocars.car.hydraulic"
+  },
+  "car.compactor": {
+    "sounds": [
+      {
+        "name": "reikocars:compactor",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.reikocars.car.compactor"
   }
 }

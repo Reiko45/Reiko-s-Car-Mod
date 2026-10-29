@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "W": {
+      "tag": "c:dyes/white"
+    },
+    "D": {
+      "tag": "c:dyes/red"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "pattern": [
+    "GGG",
+    "WDW",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:ambulance_body"
+  }
+}

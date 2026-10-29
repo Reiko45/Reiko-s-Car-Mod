@@ -113,7 +113,7 @@ public final class DevShowcase {
             rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false, null);
             rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, null);
             LevelSettings settings = new LevelSettings("showcase-" + System.currentTimeMillis(), GameType.CREATIVE, false,
-                    Difficulty.PEACEFUL, !MODE.equals("repair") && !MODE.equals("sales") && !MODE.equals("tolls") && !MODE.equals("insurance"), rules, WorldDataConfiguration.DEFAULT); // no cheats: a customer, not an admin
+                    Difficulty.PEACEFUL, !MODE.equals("repair") && !MODE.equals("sales") && !MODE.equals("tolls") && !MODE.equals("insurance") && !MODE.equals("work"), rules, WorldDataConfiguration.DEFAULT); // no cheats: a customer, not an admin
             minecraft.createWorldOpenFlows().createFreshLevel(settings.levelName(), settings, new WorldOptions(1L, false, false),
                     registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT)
                             .value().createWorldDimensions(), new TitleScreen());
@@ -142,6 +142,8 @@ public final class DevShowcase {
             tollsScript();
         } else if (MODE.equals("insurance")) {
             insuranceScript();
+        } else if (MODE.equals("work")) {
+            workScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -1774,5 +1776,152 @@ public final class DevShowcase {
         at(316, mc -> server(mc, player -> give(player, ModItems.INSURANCE_OFFICE.get(), 1)));
         at(335, mc -> shot(mc, "103_office_item"));
         at(340, mc -> mc.stop());
+    }
+
+    // ---- the work vehicles: ./gradlew runClient -Pshowcase=work ----
+
+    private static void tile(ServerLevel level, int x0, int z0, int x1, int z1) {
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                level.setBlockAndUpdate(new BlockPos(x, -61, z), ((x + z) & 1) == 0
+                        ? Blocks.LIGHT_GRAY_CONCRETE.defaultBlockState() : Blocks.SMOOTH_STONE.defaultBlockState());
+            }
+        }
+    }
+
+    private static void workScript() {
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                tile(level, -14, -10, 30, 26);
+                spawn(level, CarType.POLICE_CAR, 0.5, 0.5, 0.0F, 0.7);
+                spawn(level, CarType.AMBULANCE, 5.5, 0.5, 0.0F, 0.7);
+                car(level, CarType.POLICE_CAR).setSiren(true);
+                car(level, CarType.AMBULANCE).setSiren(true);
+                spawn(level, CarType.DUMP_TRUCK, 16.5, 0.5, 0.0F, 0.7);
+                CarEntity dump = car(level, CarType.DUMP_TRUCK);
+                for (int i = 0; i < 6; i++) {
+                    dump.bed().addItem(new ItemStack(i % 2 == 0 ? Blocks.DIRT : Blocks.GRAVEL, 64));
+                }
+                spawn(level, CarType.GARBAGE_TRUCK, 0.5, 16.5, 0.0F, 0.7);
+                for (BlockPos can : new BlockPos[] {new BlockPos(2, -60, 12), new BlockPos(-2, -60, 12)}) {
+                    level.setBlockAndUpdate(can, ModBlocks.TRASH_CAN.get().defaultBlockState()
+                            .setValue(net.minecraft.world.level.block.HorizontalDirectionalBlock.FACING, Direction.WEST));
+                    ((com.reiko.cars.garbage.TrashCanBlockEntity) level.getBlockEntity(can)).setItem(0, new ItemStack(net.minecraft.world.item.Items.ROTTEN_FLESH, 12));
+                }
+                ServerPlayer ivy = extraPlayer(level.getServer(), "Ivy");
+                spawn(level, CarType.ICE_CREAM_TRUCK, 10.5, 16.5, 0.0F, 0.7);
+                CarEntity truck = car(level, CarType.ICE_CREAM_TRUCK);
+                truck.setOwner(ivy);
+                truck.bed().addItem(new ItemStack(ModItems.VANILLA_ICE_CREAM.get(), 16));
+                truck.bed().addItem(new ItemStack(ModItems.CHOCOLATE_ICE_CREAM.get(), 12));
+                truck.bed().addItem(new ItemStack(ModItems.STRAWBERRY_ICE_CREAM.get(), 9));
+                truck.shopPrices().put(ModItems.VANILLA_ICE_CREAM.get(), 200L);
+                truck.shopPrices().put(ModItems.CHOCOLATE_ICE_CREAM.get(), 250L);
+                truck.shopPrices().put(ModItems.STRAWBERRY_ICE_CREAM.get(), 225L);
+                spawn(level, CarType.CEMENT_MIXER, 22.5, 16.5, 0.0F, 0.7);
+                CarEntity mixer = car(level, CarType.CEMENT_MIXER);
+                mixer.bed().addItem(new ItemStack(Blocks.LIGHT_GRAY_CONCRETE_POWDER, 24));
+                mixer.bed().addItem(new ItemStack(Blocks.YELLOW_CONCRETE_POWDER, 16));
+                player.getInventory().clearContent();
+                Purse.give(player, 20_000);
+            });
+        });
+        // Lights and sirens, by day and by night.
+        at(60, mc -> aim(mc, 3.0, -59.2, 0.5, 3.4, 1.5, 6.0));
+        at(100, mc -> shot(mc, "104_lights_a"));
+        at(104, mc -> shot(mc, "105_lights_b"));
+        at(106, mc -> server(mc, player -> player.serverLevel().setDayTime(18000)));
+        at(130, mc -> shot(mc, "106_lights_night_a"));
+        at(134, mc -> shot(mc, "107_lights_night_b"));
+        at(136, mc -> server(mc, player -> player.serverLevel().setDayTime(6000)));
+        // The dump truck tips its load.
+        at(140, mc -> {
+            aim(mc, 16.5, -58.5, 0.0, 9.5, 2.5, -3.0);
+            server(mc, player -> car(player.serverLevel(), CarType.DUMP_TRUCK).setTipStart(player.serverLevel().getGameTime()));
+        });
+        at(140 + 30, mc -> shot(mc, "108_dump_tipping"));
+        at(140 + 62, mc -> shot(mc, "109_dump_up"));
+        at(140 + 64, mc -> aim(mc, 16.5, -59.0, -2.5, 4.5, 2.6, -5.5));
+        at(140 + 100, mc -> shot(mc, "110_dump_load"));
+        // The garbage truck at the cans.
+        at(260, mc -> aim(mc, 0.5, -59.2, 12.5, -4.5, 2.6, -4.5));
+        at(290, mc -> shot(mc, "111_garbage_cans"));
+        at(292, mc -> server(mc, player -> {
+            player.getAbilities().flying = false;
+            player.onUpdateAbilities();
+            player.startRiding(car(player.serverLevel(), CarType.GARBAGE_TRUCK), true);
+        }));
+        at(296, mc -> mc.options.hideGui = false);
+        at(320, mc -> shot(mc, "112_garbage_hud"));
+        at(322, mc -> server(mc, com.reiko.cars.trailer.Hitching::use));
+        at(330, mc -> shot(mc, "113_garbage_collected"));
+        // The police car's siren key.
+        at(335, mc -> server(mc, player -> {
+            player.stopRiding();
+            player.startRiding(car(player.serverLevel(), CarType.POLICE_CAR), true);
+        }));
+        at(360, mc -> shot(mc, "114_police_hud"));
+        // The ice cream truck's shop.
+        at(365, mc -> server(mc, player -> {
+            player.stopRiding();
+            player.teleportTo(player.serverLevel(), 13.0, -60.0, 16.5, 90.0F, 10.0F);
+            com.reiko.cars.icecream.IceCreamMenu.open(player, car(player.serverLevel(), CarType.ICE_CREAM_TRUCK));
+        }));
+        at(385, mc -> shot(mc, "115_ice_cream_shop"));
+        at(387, mc -> clickAt(mc, 180, 27));
+        at(395, mc -> clickAt(mc, 180, 27));
+        at(405, mc -> clickAt(mc, 140, 116));
+        at(412, mc -> hoverOn(mc, 300, 300));
+        at(425, mc -> shot(mc, "116_ice_cream_bought"));
+        at(427, mc -> mc.player.closeContainer());
+        at(430, mc -> server(mc, player -> {
+            car(player.serverLevel(), CarType.ICE_CREAM_TRUCK).setOwner(player);
+            com.reiko.cars.icecream.IceCreamMenu.open(player, car(player.serverLevel(), CarType.ICE_CREAM_TRUCK));
+        }));
+        at(450, mc -> shot(mc, "117_ice_cream_owner"));
+        at(452, mc -> mc.player.closeContainer());
+        at(455, mc -> {
+            mc.options.hideGui = true;
+            aim(mc, 10.5, -58.8, 16.5, 5.0, 1.2, 3.0);
+        });
+        at(480, mc -> shot(mc, "118_ice_cream_hatch"));
+        // The mixer, with someone driving it: the drum turns and the powder sets; then it pours.
+        at(482, mc -> server(mc, player -> {
+            ServerPlayer mo = extraPlayer(player.server, "Mo");
+            CarEntity mixer = car(player.serverLevel(), CarType.CEMENT_MIXER);
+            mo.teleportTo(player.serverLevel(), mixer.getX(), mixer.getY(), mixer.getZ(), 0.0F, 0.0F);
+            mo.startRiding(mixer, true);
+        }));
+        at(485, mc -> aim(mc, 22.5, -58.5, 17.5, 8.0, 2.0, 1.0));
+        at(520, mc -> shot(mc, "119_mixer_turning_a"));
+        at(527, mc -> shot(mc, "120_mixer_turning_b"));
+        at(530, mc -> server(mc, player -> {
+            CarEntity mixer = car(player.serverLevel(), CarType.CEMENT_MIXER);
+            ReikoCars.LOGGER.info("Showcase mixer drum: {} light gray concrete, {} powder left", mixer.bed().countItem(Blocks.LIGHT_GRAY_CONCRETE.asItem()),
+                    mixer.bed().countItem(Blocks.LIGHT_GRAY_CONCRETE_POWDER.asItem()) + mixer.bed().countItem(Blocks.YELLOW_CONCRETE_POWDER.asItem()));
+            com.reiko.cars.car.WorkVehicles.pour((ServerPlayer) mixer.getControllingPassenger(), mixer);
+        }));
+        at(532, mc -> aim(mc, 22.5, -59.0, 12.0, 6.0, 3.0, -6.0));
+        at(560, mc -> shot(mc, "121_mixer_poured"));
+        // The new items.
+        at(565, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                player.getInventory().clearContent();
+                give(player, ModItems.VANILLA_ICE_CREAM.get(), 3);
+                give(player, ModItems.CHOCOLATE_ICE_CREAM.get(), 3);
+                give(player, ModItems.STRAWBERRY_ICE_CREAM.get(), 3);
+                give(player, ModItems.TRASH_CAN.get(), 1);
+                for (CarType type : new CarType[] {CarType.POLICE_CAR, CarType.AMBULANCE, CarType.GARBAGE_TRUCK, CarType.ICE_CREAM_TRUCK, CarType.DUMP_TRUCK}) {
+                    give(player, ModItems.car(type), 1);
+                }
+            });
+        });
+        at(585, mc -> shot(mc, "122_items"));
+        at(590, mc -> mc.stop());
     }
 }

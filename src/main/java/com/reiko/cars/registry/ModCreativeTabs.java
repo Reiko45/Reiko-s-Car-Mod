@@ -38,6 +38,10 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.TOLL_BOOTH.get());
                 output.accept(ModItems.TOLL_GATE.get());
                 output.accept(ModItems.INSURANCE_OFFICE.get());
+                output.accept(ModItems.TRASH_CAN.get());
+                output.accept(ModItems.VANILLA_ICE_CREAM.get());
+                output.accept(ModItems.CHOCOLATE_ICE_CREAM.get());
+                output.accept(ModItems.STRAWBERRY_ICE_CREAM.get());
                 for (TrailerType type : TrailerType.values()) {
                     output.accept(ModItems.trailer(type));
                 }

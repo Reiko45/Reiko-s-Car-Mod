@@ -8,6 +8,7 @@
     "reikocars:dealership",
     "reikocars:parking_meter",
     "reikocars:toll_booth",
-    "reikocars:toll_gate"
+    "reikocars:toll_gate",
+    "reikocars:trash_can"
   ]
 }

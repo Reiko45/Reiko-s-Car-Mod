@@ -1,0 +1,22 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:ambulance_chassis"
+  },
+  "body": {
+    "item": "reikocars:ambulance_body"
+  },
+  "interior": {
+    "item": "reikocars:ambulance_interior"
+  },
+  "engine": {
+    "item": "reikocars:diesel_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:ambulance"
+  }
+}

@@ -21,6 +21,10 @@ import org.jetbrains.annotations.Nullable;
  *       the first.</li>
  * </ul>
  *
+ * <p>The work vehicles have more, each optional: {@code beacon_a} and {@code beacon_b}, emergency lights that flash
+ * in turn while the siren's on; {@code bed}, the dump truck's bed, pivoting at its hinge to tip; and
+ * {@code drum_mount}, holding the mixer's {@code drum}, which turns about its own z axis.
+ *
  * <p>A motorcycle has no right-hand wheels: {@code wheel_fl} is its front wheel and {@code wheel_rl} its back one.
  * Its front wheel sits inside a {@code fork} bone, with the forks and handlebars, and the whole fork steers.
  */
@@ -38,6 +42,16 @@ public final class CarModel {
     private final ModelPart fork;
     /** What steers: the fork, or a car's two front wheels. */
     private final List<ModelPart> steered = new ArrayList<>();
+    @Nullable
+    private final ModelPart beaconA;
+    @Nullable
+    private final ModelPart beaconB;
+    @Nullable
+    private final ModelPart bed;
+    @Nullable
+    private final ModelPart drumMount;
+    @Nullable
+    private final ModelPart drum;
 
     public CarModel(ModelPart root) {
         this.body = root.getChild("body");
@@ -49,6 +63,11 @@ public final class CarModel {
         this.twins = root.hasChild("wheel_rl2")
                 ? new ModelPart[] {root.getChild("wheel_rl2"), root.getChild("wheel_rr2")}
                 : new ModelPart[0];
+        this.beaconA = child(root, "beacon_a");
+        this.beaconB = child(root, "beacon_b");
+        this.bed = child(root, "bed");
+        this.drumMount = child(root, "drum_mount");
+        this.drum = drumMount != null && drumMount.hasChild("drum") ? drumMount.getChild("drum") : null;
         if (fork != null) {
             steered.add(fork);
         } else {
@@ -80,6 +99,31 @@ public final class CarModel {
         }
     }
 
+    /**
+     * @param bedTilt how far the dump truck's bed is tipped up, in radians
+     * @param drumSpin how far the mixer's drum has turned, in radians
+     */
+    public void poseWork(float bedTilt, float drumSpin) {
+        if (bed != null) {
+            bed.xRot = -bedTilt; // lifts its front end, about the hinge at its back
+        }
+        if (drum != null) {
+            drum.zRot = drumSpin;
+        }
+    }
+
+    public boolean hasBeacons() {
+        return beaconA != null || beaconB != null;
+    }
+
+    /** One set of beacons: {@code first} for {@code beacon_a}, otherwise {@code beacon_b}. */
+    public void renderBeacons(boolean first, PoseStack poseStack, VertexConsumer consumer, int light, int overlay) {
+        ModelPart beacon = first ? beaconA : beaconB;
+        if (beacon != null) {
+            beacon.render(poseStack, consumer, light, overlay);
+        }
+    }
+
     /** The paintwork, tinted {@code color} (ARGB). */
     public void renderBody(PoseStack poseStack, VertexConsumer consumer, int light, int overlay, int color) {
         body.render(poseStack, consumer, light, overlay, color);
@@ -88,6 +132,7 @@ public final class CarModel {
     /** Everything that isn't paint or a light. */
     public void renderTrim(PoseStack poseStack, VertexConsumer consumer, int light, int overlay) {
         trim.render(poseStack, consumer, light, overlay);
+        renderWorkParts(poseStack, consumer, light, overlay, -1);
         if (fork != null) {
             fork.render(poseStack, consumer, light, overlay); // the front wheel with it
         }
@@ -111,11 +156,26 @@ public final class CarModel {
         }
     }
 
+    private void renderWorkParts(PoseStack poseStack, VertexConsumer consumer, int light, int overlay, int color) {
+        if (bed != null) {
+            bed.render(poseStack, consumer, light, overlay, color);
+        }
+        if (drumMount != null) {
+            drumMount.render(poseStack, consumer, light, overlay, color);
+        }
+    }
+
     // ---- one bone at a time, for the workbench's preview, where parts not fitted yet are drawn as ghosts ----
 
     /** The trim alone, without the wheels (but with a motorcycle's forks and bars), tinted {@code color} (ARGB). */
     public void renderTrimOnly(PoseStack poseStack, VertexConsumer consumer, int light, int overlay, int color) {
         trim.render(poseStack, consumer, light, overlay, color);
+        renderWorkParts(poseStack, consumer, light, overlay, color);
+        for (ModelPart beacon : new ModelPart[] {beaconA, beaconB}) {
+            if (beacon != null) {
+                beacon.render(poseStack, consumer, light, overlay, color);
+            }
+        }
         if (fork != null) {
             ModelPart front = wheels[0];
             front.visible = false;

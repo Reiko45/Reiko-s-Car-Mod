@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "tag": "c:dyes/green"
+    },
+    "T": {
+      "item": "minecraft:iron_trapdoor"
+    }
+  },
+  "pattern": [
+    "ITI",
+    "IGI",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:trash_can"
+  }
+}

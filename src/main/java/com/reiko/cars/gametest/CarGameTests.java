@@ -2177,4 +2177,218 @@ public final class CarGameTests {
         }
         helper.succeed();
     }
+    // ---- work vehicles ----
+
+    /** How many items are lying on the ground in the box from {@code from} to {@code to} (test coordinates). */
+    private static int itemsOnGround(GameTestHelper helper, Vec3 from, Vec3 to) {
+        net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(helper.absoluteVec(from), helper.absoluteVec(to));
+        int count = 0;
+        for (net.minecraft.world.entity.item.ItemEntity item : helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box)) {
+            count += item.getItem().getCount();
+        }
+        return count;
+    }
+
+    @GameTest(template = YARD)
+    public static void emergencyVehiclesAndTheMixer(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        ServerPlayer patient = join(helper);
+        try {
+            // The police car's lights and siren, on and off; a sedan has none.
+            CarEntity police = vehicle(helper, CarType.POLICE_CAR, 3.0, 4.0);
+            driver.startRiding(police, true);
+            com.reiko.cars.car.WorkVehicles.toggleSiren(driver, police);
+            check(helper, police.sirenOn(), "K turns the siren on");
+            com.reiko.cars.car.WorkVehicles.toggleSiren(driver, police);
+            check(helper, !police.sirenOn(), "and off");
+            com.reiko.cars.car.WorkVehicles.toggleSiren(patient, police);
+            check(helper, !police.sirenOn(), "only the driver works it");
+            CarEntity sedan = vehicle(helper, CarType.SEDAN, 7.0, 4.0);
+            sedan.setSiren(true);
+            check(helper, !sedan.sirenOn(), "a sedan has no siren");
+            CompoundTag saved = new CompoundTag();
+            police.setSiren(true);
+            police.saveWithoutId(saved);
+            police.setSiren(false);
+            police.load(saved);
+            check(helper, police.sirenOn(), "the siren's saved");
+            driver.stopRiding();
+            police.discard();
+            sedan.discard();
+
+            // The ambulance heals whoever rides in the back, but not its driver.
+            CarEntity ambulance = vehicle(helper, CarType.AMBULANCE, 5.0, 6.0);
+            driver.startRiding(ambulance, true);
+            patient.startRiding(ambulance, true);
+            check(helper, ambulance.getControllingPassenger() == driver && patient.getVehicle() == ambulance, "a driver and a patient");
+            driver.setHealth(10.0F);
+            patient.setHealth(10.0F);
+            com.reiko.cars.car.WorkVehicles.heal(ambulance);
+            com.reiko.cars.car.WorkVehicles.heal(ambulance);
+            near(helper, patient.getHealth(), 12.0, "the patient's healed a heart");
+            near(helper, driver.getHealth(), 10.0, "the driver isn't");
+            driver.stopRiding();
+            patient.stopRiding();
+            ambulance.discard();
+
+            // The cement mixer: concrete powder sets in the drum, which pours out at the back.
+            CarEntity mixer = vehicle(helper, CarType.CEMENT_MIXER, 5.0, 12.0);
+            mixer.bed().addItem(new ItemStack(Items.WHITE_CONCRETE_POWDER, 3));
+            mixer.bed().addItem(new ItemStack(Items.RED_CONCRETE_POWDER, 1));
+            mixer.bed().addItem(new ItemStack(Items.COBBLESTONE, 2));
+            int mixed = 0;
+            while (com.reiko.cars.car.WorkVehicles.mixOne(mixer)) {
+                mixed++;
+            }
+            helper.assertValueEqual(mixed, 4, "every block of powder sets");
+            check(helper, mixer.bed().countItem(Items.WHITE_CONCRETE) == 3 && mixer.bed().countItem(Items.RED_CONCRETE) == 1
+                    && mixer.bed().countItem(Items.WHITE_CONCRETE_POWDER) == 0, "into concrete of the same colour");
+            helper.assertValueEqual(mixer.bed().countItem(Items.COBBLESTONE), 2, "anything else just rides along");
+            driver.startRiding(mixer, true);
+            check(helper, Hitching.available(mixer, driver) == Hitching.Action.POUR, "G pours");
+            Hitching.use(driver);
+            check(helper, mixer.bed().isEmpty(), "the drum's empty");
+            helper.assertValueEqual(itemsOnGround(helper, new Vec3(2, 0, 0), new Vec3(9, 4, 9)), 6, "and it's all behind the mixer");
+            driver.stopRiding();
+            mixer.discard();
+        } finally {
+            leave(helper, driver, patient);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 200)
+    public static void dumpTrucksTipTheirLoad(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        CarEntity truck = vehicle(helper, CarType.DUMP_TRUCK, 5.0, 20.0);
+        truck.bed().addItem(new ItemStack(Items.DIRT, 64));
+        truck.bed().addItem(new ItemStack(Items.GRAVEL, 10));
+        driver.startRiding(truck, true);
+        check(helper, Hitching.available(truck, driver) == Hitching.Action.DUMP, "G tips the bed");
+        Hitching.use(driver);
+        check(helper, truck.tipStart() >= 0 && !truck.bed().isEmpty(), "the bed starts up, still loaded");
+        check(helper, Hitching.available(truck, driver) == null, "and can't be tipped again while it's up");
+        helper.runAfterDelay(com.reiko.cars.car.WorkVehicles.TIP_DUMP_AT + 2, () -> {
+            check(helper, truck.bed().isEmpty(), "the load slides out");
+            helper.assertValueEqual(itemsOnGround(helper, new Vec3(2, 0, 9), new Vec3(9, 4, 17)), 74, "behind the truck");
+            near(helper, truck.bedTilt(0.0F), 1.0, "with the bed all the way up");
+        });
+        helper.runAfterDelay(com.reiko.cars.car.WorkVehicles.TIP_UP + com.reiko.cars.car.WorkVehicles.TIP_HOLD
+                + com.reiko.cars.car.WorkVehicles.TIP_DOWN + 5, () -> {
+            check(helper, truck.tipStart() < 0 && truck.bedTilt(0.0F) == 0.0F, "then it comes back down");
+            leave(helper, driver);
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = YARD)
+    public static void garbageTrucksEmptyTrashCans(GameTestHelper helper) {
+        ServerPlayer worker = worker(helper, "garbage_collector");
+        ResourceLocation job = carJob("garbage_collector");
+        try {
+            CarEntity truck = vehicle(helper, CarType.GARBAGE_TRUCK, 5.5, 14.0); // its hopper's at z 10
+            BlockPos left = new BlockPos(7, 1, 10);
+            BlockPos right = new BlockPos(3, 1, 10);
+            BlockPos far = new BlockPos(5, 1, 2);
+            for (BlockPos pos : new BlockPos[] {left, right, far}) {
+                helper.setBlock(pos, ModBlocks.TRASH_CAN.get().defaultBlockState());
+            }
+            var leftCan = (com.reiko.cars.garbage.TrashCanBlockEntity) helper.getBlockEntity(left);
+            var rightCan = (com.reiko.cars.garbage.TrashCanBlockEntity) helper.getBlockEntity(right);
+            var farCan = (com.reiko.cars.garbage.TrashCanBlockEntity) helper.getBlockEntity(far);
+            leftCan.setItem(0, new ItemStack(Items.ROTTEN_FLESH, 20));
+            rightCan.setItem(3, new ItemStack(Items.BONE, 5));
+            farCan.setItem(0, new ItemStack(Items.STICK, 7));
+
+            worker.startRiding(truck, true);
+            check(helper, Hitching.available(truck, worker) == Hitching.Action.TRASH, "G empties the cans by the hopper");
+            Hitching.use(worker);
+            check(helper, leftCan.isEmpty() && rightCan.isEmpty(), "both cans by the hopper are emptied");
+            helper.assertValueEqual(farCan.itemCount(), 7, "the one down the road isn't");
+            helper.assertValueEqual(itemsOnGround(helper, new Vec3(0, 0, 0), new Vec3(10, 4, 34)), 0, "the trash is gone, not dropped");
+            helper.assertValueEqual(jobXp(worker, job), 20L, "two cans at 10 XP");
+
+            leftCan.setItem(0, new ItemStack(Items.ROTTEN_FLESH, 3));
+            Hitching.use(worker);
+            check(helper, leftCan.isEmpty(), "a can can be emptied again");
+            helper.assertValueEqual(jobXp(worker, job), 20L, "but it only pays once a day");
+            leftCan.setLastPaid(helper.getLevel().getGameTime() - com.reiko.cars.garbage.GarbageService.PAY_EVERY);
+            leftCan.setItem(0, new ItemStack(Items.ROTTEN_FLESH, 3));
+            Hitching.use(worker);
+            long nextDay = jobXp(worker, job);
+            check(helper, nextDay >= 30L, "the next day it pays again"); // (and maybe finishes a contract for 3 cans)
+            Hitching.use(worker);
+            helper.assertValueEqual(jobXp(worker, job), nextDay, "empty cans don't pay");
+
+            CompoundTag saved = leftCan.saveWithoutMetadata(helper.getLevel().registryAccess());
+            check(helper, saved.getLong("LastPaid") == leftCan.lastPaid(), "when it was last paid is saved");
+            worker.stopRiding();
+            truck.discard();
+        } finally {
+            leave(helper, worker);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD)
+    public static void iceCreamTrucksSellTreats(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer owner = join(helper);
+        ServerPlayer customer = join(helper);
+        try {
+            CarEntity truck = vehicle(helper, CarType.ICE_CREAM_TRUCK, 5.0, 8.0);
+            truck.setOwner(owner);
+            truck.bed().addItem(new ItemStack(ModItems.VANILLA_ICE_CREAM.get(), 5));
+            truck.bed().addItem(new ItemStack(ModItems.CHOCOLATE_ICE_CREAM.get(), 3));
+            Item vanilla = ModItems.VANILLA_ICE_CREAM.get();
+            Item chocolate = ModItems.CHOCOLATE_ICE_CREAM.get();
+            check(helper, com.reiko.cars.icecream.IceCreamService.menu(truck, false).isEmpty(), "nothing's for sale until it's priced");
+            helper.assertValueEqual(com.reiko.cars.icecream.IceCreamService.menu(truck, true).size(), 2, "though the owner sees the stock");
+            check(helper, !com.reiko.cars.icecream.IceCreamService.setPrice(customer, truck, vanilla, "0.01").success(), "only the owner sets prices");
+            check(helper, com.reiko.cars.icecream.IceCreamService.setPrice(owner, truck, vanilla, "2.00").success(), "the owner prices vanilla");
+            check(helper, !com.reiko.cars.icecream.IceCreamService.setPrice(owner, truck, chocolate, "lots").success(), "a price has to be money");
+            helper.assertValueEqual(com.reiko.cars.icecream.IceCreamService.menu(truck, false), List.of(vanilla), "vanilla's on the menu");
+
+            // The shop screen: the serving hatch is on the left (+x, facing south).
+            check(helper, com.reiko.cars.car.WorkVehicles.atHatch(truck, new Vec3(1.1, 1.0, 0.0))
+                    && !com.reiko.cars.car.WorkVehicles.atHatch(truck, new Vec3(-1.1, 1.0, 0.0)), "the hatch is on the left");
+            var menu = com.reiko.cars.icecream.IceCreamMenu.create(1, customer, truck);
+            check(helper, !menu.isOwner() && menu.count() == 1 && menu.item().is(vanilla) && menu.price() == 200 && menu.stock() == 5,
+                    "the shop shows vanilla at $2.00, 5 left");
+            check(helper, !truck.interactAt(owner, new Vec3(-1.1, 1.0, 0.0), InteractionHand.MAIN_HAND).consumesAction(),
+                    "the owner's other door is just a door");
+            var own = com.reiko.cars.icecream.IceCreamMenu.create(2, owner, truck);
+            check(helper, own.isOwner() && own.count() == 2 && own.price() == 200, "the owner sees the whole freezer to price");
+            own.clickMenuButton(owner, com.reiko.cars.icecream.IceCreamMenu.NEXT);
+            check(helper, own.item().is(chocolate) && own.price() == -1 && own.stock() == 3, "and picks chocolate, not priced yet");
+
+            // Buying one.
+            Purse.give(customer, 1_000);
+            long tax = com.reiko.economy.config.EconomyConfig.taxRates().salesTax(200);
+            long ownerBefore = ECO.getBalance(server, owner.getUUID());
+            check(helper, !com.reiko.cars.icecream.IceCreamService.buy(owner, truck, vanilla, 200, Payment.cash()).success(), "the owner can't buy their own");
+            check(helper, !com.reiko.cars.icecream.IceCreamService.buy(customer, truck, vanilla, 100, Payment.cash()).success(), "an old price is caught");
+            check(helper, !com.reiko.cars.icecream.IceCreamService.buy(customer, truck, chocolate, 0, Payment.cash()).success(), "chocolate isn't for sale");
+            ShopActionResult bought = com.reiko.cars.icecream.IceCreamService.buy(customer, truck, vanilla, 200, Payment.cash());
+            check(helper, bought.success(), "buying a vanilla: " + bought.message().getString());
+            check(helper, bought.message().getString().contains("Vanilla Ice Cream"), "the receipt names it: " + bought.message().getString());
+            helper.assertValueEqual(customer.getInventory().countItem(vanilla), 1, "one vanilla ice cream");
+            helper.assertValueEqual(truck.bed().countItem(vanilla), 4, "out of the freezer");
+            helper.assertValueEqual(Purse.value(customer), 1_000L - 200 - tax, "paid $2.00 and the tax");
+            helper.assertValueEqual(ECO.getBalance(server, owner.getUUID()), ownerBefore + 200, "the owner gets the price");
+
+            check(helper, com.reiko.cars.icecream.IceCreamService.setPrice(owner, truck, vanilla, "").success(), "clearing the price");
+            check(helper, com.reiko.cars.icecream.IceCreamService.menu(truck, false).isEmpty(), "takes it off the menu");
+            com.reiko.cars.icecream.IceCreamService.setPrice(owner, truck, chocolate, "1.50");
+            CompoundTag saved = new CompoundTag();
+            truck.saveWithoutId(saved);
+            truck.shopPrices().clear();
+            truck.load(saved);
+            helper.assertValueEqual(truck.shopPrices().get(chocolate), 150L, "prices are saved");
+            check(helper, ModItems.STRAWBERRY_ICE_CREAM.get().components().has(net.minecraft.core.component.DataComponents.FOOD), "ice cream is food");
+        } finally {
+            leave(helper, owner, customer);
+        }
+        helper.succeed();
+    }
 }

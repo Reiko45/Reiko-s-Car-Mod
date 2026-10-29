@@ -153,5 +153,11 @@ public final class CarHud implements LayeredDraw.Layer {
                     ReikoCarsClient.HITCH.getTranslatedKeyMessage());
             graphics.drawString(font, hint, x + WIDTH - font.width(hint), y - 11, 0xFFFFD54F, true);
         }
+        // And the siren key, in a police car or ambulance: lit up while they're on.
+        if (car.carType().hasSiren() && car.getControllingPassenger() == minecraft.player) {
+            Component hint = Component.translatable("hud.reikocars.siren", ReikoCarsClient.SIREN.getTranslatedKeyMessage());
+            int sirenColor = car.sirenOn() ? ((minecraft.level.getGameTime() / 4) % 2 == 0 ? 0xFFFF5252 : 0xFF448AFF) : 0xC0FFFFFF;
+            graphics.drawString(font, hint, x + WIDTH - font.width(hint), y - (action != null ? 22 : 11), sirenColor, true);
+        }
     }
 }
