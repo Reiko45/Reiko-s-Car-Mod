@@ -2,6 +2,7 @@ package com.reiko.cars.registry;
 
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.FuelType;
+import com.reiko.cars.mail.MailboxBlock;
 import com.reiko.cars.pump.GasPumpBlock;
 import com.reiko.cars.repair.RepairBenchBlock;
 import com.reiko.cars.workbench.CarWorkbenchBlock;
@@ -50,6 +51,15 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL)
                     .noOcclusion()));
+
+    /** Where mail is sent from and comes to. Blast-proof, so nobody can blow up someone else's mail. */
+    public static final DeferredBlock<MailboxBlock> MAILBOX = BLOCKS.register("mailbox", () -> new MailboxBlock(
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(2.0F, 1200.0F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .pushReaction(PushReaction.BLOCK)));
 
     private ModBlocks() {
     }

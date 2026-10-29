@@ -1,0 +1,22 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:mail_van_chassis"
+  },
+  "body": {
+    "item": "reikocars:mail_van_body"
+  },
+  "interior": {
+    "item": "reikocars:mail_van_interior"
+  },
+  "engine": {
+    "item": "reikocars:car_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:mail_van"
+  }
+}

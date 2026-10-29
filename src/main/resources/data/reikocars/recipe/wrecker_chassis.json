@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "tag": "c:storage_blocks/iron"
+    },
+    "H": {
+      "item": "minecraft:tripwire_hook"
+    }
+  },
+  "pattern": [
+    "I I",
+    "BHB",
+    "I I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:wrecker_chassis"
+  }
+}

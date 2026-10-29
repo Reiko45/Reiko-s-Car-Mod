@@ -3,6 +3,7 @@
     "reikocars:gas_pump",
     "reikocars:car_workbench",
     "reikocars:diesel_pump",
-    "reikocars:repair_bench"
+    "reikocars:repair_bench",
+    "reikocars:mailbox"
   ]
 }

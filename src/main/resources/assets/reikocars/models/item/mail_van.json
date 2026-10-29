@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "reikocars:item/mail_van_paint",
+    "layer1": "reikocars:item/mail_van_trim"
+  }
+}

@@ -20,6 +20,9 @@ import com.reiko.cars.client.model.ConvertibleModel;
 import com.reiko.cars.client.model.CruiserModel;
 import com.reiko.cars.client.model.DeliveryVanModel;
 import com.reiko.cars.client.model.FarmTractorModel;
+import com.reiko.cars.client.model.FlatbedModel;
+import com.reiko.cars.client.model.MailVanModel;
+import com.reiko.cars.client.model.WreckerModel;
 import com.reiko.cars.client.model.HatchbackModel;
 import com.reiko.cars.client.model.HeavyPickupModel;
 import com.reiko.cars.client.model.MinivanModel;
@@ -132,6 +135,9 @@ public final class ReikoCarsClient {
             case CITY_BUS -> CityBusModel::createBodyLayer;
             case HEAVY_PICKUP -> HeavyPickupModel::createBodyLayer;
             case FARM_TRACTOR -> FarmTractorModel::createBodyLayer;
+            case FLATBED -> FlatbedModel::createBodyLayer;
+            case WRECKER -> WreckerModel::createBodyLayer;
+            case MAIL_VAN -> MailVanModel::createBodyLayer;
             case SPORT_BIKE -> SportBikeModel::createBodyLayer;
             case CRUISER -> CruiserModel::createBodyLayer;
             case DIRT_BIKE -> DirtBikeModel::createBodyLayer;
@@ -162,6 +168,7 @@ public final class ReikoCarsClient {
         event.register(ModMenus.PUMP.get(), PumpScreen::new);
         event.register(ModMenus.CAR_WORKBENCH.get(), CarWorkbenchScreen::new);
         event.register(ModMenus.REPAIR_BENCH.get(), RepairBenchScreen::new);
+        event.register(ModMenus.MAILBOX.get(), MailboxScreen::new);
     }
 
     private static void registerKeys(RegisterKeyMappingsEvent event) {

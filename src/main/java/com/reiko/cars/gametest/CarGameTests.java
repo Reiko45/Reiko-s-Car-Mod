@@ -10,6 +10,12 @@ import com.reiko.cars.car.CarFuel;
 import com.reiko.cars.car.CarTank;
 import com.reiko.cars.car.CarType;
 import com.reiko.cars.car.FuelType;
+import com.reiko.cars.mail.MailService;
+import com.reiko.cars.mail.MailboxBlock;
+import com.reiko.cars.mail.MailboxBlockEntity;
+import com.reiko.cars.mail.MailboxMenu;
+import com.reiko.cars.mail.Parcel;
+import com.reiko.cars.mail.ParcelItem;
 import com.reiko.cars.pump.GasPumpBlock;
 import com.reiko.cars.pump.GasPumpBlockEntity;
 import com.reiko.cars.pump.PumpService;
@@ -21,6 +27,7 @@ import com.reiko.cars.repair.RepairBenchBlockEntity;
 import com.reiko.cars.repair.RepairBenchMenu;
 import com.reiko.cars.repair.RepairJobs;
 import com.reiko.cars.repair.RepairService;
+import com.reiko.cars.tow.Towing;
 import com.reiko.cars.trailer.Hitching;
 import com.reiko.cars.trailer.TankerService;
 import com.reiko.cars.trailer.TrailerEntity;
@@ -47,6 +54,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.CommonListenerCookie;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.Slot;
@@ -1309,6 +1317,175 @@ public final class CarGameTests {
             check(helper, trailer.condition().isNew(), "as good as new: " + trailer.condition());
         } finally {
             leave(helper, mechanic);
+        }
+        helper.succeed();
+    }
+
+    // ---- tow trucks ----
+
+    /** A car standing behind {@code truck}, facing the same way, its front {@code gap} blocks short of the pickup point. */
+    private static CarEntity behind(GameTestHelper helper, CarEntity truck, CarType type, double gap) {
+        Vec3 point = helper.relativeVec(Towing.pickupPoint(truck));
+        return vehicle(helper, type, point.x, point.z - type.length / 2.0 - gap);
+    }
+
+    @GameTest(template = YARD)
+    public static void flatbedLoadsAndDropsACar(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        try {
+            CarEntity truck = vehicle(helper, CarType.FLATBED, 5.0, 22.0);
+            CarEntity semi = behind(helper, truck, CarType.SEMI_TRUCK, 0.3);
+            driver.startRiding(truck, true);
+            check(helper, Hitching.available(truck, driver) == null, "a semi is too big for the flatbed");
+            semi.discard();
+
+            CarEntity car = behind(helper, truck, CarType.SEDAN, 0.3);
+            car.setCondition(new CarCondition(1.0F, 0.0F, 1.0F, 1.0F, 1.0F)); // broken down: its engine's gone
+            check(helper, Hitching.available(truck, driver) == Hitching.Action.TOW, "the flatbed can take the car behind, broken down or not");
+            Hitching.use(driver);
+            check(helper, car.getVehicle() == truck && Towing.towed(truck) == car, "the car is on the flatbed");
+            truck.positionRider(car);
+            close(helper, car.getY(), truck.getY() + Towing.DECK_TOP, "up on the deck");
+            check(helper, flatDistance(car.position(), truck.position()) < CarType.FLATBED.length / 2.0, "within the truck's length");
+            near(helper, net.minecraft.util.Mth.wrapDegrees(car.getYRot() - truck.getYRot()), 0.0, "facing forward");
+            check(helper, Hitching.available(truck, driver) == Hitching.Action.DROP, "then G drops it off");
+            check(helper, Towing.towable(truck, driver) == null, "and it can't take a second");
+
+            Hitching.use(driver);
+            check(helper, !car.isPassenger(), "the car is off");
+            close(helper, car.getY(), truck.getY(), "on the ground");
+            check(helper, flatDistance(car.position(), truck.position()) > CarType.FLATBED.length / 2.0, "behind the truck");
+        } finally {
+            leave(helper, driver);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD)
+    public static void wreckerLiftsACarByItsFront(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        ServerPlayer stranger = join(helper);
+        try {
+            CarEntity truck = vehicle(helper, CarType.WRECKER, 5.0, 22.0);
+            CarEntity backwards = behind(helper, truck, CarType.SEDAN, 0.3);
+            backwards.setYRot(180.0F); // facing the truck: its back's toward the forks, not its front
+            driver.startRiding(truck, true);
+            check(helper, Towing.towable(truck, driver) == null, "the wrecker needs the car's front at its forks");
+            backwards.discard();
+
+            CarEntity locked = behind(helper, truck, CarType.HATCHBACK, 0.3);
+            locked.setOwner(stranger);
+            locked.setLocked(true);
+            check(helper, Towing.towable(truck, driver) == null, "nor a stranger's locked car");
+            locked.discard();
+
+            CarEntity car = behind(helper, truck, CarType.SEDAN, 0.3);
+            Hitching.use(driver);
+            check(helper, car.getVehicle() == truck, "the wrecker has the car");
+            truck.positionRider(car);
+            check(helper, car.towPitch(1.0F) != 0.0F, "its front lifted");
+            check(helper, car.getY() > truck.getY() && car.getY() < truck.getY() + Towing.LIFT_RISE, "its back wheels on the road");
+            check(helper, Math.abs(net.minecraft.util.Mth.wrapDegrees(car.getYRot() - truck.getYRot())) < 1.0F, "trailing straight behind");
+
+            Hitching.use(driver);
+            check(helper, !car.isPassenger() && car.towPitch(1.0F) == 0.0F, "let down");
+            close(helper, car.getY(), truck.getY(), "where it was");
+        } finally {
+            leave(helper, driver, stranger);
+        }
+        helper.succeed();
+    }
+
+    // ---- the mail ----
+
+    private static MailboxBlockEntity mailbox(GameTestHelper helper, BlockPos pos, ServerPlayer owner) {
+        helper.setBlock(pos, ModBlocks.MAILBOX.get().defaultBlockState());
+        MailboxBlockEntity box = (MailboxBlockEntity) helper.getBlockEntity(pos);
+        box.setOwner(owner);
+        return box;
+    }
+
+    private static ShopActionResult send(ServerPlayer sender, MailboxBlockEntity box, String to, long postage, ItemStack... items) {
+        MailboxMenu menu = MailboxMenu.create(0, sender, box);
+        for (int i = 0; i < items.length; i++) {
+            menu.packing().setItem(i, items[i]);
+        }
+        ShopActionResult result = MailService.send(sender, menu, to, postage, Payment.cash());
+        menu.removed(sender); // what wasn't sent goes back
+        return result;
+    }
+
+    private static int parcels(net.minecraft.world.SimpleContainer bag) {
+        int count = 0;
+        for (int i = 0; i < bag.getContainerSize(); i++) {
+            count += ParcelItem.parcel(bag.getItem(i)) != null ? bag.getItem(i).getCount() : 0;
+        }
+        return count;
+    }
+
+    @GameTest(template = YARD)
+    public static void theMailVanDeliversParcels(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer alice = join(helper);
+        ServerPlayer bob = join(helper);
+        ServerPlayer carrier = join(helper);
+        try {
+            BlockPos aPos = new BlockPos(1, 1, 6);
+            BlockPos bPos = new BlockPos(1, 1, 26);
+            MailboxBlockEntity aliceBox = mailbox(helper, aPos, alice);
+            MailboxBlockEntity bobBox = mailbox(helper, bPos, bob);
+            check(helper, !aliceBox.canManage(bob), "only its owner empties a mailbox");
+
+            // Into the addressee's own mailbox: free.
+            ShopActionResult dropped = send(bob, aliceBox, alice.getGameProfile().getName(), 0, new ItemStack(Items.DIAMOND, 2));
+            check(helper, dropped.success(), "dropping a parcel in: " + dropped.message().getString());
+            helper.assertValueEqual(aliceBox.count(aliceBox.inbox()), 1, "a parcel in Alice's inbox");
+            Parcel gift = ParcelItem.parcel(aliceBox.inbox().getStackInSlot(0));
+            check(helper, gift != null && gift.to().equals(alice.getUUID()) && gift.postage() == 0, "for Alice, no postage");
+
+            // To anyone else: postage, and it waits for the van.
+            String bobName = bob.getGameProfile().getName();
+            Purse.give(alice, 1000);
+            check(helper, !send(alice, aliceBox, "nobody_here", 200, new ItemStack(Items.APPLE)).success(), "nobody by that name");
+            check(helper, !send(alice, aliceBox, bobName, 100, new ItemStack(Items.APPLE)).success(), "out-of-date postage is caught");
+            check(helper, alice.getInventory().countItem(Items.APPLE) == 2, "and the apples come back");
+            alice.getInventory().clearContent();
+            Purse.give(alice, 1000);
+            ShopActionResult posted = send(alice, aliceBox, bobName, MailService.postage(), new ItemStack(Items.APPLE, 3));
+            check(helper, posted.success(), "posting to Bob: " + posted.message().getString());
+            helper.assertValueEqual(Purse.value(alice), 1000L - MailService.postage(), "postage paid in cash");
+            helper.assertValueEqual(aliceBox.count(aliceBox.outbox()), 1, "the parcel waits for the van");
+            check(helper, helper.getBlockState(aPos).getValue(MailboxBlock.FLAG), "with the flag up");
+
+            // The van collects it at Alice's, and delivers it at Bob's.
+            CarEntity van = vehicle(helper, CarType.MAIL_VAN, 4.5, 6.5);
+            carrier.startRiding(van, true);
+            check(helper, Hitching.available(van, carrier) == Hitching.Action.MAIL, "the van can stop for the mail");
+            long carrierBefore = ECO.getBalance(server, carrier.getUUID());
+            Hitching.use(carrier);
+            helper.assertValueEqual(parcels(van.bed()), 1, "collected into the mail compartment");
+            helper.assertValueEqual(aliceBox.count(aliceBox.outbox()), 0, "the outbox is empty");
+            check(helper, !helper.getBlockState(aPos).getValue(MailboxBlock.FLAG), "and the flag down");
+            helper.assertValueEqual(aliceBox.count(aliceBox.inbox()), 1, "Alice's own mail stays put");
+
+            Vec3 atBob = helper.absoluteVec(new Vec3(4.5, 1.0, 26.5));
+            van.moveTo(atBob.x, atBob.y, atBob.z, 0.0F, 0.0F);
+            Hitching.use(carrier);
+            helper.assertValueEqual(parcels(van.bed()), 0, "delivered");
+            helper.assertValueEqual(bobBox.count(bobBox.inbox()), 1, "into Bob's mailbox");
+            helper.assertValueEqual(ECO.getBalance(server, carrier.getUUID()), carrierBefore + MailService.postage(), "the carrier earns the postage");
+
+            // Only Bob (or Alice, who sent it) can open it.
+            ItemStack parcel = bobBox.inbox().extractItem(0, 1, false);
+            carrier.setItemInHand(InteractionHand.MAIN_HAND, parcel.copy());
+            ModItems.PARCEL.get().use(helper.getLevel(), carrier, InteractionHand.MAIN_HAND);
+            check(helper, carrier.getMainHandItem().is(ModItems.PARCEL.get()), "the carrier can't open it");
+            bob.setItemInHand(InteractionHand.MAIN_HAND, parcel);
+            ModItems.PARCEL.get().use(helper.getLevel(), bob, InteractionHand.MAIN_HAND);
+            helper.assertValueEqual(bob.getInventory().countItem(Items.APPLE), 3, "Bob opens it: three apples");
+            check(helper, bob.getInventory().countItem(ModItems.PARCEL.get()) == 0, "and the box is gone");
+        } finally {
+            leave(helper, alice, bob, carrier);
         }
         helper.succeed();
     }

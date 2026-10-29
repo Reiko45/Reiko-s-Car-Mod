@@ -3,6 +3,7 @@ package com.reiko.cars.registry;
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarItem;
 import com.reiko.cars.car.CarType;
+import com.reiko.cars.mail.ParcelItem;
 import com.reiko.cars.trailer.TrailerItem;
 import com.reiko.cars.trailer.TrailerPartItem;
 import com.reiko.cars.trailer.TrailerType;
@@ -60,6 +61,10 @@ public final class ModItems {
             () -> new DoubleHighBlockItem(ModBlocks.DIESEL_PUMP.get(), new Item.Properties()));
     public static final DeferredItem<BlockItem> CAR_WORKBENCH = ITEMS.registerSimpleBlockItem(ModBlocks.CAR_WORKBENCH);
     public static final DeferredItem<BlockItem> REPAIR_BENCH = ITEMS.registerSimpleBlockItem(ModBlocks.REPAIR_BENCH);
+
+    public static final DeferredItem<BlockItem> MAILBOX = ITEMS.registerSimpleBlockItem(ModBlocks.MAILBOX);
+    /** Items wrapped up for someone at a mailbox. Only made there. */
+    public static final DeferredItem<ParcelItem> PARCEL = ITEMS.register("parcel", () -> new ParcelItem(new Item.Properties().stacksTo(1)));
 
     // Repair parts, fitted at a repair bench (see RepairJobs). Tires are the same ones cars are built with.
     /** An oil change. */

@@ -8,6 +8,7 @@ import com.reiko.cars.registry.ModDataSerializers;
 import com.reiko.cars.registry.ModItems;
 import com.reiko.cars.registry.ModSounds;
 import com.reiko.cars.repair.Repairable;
+import com.reiko.cars.tow.Towing;
 import com.reiko.cars.trailer.TrailerEntity;
 import java.util.List;
 import java.util.Optional;
@@ -137,6 +138,9 @@ public class CarEntity extends VehicleEntity implements Repairable {
     private double skidWork;
     private double crashImpact;
     private int squealCooldown;
+    // Tilted nose-up on a wrecker's wheel-lift (client and server both work it out).
+    private float towPitch;
+    private float towPitchO;
 
     // Lerping toward the server's position, on clients that don't drive it
     private int lerpSteps;
@@ -342,7 +346,7 @@ public class CarEntity extends VehicleEntity implements Repairable {
             return;
         }
         double rate = CarsConfig.get(CarsConfig.WEAR);
-        double load = trailer() != null ? 1.4 : 1.0;
+        double load = trailer() != null ? 1.4 : towed() != null ? 1.3 : 1.0;
         if ((brakeSpeed > 0.0F || skidSpeed > 0.0F) && tickCount - lastBrakeReport >= REPORT_INTERVAL) {
             // At most what the brakes could take off in two seconds.
             double most = type.braking * 1.5 * 40;
@@ -552,9 +556,24 @@ public class CarEntity extends VehicleEntity implements Repairable {
 
     // ---- passengers ----
 
-    /** The passengers in seats: everyone but the trailer. */
+    /** The passengers in seats: everyone but the trailer, or a car being towed. */
     private List<Entity> riders() {
-        return getPassengers().stream().filter(passenger -> !(passenger instanceof TrailerEntity)).toList();
+        return getPassengers().stream().filter(passenger -> !(passenger instanceof TrailerEntity) && !(passenger instanceof CarEntity)).toList();
+    }
+
+    /** The car this tow truck is towing, if any. */
+    @Nullable
+    public CarEntity towed() {
+        return Towing.towed(this);
+    }
+
+    /** Nose-up tilt while hanging off a wrecker's wheel-lift, in degrees. */
+    public float towPitch(float partialTick) {
+        return Mth.lerp(partialTick, towPitchO, towPitch);
+    }
+
+    public void setTowPitch(float pitch) {
+        towPitch = pitch;
     }
 
     /** The trailer this tractor is pulling, if any. */
@@ -577,6 +596,9 @@ public class CarEntity extends VehicleEntity implements Repairable {
     protected boolean canAddPassenger(Entity passenger) {
         if (passenger instanceof TrailerEntity) {
             return type.isTractor() && trailer() == null;
+        }
+        if (passenger instanceof CarEntity car) {
+            return type.isTowTruck() && towed() == null && car.carType().towableBy(type);
         }
         return riders().size() < type.seatCount();
     }
@@ -620,6 +642,10 @@ public class CarEntity extends VehicleEntity implements Repairable {
     protected void positionRider(Entity passenger, Entity.MoveFunction callback) {
         if (passenger instanceof TrailerEntity trailer) {
             trailer.followTractor(this);
+            return;
+        }
+        if (passenger instanceof CarEntity car) {
+            Towing.position(this, car, callback);
             return;
         }
         super.positionRider(passenger, callback);
@@ -692,10 +718,14 @@ public class CarEntity extends VehicleEntity implements Repairable {
             setDamage(getDamage() - 1.0F);
         }
         float yawBefore = getYRot();
+        towPitchO = towPitch;
+        if (!(getVehicle() instanceof CarEntity)) {
+            towPitch = 0.0F;
+        }
         super.tick();
         tickLerp();
         if (isPassenger()) {
-            stopDead(); // carried on a car hauler: the hauler moves it
+            stopDead(); // carried on a car hauler or a tow truck: that moves it
         } else if (isControlledByLocalInstance()) {
             if (getControllingPassenger() == null) {
                 setInput(false, false, false, false, false);
@@ -751,6 +781,10 @@ public class CarEntity extends VehicleEntity implements Repairable {
         }
         double accel = type.acceleration * speedScale * wear.power() * tires;
         double brakes = type.braking * wear.braking() * tires;
+        if (towed() != null) {
+            top *= Towing.LOADED_SPEED; // a car on the back: slower, and slower to get going
+            accel *= Towing.LOADED_ACCELERATION;
+        }
         TrailerEntity towed = trailer();
         if (towed != null) {
             top *= 0.9; // pulling a trailer: slower, and slower to get going
@@ -912,7 +946,7 @@ public class CarEntity extends VehicleEntity implements Repairable {
         }
         lastFuelPos = pos;
         LivingEntity driver = getControllingPassenger();
-        double load = trailer() != null ? 1.4 : 1.0;
+        double load = trailer() != null ? 1.4 : towed() != null ? 1.3 : 1.0;
         if (driver != null && fuel > 0 && !isBrokenDown()) {
             double burn = moved * type.fuelPerBlock * load * CarsConfig.get(CarsConfig.FUEL_USE) * condition.fuelUse()
                     + CarsConfig.get(CarsConfig.IDLE_FUEL_USE);

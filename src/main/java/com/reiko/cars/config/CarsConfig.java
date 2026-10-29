@@ -29,6 +29,9 @@ public final class CarsConfig {
     public static final ModConfigSpec.DoubleValue BENCH_REACH;
     public static final ModConfigSpec.DoubleValue DEFAULT_PART_PRICE;
 
+    public static final ModConfigSpec.DoubleValue POSTAGE;
+    public static final ModConfigSpec.DoubleValue MAIL_REACH;
+
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
@@ -95,6 +98,16 @@ public final class CarsConfig {
         DEFAULT_PART_PRICE = builder
                 .comment("Price per part a newly placed repair bench charges for each kind of part. The owner can change them.")
                 .defineInRange("defaultPricePerPart", 20.0, 0.0, 1_000_000.0);
+        builder.pop();
+
+        builder.push("mail");
+        POSTAGE = builder
+                .comment("Postage for a parcel sent by mail van, paid by the sender (plus sales tax) and earned by whoever delivers it.",
+                        "Dropping a parcel into its addressee's own mailbox by hand is always free.")
+                .defineInRange("postage", 2.0, 0.0, 1_000_000.0);
+        MAIL_REACH = builder
+                .comment("How close, in blocks, the mail van must be to a mailbox to collect and deliver its mail.")
+                .defineInRange("mailVanReach", 3.0, 1.0, 16.0);
         builder.pop();
 
         SPEC = builder.build();

@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "K": {
+      "item": "minecraft:clock"
+    },
+    "W": {
+      "tag": "minecraft:wool"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "P": {
+      "item": "minecraft:paper"
+    }
+  },
+  "pattern": [
+    " K ",
+    "WRW",
+    "IPI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:mail_van_interior"
+  }
+}

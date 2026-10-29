@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "tag": "c:storage_blocks/iron"
+    },
+    "C": {
+      "item": "minecraft:chain"
+    }
+  },
+  "pattern": [
+    "I I",
+    "BCB",
+    "I I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:flatbed_chassis"
+  }
+}

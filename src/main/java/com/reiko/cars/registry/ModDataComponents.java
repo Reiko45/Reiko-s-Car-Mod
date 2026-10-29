@@ -3,6 +3,7 @@ package com.reiko.cars.registry;
 import com.mojang.serialization.Codec;
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarCondition;
+import com.reiko.cars.mail.Parcel;
 import java.util.function.Supplier;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
@@ -11,8 +12,8 @@ import net.neoforged.neoforge.fluids.SimpleFluidContent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
- * Data items carry: a picked-up car's fuel and wear (its paint uses vanilla's dyed colour), a picked-up tanker's load, and a
- * broken gas pump's fuel and price, so nothing is lost when they're moved.
+ * Data items carry: a picked-up car's fuel and wear (its paint uses vanilla's dyed colour), a picked-up tanker's load, a
+ * broken gas pump's fuel and price, so nothing is lost when they're moved, and what's in a parcel and who it's for.
  */
 public final class ModDataComponents {
     public static final DeferredRegister.DataComponents COMPONENTS =
@@ -37,6 +38,10 @@ public final class ModDataComponents {
     /** A picked-up car's wear and tear. Missing means as new. */
     public static final Supplier<DataComponentType<CarCondition>> CONDITION = COMPONENTS.registerComponentType("condition",
             builder -> builder.persistent(CarCondition.CODEC).networkSynchronized(CarCondition.STREAM_CODEC));
+
+    /** A parcel's addressee, sender, postage and contents. */
+    public static final Supplier<DataComponentType<Parcel>> PARCEL = COMPONENTS.registerComponentType("parcel",
+            builder -> builder.persistent(Parcel.CODEC).networkSynchronized(Parcel.STREAM_CODEC));
 
     private ModDataComponents() {
     }

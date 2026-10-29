@@ -1,6 +1,7 @@
 package com.reiko.cars.registry;
 
 import com.reiko.cars.ReikoCars;
+import com.reiko.cars.mail.MailboxBlockEntity;
 import com.reiko.cars.pump.GasPumpBlockEntity;
 import com.reiko.cars.repair.RepairBenchBlockEntity;
 import java.util.function.Supplier;
@@ -18,6 +19,9 @@ public final class ModBlockEntities {
 
     public static final Supplier<BlockEntityType<RepairBenchBlockEntity>> REPAIR_BENCH = BLOCK_ENTITIES.register("repair_bench",
             () -> BlockEntityType.Builder.of(RepairBenchBlockEntity::new, ModBlocks.REPAIR_BENCH.get()).build(null));
+
+    public static final Supplier<BlockEntityType<MailboxBlockEntity>> MAILBOX = BLOCK_ENTITIES.register("mailbox",
+            () -> BlockEntityType.Builder.of(MailboxBlockEntity::new, ModBlocks.MAILBOX.get()).build(null));
 
     private ModBlockEntities() {
     }

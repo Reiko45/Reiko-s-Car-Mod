@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,flag=false": {
+      "model": "reikocars:block/mailbox"
+    },
+    "facing=north,flag=true": {
+      "model": "reikocars:block/mailbox_flag_up"
+    },
+    "facing=east,flag=false": {
+      "model": "reikocars:block/mailbox",
+      "y": 90
+    },
+    "facing=east,flag=true": {
+      "model": "reikocars:block/mailbox_flag_up",
+      "y": 90
+    },
+    "facing=south,flag=false": {
+      "model": "reikocars:block/mailbox",
+      "y": 180
+    },
+    "facing=south,flag=true": {
+      "model": "reikocars:block/mailbox_flag_up",
+      "y": 180
+    },
+    "facing=west,flag=false": {
+      "model": "reikocars:block/mailbox",
+      "y": 270
+    },
+    "facing=west,flag=true": {
+      "model": "reikocars:block/mailbox_flag_up",
+      "y": 270
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "C": {
+      "item": "minecraft:chain"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "D": {
+      "tag": "c:dyes/yellow"
+    },
+    "H": {
+      "item": "minecraft:tripwire_hook"
+    }
+  },
+  "pattern": [
+    "GGC",
+    "IDI",
+    "IHI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:wrecker_body"
+  }
+}

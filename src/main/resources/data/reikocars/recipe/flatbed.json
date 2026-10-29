@@ -1,0 +1,22 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:flatbed_chassis"
+  },
+  "body": {
+    "item": "reikocars:flatbed_body"
+  },
+  "interior": {
+    "item": "reikocars:flatbed_interior"
+  },
+  "engine": {
+    "item": "reikocars:diesel_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:flatbed"
+  }
+}

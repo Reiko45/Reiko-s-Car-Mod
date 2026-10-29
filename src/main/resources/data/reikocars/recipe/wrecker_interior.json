@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "K": {
+      "item": "minecraft:clock"
+    },
+    "L": {
+      "tag": "c:leathers"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "C": {
+      "item": "minecraft:chain"
+    }
+  },
+  "pattern": [
+    " K ",
+    "LRL",
+    "ICI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:wrecker_interior"
+  }
+}

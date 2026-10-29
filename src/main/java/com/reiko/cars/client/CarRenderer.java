@@ -37,6 +37,10 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         poseStack.pushPose();
         leanOver(poseStack, car, entityYaw, partialTick);
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - entityYaw));
+        float towPitch = car.towPitch(partialTick);
+        if (towPitch != 0.0F) {
+            poseStack.mulPose(Axis.XP.rotationDegrees(towPitch)); // nose up, on a wrecker's wheel-lift (the model faces -z here)
+        }
         float hurt = car.getHurtTime() - partialTick;
         float damage = Math.max(0.0F, car.getDamage() - partialTick);
         if (hurt > 0.0F) {

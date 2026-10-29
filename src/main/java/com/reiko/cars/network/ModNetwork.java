@@ -2,6 +2,8 @@ package com.reiko.cars.network;
 
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarEntity;
+import com.reiko.cars.mail.MailService;
+import com.reiko.cars.mail.MailboxMenu;
 import com.reiko.cars.trailer.Hitching;
 import com.reiko.cars.trailer.TankerService;
 import com.reiko.cars.trailer.TrailerEntity;
@@ -40,6 +42,7 @@ public final class ModNetwork {
         registrar.playToServer(TrailerActionPayload.TYPE, TrailerActionPayload.STREAM_CODEC, ModNetwork::handleTrailer);
         registrar.playToServer(CarWearPayload.TYPE, CarWearPayload.STREAM_CODEC, ModNetwork::handleWear);
         registrar.playToServer(RepairActionPayload.TYPE, RepairActionPayload.STREAM_CODEC, ModNetwork::handleRepair);
+        registrar.playToServer(MailActionPayload.TYPE, MailActionPayload.STREAM_CODEC, ModNetwork::handleMail);
     }
 
     private static void handleWear(CarWearPayload payload, IPayloadContext context) {
@@ -48,6 +51,16 @@ public final class ModNetwork {
             return;
         }
         car.applyWearReport(player, Math.max(0.0F, payload.braked()), Math.max(0.0F, payload.skidded()), Math.max(0.0F, payload.impact()));
+    }
+
+    private static void handleMail(MailActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player)
+                || !(player.containerMenu instanceof MailboxMenu menu)
+                || menu.containerId != payload.containerId()
+                || !menu.stillValid(player)) {
+            return;
+        }
+        ShopFeedback.send(player, MailService.send(player, menu, payload.recipient(), payload.expectedPostage(), payload.payment()));
     }
 
     private static void handleRepair(RepairActionPayload payload, IPayloadContext context) {

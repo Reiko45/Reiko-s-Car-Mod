@@ -130,6 +130,8 @@ public final class DevShowcase {
             moreCarsScript();
         } else if (MODE.equals("repair")) {
             repairScript();
+        } else if (MODE.equals("tow")) {
+            towScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -1075,4 +1077,171 @@ public final class DevShowcase {
         at(570, mc -> mc.stop());
     }
 
+    // ---- the tow trucks, the mail van and mailboxes: ./gradlew runClient -Pshowcase=tow ----
+
+    private static final BlockPos HOME_BOX = new BlockPos(35, -60, 3);
+    private static final BlockPos REIKO_BOX = new BlockPos(35, -60, 21);
+    private static final java.util.UUID REIKO = java.util.UUID.nameUUIDFromBytes("reiko".getBytes());
+
+    private static void clickAt(Minecraft minecraft, int x, int y) {
+        if (minecraft.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen) {
+            screen.mouseClicked(screen.getGuiLeft() + x, screen.getGuiTop() + y, 0);
+        }
+    }
+
+    private static void hoverOn(Minecraft minecraft, int x, int y) {
+        if (minecraft.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen) {
+            hover(minecraft, screen.getGuiLeft() + x, screen.getGuiTop() + y);
+        }
+    }
+
+    private static com.reiko.cars.mail.MailboxBlockEntity mailboxAt(ServerPlayer player, BlockPos pos) {
+        return (com.reiko.cars.mail.MailboxBlockEntity) player.serverLevel().getBlockEntity(pos);
+    }
+
+    private static CarEntity loaded(ServerLevel level, CarType truckType, CarType carType, double x, double z) {
+        spawn(level, truckType, x, z, 0.0F, 0.7);
+        CarEntity truck = car(level, truckType);
+        net.minecraft.world.phys.Vec3 point = com.reiko.cars.tow.Towing.pickupPoint(truck);
+        spawn(level, carType, point.x, point.z - carType.length / 2.0 - 0.3, 0.0F, 0.4);
+        car(level, carType).startRiding(truck, true);
+        return truck;
+    }
+
+    private static void towScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                for (int x = -10; x <= 44; x++) {
+                    for (int z = -12; z <= 40; z++) {
+                        boolean road = x >= 29 && x <= 33;
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), (road ? Blocks.GRAY_CONCRETE : Blocks.SMOOTH_STONE).defaultBlockState());
+                    }
+                }
+                CarEntity flatbed = loaded(level, CarType.FLATBED, CarType.SEDAN, 0.5, 4.0);
+                flatbed.setOwner(player);
+                CarEntity wrecker = loaded(level, CarType.WRECKER, CarType.HATCHBACK, 16.5, 4.0);
+                wrecker.setOwner(player);
+                spawn(level, CarType.MAIL_VAN, 31.5, 3.5, 180.0F, 0.8); // northbound: right-hand drive, the mailboxes on its right
+                car(level, CarType.MAIL_VAN).setOwner(player);
+                for (BlockPos pos : new BlockPos[] {HOME_BOX, REIKO_BOX}) {
+                    level.setBlockAndUpdate(pos, ModBlocks.MAILBOX.get().defaultBlockState()
+                            .setValue(com.reiko.cars.mail.MailboxBlock.FACING, Direction.WEST));
+                }
+                mailboxAt(player, HOME_BOX).setOwner(player);
+                level.getServer().getProfileCache().add(new com.mojang.authlib.GameProfile(REIKO, "Reiko"));
+                EconomyService.INSTANCE.ensureAccount(level.getServer(), REIKO, "Reiko");
+                mailboxAt(player, REIKO_BOX).setOwner(REIKO, "Reiko");
+                player.getInventory().clearContent();
+                Purse.give(player, 5_000);
+            });
+        });
+        // The flatbed with a sedan up on its deck, and the wrecker with a hatchback on its wheel-lift.
+        at(60, mc -> {
+            mc.options.hideGui = true;
+            aim(mc, 0.5, -59.0, 3.0, 8.5, 3.0, -5.5);
+        });
+        at(110, mc -> shot(mc, "50_flatbed_loaded"));
+        at(112, mc -> aim(mc, 16.5, -59.2, 1.5, 7.5, 2.6, -7.0));
+        at(160, mc -> shot(mc, "51_wrecker_towing"));
+        at(162, mc -> aim(mc, 16.5, -59.6, 0.5, 9.5, 0.6, 0.0));
+        at(205, mc -> shot(mc, "52_wrecker_side"));
+        // Towing round a bend: the car swings out behind.
+        at(210, mc -> server(mc, player -> player.startRiding(car(player.serverLevel(), CarType.WRECKER), true)));
+        at(214, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+        });
+        at(220, mc -> mc.options.keyUp.setDown(true));
+        at(240, mc -> mc.options.keyLeft.setDown(true));
+        at(262, mc -> {
+            mc.options.keyUp.setDown(false);
+            mc.options.keyLeft.setDown(false);
+            mc.options.keyDown.setDown(true);
+        });
+        at(270, mc -> mc.options.keyDown.setDown(false));
+        at(280, mc -> {
+            mc.options.hideGui = true;
+            server(mc, player -> {
+                CarEntity wrecker = car(player.serverLevel(), CarType.WRECKER);
+                player.stopRiding();
+                net.minecraft.world.phys.Vec3 at = wrecker.position();
+                player.teleportTo(player.serverLevel(), at.x + 7.0, at.y + 9.0, at.z - 4.0, 60.0F, 52.0F);
+                player.getAbilities().flying = true;
+                player.onUpdateAbilities();
+            });
+        });
+        at(286, mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
+        at(320, mc -> shot(mc, "53_wrecker_cornering"));
+        // Posting a parcel to Reiko from your own mailbox.
+        at(330, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                player.stopRiding();
+                player.teleportTo(player.serverLevel(), 37.5, -60.0, 3.5, 90.0F, 20.0F);
+                com.reiko.cars.mail.MailboxMenu.open(player, mailboxAt(player, HOME_BOX));
+            });
+        });
+        at(340, mc -> server(mc, player -> {
+            if (player.containerMenu instanceof com.reiko.cars.mail.MailboxMenu menu) {
+                menu.packing().setItem(0, new ItemStack(net.minecraft.world.item.Items.DIAMOND, 3));
+                menu.packing().setItem(1, new ItemStack(net.minecraft.world.item.Items.BREAD, 6));
+                menu.packing().setItem(2, new ItemStack(ModItems.TIRE.get(), 2));
+                menu.broadcastChanges();
+            }
+        }));
+        at(345, mc -> clickAt(mc, 40, 35));
+        at(348, mc -> {
+            for (char c : "Reiko".toCharArray()) {
+                mc.screen.charTyped(c, 0);
+            }
+        });
+        at(355, mc -> hoverOn(mc, 4, 4));
+        at(370, mc -> shot(mc, "54_mailbox_send"));
+        at(372, mc -> clickAt(mc, 140, 30 + 70 + 10));
+        at(395, mc -> shot(mc, "55_mailbox_posted"));
+        at(397, mc -> mc.player.closeContainer());
+        // The flag's up: the mail van stops for it, collects the parcel and takes it to Reiko's mailbox.
+        at(400, mc -> {
+            mc.options.hideGui = true;
+            aim(mc, 33.5, -59.5, 3.5, -6.0, 2.6, 7.5);
+        });
+        at(445, mc -> shot(mc, "56_mail_van_mailbox"));
+        at(448, mc -> server(mc, player -> player.startRiding(car(player.serverLevel(), CarType.MAIL_VAN), true)));
+        at(452, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+        });
+        at(480, mc -> shot(mc, "57_mail_van_hud"));
+        at(482, mc -> server(mc, com.reiko.cars.trailer.Hitching::use));
+        at(495, mc -> shot(mc, "58_mail_collected"));
+        at(498, mc -> server(mc, player -> {
+            CarEntity van = car(player.serverLevel(), CarType.MAIL_VAN);
+            van.moveTo(31.5, -60.0, 21.5, 180.0F, 0.0F);
+            player.connection.send(new net.minecraft.network.protocol.game.ClientboundMoveVehiclePacket(van));
+        }));
+        at(515, mc -> server(mc, com.reiko.cars.trailer.Hitching::use));
+        at(528, mc -> shot(mc, "59_mail_delivered"));
+        // Mail for you, in your inbox.
+        at(532, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                player.stopRiding();
+                player.teleportTo(player.serverLevel(), 37.5, -60.0, 3.5, 90.0F, 20.0F);
+                com.reiko.cars.mail.MailboxBlockEntity box = mailboxAt(player, HOME_BOX);
+                box.deliver(com.reiko.cars.mail.ParcelItem.of(new com.reiko.cars.mail.Parcel(player.getUUID(), player.getGameProfile().getName(),
+                        REIKO, "Reiko", 200, net.minecraft.world.item.component.ItemContainerContents.fromItems(
+                        List.of(new ItemStack(net.minecraft.world.item.Items.EMERALD, 12), new ItemStack(ModItems.MOTOR_OIL.get(), 2))),
+                        java.util.Optional.of(net.minecraft.core.GlobalPos.of(player.level().dimension(), HOME_BOX)))));
+                com.reiko.cars.mail.MailboxMenu.open(player, box);
+            });
+        });
+        at(545, mc -> clickAt(mc, 8 + 58 + 2 + 35, 16 + 6));
+        at(550, mc -> hoverOn(mc, 16 + 8, 50 + 8));
+        at(570, mc -> shot(mc, "60_mailbox_inbox"));
+        at(575, mc -> mc.stop());
+    }
 }

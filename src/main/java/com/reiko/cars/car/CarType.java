@@ -56,6 +56,15 @@ public enum CarType {
     /** Slow, but at home in a field. */
     FARM_TRACTOR(2.2f,  2.95f, 3.5f,  8,    0.45f, 0.010f, 0.040f, 0.15f, 4.5f,  6, 500, 0x388E3C, 24, true,  0, 4, DIESEL, noFifthWheel(),
             seat(0, 9)),
+    /** A rollback tow truck: carries a car on its long flat deck. */
+    FLATBED(     2.5f,  3.15f, 7.35f, 7,    0.80f, 0.010f, 0.035f, 0.20f, 3.0f, 14, 950, 0xC62828, 26, false, 1, 4, DIESEL, noFifthWheel(),
+            seat(8, -17), seat(-8, -17)),
+    /** A tow truck with a boom and a wheel-lift: lifts a car by its front wheels and tows it behind. */
+    WRECKER(     2.5f,  3.4f,  7.6f,  7,    0.85f, 0.011f, 0.036f, 0.20f, 3.1f, 12, 900, 0xF2A900, 26, false, 2, 4, DIESEL, noFifthWheel(),
+            seat(8, -17), seat(-8, -17)),
+    /** A tall walk-in mail van, driven from the right-hand seat, with a mail compartment in the back. */
+    MAIL_VAN(    2.35f, 3.05f, 4.75f, 6,    0.78f, 0.012f, 0.038f, 0.22f, 3.9f,  9, 150, 0xF4F5F7, 15, false, 4, 4, GASOLINE, noFifthWheel(),
+            seat(-7, -16), seat(7, -16)),
 
     // Motorcycles: two wheels, lean into turns, a rider and maybe a passenger behind.
     /** The fastest thing on the road, and quick off the line. */
@@ -187,8 +196,32 @@ public enum CarType {
             case CRUISER -> "container.reikocars.saddlebags";
             case MINIVAN -> "container.reikocars.trunk";
             case DELIVERY_VAN -> "container.reikocars.cargo_area";
+            case FLATBED, WRECKER -> "container.reikocars.toolboxes";
+            case MAIL_VAN -> "container.reikocars.mail_compartment";
             default -> "container.reikocars.truck_bed";
         };
+    }
+
+    /** A tow truck: picks up broken-down (or any) cars with G. */
+    public boolean isTowTruck() {
+        return this == FLATBED || this == WRECKER;
+    }
+
+    /**
+     * Whether a tow truck of type {@code truck} can pick this up: cars, vans and pickups up to about 4.8 blocks long,
+     * but not semis, buses or other tow trucks. The flatbed carries motorcycles too; the wrecker lifts a car by its
+     * front wheels, so it needs four.
+     */
+    public boolean towableBy(CarType truck) {
+        if (!truck.isTowTruck() || isTowTruck() || isTractor() || this == CITY_BUS || length > 4.8f) {
+            return false;
+        }
+        return truck == FLATBED || !isBike();
+    }
+
+    /** The mail van: collects and delivers parcels at mailboxes with G. */
+    public boolean isMailVan() {
+        return this == MAIL_VAN;
     }
 
     /** Whether it fits on a car hauler: anything up to a minivan's size, but no trucks, vans or buses. */
@@ -204,6 +237,7 @@ public enum CarType {
         return switch (this) {
             case SEMI_TRUCK -> List.of(new Vec3(1.19, 4.3, -0.94), new Vec3(-1.19, 4.3, -0.94));
             case FARM_TRACTOR -> List.of(new Vec3(-0.375, 2.6, 0.81));
+            case FLATBED, WRECKER -> List.of(new Vec3(-1.03, 3.31, 0.375));
             default -> List.of();
         };
     }
@@ -221,6 +255,8 @@ public enum CarType {
             case SPORT_BIKE, DIRT_BIKE -> 1.35F;
             case CRUISER -> 1.1F;
             case SCOOTER -> 1.6F;
+            case FLATBED, WRECKER -> 0.7F;
+            case MAIL_VAN -> 1.1F;
             default -> 1.0F;
         };
     }
@@ -238,6 +274,8 @@ public enum CarType {
             case CRUISER -> 0.8F;
             case DIRT_BIKE -> 1.4F;
             case SCOOTER -> 1.6F;
+            case FLATBED, WRECKER -> 0.75F;
+            case MAIL_VAN -> 1.05F;
             default -> 1.0F;
         };
     }
@@ -260,6 +298,12 @@ public enum CarType {
     public double pivotBack() {
         if (this == CITY_BUS) {
             return 36 / 16.0; // its back axle: the bus swings its long nose round corners, as a real one does
+        }
+        if (this == FLATBED) {
+            return 26 / 16.0; // the tow trucks turn about their back axles too
+        }
+        if (this == WRECKER) {
+            return 20 / 16.0;
         }
         return fifthWheel == null ? 0.0 : fifthWheel[0] / 16.0;
     }

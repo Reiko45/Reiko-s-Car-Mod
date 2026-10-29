@@ -1,6 +1,7 @@
 package com.reiko.cars.registry;
 
 import com.reiko.cars.ReikoCars;
+import com.reiko.cars.mail.MailboxMenu;
 import com.reiko.cars.pump.PumpMenu;
 import com.reiko.cars.repair.RepairBenchMenu;
 import com.reiko.cars.workbench.CarWorkbenchMenu;
@@ -20,6 +21,9 @@ public final class ModMenus {
 
     public static final Supplier<MenuType<RepairBenchMenu>> REPAIR_BENCH = MENUS.register("repair_bench",
             () -> IMenuTypeExtension.create(RepairBenchMenu::new));
+
+    public static final Supplier<MenuType<MailboxMenu>> MAILBOX = MENUS.register("mailbox",
+            () -> IMenuTypeExtension.create(MailboxMenu::new));
 
     private ModMenus() {
     }

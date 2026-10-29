@@ -1,6 +1,8 @@
 package com.reiko.cars.trailer;
 
 import com.reiko.cars.car.CarEntity;
+import com.reiko.cars.mail.MailService;
+import com.reiko.cars.tow.Towing;
 import java.util.Comparator;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundMoveVehiclePacket;
@@ -15,7 +17,9 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * The hitch key (G). Driving a semi: hitches the trailer whose front you've backed up to, or drops off the one you're
- * pulling. Driving a car: drives it onto a car hauler you've pulled up behind, or back off one you're on.
+ * pulling. Driving a tow truck: picks up the car behind, or puts it down ({@link Towing}). Driving the mail van:
+ * collects and delivers the mail at the mailboxes beside it ({@link MailService}). Driving a car: drives it onto a car
+ * hauler you've pulled up behind, or back off one you're on.
  */
 public final class Hitching {
     /** How close the kingpin must be to the fifth wheel, across the ground, in blocks. */
@@ -30,7 +34,10 @@ public final class Hitching {
         HITCH,
         UNHITCH,
         LOAD,
-        UNLOAD
+        UNLOAD,
+        TOW,
+        DROP,
+        MAIL
     }
 
     private Hitching() {
@@ -39,6 +46,12 @@ public final class Hitching {
     /** What the hitch key would do for {@code driver} driving {@code car}, or null if nothing. Works on either side. */
     @Nullable
     public static Action available(CarEntity car, Player driver) {
+        if (car.carType().isTowTruck()) {
+            return car.towed() != null ? Action.DROP : Towing.towable(car, driver) != null ? Action.TOW : null;
+        }
+        if (car.carType().isMailVan() && MailService.mailboxesNear(car).size() > 0) {
+            return Action.MAIL;
+        }
         if (car.carType().isTractor()) {
             return car.trailer() != null ? Action.UNHITCH : hitchable(car, driver) != null ? Action.HITCH : null;
         }
@@ -81,6 +94,14 @@ public final class Hitching {
     public static void use(ServerPlayer player) {
         if (!(player.getVehicle() instanceof CarEntity car) || car.getControllingPassenger() != player) {
             player.displayClientMessage(Component.translatable("trailer.reikocars.drive_first"), true);
+            return;
+        }
+        if (car.carType().isTowTruck()) {
+            Towing.use(player, car);
+            return;
+        }
+        if (car.carType().isMailVan() && !MailService.mailboxesNear(car).isEmpty()) {
+            MailService.serve(player, car);
             return;
         }
         if (car.carType().isTractor()) {

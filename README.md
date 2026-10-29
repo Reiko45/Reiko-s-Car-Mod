@@ -1,11 +1,13 @@
 # Reiko's Car Mod
 
-Drivable cars, motorcycles and semi trucks for Minecraft 1.21.1 (NeoForge) that run on **BuildCraft Reborn**'s fuel,
-trailers for the semis to pull, and gas and diesel pumps that sell the fuel for **cash or card** through **Reiko's Economy Mod**.
+Drivable cars, motorcycles, semi trucks, tow trucks and a mail van for Minecraft 1.21.1 (NeoForge) that run on
+**BuildCraft Reborn**'s fuel, trailers for the semis to pull, and gas and diesel pumps that sell the fuel for **cash or
+card** through **Reiko's Economy Mod**.
 
 Refine oil into fuel with BuildCraft, pipe it into a pump, set a price, and other players pay you to fill up.
 Cars wear out as they're driven, and a **Repair Bench** fixes them: fit your own parts, or run a mechanic's shop and
-charge for repairs.
+charge for repairs. Tow trucks haul broken-down cars to it, and mailboxes and the mail van carry parcels between
+players for postage.
 
 ## Requirements
 
@@ -31,23 +33,26 @@ charge for repairs.
 | City Bus | 10 | 29 mph | 16 buckets of diesel | A driver and nine passengers; turns about its back axle, so swing wide |
 | Heavy-Duty Pickup | 4 | 38 mph | 14 buckets of diesel | Lifted crew-cab 4x4: 27-slot truck bed, full speed off-road |
 | Farm Tractor | 1 | 20 mph | 6 buckets of diesel | Slow, but at home in a field: full speed on grass, dirt and farmland |
+| Flatbed Tow Truck | 2 | 36 mph | 14 buckets of diesel | Carries a car on its deck (see [Tow trucks](#tow-trucks)); 9-slot toolboxes |
+| Wrecker Tow Truck | 2 | 38 mph | 12 buckets of diesel | Tows a car on its wheel-lift by the front wheels; 18-slot toolboxes |
+| Mail Van | 2 | 35 mph | 9 buckets | Right-hand drive; collects and delivers parcels (see [Mail](#mail)); 36-slot mail compartment |
 | Sport Bike | 2 | 65 mph | 4 buckets | The fastest thing on the road (see [Motorcycles](#motorcycles)) |
 | Cruiser | 2 | 45 mph | 5 buckets | 9-slot saddlebags (sneak + use) |
 | Dirt Bike | 1 | 42 mph | 3 buckets | Keeps full speed on grass, sand and snow |
 | Scooter | 1 | 27 mph | 2 buckets | Slow, but about 2,500 blocks to a bucket |
 
 Tank sizes are in buckets of the car's own fuel: BuildCraft's **light fuel** for the gasoline cars, **dense fuel**
-for the diesel ones (the semi, delivery van, city bus, heavy-duty pickup and farm tractor). A sedan goes about 600
+for the diesel ones (the semi, delivery van, city bus, heavy-duty pickup, farm tractor and tow trucks). A sedan goes about 600
 blocks on a bucket; a semi about 250, or 180 pulling a trailer; the bus about 300.
 
 **Driving:** right-click a car to get in (the first person in drives). The movement keys drive and steer, **jump**
 is the handbrake and **sneak** gets out. **H** sounds the horn, **L** locks or unlocks the car and **G** hitches a
-trailer or loads a car onto a car hauler. While you're
+trailer, loads a car onto a car hauler, picks up or drops a car in a tow truck, or stops the mail van for the mail. While you're
 in a car, a dashboard in the bottom right shows your speed and a fuel gauge.
 
 - **Fuel:** cars burn fuel for every block they cover, and a little while idling with someone at the wheel. The cars
   run on **gasoline**: BuildCraft's Light Fuel (and the Mixed Light and Gaseous Fuels), or other mods' gasoline,
-  ethanol, kerosene and LPG. The semi, delivery van, city bus, heavy-duty pickup and farm tractor run on **diesel**:
+  ethanol, kerosene and LPG. The semi, delivery van, city bus, heavy-duty pickup, farm tractor and tow trucks run on **diesel**:
   BuildCraft's Dense Fuel and Mixed Heavy Fuels, or other mods' diesel and biodiesel. Neither takes the other's fuel, and nothing runs on crude oil. How far a bucket goes
   comes from BuildCraft's own fuel values. The `reikocars:gasoline` and `reikocars:diesel` fluid tags decide which
   fuel is which, so a data pack can move fluids between them. A car's tooltip says what it runs on.
@@ -224,6 +229,41 @@ to load the bench with parts (hoppers and pipes can fill it too, but nothing com
 the price of each part. The owner repairs from their own stock for free, so a bench works as a garage at home or a
 mechanic's shop for other players.
 
+## Tow trucks
+
+Two diesel tow trucks fetch cars that have broken down (or anything else that needs moving):
+
+- **The flatbed** carries the car on its deck. Back up until the car's front or back is at the tail of the deck and
+  press **G**: the car is winched up and rides on the deck facing forward. **G** again rolls it off behind.
+- **The wrecker** lifts the car by its front wheels on its wheel-lift, the back wheels still on the road. Back the
+  wheel-lift up to the car's front (the car facing the same way as the truck) and press **G**. The car swings out
+  behind on bends, as a trailer does. **G** again lets it down where it is.
+
+Either truck takes any car, van or pickup up to about 4.8 blocks long, broken down or not, as long as nobody is in
+it and it's yours or unlocked. The flatbed carries motorcycles too; neither takes semis, buses, tractors or another
+tow truck. The dashboard shows **[G] Tow car** when there's one to pick up. A towed car doesn't run, burn fuel or
+wear, and goes wherever the truck goes, saved with it. A loaded tow truck is a little slower and its tires and
+brakes wear faster.
+
+## Mail
+
+**Mailboxes** send parcels between players. Whoever puts one up owns it (only they or an admin can break it), and
+anyone can right-click it:
+
+- **Send:** type who it's for, put up to nine stacks in the slots, and send. If the mailbox is the addressee's own,
+  the parcel goes straight in, free. Otherwise you pay **postage** ($2.00 plus sales tax, by **Card** with PIN or
+  **Cash**), the parcel waits in the mailbox for the mail van, and the mailbox's **flag goes up**. The addressee
+  needs a mailbox of their own somewhere.
+- **Inbox** (the owner's tab): the parcels that have come for you. Right-click a parcel to open it. Only its
+  addressee can, or its sender if it comes back. A parcel's tooltip says who it's for, who it's from and where it's
+  going. You get a chat message when mail arrives while you're on.
+
+**The mail van** carries the mail. Drive up beside a mailbox (within 3 blocks) and press **G**: the van collects any
+parcels waiting there into its mail compartment, and delivers the ones it's carrying for that mailbox's owner. The
+driver **earns each parcel's postage** on delivery, so running a mail route pays. A parcel whose addressee no longer
+has a mailbox goes back to the sender's mailbox instead. The van is right-hand drive, so the mailboxes are on the
+driver's side.
+
 ## Recipes
 
 | Item | Recipe |
@@ -240,6 +280,7 @@ mechanic's shop for other players.
 | Tanker Trailer Tank | four BuildCraft **Tanks** around an empty middle, iron ingots in the corners |
 | Car Hauler Deck | iron bars in the corners, iron ingots across the middle |
 | Repair Bench | iron ingot, anvil, iron ingot on top, iron gear, chest, iron gear across the middle, iron legs |
+| Mailbox | iron ingot, blue dye, red dye on top, iron ingot, chest, iron ingot across the middle, a wooden fence below |
 | Motor Oil ×3 | a BuildCraft **Oil** bucket and three glass bottles (shapeless) |
 | Engine Parts ×2 | iron ingot, piston, iron ingot over iron gear, iron ingot, iron gear |
 | Brake Pads ×2 | three iron ingots over three flint |
@@ -271,6 +312,14 @@ The second lot of cars' parts, the same way:
 | **Interior** | clock, redstone, leather, iron below | clock and redstone in wool | clock, redstone, leather, iron | compass, redstone, leather, iron |
 
 The gasoline cars take a Car Engine, the diesel ones a Diesel Engine.
+
+| Part | Flatbed Tow Truck | Wrecker Tow Truck | Mail Van |
+| --- | --- | --- | --- |
+| **Chassis**: iron rails (`I I`) around a middle | chain between iron blocks | tripwire hook between iron blocks | piston between iron blocks |
+| **Body** | glass panes and iron over red dye, iron trapdoors below (the deck) | glass panes and a chain over yellow dye, iron and a hook below | glass all along over blue dye between white dye, iron below |
+| **Interior** | clock, redstone between leather, a lever between iron | clock, redstone between leather, a chain between iron | clock, redstone between wool, paper between iron |
+
+The tow trucks take a Diesel Engine, the mail van a Car Engine.
 
 The motorcycles' parts:
 
@@ -309,6 +358,8 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `wear.breakdowns` | `true` | A part at 0% breaks the car down. If false, worn parts only make it drive worse |
 | `wear.repairBenchReach` | `6.0` | How close a car must be to a repair bench |
 | `wear.defaultPricePerPart` | `20.0` | Starting price of each part at a new repair bench |
+| `mail.postage` | `2.0` | Postage for a parcel sent by mail van, earned by whoever delivers it (hand delivery is always free) |
+| `mail.mailVanReach` | `3.0` | How close the mail van must be to a mailbox |
 
 Each player can pick **mph** or **km/h**, and turn the dashboard off, in `config/reikocars-client.toml`.
 
@@ -321,7 +372,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
-./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs), then exit
+./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs, tow trucks, mail), then exit
 ./gradlew runClient         # start a dev client
 ./gradlew runClient -Pshowcase  # build a test scene, buy fuel, drive, save screenshots to run/screenshots/, quit
 ./gradlew runClient -Pshowcase=workbench  # the same for the Car Workbench and its JEI pages
@@ -330,6 +381,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 ./gradlew runClient -Pshowcase=bikes      # the same for the motorcycles: parked, riding and leaning, saddlebags
 ./gradlew runClient -Pshowcase=cars2      # the same for the hatchback, muscle car, convertible, minivan, van, bus, 4x4, tractor
 ./gradlew runClient -Pshowcase=repair     # the Repair Bench, paying for repairs, its owner's tabs, a worn car's dashboard and smoke, a worn trailer
+./gradlew runClient -Pshowcase=tow        # the tow trucks loaded and towing, posting a parcel, the mail van's round, the inbox
 ./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
 
@@ -346,6 +398,10 @@ relies on:
 - `lights`: head- and taillights, which glow while the engine runs.
 - `wheel_fl`, `wheel_fr`, `wheel_rl`, `wheel_rr`: each pivoting on its axle. They roll, and the front pair steers.
 - `wheel_rl2`, `wheel_rr2` (the semi only): the second rear axle, which rolls with the first.
+
+The tow trucks' decks and wheel-lift are part of `trim`, so a towed car must sit where the code puts it: the
+flatbed's deck top 20 pixels up, running from 4 pixels ahead of the middle to 59 behind, and the wrecker's forks 61
+pixels behind the middle (see `tow/Towing.java`). The wrecker's boom is a child bone tilted up from its pivot.
 
 A motorcycle has `body`, `trim`, `lights`, `wheel_rl` (its back wheel) and a `fork`, which steers and holds the
 forks, handlebars and `wheel_fl` (its front wheel) inside it. It has no right-hand wheels.
@@ -365,9 +421,10 @@ The car's front faces north (−Z), and the driver's side is **−X** in Blockbe
 **File > Export > Export Java Entity**, and paste the exported `createBodyLayer()` into
 `client/model/<Car>Model.java`. If you move the seats, update the seat table at the top of `car/CarType.java`.
 
-The pumps, the Car Workbench and the Repair Bench are block models: `models/block/gas_pump.json` (the diesel pump uses
-the same model with `textures/block/diesel_pump.png`), `models/block/car_workbench.json` and
-`models/block/repair_bench.json`, each with one 128×128 texture. The
+The pumps, the Car Workbench, the Repair Bench and the mailbox are block models: `models/block/gas_pump.json` (the
+diesel pump uses the same model with `textures/block/diesel_pump.png`), `models/block/car_workbench.json`,
+`models/block/repair_bench.json` and `models/block/mailbox.json` (with `mailbox_flag_up.json` for when there's mail
+waiting to go out), each with one 128×128 texture. The
 pump's model is two blocks tall and faces north. Its screen's face must stay at z = 3, 19 to 26 pixels up, and its
 sign's face at z = 3, 28 to 32 up, because that's where the lit price and the fuel's name are drawn. The screen and
 sign glow (`neoforge_data` light on those elements).
@@ -382,14 +439,16 @@ src/main/java/com/reiko/cars/
 ├── trailer/              the trailers, their item, hitching and car hauling (Hitching), and the tanker (TankerService)
 ├── workbench/            the Car Workbench block and menu, the car parts, and the car_assembly recipe type
 ├── repair/               the Repair Bench block, block entity, menu and protection, the jobs (RepairJobs), and RepairService (repairs and paying)
+├── tow/                  the tow trucks' picking up, carrying and dropping off (Towing)
+├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
-├── network/              packets: pump and repair bench actions, horn, lock and hitch, the driver's wear reports, tanker load and unload
+├── network/              packets: pump, repair bench and mailbox actions, horn, lock and hitch, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench and tanker screens, pump display, engine sound, keys
+├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox and tanker screens, pump display, engine sound, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
-blockbench/               the car, motorcycle, semi and trailer models (Blockbench projects)
+blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)
 ```
 
 ## License

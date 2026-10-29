@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "R": {
+      "tag": "c:dyes/red"
+    },
+    "B": {
+      "tag": "c:dyes/blue"
+    },
+    "C": {
+      "tag": "c:chests/wooden"
+    },
+    "F": {
+      "tag": "c:fences/wooden"
+    }
+  },
+  "pattern": [
+    "IBR",
+    "ICI",
+    " F "
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:mailbox"
+  }
+}
