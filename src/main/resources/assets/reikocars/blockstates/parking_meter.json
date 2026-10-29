@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,expired=false": {
+      "model": "reikocars:block/parking_meter"
+    },
+    "facing=east,expired=false": {
+      "model": "reikocars:block/parking_meter",
+      "y": 90
+    },
+    "facing=south,expired=false": {
+      "model": "reikocars:block/parking_meter",
+      "y": 180
+    },
+    "facing=west,expired=false": {
+      "model": "reikocars:block/parking_meter",
+      "y": 270
+    },
+    "facing=north,expired=true": {
+      "model": "reikocars:block/parking_meter_expired"
+    },
+    "facing=east,expired=true": {
+      "model": "reikocars:block/parking_meter_expired",
+      "y": 90
+    },
+    "facing=south,expired=true": {
+      "model": "reikocars:block/parking_meter_expired",
+      "y": 180
+    },
+    "facing=west,expired=true": {
+      "model": "reikocars:block/parking_meter_expired",
+      "y": 270
+    }
+  }
+}

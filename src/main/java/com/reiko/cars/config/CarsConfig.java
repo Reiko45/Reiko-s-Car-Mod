@@ -36,6 +36,12 @@ public final class CarsConfig {
 
     public static final ModConfigSpec.DoubleValue DEALERSHIP_REACH;
 
+    public static final ModConfigSpec.DoubleValue PARKING_RATE;
+    public static final ModConfigSpec.DoubleValue PARKING_FINE;
+    public static final ModConfigSpec.IntValue PARKING_GRACE;
+    public static final ModConfigSpec.IntValue PARKING_FINE_EVERY;
+    public static final ModConfigSpec.DoubleValue TOLL;
+
     public static final ModConfigSpec.DoubleValue POSTAGE;
     public static final ModConfigSpec.DoubleValue MAIL_REACH;
 
@@ -127,6 +133,27 @@ public final class CarsConfig {
         DEALERSHIP_REACH = builder
                 .comment("How close, in blocks, a car must be to a dealership to be on its lot: for sale there, or to trade in.")
                 .defineInRange("dealershipReach", 10.0, 2.0, 48.0);
+        builder.pop();
+
+        builder.push("parking");
+        PARKING_RATE = builder
+                .comment("What a new parking meter charges per 10 minutes. Its owner can change it.")
+                .defineInRange("ratePer10Minutes", 0.5, 0.0, 1_000_000.0);
+        PARKING_FINE = builder
+                .comment("A new parking meter's fine for overstaying, taken from the car owner's bank account. Its owner can change it.")
+                .defineInRange("fine", 10.0, 0.0, 1_000_000.0);
+        PARKING_GRACE = builder
+                .comment("Seconds a car can stand at a meter, unpaid or after its time runs out, before it's ticketed.")
+                .defineInRange("graceSeconds", 60, 0, 3600);
+        PARKING_FINE_EVERY = builder
+                .comment("Seconds between further tickets for a car that stays at a meter unpaid.")
+                .defineInRange("fineEverySeconds", 900, 30, 86_400);
+        builder.pop();
+
+        builder.push("tolls");
+        TOLL = builder
+                .comment("The toll a new toll booth charges to lift its gates. Its owner can change it.")
+                .defineInRange("toll", 2.0, 0.0, 1_000_000.0);
         builder.pop();
 
         builder.push("mail");

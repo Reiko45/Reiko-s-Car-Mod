@@ -6,6 +6,9 @@ import com.reiko.cars.mail.MailboxBlock;
 import com.reiko.cars.pump.GasPumpBlock;
 import com.reiko.cars.repair.RepairBenchBlock;
 import com.reiko.cars.sale.DealershipBlock;
+import com.reiko.cars.parking.ParkingMeterBlock;
+import com.reiko.cars.toll.TollBoothBlock;
+import com.reiko.cars.toll.TollGateBlock;
 import com.reiko.cars.workbench.CarWorkbenchBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -69,6 +72,34 @@ public final class ModBlocks {
                     .strength(3.0F, 1200.0F)
                     .sound(SoundType.METAL)
                     .noOcclusion()
+                    .pushReaction(PushReaction.BLOCK)));
+
+    /** A parking meter on a post. Blast-proof, like the shops. */
+    public static final DeferredBlock<ParkingMeterBlock> PARKING_METER = BLOCKS.register("parking_meter", () -> new ParkingMeterBlock(
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(2.5F, 1200.0F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .pushReaction(PushReaction.BLOCK)));
+
+    /** A toll booth: the toll for its owner's gates nearby. */
+    public static final DeferredBlock<TollBoothBlock> TOLL_BOOTH = BLOCKS.register("toll_booth", () -> new TollBoothBlock(
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_YELLOW)
+                    .strength(3.0F, 1200.0F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .pushReaction(PushReaction.BLOCK)));
+
+    /** A toll gate: a post and a barrier arm across three blocks of road. */
+    public static final DeferredBlock<TollGateBlock> TOLL_GATE = BLOCKS.register("toll_gate", () -> new TollGateBlock(
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_RED)
+                    .strength(2.5F, 1200.0F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .dynamicShape()
                     .pushReaction(PushReaction.BLOCK)));
 
     private ModBlocks() {

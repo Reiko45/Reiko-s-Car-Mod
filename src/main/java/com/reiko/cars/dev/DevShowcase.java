@@ -113,7 +113,7 @@ public final class DevShowcase {
             rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false, null);
             rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, null);
             LevelSettings settings = new LevelSettings("showcase-" + System.currentTimeMillis(), GameType.CREATIVE, false,
-                    Difficulty.PEACEFUL, !MODE.equals("repair") && !MODE.equals("sales"), rules, WorldDataConfiguration.DEFAULT); // no cheats: a customer, not an admin
+                    Difficulty.PEACEFUL, !MODE.equals("repair") && !MODE.equals("sales") && !MODE.equals("tolls"), rules, WorldDataConfiguration.DEFAULT); // no cheats: a customer, not an admin
             minecraft.createWorldOpenFlows().createFreshLevel(settings.levelName(), settings, new WorldOptions(1L, false, false),
                     registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT)
                             .value().createWorldDimensions(), new TitleScreen());
@@ -138,6 +138,8 @@ public final class DevShowcase {
             faresScript();
         } else if (MODE.equals("sales")) {
             salesScript();
+        } else if (MODE.equals("tolls")) {
+            tollsScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -1519,5 +1521,144 @@ public final class DevShowcase {
         at(285, mc -> server(mc, player -> com.reiko.cars.sale.CarSaleMenu.open(player, car(player.serverLevel(), CarType.SEDAN))));
         at(305, mc -> shot(mc, "80_sale_sign"));
         at(310, mc -> mc.stop());
+    }
+
+    // ---- parking meters and toll gates ----
+
+    private static final BlockPos[] METERS = {new BlockPos(0, -60, 2), new BlockPos(0, -60, 8), new BlockPos(0, -60, 14)};
+    private static final BlockPos GATE = new BlockPos(9, -60, 24);
+    private static final BlockPos BOOTH = new BlockPos(10, -60, 22);
+
+    private static com.reiko.cars.parking.ParkingMeterBlockEntity meterAt(ServerPlayer player, int i) {
+        return (com.reiko.cars.parking.ParkingMeterBlockEntity) player.serverLevel().getBlockEntity(METERS[i]);
+    }
+
+    private static void tollsScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                com.reiko.cars.config.CarsConfig.PARKING_GRACE.set(1); // tickets come quickly for the camera
+                for (int x = -10; x <= 24; x++) {
+                    for (int z = -10; z <= 34; z++) {
+                        net.minecraft.world.level.block.Block ground = x <= 0 ? Blocks.LIGHT_GRAY_CONCRETE
+                                : x <= 3 && (z == 5 || z == 11 || z == 17 || z == -1) ? Blocks.WHITE_CONCRETE
+                                : x == 4 && Math.floorMod(z, 3) == 0 ? Blocks.WHITE_CONCRETE
+                                : x == 10 && z < 21 && Math.floorMod(z, 3) != 2 ? Blocks.YELLOW_CONCRETE
+                                : Blocks.GRAY_CONCRETE;
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), ground.defaultBlockState());
+                    }
+                }
+                ServerPlayer town = extraPlayer(level.getServer(), "Town");
+                ServerPlayer dee = extraPlayer(level.getServer(), "Dee");
+                for (BlockPos pos : METERS) {
+                    level.setBlockAndUpdate(pos, ModBlocks.PARKING_METER.get().defaultBlockState()
+                            .setValue(com.reiko.cars.parking.ParkingMeterBlock.FACING, Direction.WEST)); // fed from the sidewalk
+                    ((com.reiko.cars.parking.ParkingMeterBlockEntity) level.getBlockEntity(pos)).setOwner(town);
+                }
+                // Dee's paid up at the first meter; the player's hatchback, at the second, isn't.
+                spawn(level, CarType.SEDAN, 2.4, 2.5, 0.0F, 0.5);
+                CarEntity dees = car(level, CarType.SEDAN);
+                dees.setOwner(dee);
+                dees.setColor(0xC62828);
+                com.reiko.cars.parking.MeterService.pay(town, meterAt(player, 0), 60,
+                        com.reiko.cars.parking.MeterService.cost(meterAt(player, 0), 60), com.reiko.economy.shop.Payment.cash());
+                spawn(level, CarType.HATCHBACK, 2.4, 8.5, 0.0F, 0.5);
+                car(level, CarType.HATCHBACK).setOwner(player);
+                EconomyService.INSTANCE.deposit(level.getServer(), player.getUUID(), 20_000, "showcase");
+                // The toll plaza down the road: Dee's gate and booth.
+                BlockState gate = ModBlocks.TOLL_GATE.get().defaultBlockState().setValue(com.reiko.cars.toll.TollGateBlock.FACING, Direction.NORTH);
+                level.setBlockAndUpdate(GATE, gate);
+                gate.getBlock().setPlacedBy(level, GATE, gate, dee, ItemStack.EMPTY);
+                level.setBlockAndUpdate(BOOTH, ModBlocks.TOLL_BOOTH.get().defaultBlockState()
+                        .setValue(com.reiko.cars.toll.TollBoothBlock.FACING, Direction.WEST));
+                com.reiko.cars.toll.TollBoothBlockEntity booth = (com.reiko.cars.toll.TollBoothBlockEntity) level.getBlockEntity(BOOTH);
+                booth.setOwner(dee);
+                booth.setToll(250);
+                spawn(level, CarType.SPORTS_CAR, 7.0, 24.0 - 0.7 - CarType.SPORTS_CAR.length / 2.0, 0.0F, 0.6);
+                CarEntity mine = car(level, CarType.SPORTS_CAR);
+                mine.setOwner(player);
+                mine.setColor(0x1E5AA8);
+                player.getInventory().clearContent();
+                Purse.give(player, 5_000);
+            });
+        });
+        // The street: one meter paid, one EXPIRED, one free.
+        at(70, mc -> {
+            mc.options.hideGui = true;
+            aim(mc, 0.5, -58.8, 8.5, -6.5, 3.0, 0.0);
+        });
+        at(120, mc -> shot(mc, "81_parking_street"));
+        at(122, mc -> aim(mc, 0.5, -58.8, 8.5, -2.0, 0.3, 1.1));
+        at(160, mc -> shot(mc, "82_meter_expired"));
+        // The ticket in chat, from the sidewalk; then the meter's screen.
+        at(162, mc -> {
+            mc.options.hideGui = false;
+            mc.player.getInventory().selected = 8;
+            server(mc, player -> player.getInventory().selected = 8);
+            aim(mc, 0.5, -58.8, 8.5, -3.0, 0.8, -1.5);
+        });
+        at(190, mc -> shot(mc, "83_ticket"));
+        at(192, mc -> server(mc, player -> com.reiko.cars.parking.ParkingMeterMenu.open(player, meterAt(player, 1))));
+        at(215, mc -> shot(mc, "84_meter_pay"));
+        at(217, mc -> clickAt(mc, 140, 130));
+        at(240, mc -> shot(mc, "85_meter_paid"));
+        at(242, mc -> mc.player.closeContainer());
+        // An owner's meter: the Settings tab.
+        at(245, mc -> server(mc, player -> {
+            meterAt(player, 2).setOwner(player);
+            com.reiko.cars.parking.ParkingMeterMenu.open(player, meterAt(player, 2));
+        }));
+        at(262, mc -> clickAt(mc, 100, 22));
+        at(280, mc -> shot(mc, "86_meter_settings"));
+        at(282, mc -> mc.player.closeContainer());
+        // The toll plaza, the sports car pulled up to the closed gate.
+        at(285, mc -> {
+            mc.options.hideGui = true;
+            aim(mc, 7.5, -59.0, 23.0, 7.0, 3.5, -5.5);
+        });
+        at(335, mc -> shot(mc, "87_toll_plaza"));
+        at(337, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                player.startRiding(car(player.serverLevel(), CarType.SPORTS_CAR), true);
+            });
+        });
+        at(365, mc -> shot(mc, "88_toll_hint"));
+        at(367, mc -> server(mc, player -> com.reiko.cars.toll.TollService.use(player, car(player.serverLevel(), CarType.SPORTS_CAR))));
+        at(390, mc -> shot(mc, "89_toll_pay"));
+        at(392, mc -> clickAt(mc, 140, 76));
+        at(396, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        at(420, mc -> shot(mc, "90_toll_paid"));
+        at(422, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            mc.options.hideGui = true;
+            server(mc, player -> player.stopRiding());
+        });
+        at(426, mc -> aim(mc, 7.0, -58.5, 24.0, 8.5, 3.0, 7.0));
+        at(455, mc -> shot(mc, "91_gate_up"));
+        // The booth's own screen, for its owner.
+        at(457, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                com.reiko.cars.toll.TollBoothBlockEntity booth = (com.reiko.cars.toll.TollBoothBlockEntity) player.serverLevel().getBlockEntity(BOOTH);
+                booth.setOwner(player);
+                player.teleportTo(player.serverLevel(), 12.5, -60.0, 22.5, 90.0F, 20.0F);
+                com.reiko.cars.toll.TollBoothMenu.open(player, booth);
+            });
+        });
+        at(480, mc -> shot(mc, "92_toll_booth"));
+        at(482, mc -> mc.player.closeContainer());
+        at(485, mc -> server(mc, player -> {
+            give(player, ModItems.PARKING_METER.get(), 1);
+            give(player, ModItems.TOLL_BOOTH.get(), 1);
+            give(player, ModItems.TOLL_GATE.get(), 1);
+        }));
+        at(505, mc -> shot(mc, "93_items"));
+        at(510, mc -> mc.stop());
     }
 }

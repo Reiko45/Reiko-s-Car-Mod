@@ -7,7 +7,7 @@ card** through **Reiko's Economy Mod**.
 Refine oil into fuel with BuildCraft, pipe it into a pump, set a price, and other players pay you to fill up.
 Cars wear out as they're driven, and a **Repair Bench** fixes them: fit your own parts, or run a mechanic's shop and
 charge for repairs. Tow trucks haul broken-down cars to it, and mailboxes and the mail van carry parcels between
-players for postage.
+players for postage. Parking meters ticket cars that overstay, and toll gates lift for drivers who pay.
 
 ## Requirements
 
@@ -326,6 +326,39 @@ driver **earns each parcel's postage** on delivery, so running a mail route pays
 has a mailbox goes back to the sender's mailbox instead. The van is right-hand drive, so the mailboxes are on the
 driver's side.
 
+## Parking meters and tolls
+
+**Parking meters** charge cars parked beside them. Whoever puts one up owns it (only they or an admin can break it).
+
+- **Paying:** right-click the meter. It shows the car parked there (the nearest within **3 blocks**; a car between
+  two meters belongs to the nearer one), how long it has left, and the rate. Pick the time with **-** and **+**, 10 to
+  120 minutes at a go (four hours at most on the meter), and pay by **Card** with PIN or **Cash**, plus sales tax, to
+  the meter's owner. Anyone can pay for any car.
+- **Overstaying:** once a car's paid time runs out (or if none was bought) it gets **a minute's grace**. Then the
+  meter's **red EXPIRED flag** goes up and the car's owner gets a **parking ticket**: the fine ($10.00) comes out of
+  their bank account and goes to the meter's owner, with a chat message saying where. Another follows every **15
+  minutes** the car stays unpaid. If they can't cover a fine, they pay what they have. A car with someone in it is
+  waiting, not parked, and isn't ticketed.
+- **The owner's side:** the owner's own cars park free, and they can add time free for anyone's car. The
+  **Settings** tab sets the rate per 10 minutes and the fine, and shows what the meter has taken in parking and
+  tickets.
+
+**Toll gates** close the road until the toll is paid. A gate is a post with a striped barrier arm across the three
+blocks to the right of whoever puts it down (facing them), so put it at the edge of the road. Closed, the arm's a
+wall cars can't get past.
+
+- **Paying a toll:** drive up to a closed gate; the dashboard shows **[G] Pay toll**. Press **G** and pay the toll by
+  **Card** with PIN or **Cash**, plus sales tax. The arm swings up for a few seconds, and doesn't come down while
+  anything's under it. The money goes to the gate's owner.
+- **Toll Booths** set the toll: right-click your booth to set it (0 lifts the gate for free) and see how many cars
+  have paid and what they've taken. A gate charges the toll of its owner's nearest booth within **12 blocks**; with
+  no booth, it only opens for its owner. Anyone else right-clicking a booth is told the toll.
+- **The owner** drives through free, and can right-click the gate to **hold it open** (and again to let it shut).
+  Only the owner or an admin can break a gate or booth; breaking any block of a gate takes it all down and gives the
+  gate back.
+
+New meters charge $0.50 per 10 minutes with a $10.00 fine, and new booths a $2.00 toll (see [Settings](#settings)).
+
 ## Recipes
 
 | Item | Recipe |
@@ -346,6 +379,9 @@ driver's side.
 | Blank Key ×2 | an iron ingot and a gold nugget (shapeless) |
 | Car Dealership | paper, any sign, paper on top, iron ingot, gold ingot, iron ingot across the middle, iron ingot, chest, iron ingot below |
 | For Sale Sign | any sign, red dye and paper (shapeless) |
+| Parking Meter | iron ingot, glass pane, iron ingot on top, gold nugget, redstone, gold nugget across the middle, an iron ingot below |
+| Toll Booth | yellow dye, glass pane, yellow dye on top, iron ingot, redstone, iron ingot across the middle, three smooth stone below |
+| Toll Gate | stick, red dye, stick on top, yellow dye, piston, yellow dye across the middle, iron ingots in the bottom corners |
 | Motor Oil ×3 | a BuildCraft **Oil** bucket and three glass bottles (shapeless) |
 | Engine Parts ×2 | iron ingot, piston, iron ingot over iron gear, iron ingot, iron gear |
 | Brake Pads ×2 | three iron ingots over three flint |
@@ -434,6 +470,11 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `fares.taxiStartingFare` | `3.0` | What a new taxi's meter starts at |
 | `fares.taxiFarePer100Blocks` | `1.0` | What a new taxi's meter adds per 100 blocks |
 | `sales.dealershipReach` | `10.0` | How close a car must be to a dealership to be on its lot |
+| `parking.ratePer10Minutes` | `0.5` | What a new parking meter charges per 10 minutes (its owner can change it) |
+| `parking.fine` | `10.0` | A new meter's fine for overstaying, from the car owner's bank account (its owner can change it) |
+| `parking.graceSeconds` | `60` | How long a car can stand at a meter unpaid, or after its time runs out, before it's ticketed |
+| `parking.fineEverySeconds` | `900` | How often a car that stays is ticketed again |
+| `tolls.toll` | `2.0` | The toll a new toll booth charges (its owner can change it) |
 
 Each player can pick **mph** or **km/h**, and turn the dashboard off, in `config/reikocars-client.toml`.
 
@@ -520,12 +561,14 @@ src/main/java/com/reiko/cars/
 ├── sale/                 the For Sale Sign, a car's sale screen, the Car Dealership block, its lot and tabs, and SaleService (buying, selling, trade-ins)
 ├── fare/                 bus fares and the taxi meter (CarFares), the pay and fare screens' menus, and FareService
 ├── key/                  car keys: the key items, what a key fits (CarKey), and cutting, changing the locks and the key fob (CarKeys)
+├── parking/              the parking meter block, block entity and menu, and MeterService (paying and tickets)
+├── toll/                 the toll booth and toll gate blocks, their block entities and menus, protection, and TollService (paying and the gate)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
-├── network/              packets: pump, repair bench and mailbox actions, horn, lock and hitch, the driver's wear reports, tanker load and unload
+├── network/              packets: pump, repair bench, mailbox, parking meter and toll actions, horn, lock and hitch, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox and tanker screens, pump display, engine sound, keys
+├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox, meter, toll and tanker screens, the toll gate's arm, pump display, engine sound, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)

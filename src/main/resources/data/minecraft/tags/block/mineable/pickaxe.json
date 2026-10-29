@@ -5,6 +5,9 @@
     "reikocars:diesel_pump",
     "reikocars:repair_bench",
     "reikocars:mailbox",
-    "reikocars:dealership"
+    "reikocars:dealership",
+    "reikocars:parking_meter",
+    "reikocars:toll_booth",
+    "reikocars:toll_gate"
   ]
 }

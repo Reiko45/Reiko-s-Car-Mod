@@ -5,6 +5,9 @@ import com.reiko.cars.mail.MailboxBlockEntity;
 import com.reiko.cars.pump.GasPumpBlockEntity;
 import com.reiko.cars.repair.RepairBenchBlockEntity;
 import com.reiko.cars.sale.DealershipBlockEntity;
+import com.reiko.cars.parking.ParkingMeterBlockEntity;
+import com.reiko.cars.toll.TollBoothBlockEntity;
+import com.reiko.cars.toll.TollGateBlockEntity;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -26,6 +29,13 @@ public final class ModBlockEntities {
 
     public static final Supplier<BlockEntityType<DealershipBlockEntity>> DEALERSHIP = BLOCK_ENTITIES.register("dealership",
             () -> BlockEntityType.Builder.of(DealershipBlockEntity::new, ModBlocks.DEALERSHIP.get()).build(null));
+
+    public static final Supplier<BlockEntityType<ParkingMeterBlockEntity>> PARKING_METER = BLOCK_ENTITIES.register("parking_meter",
+            () -> BlockEntityType.Builder.of(ParkingMeterBlockEntity::new, ModBlocks.PARKING_METER.get()).build(null));
+    public static final Supplier<BlockEntityType<TollBoothBlockEntity>> TOLL_BOOTH = BLOCK_ENTITIES.register("toll_booth",
+            () -> BlockEntityType.Builder.of(TollBoothBlockEntity::new, ModBlocks.TOLL_BOOTH.get()).build(null));
+    public static final Supplier<BlockEntityType<TollGateBlockEntity>> TOLL_GATE = BLOCK_ENTITIES.register("toll_gate",
+            () -> BlockEntityType.Builder.of(TollGateBlockEntity::new, ModBlocks.TOLL_GATE.get()).build(null));
 
     private ModBlockEntities() {
     }

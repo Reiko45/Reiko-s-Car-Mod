@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "N": {
+      "tag": "c:nuggets/gold"
+    }
+  },
+  "pattern": [
+    "IGI",
+    "NRN",
+    " I "
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:parking_meter"
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "variants": {
+    "facing=north,open=false,part=pole": {
+      "model": "reikocars:block/toll_gate"
+    },
+    "facing=east,open=false,part=pole": {
+      "model": "reikocars:block/toll_gate",
+      "y": 90
+    },
+    "facing=south,open=false,part=pole": {
+      "model": "reikocars:block/toll_gate",
+      "y": 180
+    },
+    "facing=west,open=false,part=pole": {
+      "model": "reikocars:block/toll_gate",
+      "y": 270
+    },
+    "facing=north,open=true,part=pole": {
+      "model": "reikocars:block/toll_gate"
+    },
+    "facing=east,open=true,part=pole": {
+      "model": "reikocars:block/toll_gate",
+      "y": 90
+    },
+    "facing=south,open=true,part=pole": {
+      "model": "reikocars:block/toll_gate",
+      "y": 180
+    },
+    "facing=west,open=true,part=pole": {
+      "model": "reikocars:block/toll_gate",
+      "y": 270
+    },
+    "facing=north,open=false,part=arm1": {
+      "model": "reikocars:block/toll_gate_arm"
+    },
+    "facing=east,open=false,part=arm1": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 90
+    },
+    "facing=south,open=false,part=arm1": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 180
+    },
+    "facing=west,open=false,part=arm1": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 270
+    },
+    "facing=north,open=true,part=arm1": {
+      "model": "reikocars:block/toll_gate_arm"
+    },
+    "facing=east,open=true,part=arm1": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 90
+    },
+    "facing=south,open=true,part=arm1": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 180
+    },
+    "facing=west,open=true,part=arm1": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 270
+    },
+    "facing=north,open=false,part=arm2": {
+      "model": "reikocars:block/toll_gate_arm"
+    },
+    "facing=east,open=false,part=arm2": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 90
+    },
+    "facing=south,open=false,part=arm2": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 180
+    },
+    "facing=west,open=false,part=arm2": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 270
+    },
+    "facing=north,open=true,part=arm2": {
+      "model": "reikocars:block/toll_gate_arm"
+    },
+    "facing=east,open=true,part=arm2": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 90
+    },
+    "facing=south,open=true,part=arm2": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 180
+    },
+    "facing=west,open=true,part=arm2": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 270
+    },
+    "facing=north,open=false,part=arm3": {
+      "model": "reikocars:block/toll_gate_arm"
+    },
+    "facing=east,open=false,part=arm3": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 90
+    },
+    "facing=south,open=false,part=arm3": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 180
+    },
+    "facing=west,open=false,part=arm3": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 270
+    },
+    "facing=north,open=true,part=arm3": {
+      "model": "reikocars:block/toll_gate_arm"
+    },
+    "facing=east,open=true,part=arm3": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 90
+    },
+    "facing=south,open=true,part=arm3": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 180
+    },
+    "facing=west,open=true,part=arm3": {
+      "model": "reikocars:block/toll_gate_arm",
+      "y": 270
+    }
+  }
+}

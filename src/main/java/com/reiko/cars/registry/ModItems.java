@@ -79,6 +79,10 @@ public final class ModItems {
     public static final DeferredItem<ForSaleSignItem> FOR_SALE_SIGN = ITEMS.register("for_sale_sign",
             () -> new ForSaleSignItem(new Item.Properties().stacksTo(16)));
 
+    public static final DeferredItem<BlockItem> PARKING_METER = ITEMS.registerSimpleBlockItem(ModBlocks.PARKING_METER);
+    public static final DeferredItem<BlockItem> TOLL_BOOTH = ITEMS.registerSimpleBlockItem(ModBlocks.TOLL_BOOTH);
+    public static final DeferredItem<BlockItem> TOLL_GATE = ITEMS.registerSimpleBlockItem(ModBlocks.TOLL_GATE);
+
     // Repair parts, fitted at a repair bench (see RepairJobs). Tires are the same ones cars are built with.
     /** An oil change. */
     public static final DeferredItem<Item> MOTOR_OIL = ITEMS.registerSimpleItem("motor_oil", new Item.Properties().stacksTo(16));

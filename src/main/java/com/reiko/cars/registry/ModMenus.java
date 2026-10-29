@@ -7,6 +7,9 @@ import com.reiko.cars.mail.MailboxMenu;
 import com.reiko.cars.pump.PumpMenu;
 import com.reiko.cars.repair.RepairBenchMenu;
 import com.reiko.cars.sale.CarSaleMenu;
+import com.reiko.cars.parking.ParkingMeterMenu;
+import com.reiko.cars.toll.TollBoothMenu;
+import com.reiko.cars.toll.TollMenu;
 import com.reiko.cars.sale.DealershipMenu;
 import com.reiko.cars.workbench.CarWorkbenchMenu;
 import java.util.function.Supplier;
@@ -36,6 +39,11 @@ public final class ModMenus {
     public static final Supplier<MenuType<CarSaleMenu>> CAR_SALE = MENUS.register("car_sale", () -> IMenuTypeExtension.create(CarSaleMenu::new));
     public static final Supplier<MenuType<DealershipMenu>> DEALERSHIP = MENUS.register("dealership",
             () -> IMenuTypeExtension.create(DealershipMenu::new));
+
+    public static final Supplier<MenuType<ParkingMeterMenu>> PARKING_METER = MENUS.register("parking_meter",
+            () -> IMenuTypeExtension.create(ParkingMeterMenu::new));
+    public static final Supplier<MenuType<TollMenu>> TOLL = MENUS.register("toll", () -> IMenuTypeExtension.create(TollMenu::new));
+    public static final Supplier<MenuType<TollBoothMenu>> TOLL_BOOTH = MENUS.register("toll_booth", () -> IMenuTypeExtension.create(TollBoothMenu::new));
 
     private ModMenus() {
     }

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "reikocars:block/toll_booth"
+    },
+    "facing=east": {
+      "model": "reikocars:block/toll_booth",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "reikocars:block/toll_booth",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "reikocars:block/toll_booth",
+      "y": 270
+    }
+  }
+}

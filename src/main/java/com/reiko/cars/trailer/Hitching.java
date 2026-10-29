@@ -2,6 +2,7 @@ package com.reiko.cars.trailer;
 
 import com.reiko.cars.car.CarEntity;
 import com.reiko.cars.mail.MailService;
+import com.reiko.cars.toll.TollService;
 import com.reiko.cars.tow.Towing;
 import java.util.Comparator;
 import net.minecraft.network.chat.Component;
@@ -37,7 +38,8 @@ public final class Hitching {
         UNLOAD,
         TOW,
         DROP,
-        MAIL
+        MAIL,
+        TOLL
     }
 
     private Hitching() {
@@ -46,6 +48,9 @@ public final class Hitching {
     /** What the hitch key would do for {@code driver} driving {@code car}, or null if nothing. Works on either side. */
     @Nullable
     public static Action available(CarEntity car, Player driver) {
+        if (TollService.gateAhead(car) != null) {
+            return Action.TOLL;
+        }
         if (car.carType().isTowTruck()) {
             return car.towed() != null ? Action.DROP : Towing.towable(car, driver) != null ? Action.TOW : null;
         }
@@ -94,6 +99,9 @@ public final class Hitching {
     public static void use(ServerPlayer player) {
         if (!(player.getVehicle() instanceof CarEntity car) || car.getControllingPassenger() != player) {
             player.displayClientMessage(Component.translatable("trailer.reikocars.drive_first"), true);
+            return;
+        }
+        if (TollService.use(player, car)) {
             return;
         }
         if (car.carType().isTowTruck()) {

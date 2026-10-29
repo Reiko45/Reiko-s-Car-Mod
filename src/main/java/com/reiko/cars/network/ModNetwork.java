@@ -10,6 +10,11 @@ import com.reiko.cars.car.CarType;
 import com.reiko.cars.sale.CarSaleMenu;
 import com.reiko.cars.sale.DealershipMenu;
 import com.reiko.cars.sale.SaleService;
+import com.reiko.cars.parking.MeterService;
+import com.reiko.cars.parking.ParkingMeterMenu;
+import com.reiko.cars.toll.TollBoothMenu;
+import com.reiko.cars.toll.TollMenu;
+import com.reiko.cars.toll.TollService;
 import com.reiko.cars.mail.MailboxMenu;
 import com.reiko.cars.trailer.Hitching;
 import com.reiko.cars.trailer.TankerService;
@@ -52,6 +57,8 @@ public final class ModNetwork {
         registrar.playToServer(MailActionPayload.TYPE, MailActionPayload.STREAM_CODEC, ModNetwork::handleMail);
         registrar.playToServer(FareActionPayload.TYPE, FareActionPayload.STREAM_CODEC, ModNetwork::handleFare);
         registrar.playToServer(SaleActionPayload.TYPE, SaleActionPayload.STREAM_CODEC, ModNetwork::handleSale);
+        registrar.playToServer(MeterActionPayload.TYPE, MeterActionPayload.STREAM_CODEC, ModNetwork::handleMeter);
+        registrar.playToServer(TollActionPayload.TYPE, TollActionPayload.STREAM_CODEC, ModNetwork::handleToll);
     }
 
     private static void handleWear(CarWearPayload payload, IPayloadContext context) {
@@ -60,6 +67,46 @@ public final class ModNetwork {
             return;
         }
         car.applyWearReport(player, Math.max(0.0F, payload.braked()), Math.max(0.0F, payload.skidded()), Math.max(0.0F, payload.impact()));
+    }
+
+    private static void handleMeter(MeterActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || !(player.containerMenu instanceof ParkingMeterMenu menu)
+                || menu.containerId != payload.containerId() || !menu.stillValid(player) || menu.meter() == null) {
+            return;
+        }
+        ShopActionResult result;
+        if (payload.action() == MeterActionPayload.PAY) {
+            result = MeterService.pay(player, menu.meter(), payload.minutes(), payload.expected(), payload.payment());
+        } else {
+            result = MeterService.setPrices(player, menu.meter(), payload.rate(), payload.fine());
+            if (result.success()) {
+                ParkingMeterMenu.open(player, menu.meter()); // reopen to show the new prices
+            }
+        }
+        menu.refresh();
+        ShopFeedback.send(player, result);
+    }
+
+    private static void handleToll(TollActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || player.containerMenu.containerId != payload.containerId()
+                || !player.containerMenu.stillValid(player)) {
+            return;
+        }
+        if (payload.action() == TollActionPayload.PAY && player.containerMenu instanceof TollMenu menu) {
+            ShopActionResult result = TollService.pay(player, menu.pole(), menu.booth(), payload.expected(), payload.payment());
+            if (result.success()) {
+                player.closeContainer();
+                player.displayClientMessage(result.message(), true);
+            } else {
+                ShopFeedback.send(player, result);
+            }
+        } else if (payload.action() == TollActionPayload.SET && player.containerMenu instanceof TollBoothMenu menu && menu.booth() != null) {
+            ShopActionResult result = TollService.setToll(player, menu.booth(), payload.text());
+            if (result.success()) {
+                TollBoothMenu.open(player, menu.booth());
+            }
+            ShopFeedback.send(player, result);
+        }
     }
 
     private static void handleSale(SaleActionPayload payload, IPayloadContext context) {

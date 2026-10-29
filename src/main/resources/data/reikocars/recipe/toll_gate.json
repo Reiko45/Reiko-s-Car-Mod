@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "S": {
+      "tag": "c:rods/wooden"
+    },
+    "R": {
+      "tag": "c:dyes/red"
+    },
+    "Y": {
+      "tag": "c:dyes/yellow"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "pattern": [
+    "SRS",
+    "YPY",
+    "I I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:toll_gate"
+  }
+}

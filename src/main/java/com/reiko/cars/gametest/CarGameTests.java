@@ -18,6 +18,14 @@ import com.reiko.cars.sale.DealershipMenu;
 import com.reiko.cars.sale.SaleService;
 import com.reiko.cars.key.Keyed;
 import com.reiko.cars.mail.MailService;
+import com.reiko.cars.parking.MeterService;
+import com.reiko.cars.parking.ParkingMeterBlock;
+import com.reiko.cars.parking.ParkingMeterBlockEntity;
+import com.reiko.cars.toll.GatePart;
+import com.reiko.cars.toll.TollBoothBlockEntity;
+import com.reiko.cars.toll.TollGateBlock;
+import com.reiko.cars.toll.TollGateBlockEntity;
+import com.reiko.cars.toll.TollService;
 import com.reiko.cars.mail.MailboxBlock;
 import com.reiko.cars.mail.MailboxBlockEntity;
 import com.reiko.cars.mail.MailboxMenu;
@@ -1823,6 +1831,169 @@ public final class CarGameTests {
             check(helper, another.isOwner(customer), "so the customer keeps it");
         } finally {
             leave(helper, dealer, customer);
+        }
+        helper.succeed();
+    }
+
+    // ---- parking meters and tolls ----
+
+    private static ParkingMeterBlockEntity meter(GameTestHelper helper, BlockPos pos, ServerPlayer owner) {
+        helper.setBlock(pos, ModBlocks.PARKING_METER.get().defaultBlockState());
+        ParkingMeterBlockEntity meter = (ParkingMeterBlockEntity) helper.getBlockEntity(pos);
+        meter.setOwner(owner);
+        return meter;
+    }
+
+    @GameTest(template = YARD)
+    public static void parkingMetersTicketOverstayers(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer council = join(helper);
+        ServerPlayer driver = join(helper);
+        try {
+            ParkingMeterBlockEntity meter = meter(helper, new BlockPos(2, 1, 8), council);
+            ParkingMeterBlockEntity next = meter(helper, new BlockPos(2, 1, 13), council);
+            CarEntity car = vehicle(helper, CarType.SEDAN, 4.0, 9.0);
+            car.setOwner(driver);
+            check(helper, MeterService.parkedAt(meter) == car, "the sedan's parked at the meter");
+            check(helper, MeterService.parkedAt(next) == null, "and not at the next one along, which is further");
+            ECO.setBalance(server, driver.getUUID(), 5_000, "test");
+            long councilBefore = ECO.getBalance(server, council.getUUID());
+
+            long now = helper.getLevel().getGameTime();
+            meter.update(now);
+            meter.update(now + 1_100);
+            check(helper, !meter.isExpired() && meter.tickets() == 0, "a minute's grace");
+            meter.update(now + 1_201);
+            check(helper, meter.isExpired() && meter.tickets() == 1, "then the flag goes up and a ticket");
+            helper.assertValueEqual(ECO.getBalance(server, driver.getUUID()), 4_000L, "a $10 fine from the bank");
+            helper.assertValueEqual(ECO.getBalance(server, council.getUUID()), councilBefore + 1_000, "to the meter's owner");
+            check(helper, helper.getBlockState(new BlockPos(2, 1, 8)).getValue(ParkingMeterBlock.EXPIRED), "the block shows it");
+            meter.update(now + 5_000);
+            helper.assertValueEqual(meter.tickets(), 1, "no second ticket straight away");
+            meter.update(now + 1_201 + 18_000);
+            helper.assertValueEqual(meter.tickets(), 2, "another after fifteen minutes");
+
+            // Paying stops it, for as long as was paid.
+            long cost = MeterService.cost(meter, 30);
+            helper.assertValueEqual(cost, 150L, "30 minutes at 50c per 10");
+            check(helper, !MeterService.pay(driver, meter, 30, 100, Payment.cash()).success(), "an out-of-date price is caught");
+            Purse.give(driver, 1_000);
+            ShopActionResult paid = MeterService.pay(driver, meter, 30, cost, Payment.cash());
+            check(helper, paid.success(), "paying: " + paid.message().getString());
+            helper.assertValueEqual(Purse.value(driver), 1_000 - cost - com.reiko.economy.config.EconomyConfig.taxRates().salesTax(cost),
+                    "cash spent, with tax");
+            check(helper, !meter.isExpired() && meter.earned() == cost, "the flag's down and the meter counts it");
+            long start = helper.getLevel().getGameTime();
+            check(helper, Math.abs(meter.timeLeft(car, start) - 30 * 1_200) <= 20, "half an hour on the clock");
+            Purse.give(driver, 2_000);
+            check(helper, MeterService.pay(driver, meter, 120, MeterService.cost(meter, 120), Payment.cash()).success(), "two hours more");
+            check(helper, !MeterService.pay(driver, meter, 120, MeterService.cost(meter, 120), Payment.cash()).success(),
+                    "but never more than four on the meter");
+            long paidUntil = start + 150 * 1_200;
+            ParkingMeterBlockEntity fresh = meter;
+            fresh.update(paidUntil + 600);
+            check(helper, !fresh.isExpired(), "still in its grace when the time runs out");
+            int before = fresh.tickets();
+            fresh.update(paidUntil + 1_300);
+            check(helper, fresh.isExpired() && fresh.tickets() == before + 1, "ticketed after it");
+
+            // The meter's owner parks free, and adds time free; nobody's ticketed for sitting in their car.
+            CarEntity councilCar = vehicle(helper, CarType.HATCHBACK, 4.0, 26.0);
+            councilCar.setOwner(council);
+            ParkingMeterBlockEntity third = meter(helper, new BlockPos(2, 1, 26), council);
+            third.update(now);
+            third.update(now + 50_000);
+            check(helper, !third.isExpired() && third.tickets() == 0, "the owner's own car is never ticketed");
+            ShopActionResult free = MeterService.pay(council, third, 10, MeterService.cost(third, 10), Payment.cash());
+            check(helper, free.success() && third.earned() == 0, "and the owner adds time free");
+        } finally {
+            leave(helper, council, driver);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 200)
+    public static void tollGatesLiftForTheToll(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer owner = join(helper);
+        ServerPlayer driver = join(helper);
+        try {
+            // A gate across the road at z = 16, its pole at x = 7 and its arm reaching west over x = 6, 5, 4.
+            BlockPos poleRel = new BlockPos(7, 1, 16);
+            BlockState gateState = ModBlocks.TOLL_GATE.get().defaultBlockState().setValue(TollGateBlock.FACING, Direction.NORTH);
+            helper.setBlock(poleRel, gateState);
+            BlockPos pole = helper.absolutePos(poleRel);
+            gateState.getBlock().setPlacedBy(helper.getLevel(), pole, gateState, owner, ItemStack.EMPTY);
+            for (int i = 1; i <= TollGateBlock.ARMS; i++) {
+                BlockState part = helper.getBlockState(poleRel.west(i));
+                check(helper, part.is(ModBlocks.TOLL_GATE.get()) && part.getValue(TollGateBlock.PART) == GatePart.at(i), "arm block " + i);
+            }
+            check(helper, ((TollGateBlockEntity) helper.getBlockEntity(poleRel)).isOwner(owner), "the gate's the owner's");
+
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.0, 16.0 - 0.6 - CarType.SEDAN.length / 2.0);
+            car.setOwner(driver);
+            check(helper, pole.equals(TollService.gateAhead(car)), "the car's pulled up to the gate");
+            check(helper, TollService.boothFor(helper.getLevel(), pole) == null, "no booth yet");
+            TollService.use(driver, car);
+            check(helper, !helper.getBlockState(poleRel).getValue(TollGateBlock.OPEN), "so it only opens for its owner");
+
+            BlockPos boothRel = new BlockPos(9, 1, 15);
+            helper.setBlock(boothRel, ModBlocks.TOLL_BOOTH.get().defaultBlockState());
+            TollBoothBlockEntity booth = (TollBoothBlockEntity) helper.getBlockEntity(boothRel);
+            booth.setOwner(owner);
+            check(helper, TollService.boothFor(helper.getLevel(), pole) == booth, "the owner's booth sets its toll");
+            check(helper, !TollService.setToll(driver, booth, "0.10").success(), "only the owner sets the toll");
+            check(helper, TollService.setToll(owner, booth, "2.50").success() && booth.toll() == 250, "the toll is $2.50");
+
+            Purse.give(driver, 1_000);
+            long ownerBefore = ECO.getBalance(server, owner.getUUID());
+            BlockPos boothPos = helper.absolutePos(boothRel);
+            check(helper, !TollService.pay(driver, pole, boothPos, 200, Payment.cash()).success(), "an out-of-date toll is caught");
+            ShopActionResult paid = TollService.pay(driver, pole, boothPos, 250, Payment.cash());
+            check(helper, paid.success(), "paying: " + paid.message().getString());
+            long tax = com.reiko.economy.config.EconomyConfig.taxRates().salesTax(250);
+            helper.assertValueEqual(Purse.value(driver), 1_000 - 250 - tax, "$2.50 and tax in cash");
+            helper.assertValueEqual(ECO.getBalance(server, owner.getUUID()), ownerBefore + 250, "to the gate's owner");
+            check(helper, booth.cars() == 1 && booth.earned() == 250, "the booth counts it");
+            for (int i = 0; i <= TollGateBlock.ARMS; i++) {
+                check(helper, helper.getBlockState(poleRel.west(i)).getValue(TollGateBlock.OPEN), "the whole gate lifts: " + i);
+            }
+            check(helper, TollService.gateAhead(car) == null, "and there's no closed gate ahead now");
+
+            // It waits while the car's under the arm, then shuts behind it.
+            car.setPos(car.getX(), car.getY(), pole.getZ() + 0.5);
+            TollService.tryClose(helper.getLevel(), pole);
+            check(helper, helper.getBlockState(poleRel).getValue(TollGateBlock.OPEN), "it won't come down on the car");
+            car.setPos(car.getX(), car.getY(), pole.getZ() + 6.0);
+            TollService.tryClose(helper.getLevel(), pole);
+            check(helper, !helper.getBlockState(poleRel).getValue(TollGateBlock.OPEN), "and shuts once it's through");
+
+            // The owner drives through free, and can hold it open.
+            car.setPos(car.getX(), car.getY(), pole.getZ() - 0.1 - CarType.SEDAN.length / 2.0);
+            long ownerCash = Purse.value(owner);
+            TollService.use(owner, car);
+            check(helper, helper.getBlockState(poleRel).getValue(TollGateBlock.OPEN) && Purse.value(owner) == ownerCash, "free for its owner");
+            TollService.tryClose(helper.getLevel(), pole);
+            TollService.toggleHeld(owner, helper.getLevel(), pole);
+            check(helper, ((TollGateBlockEntity) helper.getBlockEntity(poleRel)).isHeld(), "held open");
+            car.discard();
+            TollService.tryClose(helper.getLevel(), pole);
+            check(helper, helper.getBlockState(poleRel).getValue(TollGateBlock.OPEN), "held gates stay up");
+            TollService.toggleHeld(owner, helper.getLevel(), pole);
+            TollService.tryClose(helper.getLevel(), pole);
+            check(helper, !helper.getBlockState(poleRel).getValue(TollGateBlock.OPEN), "let go, it shuts");
+
+            // Breaking any block of it takes the whole gate down, and gives one gate back.
+            helper.getLevel().destroyBlock(helper.absolutePos(poleRel.west(2)), true);
+            for (int i = 0; i <= TollGateBlock.ARMS; i++) {
+                check(helper, helper.getBlockState(poleRel.west(i)).isAir(), "gone: " + i);
+            }
+            List<net.minecraft.world.entity.item.ItemEntity> drops = helper.getLevel().getEntitiesOfClass(
+                    net.minecraft.world.entity.item.ItemEntity.class, new net.minecraft.world.phys.AABB(pole).inflate(5));
+            int gates = drops.stream().filter(e -> e.getItem().is(ModItems.TOLL_GATE.get())).mapToInt(e -> e.getItem().getCount()).sum();
+            helper.assertValueEqual(gates, 1, "one toll gate dropped");
+        } finally {
+            leave(helper, owner, driver);
         }
         helper.succeed();
     }
