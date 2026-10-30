@@ -194,6 +194,7 @@ public final class CarWashService {
             }
             running = true;
             wash.washing.add(car.getUUID());
+            car.setSnow(car.snow() - RATE * 2.0F);
             float before = car.dirt();
             if (before > 0.0F) {
                 car.setDirt(before - RATE);

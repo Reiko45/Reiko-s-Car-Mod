@@ -211,6 +211,7 @@ public final class WashBayService {
             if (car.dirt() > 0.0F) {
                 car.setDirt(car.dirt() - RATE);
             }
+            car.setSnow(car.snow() - RATE * 2.0F);
         }
         return order;
     }

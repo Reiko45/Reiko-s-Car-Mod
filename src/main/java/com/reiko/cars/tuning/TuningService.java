@@ -156,8 +156,7 @@ public final class TuningService {
         if (kits.isEmpty()) {
             return ShopActionResult.fail("tuning.reikocars.nothing_picked");
         }
-        if (kits.contains(TuningKit.SPORT_TIRES) && kits.contains(TuningKit.OFF_ROAD_TIRES)
-                || kits.contains(TuningKit.LOWERING) && kits.contains(TuningKit.LIFT)) {
+        if (kits.stream().filter(TuningKit::isTires).count() > 1 || kits.contains(TuningKit.LOWERING) && kits.contains(TuningKit.LIFT)) {
             return ShopActionResult.fail("tuning.reikocars.one_or_other");
         }
         Upgrades start = car.upgrades();

@@ -65,7 +65,9 @@ public final class Headlights {
         int[] brightness = new int[SLOTS];
         if (beams || beacons) {
             dark = isDark(level, BlockPos.containing(car.getX(), car.getY() + 0.6, car.getZ()), dark);
-            if (dark && beams) {
+            // In rain, snow or a storm they light the road by day too.
+            boolean gloomy = beams && CarsConfig.WEATHER_HEADLIGHTS.get() && com.reiko.cars.weather.RoadWeather.precipitation(car);
+            if ((dark || gloomy) && beams) {
                 for (int i = 0; i < REACH.length; i++) {
                     want[i] = beam(level, REACH[i]);
                     brightness[i] = BRIGHTNESS[i];

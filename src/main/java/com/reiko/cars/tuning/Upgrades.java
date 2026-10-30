@@ -29,7 +29,7 @@ public record Upgrades(int engine, boolean turbo, Tires tires, int brakes, Suspe
     public static final int MAX_TANK = 2;
     public static final Upgrades STOCK = new Upgrades(0, false, Tires.STOCK, 0, Suspension.STOCK, 0);
 
-    public enum Tires { STOCK, SPORT, OFF_ROAD }
+    public enum Tires { STOCK, SPORT, OFF_ROAD, WINTER }
 
     public enum Suspension { STOCK, LOWERED, LIFTED }
 
@@ -85,7 +85,7 @@ public record Upgrades(int engine, boolean turbo, Tires tires, int brakes, Suspe
     // ---- what they do ----
 
     public double topSpeed() {
-        return (1.0 + 0.06 * engine) * (tires == Tires.OFF_ROAD ? 0.97 : 1.0);
+        return (1.0 + 0.06 * engine) * (tires == Tires.OFF_ROAD ? 0.97 : tires == Tires.WINTER ? 0.98 : 1.0);
     }
 
     public double acceleration() {
@@ -130,7 +130,7 @@ public record Upgrades(int engine, boolean turbo, Tires tires, int brakes, Suspe
     }
 
     public double tireWear() {
-        return tires == Tires.SPORT ? 1.3 : 1.0;
+        return tires == Tires.SPORT ? 1.3 : tires == Tires.WINTER ? 1.2 : 1.0;
     }
 
     /** What's fitted, a line each: "Stage 2 engine", "Turbo", ... (nothing for a stock car). */

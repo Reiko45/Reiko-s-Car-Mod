@@ -30,6 +30,9 @@ A **Tuning Bench** fits engine stages, turbos, tires, brakes and suspension kits
 a **Race Control** and numbered **race flags** make a race track, with timed laps, a best-lap board, and races for a
 pot of entry fees.
 
+Rain, snow and **thunderstorms** make the roads slippery: **windscreen wipers** sweep the rain off, spray flies off the
+tires, snow piles up on parked cars, lightning strikes now and then, and **Winter Tires** grip on snow and ice.
+
 Cars get **dirty** off-road, in mud and in the rain, and it shows. A drive-through **Car Wash** with spinning
 brushes, a coin-op **Wash Bay** with a pressure washer, or a bucket of water gets them clean again; left filthy, a car
 rusts and dealers pay less for it.
@@ -364,11 +367,12 @@ car's owner can have it tuned.
 | Lift Kit | Less slowed off-road | Turns 5% wider |
 | Extended Fuel Tank | One tank stage (up to 2): the tank holds 25% more a stage, so a sedan's 8 buckets become 10, then 12 | The weight takes 3% off acceleration a stage; gasoline and diesel cars only |
 | Extra Battery Module | One battery stage (up to 2): the battery holds 25% more a stage, so it goes further on a charge | The weight takes 3% off acceleration a stage; electric cars only |
+| Winter Tires | Far better grip on snow and ice, and better in the rain (see [Weather](#weather)) | 2% off the top speed, and they wear 20% faster |
 
 - **Tune tab:** each kit, how far the car has it, a **Fit** button that fits one of your own kits for nothing, and a
   button with the bench's price for one from its stock. Pick several and pay the bill by card or cash (plus sales
   tax); the money goes to the bench's owner, whose own jobs are free. One set of tires and one set of springs: fitting
-  the other kind hands the old one back.
+  another kind hands the old ones back.
 - **Livery tab:** a **race number** (1 to 99) on a white roundel on both doors, and **racing stripes** in any dye colour
   along the hood, roof and trunk. Free. Motorcycles don't take a livery.
 - **The owner's Stock and Prices tabs:** load the bench with kits (hoppers and pipes can fill it too) and set what
@@ -629,6 +633,36 @@ windows get a dusty smear. Standing in the rain rinses a car off, but only so fa
   see how many washes it's sold and what they've taken. New car washes charge $15.00 a wash, and wash bays $5.00 a
   minute (see [Settings](#settings)).
 
+## Weather
+
+Rain, snow and storms change how cars drive. With less grip a car is slower to get going, takes longer to stop, and
+slides wide in hard turns:
+
+| Weather | Grip |
+| --- | --- |
+| Dry | All of it |
+| Rain (a wet road) | 80% |
+| Thunderstorm | 65% |
+| Falling snow, or snow on the road | 55% |
+| Ice | As slippery as its block: ice, packed ice and blue ice are like glass |
+
+- **Tires matter:** **Winter Tires** (a kit at the [Tuning Bench](#tuning)) win back most of the grip lost on snow
+  (80%), bite into ice, and win back half of it in the rain. Off-road tires win back a third in snow; sport tires are
+  worse in the wet. The dashboard shows the road beside the lock: **WET**, **STORM**, **SNOW** or **ICE**.
+- **Wipers:** every car (not the motorcycles) has wipers on its windscreen: two blades, or one in the middle of a
+  narrow screen. They sweep while rain or snow falls on the car and its engine runs, faster in a storm. Raindrops (or
+  snowflakes) gather on the glass while it's coming down, engine running or not, and the blades wipe away the ones
+  they pass over; once it stops, they dry up. You see it all from the driver's seat, and so does anyone outside.
+- **Spray:** water sprays up behind the wheels on a wet road, and snow on a snowy one, more the faster you go.
+- **Snow on parked cars:** a car standing in falling snow is covered in about a minute and a half: its roof, hood,
+  trunk and windscreen (the glass stays clear while the engine runs). It blows off as the car's driven (in twenty
+  blocks or so), melts in the rain or anywhere too warm to snow, and washes off at a car wash or with a bucket of
+  water.
+- **Thunderstorms:** besides the worse grip, lightning strikes a car out in a storm now and then (about six times an
+  hour): a bolt, and 8% off its body. The people inside are safe, as in a real car, even from a bolt that strikes them
+  there.
+- **Headlights** come on by themselves in rain, snow and storms, lighting the road by day as well as at night.
+
 ## Tow trucks
 
 Two diesel tow trucks fetch cars that have broken down (or anything else that needs moving):
@@ -829,6 +863,7 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | Lift Kit | three iron ingots, blue dye and a piston (shapeless) |
 | Extended Fuel Tank | iron ingots in the top corners, iron ingots either side of a BuildCraft **Tank**, three iron ingots below |
 | Extra Battery Module | a Battery Pack, two copper ingots, redstone and an iron ingot (shapeless) |
+| Winter Tires | four Tires, white dye and an iron nugget (shapeless) |
 | Car Wash | blue dye, any sign, blue dye on top, white wool, iron gear, white wool across the middle, iron ingot, water bucket, iron ingot below |
 | Wash Bay | yellow dye, any sign, yellow dye on top, iron ingot, a BuildCraft **iron fluid pipe**, iron ingot across the middle, iron ingot, water bucket, iron ingot below |
 | Parking Meter | iron ingot, glass pane, iron ingot on top, gold nugget, redstone, gold nugget across the middle, an iron ingot below |
@@ -1009,6 +1044,13 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `parking.fine` | `10.0` | A new meter's fine for overstaying, from the car owner's bank account (its owner can change it) |
 | `parking.graceSeconds` | `60` | How long a car can stand at a meter unpaid, or after its time runs out, before it's ticketed |
 | `parking.fineEverySeconds` | `900` | How often a car that stays is ticketed again |
+| `weather.rainGrip` | `0.8` | Grip a car keeps on a wet road |
+| `weather.stormGrip` | `0.65` | Grip in a thunderstorm |
+| `weather.snowGrip` | `0.55` | Grip in falling snow or on snow |
+| `weather.lightningStrikesPerHour` | `6.0` | How often lightning strikes a car out in a thunderstorm (0 turns it off) |
+| `weather.lightningBodyDamage` | `0.08` | Body condition a strike takes off |
+| `weather.headlightsInBadWeather` | `true` | Headlights light the road in rain, snow and storms by day too |
+| `weather.snowOnCars` | `true` | Snow builds up on cars parked in falling snow |
 | `carWash.dirtRate` | `1.0` | How fast cars get dirty (0 keeps them clean) |
 | `carWash.filthyBodyWearPerDay` | `0.03` | Body condition a filthy car loses a Minecraft day to rust (0 turns it off) |
 | `carWash.dirtyTradeInCut` | `0.15` | How much less dealerships pay for a filthy car than a clean one |
@@ -1111,8 +1153,10 @@ sign glow (`neoforge_data` light on those elements).
 The Car Wash is a block model per part of its arch, all sharing `textures/block/car_wash.png`: `car_wash_base` (the
 left post's foot, with the pay terminal), `car_wash_base_far`, `car_wash_post`, `car_wash_beam_end` and
 `car_wash_beam_1` to `car_wash_beam_4`, which spell CAR WASH two letters a block (backwards from behind, so it reads
-from both sides). Its brushes are drawn in code (`client/CarWashRenderer.java`), and the dirt on cars is made from
-each car's own texture (`client/CarGrime.java`).
+from both sides). Its brushes are drawn in code (`client/CarWashRenderer.java`), and the dirt and snow on cars are
+made from each car's own texture (`client/CarGrime.java`). The wipers find each car's windscreen in its model (the
+biggest forward-facing pane of see-through glass in `trim`, with any panes in line with it: `client/Wipers.java`), so a
+new car gets them as long as its windscreen is glass that faces forward.
 
 ## Project layout
 
@@ -1135,6 +1179,7 @@ src/main/java/com/reiko/cars/
 ├── sale/                 the For Sale Sign, a car's sale screen, the Car Dealership block, its lot and tabs, and SaleService (buying, selling, trade-ins)
 ├── finance/              car loans: the Loan, where they're kept (LoanData), and LoanService (terms, daily payments, repossession, paying off)
 ├── impound/              the Impound Office block, block entity, menu and protection, the lots (ImpoundRegistry), and ImpoundService (towing in, fees, releasing)
+├── weather/              the road's grip in rain, storms, snow and ice (RoadWeather), snow on cars and lightning (CarWeather), and spray off the tires (TireSpray)
 ├── wash/                 dirt (Dirt), washing by hand (HandWash), the Car Wash arch and the Wash Bay with their block entities and menus, CarWashService and WashBayService (paying, washing, spraying), and the Pressure Washer
 ├── tuning/               upgrades (Upgrades) and the tuning kits, the Tuning Bench block, block entity and menu, TuningService, and liveries (Livery)
 ├── racing/               race flags and their registry, the Race Control block, block entity and menu, and RaceService (time trials, races, the board)
@@ -1153,7 +1198,7 @@ src/main/java/com/reiko/cars/
 ├── network/              packets: pump, repair bench, mailbox, parking meter, toll, car wash, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, and dirt, CarGrime), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
+├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, and the wipers and raindrops on the windscreen, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)

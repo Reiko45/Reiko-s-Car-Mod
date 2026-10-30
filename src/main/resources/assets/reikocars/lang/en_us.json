@@ -1352,5 +1352,16 @@
   "gui.reikocars.wash_books": "Washes: %s. Taken: %s.",
   "gui.reikocars.bay_owner_hint": "Drivers pay this for a go on the pressure washer, and the bay hands them its lance; they hold right-click to spray a car clean. You spray free: sneak and right-click the bay for a lance.",
   "gui.reikocars.wash_owner_hint": "Drivers pull up and press the hitch key (or right-click the arch from the driver's seat) to pay this for a wash, then drive through slowly. Your own cars wash free; set 0 to wash everyone's free.",
-  "hud.reikocars.hitch.wash": "[%s] Car wash"
+  "hud.reikocars.hitch.wash": "[%s] Car wash",
+  "item.reikocars.winter_tires": "Winter Tires",
+  "item.reikocars.winter_tires.effect": "Grip on snow and ice, and better in the rain",
+  "item.reikocars.winter_tires.cost": "2% off the top speed, and they wear 20% faster",
+  "tuning.reikocars.tires.winter": "Winter tires",
+  "tuning.reikocars.kit_short.winter_tires": "Winter tires",
+  "weather.reikocars.road.dry": "DRY",
+  "weather.reikocars.road.wet": "WET",
+  "weather.reikocars.road.storm": "STORM",
+  "weather.reikocars.road.snow": "SNOW",
+  "weather.reikocars.road.ice": "ICE",
+  "weather.reikocars.struck": "Lightning struck the car! You're safe inside, but the paint's scorched."
 }

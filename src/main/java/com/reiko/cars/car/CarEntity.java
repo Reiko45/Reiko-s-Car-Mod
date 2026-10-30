@@ -144,6 +144,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private static final EntityDataAccessor<CarCondition> DATA_CONDITION = SynchedEntityData.defineId(CarEntity.class, ModDataSerializers.CONDITION);
     /** How dirty it is, 0 to 1 (see {@link com.reiko.cars.wash.Dirt}). */
     private static final EntityDataAccessor<Float> DATA_DIRT = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.FLOAT);
+    /** How much snow's settled on it, 0 to 1 (see {@link com.reiko.cars.weather.CarWeather}). */
+    private static final EntityDataAccessor<Float> DATA_SNOW = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.FLOAT);
     /** Wear smaller than this isn't sent to clients straight away (warning levels always are). */
     private static final float CONDITION_SYNC_STEP = 0.005F;
     /** The fewest ticks between a driver's wear reports, so a client can't flood the server. */
@@ -281,6 +283,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_RADIO_START, 0L);
         builder.define(DATA_CONDITION, CarCondition.NEW);
         builder.define(DATA_DIRT, 0.0F);
+        builder.define(DATA_SNOW, 0.0F);
     }
 
     public CarType carType() {
@@ -780,6 +783,35 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             clamped = 0.0F;
         }
         entityData.set(DATA_DIRT, clamped);
+    }
+
+    // ---- weather (see com.reiko.cars.weather) ----
+
+    /** When lightning last struck it (game time; not saved). */
+    private long lastStruck = -100;
+
+    /** How much snow's on it, from 0 to 1. */
+    public float snow() {
+        return entityData.get(DATA_SNOW);
+    }
+
+    public void setSnow(float snow) {
+        float clamped = Mth.clamp(snow, 0.0F, 1.0F);
+        entityData.set(DATA_SNOW, clamped < 0.001F ? 0.0F : clamped);
+    }
+
+    public long lastStruck() {
+        return lastStruck;
+    }
+
+    public void setLastStruck(long time) {
+        lastStruck = time;
+    }
+
+    /** Lightning scorches a car's body; it doesn't set it alight. */
+    @Override
+    public void thunderHit(ServerLevel level, net.minecraft.world.entity.LightningBolt bolt) {
+        com.reiko.cars.weather.CarWeather.struck(this);
     }
 
     // ---- the fire truck (see com.reiko.cars.fire) ----
@@ -1561,10 +1593,18 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         double speedScale = CarsConfig.get(CarsConfig.SPEED);
         BlockState ground = level().getBlockState(getBlockPosBelowThatAffectsMyMovement());
         float friction = ground.getFriction(level(), getBlockPosBelowThatAffectsMyMovement(), this);
-        double grip = onGround() ? Mth.clamp((1.0 - friction) / 0.4, 0.1, 1.0) : 0.0;
+        com.reiko.cars.tuning.Upgrades tuned = upgrades();
+        double grip = 0.0;
+        if (onGround()) {
+            // The block's grip, less for the weather (see RoadWeather).
+            double surface = Mth.clamp((1.0 - friction) / 0.4, 0.1, 1.0);
+            com.reiko.cars.weather.RoadWeather.Condition road = com.reiko.cars.weather.RoadWeather.at(this);
+            grip = road == com.reiko.cars.weather.RoadWeather.Condition.ICE || friction > 0.7F
+                    ? com.reiko.cars.weather.RoadWeather.iceGrip(surface, tuned.tires())
+                    : surface * com.reiko.cars.weather.RoadWeather.gripFactor(road, tuned.tires());
+        }
         CarCondition wear = condition();
         double tires = wear.grip();
-        com.reiko.cars.tuning.Upgrades tuned = upgrades();
         double top = type.topSpeed * tuned.topSpeed() * speedScale * surfaceFactor() * wear.power() * wear.drag();
         if (isInWater()) {
             top = Math.min(top, 0.1);
@@ -1813,6 +1853,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             setCondition(type.isElectric() ? worn.with(Part.OIL, 1.0F) : worn); // no oil in an electric motor
         }
         com.reiko.cars.wash.Dirt.tick(this, moved, driver != null);
+        com.reiko.cars.weather.CarWeather.tick(this, moved);
         if (moved > 0.3) {
             runOver(driver, moved);
         }
@@ -1895,6 +1936,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
 
         engineSmoke();
+        com.reiko.cars.weather.TireSpray.tick(this, measuredSpeed);
         if (isEngineRunning() && tickCount % 3 == 0 && !type.isElectric()) {
             if (!type.exhaustStacks().isEmpty()) {
                 // Out of the tops of its exhaust stacks (the semi's behind the cab, the tractor's on the hood).
@@ -2199,6 +2241,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (dirt() > 0.0F) {
             tag.putFloat("Dirt", dirt());
         }
+        if (snow() > 0.0F) {
+            tag.putFloat("Snow", snow());
+        }
         if (type.isFireTruck()) {
             tag.putInt("Water", water());
             if (ladderUp()) {
@@ -2250,6 +2295,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         entityData.set(DATA_UPGRADES, tag.getInt("Upgrades"));
         entityData.set(DATA_LIVERY, tag.getInt("Livery"));
         setDirt(tag.getFloat("Dirt"));
+        setSnow(tag.getFloat("Snow"));
         if (type.isFireTruck()) {
             setWater(tag.getInt("Water"));
             if (tag.contains("Ladder", Tag.TAG_INT)) {

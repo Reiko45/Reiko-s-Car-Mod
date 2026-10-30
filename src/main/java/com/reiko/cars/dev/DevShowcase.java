@@ -170,6 +170,8 @@ public final class DevShowcase {
             tuneScript();
         } else if (MODE.equals("wash")) {
             washScript();
+        } else if (MODE.equals("weather")) {
+            weatherScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -3211,9 +3213,9 @@ public final class DevShowcase {
             });
         });
         at(90, mc -> clickAt(mc, 160, 44 + 1 * 15 + 7));
-        at(92, mc -> clickAt(mc, 160, 44 + 7 * 15 + 7));
+        at(92, mc -> clickAt(mc, 160, 44 + 8 * 15 + 7)); // the fuel tank
         at(100, mc -> shot(mc, "251_tune_tab"));
-        at(102, mc -> clickAt(mc, 142, 44 + 8 * 15 + 3 + 12 + 12 + 20 + 5));
+        at(102, mc -> clickAt(mc, 142, 44 + 9 * 15 + 3 + 12 + 12 + 20 + 5));
         at(118, mc -> shot(mc, "252_tuned"));
         at(120, mc -> clickAt(mc, 74, 22));
         at(124, mc -> {
@@ -3478,5 +3480,117 @@ public final class DevShowcase {
         at(368, mc -> hoverOn(mc, 8 + 2 * 18 + 8, 142 + 8));
         at(374, mc -> shot(mc, "287_lance_tooltip"));
         at(380, mc -> mc.stop());
+    }
+
+    // ---- weather: ./gradlew runClient -Pshowcase=weather ----
+
+    private static CarEntity carAt(ServerLevel level, double x, double z) {
+        return level.getEntitiesOfClass(CarEntity.class, new net.minecraft.world.phys.AABB(x - 1.5, -70, z - 1.5, x + 1.5, -40, z + 1.5)).getFirst();
+    }
+
+    private static void weatherScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                MinecraftServer server = level.getServer();
+                level.setDayTime(5000);
+                level.setWeatherParameters(0, 12000, true, false);
+                tile(level, -10, -20, 44, 20);
+                server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withPermission(4).withSuppressedOutput(),
+                        "fillbiome 18 -64 -20 44 -48 20 minecraft:snowy_plains");
+                for (int x = 19; x <= 44; x++) {
+                    for (int z = -20; z <= 20; z++) {
+                        level.setBlockAndUpdate(new BlockPos(x, -60, z), Blocks.SNOW.defaultBlockState());
+                    }
+                }
+                CarEntity sedan = spawned(level, CarType.SEDAN, 0.5, 0.5, 0.0F, 0.9);
+                sedan.setColor(0xC62828);
+                CarEntity pickup = spawned(level, CarType.PICKUP_TRUCK, 6.5, 0.5, 0.0F, 0.9);
+                pickup.setColor(0x1565C0);
+                spawned(level, CarType.HATCHBACK, 12.5, 0.5, 0.0F, 0.9).setColor(0xF2F2EE);
+                spawned(level, CarType.SEDAN, 28.5, 0.5, 0.0F, 0.9).setSnow(0.9F);
+                spawned(level, CarType.CITY_BUS, 35.5, 0.5, 0.0F, 0.9).setSnow(0.6F);
+                CarEntity off = spawned(level, CarType.OFF_ROADER, 23.0, -8.0, 0.0F, 0.9);
+                off.setSnow(1.0F);
+                ServerPlayer mo = extraPlayer(server, "Mo");
+                mo.teleportTo(level, 6.5, -60.0, 0.5, 0.0F, 0.0F);
+                mo.startRiding(pickup, true);
+                player.setGameMode(GameType.SURVIVAL);
+                player.startRiding(sedan, true);
+            });
+        });
+        at(70, mc -> shot(mc, "290_rain_driver_view"));
+        at(79, mc -> shot(mc, "291_rain_driver_view_2"));
+        // from outside: the pickup's wipers going, the hatchback's screen collecting rain
+        at(82, mc -> server(mc, player -> {
+            player.stopRiding();
+            player.setGameMode(GameType.CREATIVE);
+        }));
+        at(84, mc -> look(mc, 9.5, -58.3, 7.5, 165.0F, 12.0F));
+        at(110, mc -> shot(mc, "292_wipers_outside"));
+        at(116, mc -> shot(mc, "293_wipers_outside_2"));
+        at(118, mc -> look(mc, 12.5, -59.3, 3.6, 180.0F, 14.0F));
+        at(140, mc -> shot(mc, "294_drops_parked"));
+        // spray off the tires, driving on in the rain
+        at(142, mc -> server(mc, player -> {
+            player.setGameMode(GameType.SURVIVAL);
+            player.startRiding(carAt(player.serverLevel(), 0.5, 0.5), true);
+        }));
+        at(146, mc -> {
+            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+            mc.options.keyUp.setDown(true);
+            mc.options.hideGui = true;
+            mc.player.setXRot(4.0F);
+        });
+        at(178, mc -> shot(mc, "295_tire_spray"));
+        at(180, mc -> {
+            mc.options.keyUp.setDown(false);
+            mc.options.hideGui = false;
+        });
+        // snow
+        at(184, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                player.stopRiding();
+                player.setGameMode(GameType.CREATIVE);
+            });
+        });
+        at(186, mc -> look(mc, 31.0, -57.6, 9.0, 160.0F, 16.0F));
+        at(206, mc -> shot(mc, "296_snow_on_cars"));
+        at(208, mc -> look(mc, 25.5, -58.6, -2.5, 210.0F, 22.0F));
+        at(224, mc -> shot(mc, "297_snowed_in"));
+        at(226, mc -> server(mc, player -> {
+            player.setGameMode(GameType.SURVIVAL);
+            player.startRiding(carAt(player.serverLevel(), 28.5, 0.5), true);
+        }));
+        at(276, mc -> shot(mc, "298_snow_driver_view"));
+        at(278, mc -> {
+            mc.options.keyUp.setDown(true);
+            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+            mc.options.hideGui = true;
+            mc.player.setXRot(4.0F);
+        });
+        at(300, mc -> shot(mc, "299_snow_spray"));
+        at(302, mc -> {
+            mc.options.keyUp.setDown(false);
+            mc.options.hideGui = false;
+        });
+        // a thunderstorm, and lightning striking the hatchback
+        at(306, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                player.stopRiding();
+                player.setGameMode(GameType.CREATIVE);
+                player.serverLevel().setWeatherParameters(0, 12000, true, true);
+            });
+        });
+        at(308, mc -> look(mc, 12.5, -57.0, 12.0, 180.0F, 10.0F));
+        at(340, mc -> server(mc, player -> com.reiko.cars.weather.CarWeather.strike(carAt(player.serverLevel(), 12.5, 0.5))));
+        at(342, mc -> shot(mc, "300_lightning"));
+        at(350, mc -> server(mc, player -> ReikoCars.LOGGER.info("Showcase weather: hatchback body {}",
+                carAt(player.serverLevel(), 12.5, 0.5).condition().body())));
+        at(360, mc -> mc.stop());
     }
 }

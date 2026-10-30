@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "reikocars:tire"
+    },
+    {
+      "item": "reikocars:tire"
+    },
+    {
+      "item": "reikocars:tire"
+    },
+    {
+      "item": "reikocars:tire"
+    },
+    {
+      "tag": "c:dyes/white"
+    },
+    {
+      "tag": "c:nuggets/iron"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:winter_tires"
+  }
+}

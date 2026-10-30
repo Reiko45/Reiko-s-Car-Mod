@@ -36,7 +36,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.CHARGING_STATION.get());
                 output.accept(ModItems.REPAIR_BENCH.get());
                 output.accept(ModItems.TUNING_BENCH.get());
-                for (com.reiko.cars.tuning.TuningKit kit : com.reiko.cars.tuning.TuningKit.values()) {
+                for (com.reiko.cars.tuning.TuningKit kit : com.reiko.cars.tuning.TuningKit.ORDER) {
                     output.accept(ModItems.kit(kit));
                 }
                 output.accept(ModItems.MAILBOX.get());

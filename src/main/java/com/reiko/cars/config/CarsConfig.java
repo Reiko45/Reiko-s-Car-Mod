@@ -97,6 +97,13 @@ public final class CarsConfig {
     public static final ModConfigSpec.DoubleValue RED_LIGHT_FINE;
     public static final ModConfigSpec.DoubleValue SPEEDING_FINE;
 
+    public static final ModConfigSpec.DoubleValue RAIN_GRIP;
+    public static final ModConfigSpec.DoubleValue STORM_GRIP;
+    public static final ModConfigSpec.DoubleValue SNOW_GRIP;
+    public static final ModConfigSpec.DoubleValue LIGHTNING_PER_HOUR;
+    public static final ModConfigSpec.DoubleValue LIGHTNING_DAMAGE;
+    public static final ModConfigSpec.BooleanValue WEATHER_HEADLIGHTS;
+    public static final ModConfigSpec.BooleanValue SNOW_ON_CARS;
     public static final ModConfigSpec.DoubleValue DIRT_RATE;
     public static final ModConfigSpec.DoubleValue FILTHY_BODY_WEAR;
     public static final ModConfigSpec.DoubleValue DIRTY_TRADE_IN_CUT;
@@ -435,6 +442,32 @@ public final class CarsConfig {
         MAIL_REACH = builder
                 .comment("How close, in blocks, the mail van must be to a mailbox to collect and deliver its mail.")
                 .defineInRange("mailVanReach", 3.0, 1.0, 16.0);
+        builder.pop();
+
+        builder.push("weather");
+        RAIN_GRIP = builder
+                .comment("How much of its grip a car keeps on a wet road, in the rain (0.8 is 80%): less grip means longer stops and",
+                        "sliding wide in hard turns. Winter tires win half the loss back, off-road tires a fifth; sport tires lose more.")
+                .defineInRange("rainGrip", 0.8, 0.1, 1.0);
+        STORM_GRIP = builder
+                .comment("How much grip a car keeps in a thunderstorm.")
+                .defineInRange("stormGrip", 0.65, 0.1, 1.0);
+        SNOW_GRIP = builder
+                .comment("How much grip a car keeps in falling snow or on snow. Winter tires win most of the loss back, off-road tires",
+                        "a third. Ice is as slippery as its block, though winter tires bite into it.")
+                .defineInRange("snowGrip", 0.55, 0.1, 1.0);
+        LIGHTNING_PER_HOUR = builder
+                .comment("How often, on average, lightning strikes a car out in a thunderstorm, per car per hour. 0 turns it off.")
+                .defineInRange("lightningStrikesPerHour", 6.0, 0.0, 3600.0);
+        LIGHTNING_DAMAGE = builder
+                .comment("How much of its body's condition a car loses to a lightning strike (0.08 is 8%). The people inside are safe.")
+                .defineInRange("lightningBodyDamage", 0.08, 0.0, 1.0);
+        WEATHER_HEADLIGHTS = builder
+                .comment("Whether headlights also light the road in rain, snow and storms, not only in the dark.")
+                .define("headlightsInBadWeather", true);
+        SNOW_ON_CARS = builder
+                .comment("Whether snow builds up on cars parked in falling snow (it blows off once they're driven).")
+                .define("snowOnCars", true);
         builder.pop();
 
         builder.push("carWash");

@@ -169,17 +169,31 @@ public final class CarHud implements LayeredDraw.Layer {
             graphics.drawString(font, "R", x + WIDTH - 12, y + 6, 0xFFD54F, false);
         }
         long meter = car.meterCents();
+        int statusX = x + WIDTH - 6;
         if (renting && rentalLeft > 0) {
             // A rental's time left, where the lock shows otherwise.
             Component left = Component.translatable("hud.reikocars.rental", com.reiko.cars.rental.RentalService.timeLeft(rentalLeft));
-            graphics.drawString(font, left, x + WIDTH - 6 - font.width(left), y + 16, rentalLeft < 2_400 ? 0xFFFF8A65 : 0xFF81D4FA, false);
+            statusX -= font.width(left);
+            graphics.drawString(font, left, statusX, y + 16, rentalLeft < 2_400 ? 0xFFFF8A65 : 0xFF81D4FA, false);
         } else if (meter >= 0) {
             // A taxi's meter, where the lock shows otherwise.
             Component fare = Component.translatable("hud.reikocars.fare", com.reiko.economy.api.EconomyApi.get().format(meter));
-            graphics.drawString(font, fare, x + WIDTH - 6 - font.width(fare), y + 16, 0xFFD54F, false);
+            statusX -= font.width(fare);
+            graphics.drawString(font, fare, statusX, y + 16, 0xFFD54F, false);
         } else if (car.isLocked()) {
             Component locked = Component.translatable("hud.reikocars.locked");
-            graphics.drawString(font, locked, x + WIDTH - 6 - font.width(locked), y + 16, 0x9E9E9E, false);
+            statusX -= font.width(locked);
+            graphics.drawString(font, locked, statusX, y + 16, 0x9E9E9E, false);
+        }
+        // The road: wet, a storm, snow or ice (nothing on a dry road), beside that.
+        com.reiko.cars.weather.RoadWeather.Condition road = com.reiko.cars.weather.RoadWeather.at(car);
+        if (road != com.reiko.cars.weather.RoadWeather.Condition.DRY) {
+            Component tag = road.displayName();
+            int tagX = statusX - font.width(tag) - (statusX < x + WIDTH - 6 ? 5 : 0);
+            if (tagX > unitX + font.width(unitLabel) + 2) {
+                graphics.drawString(font, tag, tagX, y + 16, road == com.reiko.cars.weather.RoadWeather.Condition.STORM ? 0xFF7986CB
+                        : road == com.reiko.cars.weather.RoadWeather.Condition.WET ? 0xFF4FC3F7 : 0xFFE1F5FE, false);
+            }
         }
 
         // Fuel gauge, or an electric car's battery: a battery outline and its charge in percent

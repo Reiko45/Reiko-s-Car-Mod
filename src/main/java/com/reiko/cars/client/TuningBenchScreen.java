@@ -36,6 +36,8 @@ public final class TuningBenchScreen extends ShopScreenBase<TuningBenchMenu> {
     private static final int SHOP_WIDTH = 56;
     private static final int PIN_X = WIDTH - 8 - 34;
     private static final TuningKit[] KITS = TuningKit.values();
+    /** The kits in the bench's order (tires together). */
+    private static final java.util.List<TuningKit> ORDER = TuningKit.ORDER;
     private static final int BAD = 0xFFB3261E;
 
     @Nullable
@@ -64,7 +66,7 @@ public final class TuningBenchScreen extends ShopScreenBase<TuningBenchMenu> {
     private int stripes;
 
     public TuningBenchScreen(TuningBenchMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title, WIDTH, 258);
+        super(menu, inventory, title, WIDTH, 273);
     }
 
     private int kitsRow() {
@@ -78,7 +80,7 @@ public final class TuningBenchScreen extends ShopScreenBase<TuningBenchMenu> {
     /** The kits on the Tune tab, in order: those that suit the car (a fuel tank or a battery, never both). */
     private java.util.List<TuningKit> shown() {
         com.reiko.cars.car.CarType type = menu.carType();
-        return java.util.Arrays.stream(KITS).filter(kit -> type == null ? kit != TuningKit.BATTERY : kit.suits(type)).toList();
+        return ORDER.stream().filter(kit -> type == null ? kit != TuningKit.BATTERY : kit.suits(type)).toList();
     }
 
     private int cardRow() {
@@ -117,7 +119,7 @@ public final class TuningBenchScreen extends ShopScreenBase<TuningBenchMenu> {
                     menu.containerId, TuningActionPayload.FIT, kit.ordinal()))).bounds(leftPos + FIT_X, y + 1, 30, 14).build());
             shopButtons[i] = addRenderableWidget(Button.builder(Component.empty(), button -> choose(kit))
                     .bounds(leftPos + SHOP_X, y + 1, SHOP_WIDTH, 14).build());
-            int priceY = topPos + TOP + 14 + i * 20;
+            int priceY = topPos + TOP + 14 + ORDER.indexOf(kit) * 20;
             priceBoxes[i] = addRenderableWidget(new EditBox(font, leftPos + 108, priceY + 1, 46, 16, Component.translatable("gui.reikocars.price")));
             priceBoxes[i].setFilter(MONEY_FILTER);
             priceBoxes[i].setMaxLength(16);
@@ -188,15 +190,11 @@ public final class TuningBenchScreen extends ShopScreenBase<TuningBenchMenu> {
         chosen[kit.ordinal()] = !chosen[kit.ordinal()];
         if (chosen[kit.ordinal()]) {
             // One set of tires, one set of springs.
-            TuningKit other = switch (kit) {
-                case SPORT_TIRES -> TuningKit.OFF_ROAD_TIRES;
-                case OFF_ROAD_TIRES -> TuningKit.SPORT_TIRES;
-                case LOWERING -> TuningKit.LIFT;
-                case LIFT -> TuningKit.LOWERING;
-                default -> null;
-            };
-            if (other != null) {
-                chosen[other.ordinal()] = false;
+            for (TuningKit other : KITS) {
+                if (other != kit && (other.isTires() && kit.isTires() || kit == TuningKit.LOWERING && other == TuningKit.LIFT
+                        || kit == TuningKit.LIFT && other == TuningKit.LOWERING)) {
+                    chosen[other.ordinal()] = false;
+                }
             }
         }
         updateButtons();
@@ -329,8 +327,8 @@ public final class TuningBenchScreen extends ShopScreenBase<TuningBenchMenu> {
             drawSlotGrid(graphics, leftPos + TuningBenchMenu.STOCK_X, topPos + TuningBenchMenu.STOCK_Y, 9, 2);
             drawPlayerInventory(graphics, leftPos + TuningBenchMenu.STOCK_X, topPos + TuningBenchMenu.INVENTORY_Y);
         } else if (tab == TuningBenchMenu.TAB_PRICES) {
-            for (TuningKit kit : KITS) {
-                drawSlot(graphics, leftPos + 8, topPos + TOP + 15 + kit.ordinal() * 20);
+            for (int row = 0; row < ORDER.size(); row++) {
+                drawSlot(graphics, leftPos + 8, topPos + TOP + 15 + row * 20);
             }
         }
     }
@@ -429,17 +427,21 @@ public final class TuningBenchScreen extends ShopScreenBase<TuningBenchMenu> {
 
     private void renderStock(GuiGraphics graphics) {
         graphics.drawString(font, fit(Component.translatable("gui.reikocars.kit_stock_label"), imageWidth - 16), 8, TOP + 1, LABEL_COLOR, false);
-        int x = TuningBenchMenu.STOCK_X;
-        int y = TuningBenchMenu.STOCK_Y + 38;
-        for (TuningKit kit : KITS) {
+        int x = 8;
+        int y = TuningBenchMenu.STOCK_Y + 39;
+        for (TuningKit kit : ORDER) {
             var pose = graphics.pose();
             pose.pushPose();
             pose.translate(x, y, 0.0F);
-            pose.scale(0.75F, 0.75F, 1.0F);
+            pose.scale(0.625F, 0.625F, 1.0F);
             graphics.renderFakeItem(TuningService.stackOf(kit), 0, 0);
             pose.popPose();
-            graphics.drawString(font, "×" + menu.stock(kit), x + 13, y + 3, LABEL_COLOR, false);
-            x += 19;
+            pose.pushPose();
+            pose.translate(x + 10.5F, y + 3.0F, 0.0F);
+            pose.scale(0.75F, 0.75F, 1.0F);
+            graphics.drawString(font, Integer.toString(menu.stock(kit)), 0, 0, LABEL_COLOR, false);
+            pose.popPose();
+            x += 18;
         }
         graphics.drawString(font, playerInventoryTitle, TuningBenchMenu.STOCK_X, TuningBenchMenu.INVENTORY_Y - 10, LABEL_COLOR, false);
     }
@@ -447,7 +449,7 @@ public final class TuningBenchScreen extends ShopScreenBase<TuningBenchMenu> {
     private void renderPrices(GuiGraphics graphics) {
         graphics.drawString(font, fit(Component.translatable("gui.reikocars.kit_prices_label"), imageWidth - 16), 8, TOP + 1, LABEL_COLOR, false);
         for (TuningKit kit : KITS) {
-            int y = TOP + 15 + kit.ordinal() * 20;
+            int y = TOP + 15 + ORDER.indexOf(kit) * 20;
             graphics.renderFakeItem(TuningService.stackOf(kit), 8, y);
             graphics.drawString(font, fit(kit.displayName(), 76), 28, y + 4, LABEL_COLOR, false);
         }

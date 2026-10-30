@@ -49,6 +49,7 @@ import com.reiko.cars.wash.Dirt;
 import com.reiko.cars.wash.WashBayBlock;
 import com.reiko.cars.wash.WashBayBlockEntity;
 import com.reiko.cars.wash.WashBayService;
+import com.reiko.cars.weather.RoadWeather;
 import com.reiko.cars.repair.RepairBenchBlock;
 import com.reiko.cars.repair.RepairBenchBlockEntity;
 import com.reiko.cars.repair.RepairBenchMenu;
@@ -4286,6 +4287,81 @@ public final class CarGameTests {
             check(helper, WashBayService.bayFor(owner) == bay, "free for the owner");
         } finally {
             leave(helper, owner, customer);
+        }
+        helper.succeed();
+    }
+
+    // ---- weather ----
+
+    @GameTest(template = YARD, timeoutTicks = 100)
+    public static void weatherCutsGripAndWinterTiresHelp(GameTestHelper helper) {
+        ServerPlayer player = join(helper);
+        try {
+            com.reiko.cars.tuning.Upgrades.Tires stock = com.reiko.cars.tuning.Upgrades.Tires.STOCK;
+            com.reiko.cars.tuning.Upgrades.Tires winter = com.reiko.cars.tuning.Upgrades.Tires.WINTER;
+            double rain = com.reiko.cars.config.CarsConfig.get(com.reiko.cars.config.CarsConfig.RAIN_GRIP);
+            double storm = com.reiko.cars.config.CarsConfig.get(com.reiko.cars.config.CarsConfig.STORM_GRIP);
+            double snow = com.reiko.cars.config.CarsConfig.get(com.reiko.cars.config.CarsConfig.SNOW_GRIP);
+            near(helper, RoadWeather.gripFactor(RoadWeather.Condition.DRY, stock), 1.0, "a dry road's all grip");
+            near(helper, RoadWeather.gripFactor(RoadWeather.Condition.WET, stock), rain, "rain");
+            near(helper, RoadWeather.gripFactor(RoadWeather.Condition.STORM, stock), storm, "a storm");
+            near(helper, RoadWeather.gripFactor(RoadWeather.Condition.SNOW, stock), snow, "snow");
+            check(helper, storm < rain && snow < storm, "a storm's worse than rain, and snow worse again");
+            near(helper, RoadWeather.gripFactor(RoadWeather.Condition.SNOW, winter), snow + (1.0 - snow) * 0.8, "winter tires in snow");
+            check(helper, RoadWeather.gripFactor(RoadWeather.Condition.WET, winter) > rain, "and better in the rain");
+            check(helper, RoadWeather.gripFactor(RoadWeather.Condition.SNOW, com.reiko.cars.tuning.Upgrades.Tires.OFF_ROAD) > snow,
+                    "off-road tires help a little in snow");
+            check(helper, RoadWeather.gripFactor(RoadWeather.Condition.WET, com.reiko.cars.tuning.Upgrades.Tires.SPORT) < rain,
+                    "sport tires are worse in the wet");
+            check(helper, RoadWeather.iceGrip(0.1, winter) > 0.4 && RoadWeather.iceGrip(0.1, stock) == 0.1, "studs bite into ice");
+
+            // What's under the wheels.
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.5, 5.5);
+            helper.setBlock(new BlockPos(5, 0, 5), Blocks.SNOW_BLOCK);
+            check(helper, RoadWeather.at(car) == RoadWeather.Condition.SNOW, "on snow");
+            helper.setBlock(new BlockPos(5, 0, 5), Blocks.PACKED_ICE);
+            check(helper, RoadWeather.at(car) == RoadWeather.Condition.ICE, "on ice");
+            helper.setBlock(new BlockPos(5, 0, 5), Blocks.STONE);
+            check(helper, helper.getLevel().isRaining() || RoadWeather.at(car) == RoadWeather.Condition.DRY, "dry stone, out of the rain");
+
+            // Winter tires: a kit like the others, swapped for the other sets.
+            com.reiko.cars.tuning.Upgrades fitted = com.reiko.cars.tuning.TuningKit.WINTER_TIRES.fit(com.reiko.cars.tuning.Upgrades.STOCK);
+            check(helper, fitted != null && fitted.tires() == winter, "winter tires go on");
+            check(helper, com.reiko.cars.tuning.Upgrades.unpack(fitted.pack()).equals(fitted), "and are saved");
+            check(helper, com.reiko.cars.tuning.TuningKit.WINTER_TIRES.fit(fitted) == null, "not twice");
+            check(helper, com.reiko.cars.tuning.TuningKit.SPORT_TIRES.replaces(fitted) == com.reiko.cars.tuning.TuningKit.WINTER_TIRES
+                    && com.reiko.cars.tuning.TuningKit.WINTER_TIRES.replaces(fitted.withTires(com.reiko.cars.tuning.Upgrades.Tires.OFF_ROAD))
+                    == com.reiko.cars.tuning.TuningKit.OFF_ROAD_TIRES, "swapping sets hands the old ones back");
+            near(helper, fitted.topSpeed(), 0.98, "a little slower");
+            near(helper, fitted.tireWear(), 1.2, "and they wear faster");
+            check(helper, com.reiko.cars.tuning.TuningKit.ORDER.size() == com.reiko.cars.tuning.TuningKit.values().length, "every kit's on the bench");
+
+            // Snow blows off as it's driven, and a bucket of water washes it off.
+            car.tickCount = 1;
+            car.setSnow(1.0F);
+            com.reiko.cars.weather.CarWeather.tick(car, 2.0);
+            near(helper, car.snow(), 0.9, "two blocks blow a tenth off");
+            player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WATER_BUCKET));
+            car.interact(player, InteractionHand.MAIN_HAND);
+            check(helper, car.snow() < 0.9F, "a bucket washes snow off a clean car");
+
+            // Lightning scorches the body; the driver's safe; one bolt only counts once.
+            player.startRiding(car, true);
+            float body = car.condition().body();
+            com.reiko.cars.weather.CarWeather.strike(car);
+            near(helper, car.condition().body(), body - com.reiko.cars.config.CarsConfig.get(com.reiko.cars.config.CarsConfig.LIGHTNING_DAMAGE),
+                    "struck");
+            com.reiko.cars.weather.CarWeather.struck(car);
+            near(helper, car.condition().body(), body - com.reiko.cars.config.CarsConfig.get(com.reiko.cars.config.CarsConfig.LIGHTNING_DAMAGE),
+                    "the same bolt doesn't count twice");
+            net.minecraft.world.entity.LightningBolt bolt = net.minecraft.world.entity.EntityType.LIGHTNING_BOLT.create(helper.getLevel());
+            var event = new net.neoforged.neoforge.event.entity.EntityStruckByLightningEvent(player, bolt);
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(event);
+            check(helper, event.isCanceled(), "lightning doesn't touch the driver inside");
+            player.stopRiding();
+        } finally {
+            leave(helper, player);
         }
         helper.succeed();
     }

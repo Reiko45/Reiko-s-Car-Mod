@@ -1,5 +1,6 @@
 package com.reiko.cars.tuning;
 
+import java.util.List;
 import java.util.Locale;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
@@ -14,7 +15,12 @@ public enum TuningKit {
     LOWERING,
     LIFT,
     FUEL_TANK,
-    BATTERY;
+    BATTERY,
+    WINTER_TIRES;
+
+    /** The order the Tuning Bench lists them in (saved prices go by {@link #ordinal()}, so new kits go on the end). */
+    public static final List<TuningKit> ORDER = List.of(ENGINE, TURBO, SPORT_TIRES, OFF_ROAD_TIRES, WINTER_TIRES, BRAKES, LOWERING, LIFT, FUEL_TANK,
+            BATTERY);
 
     public String id() {
         return switch (this) {
@@ -27,6 +33,7 @@ public enum TuningKit {
             case LIFT -> "lift_kit";
             case FUEL_TANK -> "extended_fuel_tank";
             case BATTERY -> "battery_module";
+            case WINTER_TIRES -> "winter_tires";
         };
     }
 
@@ -42,6 +49,7 @@ public enum TuningKit {
             case TURBO -> current.turbo() ? null : current.withTurbo(true);
             case SPORT_TIRES -> current.tires() == Upgrades.Tires.SPORT ? null : current.withTires(Upgrades.Tires.SPORT);
             case OFF_ROAD_TIRES -> current.tires() == Upgrades.Tires.OFF_ROAD ? null : current.withTires(Upgrades.Tires.OFF_ROAD);
+            case WINTER_TIRES -> current.tires() == Upgrades.Tires.WINTER ? null : current.withTires(Upgrades.Tires.WINTER);
             case BRAKES -> current.brakes() >= Upgrades.MAX_BRAKES ? null : current.withBrakes(current.brakes() + 1);
             case LOWERING -> current.suspension() == Upgrades.Suspension.LOWERED ? null : current.withSuspension(Upgrades.Suspension.LOWERED);
             case LIFT -> current.suspension() == Upgrades.Suspension.LIFTED ? null : current.withSuspension(Upgrades.Suspension.LIFTED);
@@ -53,8 +61,10 @@ public enum TuningKit {
     @Nullable
     public TuningKit replaces(Upgrades current) {
         return switch (this) {
-            case SPORT_TIRES -> current.tires() == Upgrades.Tires.OFF_ROAD ? OFF_ROAD_TIRES : null;
-            case OFF_ROAD_TIRES -> current.tires() == Upgrades.Tires.SPORT ? SPORT_TIRES : null;
+            case SPORT_TIRES, OFF_ROAD_TIRES, WINTER_TIRES -> {
+                TuningKit fitted = tiresKit(current.tires());
+                yield fitted == this ? null : fitted;
+            }
             case LOWERING -> current.suspension() == Upgrades.Suspension.LIFTED ? LIFT : null;
             case LIFT -> current.suspension() == Upgrades.Suspension.LOWERED ? LOWERING : null;
             default -> null;
@@ -82,6 +92,22 @@ public enum TuningKit {
             case BATTERY -> type.isElectric();
             default -> true;
         };
+    }
+
+    /** The kit for a set of tires, or null for the ones the car came with. */
+    @Nullable
+    public static TuningKit tiresKit(Upgrades.Tires tires) {
+        return switch (tires) {
+            case SPORT -> SPORT_TIRES;
+            case OFF_ROAD -> OFF_ROAD_TIRES;
+            case WINTER -> WINTER_TIRES;
+            default -> null;
+        };
+    }
+
+    /** Whether this is a set of tires (a car takes one set). */
+    public boolean isTires() {
+        return this == SPORT_TIRES || this == OFF_ROAD_TIRES || this == WINTER_TIRES;
     }
 
     public String key() {

@@ -37,7 +37,7 @@ public final class HandWash {
         if (car.level().isClientSide) {
             return InteractionResult.SUCCESS;
         }
-        if (car.dirt() <= 0.0F) {
+        if (car.dirt() <= 0.0F && car.snow() <= 0.0F) {
             player.displayClientMessage(Component.translatable("dirt.reikocars.already_clean"), true);
             return InteractionResult.CONSUME;
         }
@@ -49,6 +49,7 @@ public final class HandWash {
         }
         player.setItemInHand(hand, ItemUtils.createFilledResult(held, player, result.getResult()));
         car.setDirt(car.dirt() - Dirt.BUCKET_WASH * sink.filled / BUCKET);
+        car.setSnow(car.snow() - Dirt.BUCKET_WASH * sink.filled / BUCKET);
         splash(car);
         player.displayClientMessage(car.dirt() <= 0.0F ? Component.translatable("dirt.reikocars.washed_clean")
                 : Component.translatable("dirt.reikocars.washed", Dirt.describe(car.dirt())), true);

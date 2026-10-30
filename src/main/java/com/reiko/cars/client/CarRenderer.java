@@ -31,6 +31,9 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
     private final ResourceLocation texture;
     private final CarGlass glass;
     private final CarGrime grime;
+    private final CarGrime snowCover;
+    @org.jetbrains.annotations.Nullable
+    private final Wipers wipers;
     private final Font font;
     @org.jetbrains.annotations.Nullable
     private final PlateMounts.Mount[] plates;
@@ -44,6 +47,8 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         this.texture = ReikoCars.id("textures/entity/car/" + type.id() + ".png");
         this.glass = new CarGlass(texture);
         this.grime = new CarGrime(texture, glass);
+        this.snowCover = new CarGrime(texture, glass, true);
+        this.wipers = type.isBike() ? null : new Wipers(model, glass, texture);
         this.font = context.getFont();
         this.plates = PlateMounts.of(type.id());
         this.livery = LiveryMounts.of(type.id());
@@ -86,6 +91,17 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
                 model.renderBody(poseStack, consumer, light, overlay, 0xFFFFFFFF);
                 model.renderTrim(poseStack, consumer, light, overlay);
             });
+        }
+        float snow = car.snow();
+        if (snow > 0.0F) {
+            // Snow on its roof, hood and trunk (off the glass while the engine runs: the wipers and heater see to that).
+            snowCover.draw(snow, car.carType().height, new org.joml.Matrix4f(poseStack.last().pose()), buffers, car.isEngineRunning(), consumer -> {
+                model.renderBody(poseStack, consumer, light, overlay, 0xFFFFFFFF);
+                model.renderTrim(poseStack, consumer, light, overlay);
+            });
+        }
+        if (wipers != null) {
+            wipers.render(car, partialTick, poseStack, buffers, light);
         }
         boolean lit = car.isEngineRunning() || car.lightsFlashing() || (car.alarmOn() && CarSignals.blinkOn(car));
         if (lit) {

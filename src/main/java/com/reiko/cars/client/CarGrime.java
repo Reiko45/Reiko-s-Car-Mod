@@ -16,10 +16,11 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 /**
- * Dirt on a car: the model drawn again over itself with a grime texture made from the car's own, in {@link #STAGES}
- * stages from a few specks to caked in mud. Each face takes the stage for how dirty the car is and how high up the face
- * is (the sills and wheels get dirtiest, the roof least). On the glass the grime is a lighter smear, drawn after the
- * glass (see {@link CarGlass}).
+ * Dirt (or snow) on a car: the model drawn again over itself with a texture made from the car's own, in {@link
+ * #STAGES} stages from a few specks to caked on. For dirt, each face takes the stage for how dirty the car is and how
+ * high up the face is (the sills and wheels get dirtiest, the roof least), and on the glass it's a lighter smear. Snow
+ * lies only on the faces that look up (the roof, hood and trunk, and a raked windscreen), most on the flattest. Either
+ * is drawn on the glass after the glass itself (see {@link CarGlass}).
  */
 final class CarGrime {
     static final int STAGES = 6;
@@ -28,14 +29,30 @@ final class CarGrime {
 
     private final ResourceLocation source;
     private final CarGlass glass;
+    /** Snow, not dirt. */
+    private final boolean snow;
+    /** Leave the glass clear this time (the wipers and heater keep it clear of snow while the engine runs). */
+    private boolean clearGlass;
     private final Sorter sorter = new Sorter();
     private ResourceLocation[] stages;
     private CarGlass[] glassStages;
     private boolean failed;
 
     CarGrime(ResourceLocation source, CarGlass glass) {
+        this(source, glass, false);
+    }
+
+    CarGrime(ResourceLocation source, CarGlass glass, boolean snow) {
         this.source = source;
         this.glass = glass;
+        this.snow = snow;
+    }
+
+    /** As {@link #draw}, with the glass left clear when {@code clearGlass}. */
+    void draw(float amount, float height, Matrix4f modelPose, MultiBufferSource buffers, boolean clearGlass, Consumer<VertexConsumer> draw) {
+        this.clearGlass = clearGlass;
+        draw(amount, height, modelPose, buffers, draw);
+        this.clearGlass = false;
     }
 
     /**
@@ -76,6 +93,15 @@ final class CarGrime {
         return Math.max(0, Math.min(STAGES, (int) Math.ceil(dirt * low * STAGES - 0.5F)));
     }
 
+    /** Which stage of snow a face takes, for how much it looks up ({@code up}, the up part of its normal): none on the sides. */
+    static int snowStage(float snow, float up) {
+        if (up < 0.35F) {
+            return 0;
+        }
+        float flat = Math.min(1.0F, up * 1.25F);
+        return Math.max(0, Math.min(STAGES, (int) Math.ceil(snow * flat * STAGES - 0.3F)));
+    }
+
     // ---- the grime textures ----
 
     private boolean load() {
@@ -108,7 +134,7 @@ final class CarGrime {
             for (int stage = 1; stage <= STAGES; stage++) {
                 float threshold = sorted[Math.min(sorted.length - 1, (int) (sorted.length * stage / (float) STAGES) - 1)];
                 // The glass gets less of it, and lighter, so the driver can still see out.
-                float paneThreshold = sorted[Math.max(0, (int) (sorted.length * 0.55F * stage / STAGES) - 1)];
+                float paneThreshold = snow ? threshold : sorted[Math.max(0, (int) (sorted.length * 0.55F * stage / STAGES) - 1)];
                 float strength = 0.7F + 0.3F * stage / STAGES;
                 NativeImage grime = new NativeImage(w, h, true);
                 for (int y = 0; y < h; y++) {
@@ -125,7 +151,13 @@ final class CarGrime {
                         int g;
                         int b;
                         float a;
-                        if (pane) {
+                        if (snow) {
+                            // fresh snow: white, a little blue in the shade of its lumps; thinner on the glass
+                            r = (int) (226 + 26 * t);
+                            g = (int) (232 + 21 * t);
+                            b = (int) (242 + 13 * t);
+                            a = (pane ? 0.62F + 0.25F * t : 0.82F + 0.18F * t) * strength;
+                        } else if (pane) {
                             // a dusty smear on the glass
                             r = (int) (150 + 30 * t);
                             g = (int) (138 + 26 * t);
@@ -142,14 +174,14 @@ final class CarGrime {
                         grime.setPixelRGBA(x, y, ai << 24 | b << 16 | g << 8 | r); // NativeImage is ABGR
                     }
                 }
-                ResourceLocation id = ReikoCars.id("dynamic/grime/" + name + "_" + stage);
+                ResourceLocation id = ReikoCars.id("dynamic/" + (snow ? "snow/" : "grime/") + name + "_" + stage);
                 Minecraft.getInstance().getTextureManager().register(id, new DynamicTexture(grime));
                 stages[stage - 1] = id;
                 glassStages[stage - 1] = new CarGlass(source, id);
             }
             return true;
         } catch (IOException | RuntimeException e) {
-            ReikoCars.LOGGER.warn("Couldn't make the grime for {}", source, e);
+            ReikoCars.LOGGER.warn("Couldn't make the {} for {}", snow ? "snow" : "grime", source, e);
             failed = true;
             stages = null;
             return false;
@@ -262,11 +294,15 @@ final class CarGrime {
                 toModel.transformPosition(floats[i * 8], floats[i * 8 + 1], floats[i * 8 + 2], scratch);
                 up += 1.501F - scratch.y;
             }
-            int stage = stage(dirt, up / 4.0F / height);
+            int stage = snow ? snowStage(dirt, floats[6]) : stage(dirt, up / 4.0F / height);
             if (stage == 0) {
                 return;
             }
-            (CarGrime.this.glass.isGlass(u0, v0, u1, v1) ? glass : solid)[stage].add(floats, ints);
+            boolean pane = CarGrime.this.glass.isGlass(u0, v0, u1, v1);
+            if (pane && clearGlass) {
+                return;
+            }
+            (pane ? glass : solid)[stage].add(floats, ints);
         }
 
         // Models only send whole vertices; anything else is ignored.
