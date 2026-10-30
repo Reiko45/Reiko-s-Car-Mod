@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "BWB",
+    "BIB",
+    " P "
+  ],
+  "key": {
+    "B": {
+      "tag": "c:dyes/blue"
+    },
+    "W": {
+      "tag": "c:dyes/white"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "P": {
+      "item": "reikocars:street_pole"
+    }
+  },
+  "result": {
+    "id": "reikocars:bus_stop_sign",
+    "count": 1
+  }
+}

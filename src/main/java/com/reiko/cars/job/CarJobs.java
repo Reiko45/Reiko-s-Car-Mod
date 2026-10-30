@@ -16,6 +16,8 @@ public final class CarJobs {
     public static final ResourceLocation TAXI_RIDE = ReikoCars.id("taxi_ride");
     /** A bus passenger who paid the fare. */
     public static final ResourceLocation BUS_RIDER = ReikoCars.id("bus_rider");
+    /** A bus stop served in order along a bus route. */
+    public static final ResourceLocation BUS_STOP = ReikoCars.id("bus_stop");
     /** A parcel delivered by mail van. */
     public static final ResourceLocation PARCEL_DELIVERED = ReikoCars.id("parcel_delivered");
     /** A part (tire, brake pad, engine part, body panel, oil) fitted to someone else's vehicle at a repair bench. */

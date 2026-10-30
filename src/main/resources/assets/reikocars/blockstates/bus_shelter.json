@@ -1,0 +1,94 @@
+{
+  "variants": {
+    "facing=north,level=0,slot=0": {
+      "model": "reikocars:block/bus_shelter_lower_0"
+    },
+    "facing=north,level=1,slot=0": {
+      "model": "reikocars:block/bus_shelter_upper_0"
+    },
+    "facing=north,level=0,slot=1": {
+      "model": "reikocars:block/bus_shelter_lower_1"
+    },
+    "facing=north,level=1,slot=1": {
+      "model": "reikocars:block/bus_shelter_upper_1"
+    },
+    "facing=north,level=0,slot=2": {
+      "model": "reikocars:block/bus_shelter_lower_2"
+    },
+    "facing=north,level=1,slot=2": {
+      "model": "reikocars:block/bus_shelter_upper_2"
+    },
+    "facing=east,level=0,slot=0": {
+      "model": "reikocars:block/bus_shelter_lower_0",
+      "y": 90
+    },
+    "facing=east,level=1,slot=0": {
+      "model": "reikocars:block/bus_shelter_upper_0",
+      "y": 90
+    },
+    "facing=east,level=0,slot=1": {
+      "model": "reikocars:block/bus_shelter_lower_1",
+      "y": 90
+    },
+    "facing=east,level=1,slot=1": {
+      "model": "reikocars:block/bus_shelter_upper_1",
+      "y": 90
+    },
+    "facing=east,level=0,slot=2": {
+      "model": "reikocars:block/bus_shelter_lower_2",
+      "y": 90
+    },
+    "facing=east,level=1,slot=2": {
+      "model": "reikocars:block/bus_shelter_upper_2",
+      "y": 90
+    },
+    "facing=south,level=0,slot=0": {
+      "model": "reikocars:block/bus_shelter_lower_0",
+      "y": 180
+    },
+    "facing=south,level=1,slot=0": {
+      "model": "reikocars:block/bus_shelter_upper_0",
+      "y": 180
+    },
+    "facing=south,level=0,slot=1": {
+      "model": "reikocars:block/bus_shelter_lower_1",
+      "y": 180
+    },
+    "facing=south,level=1,slot=1": {
+      "model": "reikocars:block/bus_shelter_upper_1",
+      "y": 180
+    },
+    "facing=south,level=0,slot=2": {
+      "model": "reikocars:block/bus_shelter_lower_2",
+      "y": 180
+    },
+    "facing=south,level=1,slot=2": {
+      "model": "reikocars:block/bus_shelter_upper_2",
+      "y": 180
+    },
+    "facing=west,level=0,slot=0": {
+      "model": "reikocars:block/bus_shelter_lower_0",
+      "y": 270
+    },
+    "facing=west,level=1,slot=0": {
+      "model": "reikocars:block/bus_shelter_upper_0",
+      "y": 270
+    },
+    "facing=west,level=0,slot=1": {
+      "model": "reikocars:block/bus_shelter_lower_1",
+      "y": 270
+    },
+    "facing=west,level=1,slot=1": {
+      "model": "reikocars:block/bus_shelter_upper_1",
+      "y": 270
+    },
+    "facing=west,level=0,slot=2": {
+      "model": "reikocars:block/bus_shelter_lower_2",
+      "y": 270
+    },
+    "facing=west,level=1,slot=2": {
+      "model": "reikocars:block/bus_shelter_upper_2",
+      "y": 270
+    }
+  }
+}

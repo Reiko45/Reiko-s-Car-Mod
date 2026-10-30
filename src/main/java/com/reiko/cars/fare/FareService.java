@@ -55,7 +55,10 @@ public final class FareService {
         return ShopActionResult.ok(ShopPayments.receipt(line, payment, charge));
     }
 
-    /** The owner sets the fares: the bus fare, or the taxi's starting fare and rate per 100 blocks. */
+    /**
+     * The owner sets the fares: the bus fare and its route (sent where a taxi's rate goes; blank for none), or the
+     * taxi's starting fare and rate per 100 blocks.
+     */
     public static ShopActionResult setFares(ServerPlayer player, CarEntity car, String startText, String per100Text) {
         if (!car.canManage(player) || car.owner() == null) {
             return ShopActionResult.fail("fare.reikocars.owner_only", car.ownerName());
@@ -65,8 +68,25 @@ public final class FareService {
         if (start.isEmpty() || per100.isEmpty()) {
             return ShopActionResult.fail("fare.reikocars.bad_price");
         }
+        int route = 0;
+        if (car.carType().runsRoutes()) {
+            String text = per100Text.trim();
+            try {
+                route = text.isEmpty() ? 0 : Integer.parseInt(text);
+            } catch (NumberFormatException e) {
+                route = -1;
+            }
+            if (route < 0 || route > com.reiko.cars.bus.BusStopService.MAX_ROUTE) {
+                return ShopActionResult.fail("bus.reikocars.bad_bus_route", com.reiko.cars.bus.BusStopService.MAX_ROUTE);
+            }
+        }
         car.fares().setPrices(start.getAsLong(), per100.getAsLong());
         car.fares().tick(); // the meter shows the new rate straight away
+        if (car.carType().runsRoutes()) {
+            car.busLine().setRoute(route);
+            return ShopActionResult.ok(route > 0 ? Component.translatable("bus.reikocars.fare_and_route", car.fares().priceLine(), route)
+                    : car.fares().priceLine());
+        }
         return ShopActionResult.ok(car.fares().priceLine());
     }
 

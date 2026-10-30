@@ -35,7 +35,8 @@ public enum PlaceKind {
     DMV(0xFF7986CB, () -> ModBlocks.DMV_OFFICE),
     INSURANCE(0xFF4DB6AC, () -> ModBlocks.INSURANCE_OFFICE),
     IMPOUND(0xFFA1887F, () -> ModBlocks.IMPOUND_OFFICE),
-    RACE(0xFFFFEE58, () -> ModBlocks.RACE_CONTROL);
+    RACE(0xFFFFEE58, () -> ModBlocks.RACE_CONTROL),
+    BUS_STOP(0xFF42A5F5, () -> ModBlocks.BUS_STOP_SIGN);
 
     /** Its color in the GPS's lists. */
     public final int color;
@@ -76,6 +77,7 @@ public enum PlaceKind {
                 : entity instanceof InsuranceOfficeBlockEntity ? INSURANCE
                 : entity instanceof ImpoundOfficeBlockEntity ? IMPOUND
                 : entity instanceof RaceControlBlockEntity ? RACE
+                : entity instanceof com.reiko.cars.bus.BusStopBlockEntity ? BUS_STOP
                 : null;
     }
 }

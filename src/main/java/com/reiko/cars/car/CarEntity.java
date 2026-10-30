@@ -146,6 +146,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private static final EntityDataAccessor<Float> DATA_DIRT = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.FLOAT);
     /** How much snow's settled on it, 0 to 1 (see {@link com.reiko.cars.weather.CarWeather}). */
     private static final EntityDataAccessor<Float> DATA_SNOW = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.FLOAT);
+    /** A city bus's route number (0 for none), and 0x100 while someone's rung for the next stop. */
+    private static final EntityDataAccessor<Integer> DATA_BUS = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
+    /** A city bus's next stop's name ("" for none). */
+    private static final EntityDataAccessor<String> DATA_NEXT_STOP = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.STRING);
     /** Wear smaller than this isn't sent to clients straight away (warning levels always are). */
     private static final float CONDITION_SYNC_STEP = 0.005F;
     /** The fewest ticks between a driver's wear reports, so a client can't flood the server. */
@@ -234,6 +238,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private int flashTicks;
     /** A bus's or taxi's fares, on the server. */
     private final CarFares fares = new CarFares(this);
+    /** A city bus's route, bell and villager passengers, on the server. */
+    private final com.reiko.cars.bus.BusLine busLine = new com.reiko.cars.bus.BusLine(this);
     /** The light its headlights and beacons cast in the dark, on the server. */
     private final Headlights headlights = new Headlights(this);
 
@@ -284,6 +290,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_CONDITION, CarCondition.NEW);
         builder.define(DATA_DIRT, 0.0F);
         builder.define(DATA_SNOW, 0.0F);
+        builder.define(DATA_BUS, 0);
+        builder.define(DATA_NEXT_STOP, "");
     }
 
     public CarType carType() {
@@ -1084,6 +1092,36 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return fares;
     }
 
+    /** A city bus's route and the riders who've rung for the next stop (the server's). */
+    public com.reiko.cars.bus.BusLine busLine() {
+        return busLine;
+    }
+
+    /** A city bus's route number, 0 for none. */
+    public int busRoute() {
+        return entityData.get(DATA_BUS) & 0xFF;
+    }
+
+    /** Whether someone on the bus has rung for the next stop. */
+    public boolean stopRequested() {
+        return (entityData.get(DATA_BUS) & 0x100) != 0;
+    }
+
+    /** The name of the bus's next stop, "" for none. */
+    public String nextStopName() {
+        return entityData.get(DATA_NEXT_STOP);
+    }
+
+    public void setBusDisplay(int route, boolean bell, String nextStop) {
+        int packed = (route & 0xFF) | (bell ? 0x100 : 0);
+        if (entityData.get(DATA_BUS) != packed) {
+            entityData.set(DATA_BUS, packed);
+        }
+        if (!entityData.get(DATA_NEXT_STOP).equals(nextStop)) {
+            entityData.set(DATA_NEXT_STOP, nextStop);
+        }
+    }
+
     /** The taxi's meter, in cents, or -1 when it isn't running. */
     public long meterCents() {
         return entityData.get(DATA_METER);
@@ -1100,6 +1138,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         super.removePassenger(passenger);
         if (!level().isClientSide) {
             fares.riderLeft(passenger);
+            busLine.riderLeft(passenger);
         }
     }
 
@@ -1855,6 +1894,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
         com.reiko.cars.wash.Dirt.tick(this, moved, driver != null);
         com.reiko.cars.weather.CarWeather.tick(this, moved);
+        if (type.runsRoutes()) {
+            busLine.tick(moved);
+        }
         if (moved > 0.3) {
             runOver(driver, moved);
         }
@@ -2212,6 +2254,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             tag.putLong("LockCode", lockCode());
         }
         fares.save(tag);
+        busLine.save(tag);
         if (isForSale()) {
             tag.putLong("SalePrice", salePrice());
         }
@@ -2288,6 +2331,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         ownerName = tag.getString("OwnerName");
         setLockCode(tag.getLong("LockCode"));
         fares.load(tag);
+        busLine.load(tag);
         setSalePrice(tag.contains("SalePrice") ? tag.getLong("SalePrice") : -1L);
         policy = tag.contains("Insurance") ? com.reiko.cars.insurance.Policy.CODEC.parse(NbtOps.INSTANCE, tag.get("Insurance")).result().orElse(null) : null;
         setSiren(tag.getBoolean("Siren"));

@@ -52,8 +52,12 @@ public final class PlacesRegistry extends SavedData {
      * @param variant gasoline or diesel for a pump (the fuel's ordinal); 0 for a drive-through car wash, 1 for a wash bay
      * @param price   a pump's price a bucket, a charger's a 1,000 MJ, a car wash's a wash, in cents; -1 for none
      * @param open    whether it can serve anyone: a pump with fuel in it, a car wash with an owner
+     * @param extra   a bus stop's routes ("1, 4"); "" for anything else
      */
-    public record Place(BlockPos pos, PlaceKind kind, String owner, int variant, long price, boolean open) {
+    public record Place(BlockPos pos, PlaceKind kind, String owner, int variant, long price, boolean open, String extra) {
+        public Place(BlockPos pos, PlaceKind kind, String owner, int variant, long price, boolean open) {
+            this(pos, kind, owner, variant, price, open, "");
+        }
     }
 
     private final Map<ResourceKey<Level>, Long2ObjectMap<List<Place>>> places = new HashMap<>();
@@ -84,6 +88,9 @@ public final class PlacesRegistry extends SavedData {
             case InsuranceOfficeBlockEntity office -> new Place(pos, kind, office.ownerName(), 0, -1, true);
             case ImpoundOfficeBlockEntity office -> new Place(pos, kind, office.ownerName(), 0, -1, true);
             case RaceControlBlockEntity race -> new Place(pos, kind, race.ownerName(), 0, -1, true);
+            // (a bus stop goes by its name, or its owner's if it hasn't one)
+            case com.reiko.cars.bus.BusStopBlockEntity stop -> new Place(pos, kind, stop.name().isEmpty() ? stop.ownerName() : stop.name(), 0, -1, true,
+                    stop.routesText());
             default -> null;
         };
     }
@@ -144,6 +151,7 @@ public final class PlacesRegistry extends SavedData {
                 entry.putInt("Variant", place.variant());
                 entry.putLong("Price", place.price());
                 entry.putBoolean("Open", place.open());
+                entry.putString("Extra", place.extra());
                 list.add(entry);
             }
         }));
@@ -161,7 +169,8 @@ public final class PlacesRegistry extends SavedData {
                 continue;
             }
             BlockPos pos = BlockPos.of(entry.getLong("Pos"));
-            Place place = new Place(pos, kind, entry.getString("Owner"), entry.getInt("Variant"), entry.getLong("Price"), entry.getBoolean("Open"));
+            Place place = new Place(pos, kind, entry.getString("Owner"), entry.getInt("Variant"), entry.getLong("Price"), entry.getBoolean("Open"),
+                    entry.getString("Extra"));
             registry.places.computeIfAbsent(ResourceKey.create(Registries.DIMENSION, dim), d -> new Long2ObjectOpenHashMap<>())
                     .computeIfAbsent(ChunkPos.asLong(pos), k -> new ArrayList<>()).add(place);
         }

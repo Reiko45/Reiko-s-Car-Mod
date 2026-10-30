@@ -288,6 +288,11 @@ public enum CarType {
         return this == CITY_BUS || this == TAXI;
     }
 
+    /** Whether it runs a bus route, stopping at bus stops (the city bus). */
+    public boolean runsRoutes() {
+        return this == CITY_BUS;
+    }
+
     /** Whether its fare runs on a meter, by distance (the taxi), rather than a flat fare when boarding. */
     public boolean isMetered() {
         return this == TAXI;

@@ -26,6 +26,8 @@
     "reikocars:tuning_bench",
     "reikocars:race_control",
     "reikocars:car_wash",
-    "reikocars:wash_bay"
+    "reikocars:wash_bay",
+    "reikocars:bus_stop_sign",
+    "reikocars:bus_shelter"
   ]
 }

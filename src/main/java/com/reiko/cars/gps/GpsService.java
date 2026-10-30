@@ -254,6 +254,19 @@ public final class GpsService {
                 }
                 return prices;
             }
+            case BUS_STOP -> {
+                java.util.TreeSet<Integer> routes = new java.util.TreeSet<>();
+                for (PlacesRegistry.Place stop : cluster) {
+                    for (String route : stop.extra().split(",\\s*")) {
+                        if (!route.isBlank()) {
+                            routes.add(Integer.parseInt(route.trim()));
+                        }
+                    }
+                }
+                return routes.isEmpty() ? Component.translatable("gps.reikocars.detail.no_routes")
+                        : Component.translatable("gps.reikocars.detail.routes", routes.stream().map(String::valueOf)
+                                .collect(java.util.stream.Collectors.joining(", ")));
+            }
             case PARKING -> {
                 return cluster.size() > 1 ? Component.translatable("gps.reikocars.detail.meters", cluster.size()) : Component.empty();
             }

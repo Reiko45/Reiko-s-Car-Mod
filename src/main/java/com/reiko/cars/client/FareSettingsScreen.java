@@ -20,11 +20,11 @@ public final class FareSettingsScreen extends ShopScreenBase<FareSettingsMenu> {
     private EditBox per100Box;
 
     public FareSettingsScreen(FareSettingsMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title, WIDTH, 162);
+        super(menu, inventory, title, WIDTH, 186);
     }
 
     private int setRow() {
-        return menu.isMetered() ? ROW + 44 : ROW + 22;
+        return ROW + 44;
     }
 
     @Override
@@ -35,10 +35,16 @@ public final class FareSettingsScreen extends ShopScreenBase<FareSettingsMenu> {
         startBox.setMaxLength(16);
         startBox.setValue(plain(menu.start()));
         per100Box = addRenderableWidget(new EditBox(font, leftPos + BOX_X, topPos + ROW + 22, 74, 16, Component.translatable("gui.reikocars.price")));
-        per100Box.setFilter(MONEY_FILTER);
-        per100Box.setMaxLength(16);
-        per100Box.setValue(plain(menu.per100()));
-        per100Box.visible = menu.isMetered();
+        if (menu.isMetered()) {
+            per100Box.setFilter(MONEY_FILTER);
+            per100Box.setMaxLength(16);
+            per100Box.setValue(plain(menu.per100()));
+        } else {
+            // a bus: its route (blank for none)
+            per100Box.setFilter(text -> text.matches("\\d{0,2}"));
+            per100Box.setMaxLength(2);
+            per100Box.setValue(menu.route() > 0 ? Integer.toString(menu.route()) : "");
+        }
         addRenderableWidget(Button.builder(Component.translatable("gui.reikocars.set_fares"), button -> set())
                 .bounds(leftPos + 8, topPos + setRow(), WIDTH - 16, 20).build());
     }
@@ -70,13 +76,14 @@ public final class FareSettingsScreen extends ShopScreenBase<FareSettingsMenu> {
             graphics.drawString(font, Component.translatable("gui.reikocars.fare_per_100"), 8, ROW + 26, LABEL_COLOR, false);
         } else {
             graphics.drawString(font, Component.translatable("gui.reikocars.fare_per_ride"), 8, ROW + 4, LABEL_COLOR, false);
+            graphics.drawString(font, Component.translatable("gui.reikocars.bus_route"), 8, ROW + 26, LABEL_COLOR, false);
         }
         int y = setRow() + 26;
         Component earned = Component.translatable("gui.reikocars.fares_earned", format(menu.earned()), menu.rides());
         graphics.drawString(font, fit(earned, imageWidth - 16), 8, y, MUTED_COLOR, false);
         Component hint = Component.translatable(menu.isMetered() ? "gui.reikocars.fares_hint_taxi" : "gui.reikocars.fares_hint_bus");
         var lines = font.split(hint, imageWidth - 16);
-        for (int i = 0; i < Math.min(3, lines.size()); i++) {
+        for (int i = 0; i < Math.min(5, lines.size()); i++) {
             graphics.drawString(font, lines.get(i), 8, y + 12 + i * 10, MUTED_COLOR, false);
         }
         drawFeedback(graphics, 8, imageHeight - 22, imageWidth - 16, 2);

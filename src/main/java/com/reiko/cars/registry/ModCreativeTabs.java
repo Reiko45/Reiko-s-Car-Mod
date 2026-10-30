@@ -68,6 +68,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.STOP_SIGN.get());
                 output.accept(ModItems.SPEED_SIGN.get());
                 output.accept(ModItems.STREET_LAMP.get());
+                output.accept(ModItems.BUS_STOP_SIGN.get());
+                output.accept(ModItems.BUS_SHELTER.get());
                 output.accept(ModItems.VANILLA_ICE_CREAM.get());
                 output.accept(ModItems.CHOCOLATE_ICE_CREAM.get());
                 output.accept(ModItems.STRAWBERRY_ICE_CREAM.get());

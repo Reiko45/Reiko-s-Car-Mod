@@ -13,8 +13,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
 /**
- * Only a parking meter's, toll booth's, toll gate's, traffic light's, speed sign's, Car Wash's or Wash Bay's owner (or
- * an admin) can break it, so nobody knocks down a gate to get through, or a meter or camera to dodge a ticket.
+ * Only a parking meter's, toll booth's, toll gate's, traffic light's, speed sign's, Car Wash's, Wash Bay's or bus stop's
+ * owner (or an admin) can break it, so nobody knocks down a gate to get through, or a meter or camera to dodge a ticket.
  */
 @EventBusSubscriber(modid = ReikoCars.MODID)
 public final class RoadsideProtection {
@@ -50,6 +50,10 @@ public final class RoadsideProtection {
         }
         if (level.getBlockEntity(pos) instanceof com.reiko.cars.wash.WashBayBlockEntity bay) {
             return bay.canManage(player) ? null : bay.ownerName();
+        }
+        BlockPos stopAt = state.getBlock() instanceof com.reiko.cars.bus.BusShelterBlock ? com.reiko.cars.bus.BusShelterBlock.mainPos(state, pos) : pos;
+        if (level.getBlockEntity(stopAt) instanceof com.reiko.cars.bus.BusStopBlockEntity stop) {
+            return stop.canManage(player) ? null : stop.ownerName();
         }
         return null;
     }

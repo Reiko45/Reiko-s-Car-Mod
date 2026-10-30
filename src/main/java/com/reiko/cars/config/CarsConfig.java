@@ -112,6 +112,11 @@ public final class CarsConfig {
     public static final ModConfigSpec.IntValue BAY_SECONDS;
     public static final ModConfigSpec.DoubleValue LANCE_REACH;
 
+    public static final ModConfigSpec.DoubleValue STOP_REACH;
+    public static final ModConfigSpec.BooleanValue VILLAGER_PASSENGERS;
+    public static final ModConfigSpec.DoubleValue VILLAGER_FARE;
+    public static final ModConfigSpec.DoubleValue VILLAGER_CHANCE;
+
     public static final ModConfigSpec.DoubleValue POSTAGE;
     public static final ModConfigSpec.DoubleValue MAIL_REACH;
 
@@ -367,6 +372,22 @@ public final class CarsConfig {
         TAXI_PER_100 = builder
                 .comment("What a new taxi's meter adds for every 100 blocks driven. Its owner can change it.")
                 .defineInRange("taxiFarePer100Blocks", 1.0, 0.0, 1_000_000.0);
+        builder.pop();
+
+        builder.push("busStops");
+        STOP_REACH = builder
+                .comment("How close a bus has to be to a bus stop for its driver to open the doors there (G), in blocks.")
+                .defineInRange("stopReach", 8.0, 2.0, 32.0);
+        VILLAGER_PASSENGERS = builder
+                .comment("Whether villagers near a stop on a bus's route get on when it opens its doors, ride to another stop on the",
+                        "route and pay the driver when they get off there.")
+                .define("villagerPassengers", true);
+        VILLAGER_FARE = builder
+                .comment("What a villager pays the driver when they get off at their stop. It's new money, not taken from anyone. 0 for free.")
+                .defineInRange("villagerFare", 1.0, 0.0, 1_000_000.0);
+        VILLAGER_CHANCE = builder
+                .comment("The chance each villager waiting by a stop gets on (at most three a stop).")
+                .defineInRange("villagerChance", 0.5, 0.0, 1.0);
         builder.pop();
 
         builder.push("sales");

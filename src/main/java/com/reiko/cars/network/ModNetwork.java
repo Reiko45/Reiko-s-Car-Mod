@@ -67,11 +67,25 @@ public final class ModNetwork {
         registrar.playToServer(IceCreamActionPayload.TYPE, IceCreamActionPayload.STREAM_CODEC, ModNetwork::handleIceCream);
         registrar.playToServer(RoadSignActionPayload.TYPE, RoadSignActionPayload.STREAM_CODEC, ModNetwork::handleRoadSign);
         registrar.playToServer(GpsRequestPayload.TYPE, GpsRequestPayload.STREAM_CODEC, ModNetwork::handleGps);
+        registrar.playToServer(BusStopActionPayload.TYPE, BusStopActionPayload.STREAM_CODEC, ModNetwork::handleBusStop);
         // (Back to the client: kept in the GPS's inbox, for its screen and the minimap.)
         registrar.playToClient(GpsPlacesPayload.TYPE, GpsPlacesPayload.STREAM_CODEC,
                 (payload, context) -> com.reiko.cars.gps.GpsInbox.receive(payload));
         registrar.playToClient(GpsCarsPayload.TYPE, GpsCarsPayload.STREAM_CODEC,
                 (payload, context) -> com.reiko.cars.gps.GpsInbox.receive(payload));
+    }
+
+    private static void handleBusStop(BusStopActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || !(player.containerMenu instanceof com.reiko.cars.bus.BusStopMenu menu)
+                || menu.containerId != payload.containerId() || !menu.stillValid(player) || menu.stop() == null) {
+            return;
+        }
+        int[] numbers = payload.numbers().stream().mapToInt(Integer::intValue).toArray();
+        ShopActionResult result = com.reiko.cars.bus.BusStopService.configure(player, menu.stop(), payload.name(), numbers);
+        if (result.success()) {
+            com.reiko.cars.bus.BusStopMenu.open(player, menu.stop()); // reopen with the new settings
+        }
+        ShopFeedback.send(player, result);
     }
 
     private static void handleGps(GpsRequestPayload payload, IPayloadContext context) {

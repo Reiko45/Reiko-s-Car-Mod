@@ -14,6 +14,12 @@
       "label": "Bus passenger",
       "pay": 0.5,
       "xp": 5
+    },
+    {
+      "action": "reikocars:bus_stop",
+      "label": "Bus stop served on a route",
+      "pay": 0.75,
+      "xp": 6
     }
   ],
   "contracts": [
@@ -38,6 +44,17 @@
       ],
       "pay": 1.0,
       "xp": 4
+    },
+    {
+      "work": "reikocars:bus_stop",
+      "label": "Bus Route Stops",
+      "icon": "reikocars:bus_stop_sign",
+      "count": [
+        5,
+        12
+      ],
+      "pay": 2.5,
+      "xp": 8
     }
   ]
 }

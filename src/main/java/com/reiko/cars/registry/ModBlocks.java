@@ -220,6 +220,12 @@ public final class ModBlocks {
             () -> new com.reiko.cars.road.StreetPoleBlock(streetMetal()));
     public static final DeferredBlock<com.reiko.cars.road.StopSignBlock> STOP_SIGN = BLOCKS.register("stop_sign",
             () -> new com.reiko.cars.road.StopSignBlock(streetMetal()));
+    /** A BUS STOP sign on a pole. */
+    public static final DeferredBlock<com.reiko.cars.bus.BusStopSignBlock> BUS_STOP_SIGN = BLOCKS.register("bus_stop_sign",
+            () -> new com.reiko.cars.bus.BusStopSignBlock(streetMetal().pushReaction(PushReaction.BLOCK)));
+    /** A bus shelter: glass, a roof and a bench, three blocks wide and two high. */
+    public static final DeferredBlock<com.reiko.cars.bus.BusShelterBlock> BUS_SHELTER = BLOCKS.register("bus_shelter",
+            () -> new com.reiko.cars.bus.BusShelterBlock(streetMetal().strength(2.5F, 1200.0F).pushReaction(PushReaction.BLOCK)));
     /** The light a car's headlights cast in the dark: invisible, moved along by the car, gone when it goes. */
     public static final DeferredBlock<com.reiko.cars.car.HeadlightGlowBlock> HEADLIGHT_GLOW = BLOCKS.register("headlight_glow",
             () -> new com.reiko.cars.car.HeadlightGlowBlock(BlockBehaviour.Properties.of()

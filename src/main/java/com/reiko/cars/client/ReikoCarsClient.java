@@ -200,6 +200,8 @@ public final class ReikoCarsClient {
         BlockEntityRenderers.register(ModBlockEntities.RACE_FLAG.get(), RaceFlagRenderer::new);
         BlockEntityRenderers.register(ModBlockEntities.CAR_WASH.get(), CarWashRenderer::new);
         BlockEntityRenderers.register(ModBlockEntities.WASH_BAY.get(), WashBayRenderer::new);
+        BlockEntityRenderers.register(ModBlockEntities.BUS_STOP.get(), BusStopRenderer::new);
+        event.registerEntityRenderer(ModEntities.BENCH_SEAT.get(), net.minecraft.client.renderer.entity.NoopRenderer::new);
     }
 
     private static void registerScreens(RegisterMenuScreensEvent event) {
@@ -223,6 +225,7 @@ public final class ReikoCarsClient {
         event.register(ModMenus.WASH_PAY.get(), WashPayScreen::new);
         event.register(ModMenus.WASH_OWNER.get(), WashOwnerScreen::new);
         event.register(ModMenus.ROAD_SIGN.get(), RoadSignScreen::new);
+        event.register(ModMenus.BUS_STOP.get(), BusStopScreen::new);
         event.register(ModMenus.RADIO.get(), RadioScreen::new);
         event.register(ModMenus.INSURANCE.get(), InsuranceScreen::new);
         event.register(ModMenus.ICE_CREAM.get(), IceCreamScreen::new);

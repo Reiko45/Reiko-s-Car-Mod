@@ -40,6 +40,10 @@ rusts and dealers pay less for it.
 A **GPS** (**N**, in a car or on foot) finds the nearest gas station, mechanic or car wash, with their prices, and
 leads you back to where you parked. With **Xaero's Minimap**, its destination and your cars show on the minimap too.
 
+**Bus stops** (a sign on a pole, or a glass shelter with a bench to sit on) make bus routes: the city bus calls at its
+owner's stops in order, opens its doors for whoever's waiting, lets off whoever rang the bell, carries villagers between
+stops for a fare, and the job board pays its driver for each stop served.
+
 ## Requirements
 
 - Minecraft 1.21.1, NeoForge 21.1.265 or newer (as Reiko's Economy Mod needs)
@@ -99,7 +103,8 @@ is the handbrake and **sneak** gets out. **H** sounds the horn, **L** locks or u
 trailer, loads a car onto a car hauler, picks up or drops a car in a tow truck, stops the mail van for the mail, or
 does a work vehicle's job. **K** works a police car's, ambulance's or fire truck's lights and siren. The **left and right arrow
 keys** work the turn signals and the **down arrow** the hazards (see [Turn signals, hazards and alarms](#turn-signals-hazards-and-alarms)).
-**R** opens the [radio](#car-radio) and **N** the [GPS](#gps). While you're
+**R** opens the [radio](#car-radio) and **N** the [GPS](#gps). In a city bus, **G** opens the doors at a
+[bus stop](#bus-stops), and its passengers press **G** to ring for the next stop. While you're
 in a car, a dashboard in the bottom right shows your speed and a fuel gauge. (If the screen's too narrow for it to
 fit beside the hotbar, at a big GUI scale, it moves to the top right, under your status effects.)
 
@@ -280,6 +285,35 @@ rides free.
   Anyone else doing that is told the fares.
 
 New buses charge $2.00 a ride, and new taxis $3.00 plus $1.00 per 100 blocks (see [Settings](#settings)).
+
+## Bus stops
+
+A **Bus Stop Sign** (a blue BUS STOP plate on a pole) or a **Bus Shelter** (three blocks wide and two high: a glass
+back and ends, a roof with a sign along its front, a lamp, a route map, and a bench) makes a stop. Whoever puts it
+down owns it, and only they (or an admin) can break it; breaking any block of a shelter takes it all down.
+
+- **Naming and routes:** the owner right-clicks the stop to name it (up to 24 letters) and put it on up to three
+  **routes** (1 to 99), with its **stop number** along each: 1 for the first stop, 2 for the next, and so on. The
+  name is written on the sign's strip and along the shelter's roof, with the routes that stop there.
+- **The bus's route:** the bus's owner sneaks and right-clicks it with an empty hand, where the fare is set, and gives
+  it a route number. A bus on route 1 calls at **its owner's** route-1 stops, in number order, round and round. The
+  dashboard shows the route and the next stop (**Route 1 · Next: Oak Ave**) to the driver and everyone aboard.
+- **Waiting:** right-click a stop to wait there (for five minutes, within six blocks of it), or right-click a shelter's
+  bench to sit down and wait. Owners sneak to do it at their own stops.
+- **The doors:** a bus driver who's stopped by a stop (within 8 blocks) presses **G** (the dashboard shows
+  **[G] Open doors**). The doors open with a hiss: passengers who rang get off, everyone waiting there gets on (and
+  pays the fare as usual), and everyone aboard hears the chime and is told the stop and the next one. Getting on this
+  way doesn't need the bus's key.
+- **The bell:** a passenger presses **G** to ring for the next stop: a ding, and **STOP REQUESTED** on the dashboard
+  until the driver opens the doors.
+- **Villagers:** villagers standing by a stop on the bus's route get on too (each has an even chance, at most three a
+  stop), for another stop on the route at least 32 blocks away. When the doors open at their stop they get off and
+  pay the driver $1.00 (new money, from nobody's account). A villager rests for half a day before riding again, and
+  one who's ridden ten minutes without getting there gets off at the next stop.
+- **Bus Driver pay:** the Driver job pays for each stop served in order along a route ($0.75), when it's at least 24
+  blocks from the last one and the bus has driven most of the way there, even with nobody aboard; and for each
+  villager who rides to their stop, as for a paying passenger.
+- **On the GPS:** stops show in the GPS's Places as **Bus stop · Oak Ave**, with their routes.
 
 ## Buying and selling cars
 
@@ -673,7 +707,8 @@ slides wide in hard turns:
 Press **N** (in a car or on foot) to open the GPS and pick somewhere to go:
 
 - **Places:** the gas stations, charging stations, mechanics (Repair Benches), car washes, dealerships, car rentals,
-  tuning shops, parking, DMVs, insurance offices, impound lots and race tracks in this dimension, nearest first. A gas
+  tuning shops, parking, DMVs, insurance offices, impound lots, race tracks and bus stops (with their routes) in this
+  dimension, nearest first. A gas
   station's pumps are one place, with its cheapest gasoline and diesel a bucket (and **Out of fuel** if they're dry);
   a car wash shows its prices, and a charging station its price per 1,000 MJ. Type in the search box to narrow it
   down: *diesel*, *mechanic* or the owner's name. The GPS knows of a place once its area has been loaded since this
@@ -844,7 +879,7 @@ as you work, level up, and hand out daily contracts.
 
 | Job | Gets paid for |
 | --- | --- |
-| Driver | Each taxi ride a rider pays for ($1.50), and each bus passenger who pays the fare ($0.50) |
+| Driver | Each taxi ride a rider pays for ($1.50), each bus passenger who pays the fare or villager who rides to their stop ($0.50), and each [bus stop](#bus-stops) served in order along a route ($0.75) |
 | Mail Carrier | Each parcel delivered by mail van ($0.75) |
 | Mechanic | Each part fitted to someone else's vehicle at a Repair Bench, or tuning kit at a Tuning Bench ($0.60), whether from the bench's stock (paid to the bench's owner) or from your own pocket, each of someone else's broken-down cars towed in to a Repair Bench from at least 24 blocks away ($4.00, once per breakdown), and each badly parked car towed to an impound lot ($2.00) |
 | Trucker | Each bucket of fuel unloaded from a tanker into a pump ($0.40), and every 100 blocks driven towing a trailer at least a quarter full ($0.50) |
@@ -852,9 +887,9 @@ as you work, level up, and hand out daily contracts.
 | Firefighter | Each fire put out with a fire hose ($0.50; not fires you lit, nor endless ones, and up to 64 a day: see [Fire trucks](#fire-trucks)) |
 | Police Officer | Each driver without a valid license ticketed with a Ticket Book ($3.00; see [License plates and driver's licenses](#license-plates-and-drivers-licenses)) |
 
-Their contracts ask for taxi rides, bus passengers, parcels, parts fitted, tow-ins, fuel delivered, loaded hauls,
+Their contracts ask for taxi rides, bus passengers, bus route stops, parcels, parts fitted, tow-ins, fuel delivered, loaded hauls,
 trash cans emptied, fires put out, unlicensed drivers stopped, or deliveries of tires, brake pads, motor oil, paper, rotten flesh and water buckets. The job files are in `data/reikocars/jobs`, so a datapack can
-change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`, `parcel_delivered`, `repair_part`,
+change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`, `bus_stop`, `parcel_delivered`, `repair_part`,
 `tow`, `impound_tow`, `fuel_delivered`, `haul_distance`, `trash_collected`, `fire_put_out` and `unlicensed_ticket`.
 
 ## Recipes
@@ -907,6 +942,8 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | Street Pole ×4 | three iron ingots in a column |
 | Traffic Light | iron ingots down both sides of red, yellow and lime dye |
 | Stop Sign | iron ingot, red dye, iron ingot over iron ingot, white dye, iron ingot, a street pole below |
+| Bus Stop Sign | blue dye, white dye, blue dye over blue dye, iron ingot, blue dye, a street pole below |
+| Bus Shelter | three iron ingots over glass pane, Bus Stop Sign, glass pane over glass pane, wooden slab, glass pane |
 | Speed Limit Sign | iron ingot, white dye, iron ingot over iron ingot, black dye, iron ingot, a street pole below |
 | Street Lamp | three iron ingots over a street pole and glowstone |
 | Trash Can | iron ingot, iron trapdoor, iron ingot on top, iron ingot, green dye, iron ingot across the middle, three iron ingots below |
@@ -1089,6 +1126,10 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `carWash.defaultBayPrice` | `5.0` | What a new Wash Bay charges for its time (its owner can change it) |
 | `carWash.baySeconds` | `60` | How many seconds of spraying a Wash Bay's price buys |
 | `carWash.lanceReach` | `8.0` | How far from its Wash Bay a pressure washer reaches |
+| `busStops.stopReach` | `8.0` | How close a bus must be to a stop for its driver to open the doors there |
+| `busStops.villagerPassengers` | `true` | Whether villagers by a stop on a bus's route ride it to another stop |
+| `busStops.villagerFare` | `1.0` | What a villager pays the driver on getting off at their stop (new money; 0 for free) |
+| `busStops.villagerChance` | `0.5` | The chance each villager by a stop gets on (at most three a stop) |
 | `tolls.toll` | `2.0` | The toll a new toll booth charges (its owner can change it) |
 | `insurance.premium` | `10.0` | What a new insurance office charges for a term of cover (its owner can change it) |
 | `insurance.deductible` | `10.0` | A new office's deductible: the part of each claim the car's owner pays |
@@ -1134,6 +1175,7 @@ Map's, if you like) in a folder and pass it: `./gradlew runClient -PxaeroJars=/p
 ./gradlew runClient -Pshowcase=dmv        # plates, the DMV, taking the driving test, a custom plate, a plate check, NO LICENSE, the cards
 ./gradlew runClient -Pshowcase=tune       # the Tuning Bench and a livery, the race track, a time trial and a race start, the kits
 ./gradlew runClient -Pshowcase=gps -PxaeroJars=/path/to/folder  # the GPS's tabs, driving and walking to a destination, arriving, the minimap
+./gradlew runClient -Pshowcase=busstops   # a bus stop sign and shelter, the owner's screens, a bus route, the doors, the bell, villagers aboard
 ./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
 
@@ -1216,6 +1258,7 @@ src/main/java/com/reiko/cars/
 ├── sale/                 the For Sale Sign, a car's sale screen, the Car Dealership block, its lot and tabs, and SaleService (buying, selling, trade-ins)
 ├── finance/              car loans: the Loan, where they're kept (LoanData), and LoanService (terms, daily payments, repossession, paying off)
 ├── impound/              the Impound Office block, block entity, menu and protection, the lots (ImpoundRegistry), and ImpoundService (towing in, fees, releasing)
+├── bus/                  bus stops: the Bus Stop Sign and the Bus Shelter (and its bench seat), their block entity, menu and naming (BusStopService), every stop's routes (BusStopRegistry), a bus's route (BusLine), and BusService (waiting, the doors, the bell, villagers)
 ├── gps/                  the GPS: the places it knows of (PlacesRegistry, PlaceKind), where every car is (CarLocator), GpsService (gas stations and their prices, your cars) and GpsMath
 ├── weather/              the road's grip in rain, storms, snow and ice (RoadWeather), snow on cars and lightning (CarWeather), and spray off the tires (TireSpray)
 ├── wash/                 dirt (Dirt), washing by hand (HandWash), the Car Wash arch and the Wash Bay with their block entities and menus, CarWashService and WashBayService (paying, washing, spraying), and the Pressure Washer
@@ -1233,10 +1276,10 @@ src/main/java/com/reiko/cars/
 ├── toll/                 the toll booth and toll gate blocks, their block entities and menus, protection, and TollService (paying and the gate)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
-├── network/              packets: the GPS's places and cars, pump, repair bench, mailbox, parking meter, toll, car wash, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
+├── network/              packets: the GPS's places and cars, a bus stop's name and routes, pump, repair bench, mailbox, parking meter, toll, car wash, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, and the wipers and raindrops on the windscreen, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the GPS (GpsClient, its screen and panel, and GpsXaero for Xaero's Minimap), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
+├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, and the wipers and raindrops on the windscreen, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the GPS (GpsClient, its screen and panel, and GpsXaero for Xaero's Minimap), the bus stop's screen and lettering, the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)

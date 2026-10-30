@@ -4490,4 +4490,124 @@ public final class CarGameTests {
         }
         helper.succeed();
     }
+
+    // ---- bus stops ----
+
+    @GameTest(template = YARD, timeoutTicks = 200)
+    public static void busStopsRoutesDoorsAndVillagers(GameTestHelper helper) {
+        ServerPlayer owner = worker(helper, "driver");
+        ServerPlayer rider = join(helper);
+        ServerPlayer waiter = join(helper);
+        MinecraftServer server = helper.getLevel().getServer();
+        net.minecraft.server.level.ServerLevel level = helper.getLevel();
+        double chanceBefore = com.reiko.cars.config.CarsConfig.get(com.reiko.cars.config.CarsConfig.VILLAGER_CHANCE);
+        com.reiko.cars.config.CarsConfig.VILLAGER_CHANCE.set(1.0);
+        Runnable done = () -> {
+            com.reiko.cars.config.CarsConfig.VILLAGER_CHANCE.set(chanceBefore);
+            leave(helper, owner, rider, waiter);
+        };
+        try {
+            Vec3 middle = helper.absoluteVec(new Vec3(5.0, 1.0, 16.0));
+            owner.moveTo(middle.x, middle.y, middle.z, 0.0F, 0.0F);
+            // Stop A, a sign at one corner of the yard; stop B, a shelter at the far one.
+            BlockPos aRel = new BlockPos(0, 1, 0);
+            helper.setBlock(aRel, ModBlocks.BUS_STOP_SIGN.get().defaultBlockState());
+            BlockPos aPos = helper.absolutePos(aRel);
+            ModBlocks.BUS_STOP_SIGN.get().setPlacedBy(level, aPos, level.getBlockState(aPos), owner, ItemStack.EMPTY);
+            com.reiko.cars.bus.BusStopBlockEntity a = (com.reiko.cars.bus.BusStopBlockEntity) helper.getBlockEntity(aRel);
+            check(helper, a.isOwner(owner), "the owner's sign");
+            BlockPos bRel = new BlockPos(9, 1, 33);
+            helper.setBlock(bRel, ModBlocks.BUS_SHELTER.get().defaultBlockState());
+            BlockPos bPos = helper.absolutePos(bRel);
+            ModBlocks.BUS_SHELTER.get().setPlacedBy(level, bPos, level.getBlockState(bPos), owner, ItemStack.EMPTY);
+            int parts = 0;
+            for (BlockPos at : BlockPos.betweenClosed(bPos.offset(-2, 0, 0), bPos.offset(0, 1, 0))) {
+                parts += level.getBlockState(at).getBlock() instanceof com.reiko.cars.bus.BusShelterBlock ? 1 : 0;
+            }
+            helper.assertValueEqual(parts, 6, "the shelter's six blocks, reaching to the placer's right");
+            com.reiko.cars.bus.BusStopBlockEntity b = (com.reiko.cars.bus.BusStopBlockEntity) helper.getBlockEntity(bRel);
+
+            // Naming them and putting them on routes.
+            check(helper, !com.reiko.cars.bus.BusStopService.configure(rider, a, "Nope", new int[] {1, 1}).success(), "only the owner");
+            check(helper, !com.reiko.cars.bus.BusStopService.configure(owner, a, "Main St", new int[] {7, 0}).success(), "a stop number's needed");
+            check(helper, !com.reiko.cars.bus.BusStopService.configure(owner, a, "Main St", new int[] {7, 1, 7, 2}).success(), "not a route twice");
+            check(helper, com.reiko.cars.bus.BusStopService.configure(owner, a, "  Main   St ", new int[] {7, 1, 0, 0, 3, 5}).success(), "saved");
+            check(helper, a.name().equals("Main St") && a.numberOn(7) == 1 && a.numberOn(3) == 5 && a.routesText().equals("3, 7"),
+                    "Main St, first on route 7 and fifth on route 3: " + a.name() + " " + a.routesText());
+            check(helper, com.reiko.cars.bus.BusStopService.configure(owner, b, "Oak Ave", new int[] {7, 2}).success(), "the shelter too");
+            List<com.reiko.cars.bus.BusStopRegistry.Stop> route = com.reiko.cars.bus.BusStopRegistry.get(server).route(owner.getUUID(), 7, level.dimension());
+            check(helper, route.size() == 2 && route.get(0).name().equals("Main St") && route.get(1).name().equals("Oak Ave"), "route 7 in order");
+            check(helper, com.reiko.cars.bus.BusStopRegistry.get(server).route(rider.getUUID(), 7, level.dimension()).isEmpty(), "not someone else's");
+            List<GpsPlacesPayload.Entry> stops = inYard(helper, GpsService.placesFor(owner)).stream().filter(entry -> entry.kind() == PlaceKind.BUS_STOP)
+                    .toList();
+            check(helper, stops.size() == 2 && stops.stream().anyMatch(entry -> entry.owner().equals("Main St") && entry.detail().getString().contains("3, 7")),
+                    "both stops on the GPS, with their routes");
+
+            // The owner's bus, put on route 7 on its fare screen, with the owner driving and a passenger.
+            CarEntity bus = vehicle(helper, CarType.CITY_BUS, 4.5, 8.0);
+            bus.setOwner(owner);
+            check(helper, !FareService.setFares(owner, bus, "2.00", "100").success(), "no route 100");
+            // (free rides: a fake player can't be shown the fare screen)
+            check(helper, FareService.setFares(owner, bus, "0", "7").success() && bus.busLine().route() == 7, "route 7");
+            owner.startRiding(bus, true);
+            rider.startRiding(bus, true);
+            // Someone waits at stop A, and a villager stands by it.
+            Vec3 byA = helper.absoluteVec(new Vec3(1.5, 1.0, 2.5));
+            waiter.moveTo(byA.x, byA.y, byA.z, 0.0F, 0.0F);
+            com.reiko.cars.bus.BusService.useStop(waiter, a, false);
+            check(helper, com.reiko.cars.bus.BusService.waitingAt(waiter, a), "waiting at Main St");
+            net.minecraft.world.entity.npc.Villager villager = net.minecraft.world.entity.EntityType.VILLAGER.create(level);
+            Vec3 villagerAt = helper.absoluteVec(new Vec3(2.5, 1.0, 3.5));
+            villager.moveTo(villagerAt.x, villagerAt.y, villagerAt.z, 0.0F, 0.0F);
+            villager.setNoAi(true);
+            level.addFreshEntity(villager);
+            long balance = ECO.getBalance(server, owner.getUUID());
+            ResourceLocation driverJob = carJob("driver");
+
+            helper.startSequence().thenIdle(15).thenExecute(() -> {
+                check(helper, com.reiko.cars.bus.BusService.stopNear(bus) == a, "the bus is at Main St");
+                check(helper, com.reiko.cars.trailer.Hitching.available(bus, owner) == com.reiko.cars.trailer.Hitching.Action.DOORS, "[G] Open doors");
+                com.reiko.cars.trailer.Hitching.use(rider);
+                check(helper, bus.busLine().rung(rider.getUUID()) && bus.stopRequested(), "the passenger rings for the stop");
+                com.reiko.cars.trailer.Hitching.use(owner);
+                check(helper, !bus.hasPassenger(rider), "they get off");
+                check(helper, bus.hasPassenger(waiter), "the one waiting gets on");
+                com.reiko.cars.bus.BusLine.Ride ride = bus.busLine().villagers().get(villager.getUUID());
+                check(helper, bus.hasPassenger(villager) && ride != null && ride.to().pos().equals(bPos), "the villager gets on for Oak Ave");
+                check(helper, bus.nextStopName().equals("Oak Ave") && !bus.stopRequested(), "next stop Oak Ave, and the bell's off");
+                helper.assertValueEqual(jobXp(owner, driverJob), 0L, "the first stop doesn't pay");
+                // Off to Oak Ave, driving the way.
+                Vec3 toB = helper.absoluteVec(new Vec3(4.5, 1.0, 25.0));
+                bus.moveTo(toB.x, toB.y, toB.z, 0.0F, 0.0F);
+                bus.busLine().tick(30.0);
+            }).thenIdle(15).thenExecute(() -> {
+                check(helper, com.reiko.cars.bus.BusService.stopNear(bus) == b, "at Oak Ave");
+                com.reiko.cars.trailer.Hitching.use(owner);
+                check(helper, !bus.hasPassenger(villager), "the villager gets off at their stop");
+                helper.assertValueEqual(jobXp(owner, driverJob), 11L, "a stop served in order (6 XP) and a villager's ride (5 XP)");
+                check(helper, ECO.getBalance(server, owner.getUUID()) >= balance + 100, "the villager's dollar fare");
+                check(helper, bus.nextStopName().equals("Main St"), "and back round to Main St");
+                com.reiko.cars.trailer.Hitching.use(owner);
+                helper.assertValueEqual(jobXp(owner, driverJob), 11L, "the same stop again doesn't pay");
+
+                // Sitting on the shelter's bench is waiting there.
+                Vec3 inShelter = helper.absoluteVec(new Vec3(8.5, 1.0, 32.5));
+                rider.moveTo(inShelter.x, inShelter.y, inShelter.z, 0.0F, 0.0F);
+                BlockPos bench = bPos.relative(com.reiko.cars.bus.BusShelterBlock.across(level.getBlockState(bPos)), 1);
+                check(helper, com.reiko.cars.bus.BusService.sit(rider, b, level.getBlockState(bench), bench), "sitting down");
+                check(helper, rider.getVehicle() instanceof com.reiko.cars.bus.BenchSeatEntity && com.reiko.cars.bus.BusService.waitingAt(rider, b),
+                        "on the bench, waiting");
+                com.reiko.cars.trailer.Hitching.use(owner);
+                check(helper, bus.hasPassenger(rider), "and onto the bus when it opens its doors");
+
+                // Taking the shelter down takes it off the route.
+                helper.setBlock(new BlockPos(8, 2, 33), Blocks.AIR);
+                check(helper, !(level.getBlockState(bPos).getBlock() instanceof com.reiko.cars.bus.BusShelterBlock), "all of it");
+                check(helper, com.reiko.cars.bus.BusStopRegistry.get(server).route(owner.getUUID(), 7, level.dimension()).size() == 1, "off route 7");
+            }).thenExecute(done).thenSucceed();
+        } catch (RuntimeException e) {
+            done.run();
+            throw e;
+        }
+    }
 }

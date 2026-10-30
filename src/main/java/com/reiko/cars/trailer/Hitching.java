@@ -45,7 +45,8 @@ public final class Hitching {
         DUMP,
         POUR,
         LADDER_UP,
-        LADDER_DOWN
+        LADDER_DOWN,
+        DOORS
     }
 
     private Hitching() {
@@ -59,6 +60,9 @@ public final class Hitching {
         }
         if (car.dirt() > 0.0F && com.reiko.cars.wash.CarWashService.washFor(car) != null) {
             return Action.WASH;
+        }
+        if (car.carType().runsRoutes()) {
+            return com.reiko.cars.bus.BusService.stopNear(car) != null ? Action.DOORS : null;
         }
         if (car.carType().isTowTruck()) {
             return car.towed() != null ? Action.DROP : Towing.towable(car, driver) != null ? Action.TOW : null;
@@ -122,6 +126,10 @@ public final class Hitching {
 
     /** The hitch key, on the server. */
     public static void use(ServerPlayer player) {
+        if (player.getVehicle() instanceof CarEntity bus && bus.carType().runsRoutes() && bus.getControllingPassenger() != player) {
+            com.reiko.cars.bus.BusService.ringBell(player, bus); // a passenger rings for the next stop
+            return;
+        }
         if (!(player.getVehicle() instanceof CarEntity car) || car.getControllingPassenger() != player) {
             player.displayClientMessage(Component.translatable("trailer.reikocars.drive_first"), true);
             return;
@@ -130,6 +138,12 @@ public final class Hitching {
             return;
         }
         if (com.reiko.cars.wash.CarWashService.use(player, car)) {
+            return;
+        }
+        if (car.carType().runsRoutes()) {
+            if (!com.reiko.cars.bus.BusService.openDoors(player, car)) {
+                player.displayClientMessage(Component.translatable("bus.reikocars.no_stop"), true);
+            }
             return;
         }
         if (car.carType().isTowTruck()) {

@@ -1,5 +1,7 @@
 package com.reiko.cars.client;
 
+import java.util.List;
+
 import com.reiko.cars.car.CarCondition;
 import com.reiko.cars.car.CarCondition.Part;
 import com.reiko.cars.car.CarEntity;
@@ -265,27 +267,53 @@ public final class CarHud implements LayeredDraw.Layer {
             }
         }
 
-        // What the hitch key would do here, just above the dashboard.
-        Hitching.Action action = car.getControllingPassenger() == minecraft.player ? Hitching.available(car, minecraft.player) : null;
-        if (action != null) {
-            Component hint = Component.translatable("hud.reikocars.hitch." + action.name().toLowerCase(java.util.Locale.ROOT),
-                    ReikoCarsClient.HITCH.getTranslatedKeyMessage());
-            graphics.drawString(font, hint, x + WIDTH - font.width(hint), hintY, 0xFFFFD54F, true);
-        }
-        // And the siren key, in a police car or ambulance: lit up while they're on.
-        if (car.carType().hasSiren() && car.getControllingPassenger() == minecraft.player) {
-            Component hint = Component.translatable("hud.reikocars.siren", ReikoCarsClient.SIREN.getTranslatedKeyMessage());
-            int sirenColor = car.sirenOn() ? ((minecraft.level.getGameTime() / 4) % 2 == 0 ? 0xFFFF5252 : 0xFF448AFF) : 0xC0FFFFFF;
-            graphics.drawString(font, hint, x + WIDTH - font.width(hint), hintY + (action != null ? hintStep : 0), sirenColor, true);
+        // Lines over the dashboard (under it, at the top of the screen): a bus's route and its bell, and what the keys do.
+        List<Hint> hints = hints(minecraft, car);
+        for (int i = 0; i < hints.size(); i++) {
+            Hint hint = hints.get(i);
+            graphics.drawString(font, hint.text(), x + WIDTH - font.width(hint.text()), hintY + i * hintStep, hint.color(), true);
         }
     }
 
-    /** How far up the action bar goes to clear the key hints over the dashboard, when the dashboard sits beside the hotbar. */
-    public static int actionBarRaise(Minecraft minecraft, CarEntity car) {
+    private record Hint(Component text, int color) {
+    }
+
+    /** The lines over the dashboard, nearest it first. */
+    private static List<Hint> hints(Minecraft minecraft, CarEntity car) {
+        List<Hint> hints = new java.util.ArrayList<>();
         boolean driving = car.getControllingPassenger() == minecraft.player;
-        boolean hitch = driving && Hitching.available(car, minecraft.player) != null;
-        boolean siren = driving && car.carType().hasSiren();
-        return hitch && siren ? 25 : 14;
+        if (car.carType().runsRoutes()) {
+            int route = car.busRoute();
+            if (route > 0) {
+                String next = car.nextStopName();
+                hints.add(new Hint(next.isEmpty() ? Component.translatable("hud.reikocars.bus_route_only", route)
+                        : Component.translatable("hud.reikocars.bus_route", route, next), 0xFF81D4FA));
+            }
+            if (car.stopRequested()) {
+                boolean flash = (minecraft.level.getGameTime() / 8) % 2 == 0;
+                hints.add(new Hint(Component.translatable("hud.reikocars.stop_requested"), flash ? 0xFFFF5252 : 0xFFFFCDD2));
+            } else if (!driving) {
+                hints.add(new Hint(Component.translatable("hud.reikocars.request_stop", ReikoCarsClient.HITCH.getTranslatedKeyMessage()), 0xC0FFFFFF));
+            }
+        }
+        // What the hitch key would do here.
+        Hitching.Action action = driving ? Hitching.available(car, minecraft.player) : null;
+        if (action != null) {
+            hints.add(new Hint(Component.translatable("hud.reikocars.hitch." + action.name().toLowerCase(java.util.Locale.ROOT),
+                    ReikoCarsClient.HITCH.getTranslatedKeyMessage()), 0xFFFFD54F));
+        }
+        // And the siren key, in a police car or ambulance: lit up while they're on.
+        if (car.carType().hasSiren() && driving) {
+            int sirenColor = car.sirenOn() ? ((minecraft.level.getGameTime() / 4) % 2 == 0 ? 0xFFFF5252 : 0xFF448AFF) : 0xC0FFFFFF;
+            hints.add(new Hint(Component.translatable("hud.reikocars.siren", ReikoCarsClient.SIREN.getTranslatedKeyMessage()), sirenColor));
+        }
+        return hints;
+    }
+
+    /** How far up the action bar goes to clear the lines over the dashboard, when the dashboard sits beside the hotbar. */
+    public static int actionBarRaise(Minecraft minecraft, CarEntity car) {
+        int lines = hints(minecraft, car).size();
+        return lines <= 1 ? 14 : 3 + 11 * lines;
     }
 
     /**

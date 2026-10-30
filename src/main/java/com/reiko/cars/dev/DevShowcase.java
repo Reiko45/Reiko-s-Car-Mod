@@ -174,6 +174,8 @@ public final class DevShowcase {
             weatherScript();
         } else if (MODE.equals("gps")) {
             gpsScript();
+        } else if (MODE.equals("busstops")) {
+            busScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -3784,5 +3786,170 @@ public final class DevShowcase {
             set.add(new xaero.common.minimap.waypoints.Waypoint(-90, -60, -20, "Village", "V", xaero.hud.minimap.waypoint.WaypointColor.GOLD,
                     xaero.hud.minimap.waypoint.WaypointPurpose.NORMAL, false, true));
         }
+    }
+
+    // ---- bus stops ----
+
+    private static com.reiko.cars.bus.BusStopBlockEntity stopAt(ServerLevel level, BlockPos pos) {
+        return (com.reiko.cars.bus.BusStopBlockEntity) level.getBlockEntity(pos);
+    }
+
+    private static final BlockPos SIGN_STOP = new BlockPos(8, -60, -2);
+    private static final BlockPos SHELTER_STOP = new BlockPos(9, -60, -52);
+
+    private static void busScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                MinecraftServer server = level.getServer();
+                level.setDayTime(5000);
+                com.reiko.cars.config.CarsConfig.VILLAGER_CHANCE.set(1.0);
+                for (int x = 0; x <= 6; x++) {
+                    for (int z = -70; z <= 10; z++) {
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), ModBlocks.ASPHALT.get().defaultBlockState());
+                    }
+                }
+                for (int x = 7; x <= 11; x++) {
+                    for (int z = -70; z <= 10; z++) {
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), Blocks.SMOOTH_STONE.defaultBlockState());
+                    }
+                }
+                // Main St: a sign, facing the road; Oak Ave: a shelter, open to the road.
+                BlockState sign = ModBlocks.BUS_STOP_SIGN.get().defaultBlockState().setValue(com.reiko.cars.bus.BusStopSignBlock.FACING, Direction.WEST);
+                level.setBlockAndUpdate(SIGN_STOP, sign);
+                sign.getBlock().setPlacedBy(level, SIGN_STOP, sign, player, ItemStack.EMPTY);
+                BlockState shelter = ModBlocks.BUS_SHELTER.get().defaultBlockState().setValue(com.reiko.cars.bus.BusShelterBlock.FACING, Direction.WEST);
+                level.setBlockAndUpdate(SHELTER_STOP, shelter);
+                shelter.getBlock().setPlacedBy(level, SHELTER_STOP, shelter, player, ItemStack.EMPTY);
+                com.reiko.cars.bus.BusStopService.configure(player, stopAt(level, SIGN_STOP), "Main St", new int[] {1, 1});
+                com.reiko.cars.bus.BusStopService.configure(player, stopAt(level, SHELTER_STOP), "Oak Ave", new int[] {1, 2, 4, 3});
+                // Villagers by the shelter, and Mo waiting at Main St.
+                for (double z : new double[] {-48.5, -54.5}) {
+                    net.minecraft.world.entity.npc.Villager villager = net.minecraft.world.entity.EntityType.VILLAGER.create(level);
+                    villager.moveTo(7.5, -60.0, z, 90.0F, 0.0F);
+                    villager.setNoAi(true);
+                    level.addFreshEntity(villager);
+                }
+                ServerPlayer mo = extraPlayer(server, "Mo");
+                mo.teleportTo(level, 7.5, -60.0, -0.5, 90.0F, 0.0F);
+                com.reiko.cars.bus.BusService.useStop(mo, stopAt(level, SIGN_STOP), false);
+                // The bus, on route 1, free rides (Mo's dummy connection can't be shown the fare screen).
+                CarEntity bus = spawned(level, CarType.CITY_BUS, 4.5, 6.5, 180.0F, 0.9);
+                bus.setOwner(player);
+                bus.fares().setPrices(0, 0);
+                bus.busLine().setRoute(1);
+                player.getInventory().setItem(0, new ItemStack(ModItems.BUS_STOP_SIGN.get()));
+                player.getInventory().setItem(1, new ItemStack(ModItems.BUS_SHELTER.get()));
+                player.setGameMode(GameType.CREATIVE);
+            });
+        });
+        at(22, mc -> mc.player.getInventory().selected = 8); // an empty hand
+        // The sign, and the shelter, from the road
+        at(30, mc -> look(mc, 5.6, -59.1, -1.5, -90.0F, 14.0F));
+        at(50, mc -> shot(mc, "330_bus_stop_sign"));
+        at(52, mc -> look(mc, 5.0, -59.3, -51.0, -90.0F, 12.0F));
+        at(72, mc -> shot(mc, "331_bus_shelter"));
+        // Someone sitting on the bench
+        at(74, mc -> server(mc, player -> {
+            ServerLevel level = player.serverLevel();
+            ServerPlayer sam = extraPlayer(level.getServer(), "Sam");
+            sam.teleportTo(level, 8.5, -60.0, -51.5, 90.0F, 0.0F);
+            BlockPos bench = SHELTER_STOP.relative(Direction.SOUTH, 1);
+            com.reiko.cars.bus.BusService.sit(sam, stopAt(level, SHELTER_STOP), level.getBlockState(bench), bench);
+        }));
+        at(76, mc -> look(mc, 5.5, -59.4, -53.5, -60.0F, 10.0F));
+        at(96, mc -> shot(mc, "332_bus_shelter_bench"));
+        // The owner's screens: the stop's, and the bus's route
+        at(98, mc -> server(mc, player -> com.reiko.cars.bus.BusStopMenu.open(player, stopAt(player.serverLevel(), SHELTER_STOP))));
+        at(110, mc -> shot(mc, "333_bus_stop_screen"));
+        at(112, mc -> {
+            mc.setScreen(null);
+            look(mc, 7.5, -60.0, 6.5, 90.0F, 10.0F);
+        });
+        at(116, mc -> server(mc, player -> com.reiko.cars.fare.FareSettingsMenu.open(player, carAt(player.serverLevel(), 4.5, 6.5))));
+        at(128, mc -> shot(mc, "334_bus_route_screen"));
+        // Driving, at Main St: the route on the dashboard and [G] Open doors
+        at(130, mc -> {
+            mc.setScreen(null);
+            server(mc, player -> {
+                player.setGameMode(GameType.SURVIVAL);
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                player.startRiding(carAt(player.serverLevel(), 4.5, 6.5), true);
+            });
+        });
+        at(154, mc -> shot(mc, "335_bus_at_main_st"));
+        at(156, mc -> server(mc, com.reiko.cars.trailer.Hitching::use)); // the doors: Mo gets on
+        at(162, mc -> server(mc, player -> {
+            ServerPlayer mo = player.server.getPlayerList().getPlayerByName("Mo");
+            com.reiko.cars.trailer.Hitching.use(mo); // and rings for the next stop
+        }));
+        at(170, mc -> shot(mc, "336_bus_stop_requested"));
+        // Driving on to Oak Ave, and stopping by it
+        for (int t = 172; t < 360; t++) {
+            at(t, mc -> {
+                if (!(mc.player.getVehicle() instanceof CarEntity bus)) {
+                    return;
+                }
+                boolean there = bus.getZ() < -40.0;
+                mc.options.keyUp.setDown(!there);
+                mc.options.keyDown.setDown(there && bus.displaySpeed() > 0.02);
+            });
+        }
+        at(360, mc -> {
+            mc.options.keyUp.setDown(false);
+            mc.options.keyDown.setDown(false);
+        });
+        at(376, mc -> server(mc, com.reiko.cars.trailer.Hitching::use)); // Mo gets off, the villagers get on
+        at(380, mc -> shot(mc, "337_bus_at_oak_ave"));
+        at(382, mc -> server(mc, player -> ReikoCars.LOGGER.info("Showcase bus: passengers {}",
+                player.getVehicle() == null ? "none" : player.getVehicle().getPassengers())));
+        at(384, mc -> {
+            CarEntity bus = (CarEntity) mc.player.getVehicle();
+            double z = bus == null ? -49.0 : bus.getZ();
+            server(mc, player -> player.stopRiding());
+            look(mc, -2.5, -58.6, z + 1.0, -90.0F, 6.0F);
+        });
+        at(404, mc -> shot(mc, "338_bus_villagers_aboard"));
+        at(406, mc -> mc.setScreen(new com.reiko.cars.client.GpsScreen()));
+        at(412, mc -> {
+            for (char c : "bus".toCharArray()) {
+                mc.screen.charTyped(c, 0);
+            }
+        });
+        at(420, mc -> shot(mc, "339_bus_stops_gps"));
+        at(422, mc -> {
+            mc.screen.keyPressed(259, 0, 0);
+            mc.screen.keyPressed(259, 0, 0);
+            mc.screen.keyPressed(259, 0, 0);
+            mc.setScreen(null);
+        });
+        // Sitting on the bench yourself
+        at(424, mc -> server(mc, player -> {
+            player.getAbilities().flying = false;
+            player.onUpdateAbilities();
+            player.teleportTo(player.serverLevel(), 8.0, -60.0, -50.5, 90.0F, 0.0F);
+            BlockPos bench = SHELTER_STOP.relative(Direction.SOUTH, 2);
+            com.reiko.cars.bus.BusService.sit(player, stopAt(player.serverLevel(), SHELTER_STOP), player.serverLevel().getBlockState(bench), bench);
+        }));
+        at(428, mc -> {
+            mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+            mc.player.setXRot(10.0F);
+        });
+        at(446, mc -> shot(mc, "340_bus_shelter_sitting"));
+        at(448, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                player.stopRiding();
+                player.serverLevel().setDayTime(18000);
+            });
+        });
+        at(452, mc -> look(mc, 7.0, -59.0, -44.0, -162.0F, 10.0F));
+        at(476, mc -> shot(mc, "341_bus_shelter_night"));
+        at(478, mc -> look(mc, 5.6, -59.1, -1.5, -90.0F, 14.0F));
+        at(500, mc -> shot(mc, "342_bus_stop_sign_night"));
+        at(508, mc -> mc.stop());
     }
 }

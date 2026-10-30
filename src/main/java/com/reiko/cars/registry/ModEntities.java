@@ -37,6 +37,15 @@ public final class ModEntities {
         }
     }
 
+    /** The seat someone sitting on a bus shelter's bench rides. */
+    public static final Supplier<EntityType<com.reiko.cars.bus.BenchSeatEntity>> BENCH_SEAT = ENTITIES.register("bench_seat",
+            () -> EntityType.Builder.<com.reiko.cars.bus.BenchSeatEntity>of(com.reiko.cars.bus.BenchSeatEntity::new, MobCategory.MISC)
+                    .sized(0.2F, 0.2F)
+                    .noSummon()
+                    .noSave()
+                    .clientTrackingRange(8)
+                    .build(ReikoCars.id("bench_seat").toString()));
+
     private ModEntities() {
     }
 

@@ -57,6 +57,8 @@ public final class ModMenus {
     public static final Supplier<MenuType<TollMenu>> TOLL = MENUS.register("toll", () -> IMenuTypeExtension.create(TollMenu::new));
     public static final Supplier<MenuType<com.reiko.cars.radio.RadioMenu>> RADIO = MENUS.register("radio",
             () -> IMenuTypeExtension.create(com.reiko.cars.radio.RadioMenu::new));
+    public static final Supplier<MenuType<com.reiko.cars.bus.BusStopMenu>> BUS_STOP = MENUS.register("bus_stop",
+            () -> IMenuTypeExtension.create(com.reiko.cars.bus.BusStopMenu::new));
     public static final Supplier<MenuType<com.reiko.cars.traffic.RoadSignMenu>> ROAD_SIGN = MENUS.register("road_sign",
             () -> IMenuTypeExtension.create(com.reiko.cars.traffic.RoadSignMenu::new));
     public static final Supplier<MenuType<TollBoothMenu>> TOLL_BOOTH = MENUS.register("toll_booth", () -> IMenuTypeExtension.create(TollBoothMenu::new));

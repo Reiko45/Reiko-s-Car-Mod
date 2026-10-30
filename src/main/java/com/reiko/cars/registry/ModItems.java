@@ -136,6 +136,8 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> STREET_POLE = ITEMS.registerSimpleBlockItem(ModBlocks.STREET_POLE);
     public static final DeferredItem<BlockItem> TRAFFIC_LIGHT = ITEMS.registerSimpleBlockItem(ModBlocks.TRAFFIC_LIGHT);
     public static final DeferredItem<BlockItem> STOP_SIGN = ITEMS.registerSimpleBlockItem(ModBlocks.STOP_SIGN);
+    public static final DeferredItem<BlockItem> BUS_STOP_SIGN = ITEMS.registerSimpleBlockItem(ModBlocks.BUS_STOP_SIGN);
+    public static final DeferredItem<BlockItem> BUS_SHELTER = ITEMS.registerSimpleBlockItem(ModBlocks.BUS_SHELTER);
     public static final DeferredItem<BlockItem> SPEED_SIGN = ITEMS.registerSimpleBlockItem(ModBlocks.SPEED_SIGN);
     public static final DeferredItem<BlockItem> STREET_LAMP = ITEMS.registerSimpleBlockItem(ModBlocks.STREET_LAMP);
     /** Paints lines, crosswalks and arrows on asphalt. */

@@ -24,12 +24,14 @@ public final class FareSettingsMenu extends AbstractContainerMenu {
     private final long per100;
     private final long earned;
     private final int rides;
+    /** A city bus's route, 0 for none. */
+    private final int route;
 
     public FareSettingsMenu(int containerId, Inventory inventory, RegistryFriendlyByteBuf buf) {
-        this(containerId, null, buf.readBoolean(), buf.readVarLong(), buf.readVarLong(), buf.readVarLong(), buf.readVarInt());
+        this(containerId, null, buf.readBoolean(), buf.readVarLong(), buf.readVarLong(), buf.readVarLong(), buf.readVarInt(), buf.readVarInt());
     }
 
-    private FareSettingsMenu(int containerId, @Nullable CarEntity car, boolean metered, long start, long per100, long earned, int rides) {
+    private FareSettingsMenu(int containerId, @Nullable CarEntity car, boolean metered, long start, long per100, long earned, int rides, int route) {
         super(ModMenus.FARE_SETTINGS.get(), containerId);
         this.car = car;
         this.metered = metered;
@@ -37,6 +39,7 @@ public final class FareSettingsMenu extends AbstractContainerMenu {
         this.per100 = per100;
         this.earned = earned;
         this.rides = rides;
+        this.route = route;
     }
 
     public static void open(ServerPlayer player, CarEntity car) {
@@ -48,12 +51,14 @@ public final class FareSettingsMenu extends AbstractContainerMenu {
                     buf.writeVarLong(fares.per100());
                     buf.writeVarLong(fares.earned());
                     buf.writeVarInt(fares.rides());
+                    buf.writeVarInt(car.busLine().route());
                 });
     }
 
     public static FareSettingsMenu create(int containerId, CarEntity car) {
         CarFares fares = car.fares();
-        return new FareSettingsMenu(containerId, car, car.carType().isMetered(), fares.start(), fares.per100(), fares.earned(), fares.rides());
+        return new FareSettingsMenu(containerId, car, car.carType().isMetered(), fares.start(), fares.per100(), fares.earned(), fares.rides(),
+                car.busLine().route());
     }
 
     @Nullable
@@ -80,6 +85,11 @@ public final class FareSettingsMenu extends AbstractContainerMenu {
 
     public int rides() {
         return rides;
+    }
+
+    /** A city bus's route (0 for none). */
+    public int route() {
+        return route;
     }
 
     @Override

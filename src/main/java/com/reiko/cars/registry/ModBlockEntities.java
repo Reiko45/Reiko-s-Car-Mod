@@ -69,6 +69,11 @@ public final class ModBlockEntities {
     public static final Supplier<BlockEntityType<TollGateBlockEntity>> TOLL_GATE = BLOCK_ENTITIES.register("toll_gate",
             () -> BlockEntityType.Builder.of(TollGateBlockEntity::new, ModBlocks.TOLL_GATE.get()).build(null));
 
+    /** A bus stop: a sign, or a shelter's first block. */
+    public static final Supplier<BlockEntityType<com.reiko.cars.bus.BusStopBlockEntity>> BUS_STOP = BLOCK_ENTITIES.register("bus_stop",
+            () -> BlockEntityType.Builder.of(com.reiko.cars.bus.BusStopBlockEntity::new, ModBlocks.BUS_STOP_SIGN.get(), ModBlocks.BUS_SHELTER.get())
+                    .build(null));
+
     private ModBlockEntities() {
     }
 }
