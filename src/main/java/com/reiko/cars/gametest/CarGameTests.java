@@ -2391,4 +2391,123 @@ public final class CarGameTests {
         }
         helper.succeed();
     }
+    // ---- turn signals, hazards and the alarm ----
+
+    /** Turns {@code car} by {@code degrees} (negative is left) over {@code ticks} ticks, then runs it straight as long. */
+    private static void steer(CarEntity car, float degrees, int ticks) {
+        for (int i = 0; i < ticks; i++) {
+            car.setYRot(car.getYRot() + degrees / ticks);
+            com.reiko.cars.car.CarSignals.serverTick(car);
+        }
+    }
+
+    @GameTest(template = YARD)
+    public static void turnSignalsAndHazards(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        ServerPlayer rider = join(helper);
+        try {
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.0, 8.0);
+            driver.startRiding(car, true);
+            rider.startRiding(car, true);
+            com.reiko.cars.car.CarSignals.serverTick(car);
+            com.reiko.cars.car.CarSignals.toggle(driver, car, com.reiko.cars.car.CarSignals.LEFT);
+            check(helper, car.signal() == com.reiko.cars.car.CarSignals.LEFT, "the left arrow signals left");
+            check(helper, com.reiko.cars.car.CarSignals.blinking(car, true) && !com.reiko.cars.car.CarSignals.blinking(car, false), "the left side blinks");
+            com.reiko.cars.car.CarSignals.toggle(driver, car, com.reiko.cars.car.CarSignals.LEFT);
+            check(helper, car.signal() == com.reiko.cars.car.CarSignals.OFF, "again turns it off");
+            com.reiko.cars.car.CarSignals.toggle(rider, car, com.reiko.cars.car.CarSignals.RIGHT);
+            check(helper, car.signal() == com.reiko.cars.car.CarSignals.OFF, "only the driver signals");
+
+            // A signal goes off by itself once the car's turned that way and straightened up, not before.
+            com.reiko.cars.car.CarSignals.toggle(driver, car, com.reiko.cars.car.CarSignals.LEFT);
+            steer(car, -20.0F, 10);
+            steer(car, 0.0F, 20);
+            check(helper, car.signal() == com.reiko.cars.car.CarSignals.LEFT, "a lane change's worth of turn leaves it on");
+            steer(car, 60.0F, 12);
+            steer(car, 0.0F, 20);
+            check(helper, car.signal() == com.reiko.cars.car.CarSignals.LEFT, "turning right doesn't cancel the left signal");
+            steer(car, -90.0F, 18);
+            check(helper, car.signal() == com.reiko.cars.car.CarSignals.LEFT, "still on mid-turn");
+            steer(car, 0.0F, com.reiko.cars.car.CarSignals.STRAIGHT_TICKS + 1);
+            check(helper, car.signal() == com.reiko.cars.car.CarSignals.OFF, "after the left turn, straightening up cancels it");
+            com.reiko.cars.car.CarSignals.toggle(driver, car, com.reiko.cars.car.CarSignals.RIGHT);
+            steer(car, 90.0F, 18);
+            steer(car, 0.0F, com.reiko.cars.car.CarSignals.STRAIGHT_TICKS + 1);
+            check(helper, car.signal() == com.reiko.cars.car.CarSignals.OFF, "and the same for a right turn");
+
+            // Hazards: the down arrow, and on by themselves when it breaks down. They don't cancel.
+            com.reiko.cars.car.CarSignals.toggle(driver, car, com.reiko.cars.car.CarSignals.HAZARDS);
+            check(helper, com.reiko.cars.car.CarSignals.blinking(car, true) && com.reiko.cars.car.CarSignals.blinking(car, false), "hazards blink both sides");
+            steer(car, -90.0F, 18);
+            steer(car, 0.0F, 20);
+            check(helper, car.signal() == com.reiko.cars.car.CarSignals.HAZARDS, "and stay on through turns");
+            CompoundTag saved = new CompoundTag();
+            car.saveWithoutId(saved);
+            car.setSignal(com.reiko.cars.car.CarSignals.OFF);
+            car.load(saved);
+            check(helper, car.signal() == com.reiko.cars.car.CarSignals.HAZARDS, "they're saved");
+            com.reiko.cars.car.CarSignals.toggle(driver, car, com.reiko.cars.car.CarSignals.HAZARDS);
+            check(helper, car.signal() == com.reiko.cars.car.CarSignals.OFF, "the down arrow turns them off");
+            car.setCondition(new CarCondition(1.0F, 0.0F, 1.0F, 1.0F, 1.0F));
+            com.reiko.cars.car.CarSignals.serverTick(car);
+            check(helper, car.isBrokenDown() && car.signal() == com.reiko.cars.car.CarSignals.HAZARDS, "a breakdown puts the hazards on");
+        } finally {
+            leave(helper, driver, rider);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD)
+    public static void carAlarmsCatchStrangers(GameTestHelper helper) {
+        ServerPlayer owner = join(helper);
+        ServerPlayer stranger = join(helper);
+        ServerPlayer friend = join(helper);
+        try {
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.0, 8.0);
+            car.setOwner(owner);
+            giveKey(owner, car);
+            giveKey(friend, car);
+            car.setFuel(100_000);
+            car.setLocked(false);
+            stranger.moveTo(car.getX() + 2, car.getY(), car.getZ());
+            car.interact(stranger, InteractionHand.MAIN_HAND);
+            check(helper, stranger.getVehicle() == car && !car.alarmOn(), "unlocked, anyone gets in and there's no alarm");
+            stranger.stopRiding();
+
+            car.setLocked(true);
+            car.interact(stranger, InteractionHand.MAIN_HAND);
+            check(helper, stranger.getVehicle() == null, "locked, the stranger can't get in");
+            check(helper, car.alarmOn(), "and the alarm goes off");
+            long now = helper.getLevel().getGameTime();
+            helper.assertValueEqual(car.alarmUntil(), now + 30 * 20L, "for half a minute");
+            check(helper, com.reiko.cars.car.CarSignals.blinking(car, true) && com.reiko.cars.car.CarSignals.blinking(car, false), "flashing every light");
+            check(helper, car.toggleLock(owner) && !car.alarmOn() && car.isLocked(), "the owner's L stops it, still locked");
+
+            car.hurt(helper.getLevel().damageSources().playerAttack(stranger), 1.0F);
+            check(helper, car.alarmOn(), "hitting it sets it off too");
+            friend.startRiding(car, true);
+            com.reiko.cars.car.CarSignals.serverTick(car);
+            check(helper, !car.alarmOn(), "someone with the key getting in stops it");
+            friend.stopRiding();
+
+            car.setAlarmUntil(helper.getLevel().getGameTime() - 1);
+            com.reiko.cars.car.CarSignals.serverTick(car);
+            helper.assertValueEqual(car.alarmUntil(), 0L, "it runs out");
+            car.hurt(helper.getLevel().damageSources().playerAttack(friend), 1.0F);
+            check(helper, !car.alarmOn(), "a friend with the key doesn't set it off");
+            car.hurt(helper.getLevel().damageSources().playerAttack(owner), 0.1F);
+            check(helper, !car.alarmOn(), "nor does its owner");
+
+            com.reiko.cars.config.CarsConfig.ALARM_SECONDS.set(0);
+            try {
+                car.interact(stranger, InteractionHand.MAIN_HAND);
+                check(helper, !car.alarmOn(), "alarmSeconds 0 turns alarms off");
+            } finally {
+                com.reiko.cars.config.CarsConfig.ALARM_SECONDS.set(30);
+            }
+        } finally {
+            leave(helper, owner, stranger, friend);
+        }
+        helper.succeed();
+    }
 }

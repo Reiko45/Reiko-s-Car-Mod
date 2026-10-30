@@ -19,6 +19,7 @@ public final class CarsConfig {
     public static final ModConfigSpec.DoubleValue RUN_OVER_DAMAGE;
     public static final ModConfigSpec.BooleanValue LOCK_NEW_CARS;
     public static final ModConfigSpec.BooleanValue REQUIRE_KEYS;
+    public static final ModConfigSpec.IntValue ALARM_SECONDS;
 
     public static final ModConfigSpec.DoubleValue DEFAULT_PUMP_PRICE;
     public static final ModConfigSpec.IntValue PUMP_CAPACITY;
@@ -87,6 +88,10 @@ public final class CarsConfig {
                 .comment("Whether a car needs one of its keys in the driver's inventory to start, even for its owner (who cuts keys",
                         "from Blank Keys). If false, keys only let other players into locked cars and lock them.")
                 .define("requireKeys", true);
+        ALARM_SECONDS = builder
+                .comment("How long a car alarm sounds, in seconds, once someone without a key hits a locked car or tries to get in.",
+                        "0 turns car alarms off.")
+                .defineInRange("alarmSeconds", 30, 0, 600);
         builder.pop();
 
         builder.push("pumps");

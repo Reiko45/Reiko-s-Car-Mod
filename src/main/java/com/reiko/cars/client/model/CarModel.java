@@ -21,6 +21,9 @@ import org.jetbrains.annotations.Nullable;
  *       the first.</li>
  * </ul>
  *
+ * <p>{@code signal_l} and {@code signal_r} are amber copies of each side's turn lamps, a shade bigger, drawn glowing
+ * only while that side blinks.
+ *
  * <p>The work vehicles have more, each optional: {@code beacon_a} and {@code beacon_b}, emergency lights that flash
  * in turn while the siren's on; {@code bed}, the dump truck's bed, pivoting at its hinge to tip; and
  * {@code drum_mount}, holding the mixer's {@code drum}, which turns about its own z axis.
@@ -43,6 +46,10 @@ public final class CarModel {
     /** What steers: the fork, or a car's two front wheels. */
     private final List<ModelPart> steered = new ArrayList<>();
     @Nullable
+    private final ModelPart signalLeft;
+    @Nullable
+    private final ModelPart signalRight;
+    @Nullable
     private final ModelPart beaconA;
     @Nullable
     private final ModelPart beaconB;
@@ -63,6 +70,8 @@ public final class CarModel {
         this.twins = root.hasChild("wheel_rl2")
                 ? new ModelPart[] {root.getChild("wheel_rl2"), root.getChild("wheel_rr2")}
                 : new ModelPart[0];
+        this.signalLeft = child(root, "signal_l");
+        this.signalRight = child(root, "signal_r");
         this.beaconA = child(root, "beacon_a");
         this.beaconB = child(root, "beacon_b");
         this.bed = child(root, "bed");
@@ -109,6 +118,14 @@ public final class CarModel {
         }
         if (drum != null) {
             drum.zRot = drumSpin;
+        }
+    }
+
+    /** One side's turn signal lamps, lit. */
+    public void renderSignal(boolean left, PoseStack poseStack, VertexConsumer consumer, int light, int overlay) {
+        ModelPart signal = left ? signalLeft : signalRight;
+        if (signal != null) {
+            signal.render(poseStack, consumer, light, overlay);
         }
     }
 

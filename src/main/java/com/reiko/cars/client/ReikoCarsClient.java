@@ -89,6 +89,12 @@ public final class ReikoCarsClient {
             InputConstants.Type.KEYSYM, InputConstants.KEY_G, "key.categories.reikocars");
     public static final KeyMapping SIREN = new KeyMapping("key.reikocars.siren", KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM, InputConstants.KEY_K, "key.categories.reikocars");
+    public static final KeyMapping SIGNAL_LEFT = new KeyMapping("key.reikocars.signal_left", KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM, InputConstants.KEY_LEFT, "key.categories.reikocars");
+    public static final KeyMapping SIGNAL_RIGHT = new KeyMapping("key.reikocars.signal_right", KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM, InputConstants.KEY_RIGHT, "key.categories.reikocars");
+    public static final KeyMapping HAZARDS = new KeyMapping("key.reikocars.hazards", KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM, InputConstants.KEY_DOWN, "key.categories.reikocars");
 
     public ReikoCarsClient(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.CLIENT, CarsClientConfig.SPEC);
@@ -198,6 +204,9 @@ public final class ReikoCarsClient {
         event.register(LOCK);
         event.register(HITCH);
         event.register(SIREN);
+        event.register(SIGNAL_LEFT);
+        event.register(SIGNAL_RIGHT);
+        event.register(HAZARDS);
     }
 
     private static void registerHud(RegisterGuiLayersEvent event) {
@@ -230,6 +239,9 @@ public final class ReikoCarsClient {
             LOCK.consumeClick();
             HITCH.consumeClick();
             SIREN.consumeClick();
+            SIGNAL_LEFT.consumeClick();
+            SIGNAL_RIGHT.consumeClick();
+            HAZARDS.consumeClick();
             return;
         }
         if (car.getControllingPassenger() == player) {
@@ -254,6 +266,30 @@ public final class ReikoCarsClient {
         while (SIREN.consumeClick()) {
             PacketDistributor.sendToServer(new CarActionPayload(CarActionPayload.SIREN));
         }
+        while (SIGNAL_LEFT.consumeClick()) {
+            PacketDistributor.sendToServer(new CarActionPayload(CarActionPayload.SIGNAL_LEFT));
+        }
+        while (SIGNAL_RIGHT.consumeClick()) {
+            PacketDistributor.sendToServer(new CarActionPayload(CarActionPayload.SIGNAL_RIGHT));
+        }
+        while (HAZARDS.consumeClick()) {
+            PacketDistributor.sendToServer(new CarActionPayload(CarActionPayload.HAZARDS));
+        }
+        tickTock(minecraft, car);
+    }
+
+    /** Whether the signal lamps of the car we're in were lit last tick, for the relay's tick and tock. */
+    private static boolean wasLit;
+
+    /** The signal relay clicking, heard inside the car: a tick as the lamps light, a tock as they go out. */
+    private static void tickTock(Minecraft minecraft, CarEntity car) {
+        boolean blinking = com.reiko.cars.car.CarSignals.blinking(car, true) || com.reiko.cars.car.CarSignals.blinking(car, false);
+        boolean lit = blinking && com.reiko.cars.car.CarSignals.blinkOn(car);
+        if (blinking && lit != wasLit && !car.alarmOn()) {
+            minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                    (lit ? com.reiko.cars.registry.ModSounds.SIGNAL_TICK : com.reiko.cars.registry.ModSounds.SIGNAL_TOCK).get(), 1.0F, 0.35F));
+        }
+        wasLit = lit;
     }
 
     /** The engine sound playing for each nearby car. Weak keys, so cars that unload are forgotten. */
@@ -343,8 +379,23 @@ public final class ReikoCarsClient {
         }
     }
 
-    /** Starts the siren of every police car and ambulance nearby that has its lights and siren on. */
+    private static final Map<CarEntity, AlarmSound> ALARMS = new WeakHashMap<>();
+
+    /** Starts the siren of every police car and ambulance nearby that has its lights and siren on, and any alarm going off. */
     private static void keepSirensGoing(Minecraft minecraft) {
+        SoundManager manager = minecraft.getSoundManager();
+        ALARMS.values().removeIf(sound -> sound.isStopped());
+        for (CarEntity car : minecraft.level.getEntitiesOfClass(CarEntity.class, minecraft.player.getBoundingBox().inflate(64.0), CarEntity::alarmOn)) {
+            AlarmSound sound = ALARMS.get(car);
+            if (sound == null || !manager.isActive(sound)) {
+                if (sound != null) {
+                    manager.stop(sound);
+                }
+                AlarmSound fresh = new AlarmSound(car);
+                ALARMS.put(car, fresh);
+                manager.play(fresh);
+            }
+        }
         SoundManager sounds = minecraft.getSoundManager();
         SIRENS.values().removeIf(sound -> sound.isStopped());
         for (CarEntity car : minecraft.level.getEntitiesOfClass(CarEntity.class, minecraft.player.getBoundingBox().inflate(64.0), CarEntity::sirenOn)) {

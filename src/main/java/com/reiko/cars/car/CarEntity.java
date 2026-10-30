@@ -106,6 +106,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private static final EntityDataAccessor<Long> DATA_METER = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** Whether a police car's or ambulance's lights and siren are on. */
     private static final EntityDataAccessor<Boolean> DATA_SIREN = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
+    /** The turn signals: {@link CarSignals#OFF}, {@link CarSignals#LEFT}, {@link CarSignals#RIGHT} or {@link CarSignals#HAZARDS}. */
+    private static final EntityDataAccessor<Byte> DATA_SIGNAL = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BYTE);
+    /** When its alarm stops, in game time: 0 when it isn't sounding. */
+    private static final EntityDataAccessor<Long> DATA_ALARM_UNTIL = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** When a dump truck started tipping its bed, in game time: -1 when it isn't. */
     private static final EntityDataAccessor<Long> DATA_TIP_START = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** The entity event that flashes the lights, when it's locked or unlocked with a key. */
@@ -210,6 +214,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_SALE_PRICE, -1L);
         builder.define(DATA_SIREN, false);
         builder.define(DATA_TIP_START, -1L);
+        builder.define(DATA_SIGNAL, CarSignals.OFF);
+        builder.define(DATA_ALARM_UNTIL, 0L);
         builder.define(DATA_CONDITION, CarCondition.NEW);
     }
 
@@ -524,6 +530,44 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return entityData.get(DATA_TIP_START);
     }
 
+    // ---- turn signals and the alarm (see CarSignals) ----
+
+    // Server-side: how far it's turned since the signal went on, and for how many ticks it's run straight since.
+    float signalTurned;
+    int signalStraight;
+    float signalYaw;
+    boolean wasBrokenDown;
+
+    /** {@link CarSignals#OFF}, {@link CarSignals#LEFT}, {@link CarSignals#RIGHT} or {@link CarSignals#HAZARDS}. */
+    public byte signal() {
+        return entityData.get(DATA_SIGNAL);
+    }
+
+    public void setSignal(byte signal) {
+        entityData.set(DATA_SIGNAL, signal);
+        signalTurned = 0.0F;
+        signalStraight = 0;
+    }
+
+    /** When the alarm stops, in game time; 0 if it isn't sounding. */
+    public long alarmUntil() {
+        return entityData.get(DATA_ALARM_UNTIL);
+    }
+
+    public void setAlarmUntil(long gameTime) {
+        entityData.set(DATA_ALARM_UNTIL, gameTime);
+    }
+
+    /** Whether its alarm is sounding. */
+    public boolean alarmOn() {
+        return alarmUntil() > level().getGameTime();
+    }
+
+    /** Whether {@code player} could unlock it: its owner, an admin, or someone with its key. */
+    public boolean opensLocks(Player player) {
+        return opens(player);
+    }
+
     public void setTipStart(long gameTime) {
         entityData.set(DATA_TIP_START, gameTime);
     }
@@ -732,7 +776,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
                 return InteractionResult.PASS;
             }
             if (!canBeUsedBy(player)) {
-                return refuse(player, Component.translatable("car.reikocars.locked"));
+                return refuseLocked(player);
             }
             if (player instanceof ServerPlayer serverPlayer) {
                 openBed(serverPlayer);
@@ -766,12 +810,20 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             return InteractionResult.PASS;
         }
         if (!canBeUsedBy(player)) {
-            return refuse(player, Component.translatable("car.reikocars.locked"));
+            return refuseLocked(player);
         }
         if (!level().isClientSide) {
             return player.startRiding(this) ? InteractionResult.CONSUME : InteractionResult.PASS;
         }
         return InteractionResult.SUCCESS;
+    }
+
+    /** Someone without a key trying a locked car's doors: it's locked, and its alarm goes off. */
+    private InteractionResult refuseLocked(Player player) {
+        if (!level().isClientSide) {
+            CarSignals.triggerAlarm(this, player);
+        }
+        return refuse(player, Component.translatable("car.reikocars.locked"));
     }
 
     private InteractionResult refuse(Player player, Component message) {
@@ -835,6 +887,14 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     public boolean toggleLock(ServerPlayer player) {
         if (owner() == null || !(canManage(player) || CarKeys.holds(player, lockCode()))) {
             return false;
+        }
+        if (alarmOn()) {
+            // The first press stops the alarm and leaves it locked.
+            CarSignals.silenceAlarm(this);
+            playSound(ModSounds.LOCK.get(), 0.7F, 1.0F);
+            flashLights();
+            player.displayClientMessage(Component.translatable("car.reikocars.alarm_off"), true);
+            return true;
         }
         setLocked(!isLocked());
         TrailerEntity trailer = trailer();
@@ -1242,6 +1302,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
         updateKey(true);
         WorkVehicles.serverTick(this);
+        CarSignals.serverTick(this);
         if (isPassenger()) {
             lastFuelPos = null; // being carried, not driven: no fuel burned, nobody run over
             return;
@@ -1513,6 +1574,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             return false; // only players can break cars: no losing one to a creeper or lava
         }
         if (!canManage(player)) {
+            if (!canBeUsedBy(player)) {
+                CarSignals.triggerAlarm(this, player); // a stranger hitting a locked car
+            }
             player.displayClientMessage(Component.translatable("car.reikocars.not_yours", ownerName), true);
             return false;
         }
@@ -1589,6 +1653,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (sirenOn()) {
             tag.putBoolean("Siren", true);
         }
+        if (signal() != CarSignals.OFF) {
+            tag.putByte("Signal", signal());
+        }
         if (!shopPrices.isEmpty()) {
             CompoundTag prices = new CompoundTag();
             shopPrices.forEach((item, cents) -> prices.putLong(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item).toString(), cents));
@@ -1617,6 +1684,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         setSalePrice(tag.contains("SalePrice") ? tag.getLong("SalePrice") : -1L);
         policy = tag.contains("Insurance") ? com.reiko.cars.insurance.Policy.CODEC.parse(NbtOps.INSTANCE, tag.get("Insurance")).result().orElse(null) : null;
         setSiren(tag.getBoolean("Siren"));
+        entityData.set(DATA_SIGNAL, (byte) Math.floorMod(tag.getByte("Signal"), 4));
         shopPrices.clear();
         CompoundTag prices = tag.getCompound("ShopPrices");
         for (String id : prices.getAllKeys()) {
@@ -1629,5 +1697,6 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         condition = tag.contains("Condition") ? CarCondition.CODEC.parse(NbtOps.INSTANCE, tag.get("Condition")).result().orElse(CarCondition.NEW)
                 : CarCondition.NEW;
         entityData.set(DATA_CONDITION, condition);
+        wasBrokenDown = isBrokenDown(); // already broken down: its hazards stay as they were saved
     }
 }

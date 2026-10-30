@@ -10,7 +10,7 @@ import net.minecraft.client.model.geom.builders.PartDefinition;
 /**
  * The farm tractor's shape, as Blockbench exports {@code blockbench/farm_tractor.bbmodel}. To change it, edit that file in
  * Blockbench, then File &gt; Export &gt; Export Java Entity and paste the new {@code createBodyLayer()} over this one.
- * Keep the top-level bone names: body, trim, lights, wheel_fl, wheel_fr, wheel_rl, wheel_rr.
+ * Keep the top-level bone names: body, trim, lights, wheel_fl, wheel_fr, wheel_rl, wheel_rr, signal_l, signal_r.
  * Its texture is {@code textures/entity/car/farm_tractor.png}. See {@link CarModel} for what each bone is for.
  */
 public final class FarmTractorModel {
@@ -70,17 +70,17 @@ public final class FarmTractorModel {
             .texOffs(96, 186).addBox(-8.0F, -6.0F, -19.0F, 16.0F, 2.0F, 2.0F, CubeDeformation.NONE)
             .texOffs(138, 205).addBox(-2.0F, -8.0F, -20.0F, 4.0F, 2.0F, 4.0F, CubeDeformation.NONE)
             .texOffs(114, 139).addBox(-8.0F, -9.0F, -32.0F, 16.0F, 6.0F, 4.0F, CubeDeformation.NONE)
-            .texOffs(102, 218).addBox(5.5F, -9.0F, -32.25F, 1.0F, 6.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(44, 219).addBox(1.5F, -9.0F, -32.25F, 1.0F, 6.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(106, 219).addBox(-2.5F, -9.0F, -32.25F, 1.0F, 6.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(110, 219).addBox(-6.5F, -9.0F, -32.25F, 1.0F, 6.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(198, 216).addBox(5.5F, -9.0F, -32.25F, 1.0F, 6.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(174, 219).addBox(1.5F, -9.0F, -32.25F, 1.0F, 6.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(178, 219).addBox(-2.5F, -9.0F, -32.25F, 1.0F, 6.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(182, 219).addBox(-6.5F, -9.0F, -32.25F, 1.0F, 6.0F, 1.0F, CubeDeformation.NONE)
             .texOffs(132, 186).addBox(-5.0F, -10.0F, -29.0F, 10.0F, 4.0F, 2.0F, CubeDeformation.NONE)
             .texOffs(196, 185).addBox(-4.0F, -20.0F, -28.25F, 8.0F, 8.0F, 1.0F, CubeDeformation.NONE)
             .texOffs(88, 132).addBox(6.0F, -13.0F, -22.0F, 1.0F, 5.0F, 12.0F, CubeDeformation.NONE)
             .texOffs(226, 135).addBox(-7.0F, -13.0F, -22.0F, 1.0F, 5.0F, 12.0F, CubeDeformation.NONE)
-            .texOffs(142, 218).addBox(-7.0F, -23.0F, -14.0F, 2.0F, 2.0F, 2.0F, CubeDeformation.NONE)
+            .texOffs(114, 219).addBox(-7.0F, -23.0F, -14.0F, 2.0F, 2.0F, 2.0F, CubeDeformation.NONE)
             .texOffs(248, 163).addBox(-7.0F, -40.0F, -14.0F, 2.0F, 17.0F, 2.0F, CubeDeformation.NONE)
-            .texOffs(244, 215).addBox(-7.5F, -41.0F, -14.5F, 3.0F, 1.0F, 3.0F, CubeDeformation.NONE)
+            .texOffs(102, 219).addBox(-7.5F, -41.0F, -14.5F, 3.0F, 1.0F, 3.0F, CubeDeformation.NONE)
             .texOffs(100, 207).addBox(5.0F, -32.0F, -14.0F, 2.0F, 10.0F, 1.0F, CubeDeformation.NONE)
             .texOffs(244, 182).addBox(4.0F, -32.0F, -13.0F, 4.0F, 10.0F, 2.0F, CubeDeformation.NONE)
             .texOffs(202, 210).addBox(5.0F, -32.0F, -11.0F, 2.0F, 10.0F, 1.0F, CubeDeformation.NONE)
@@ -92,15 +92,15 @@ public final class FarmTractorModel {
             .texOffs(88, 158).addBox(-4.0F, -24.0F, 6.0F, 8.0F, 2.0F, 6.0F, CubeDeformation.NONE)
             .texOffs(92, 166).addBox(-4.0F, -32.0F, 12.0F, 8.0F, 8.0F, 2.0F, CubeDeformation.NONE)
             .texOffs(178, 210).addBox(3.0F, -25.0F, 7.0F, 1.0F, 1.0F, 5.0F, CubeDeformation.NONE)
-            .texOffs(174, 219).addBox(3.0F, -31.0F, 11.0F, 1.0F, 5.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(222, 219).addBox(3.0F, -31.0F, 11.0F, 1.0F, 5.0F, 1.0F, CubeDeformation.NONE)
             .texOffs(190, 210).addBox(-4.0F, -25.0F, 7.0F, 1.0F, 1.0F, 5.0F, CubeDeformation.NONE)
-            .texOffs(178, 219).addBox(-4.0F, -31.0F, 11.0F, 1.0F, 5.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(52, 221).addBox(-4.0F, -31.0F, 11.0F, 1.0F, 5.0F, 1.0F, CubeDeformation.NONE)
             .texOffs(0, 211).addBox(4.0F, -27.0F, 7.0F, 1.0F, 1.0F, 5.0F, CubeDeformation.NONE)
             .texOffs(52, 211).addBox(-5.0F, -27.0F, 7.0F, 1.0F, 1.0F, 5.0F, CubeDeformation.NONE)
-            .texOffs(114, 219).addBox(6.0F, -28.0F, 6.0F, 1.0F, 6.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(118, 219).addBox(-7.0F, -28.0F, 6.0F, 1.0F, 6.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(182, 219).addBox(5.5F, -29.0F, 5.5F, 2.0F, 1.0F, 2.0F, CubeDeformation.NONE)
-            .texOffs(190, 219).addBox(-7.5F, -29.0F, 5.5F, 2.0F, 1.0F, 2.0F, CubeDeformation.NONE)
+            .texOffs(208, 219).addBox(6.0F, -28.0F, 6.0F, 1.0F, 6.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(212, 219).addBox(-7.0F, -28.0F, 6.0F, 1.0F, 6.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(56, 221).addBox(5.5F, -29.0F, 5.5F, 2.0F, 1.0F, 2.0F, CubeDeformation.NONE)
+            .texOffs(64, 221).addBox(-7.5F, -29.0F, 5.5F, 2.0F, 1.0F, 2.0F, CubeDeformation.NONE)
             .texOffs(160, 159).addBox(10.0F, -46.0F, 18.0F, 1.0F, 28.0F, 2.0F, CubeDeformation.NONE)
             .texOffs(166, 159).addBox(-11.0F, -46.0F, 18.0F, 1.0F, 28.0F, 2.0F, CubeDeformation.NONE)
             .texOffs(72, 190).addBox(-11.0F, -46.0F, 18.0F, 22.0F, 1.0F, 2.0F, CubeDeformation.NONE)
@@ -111,19 +111,19 @@ public final class FarmTractorModel {
             .texOffs(0, 148).addBox(-3.0F, -8.0F, 16.0F, 6.0F, 1.0F, 10.0F, CubeDeformation.NONE), PartPose.offset(-0.0F, 24.0F, 0.0F));
         PartDefinition steering = trim.addOrReplaceChild("steering", CubeListBuilder.create()
             .texOffs(44, 202).addBox(-3.5F, -3.5F, -0.5F, 7.0F, 7.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(72, 221).addBox(-1.0F, -1.0F, -0.25F, 2.0F, 2.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(192, 221).addBox(-1.0F, -1.0F, -0.25F, 2.0F, 2.0F, 1.0F, CubeDeformation.NONE)
             .texOffs(110, 205).addBox(-0.5F, -0.5F, -6.5F, 1.0F, 1.0F, 6.0F, CubeDeformation.NONE), PartPose.offsetAndRotation(0.0F, -30.0F, 1.0F, -0.7854F, -0.0F, 0.0F));
         PartDefinition lights = partdefinition.addOrReplaceChild("lights", CubeListBuilder.create()
-            .texOffs(188, 216).addBox(-3.0F, -26.0F, -0.25F, 6.0F, 2.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(244, 219).addBox(3.5F, -20.0F, -27.5F, 2.0F, 2.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(250, 219).addBox(-5.5F, -20.0F, -27.5F, 2.0F, 2.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(48, 221).addBox(13.5F, -22.0F, 24.25F, 2.0F, 2.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(54, 221).addBox(-15.5F, -22.0F, 24.25F, 2.0F, 2.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(60, 221).addBox(10.0F, -26.0F, 4.75F, 2.0F, 2.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(66, 221).addBox(-12.0F, -26.0F, 4.75F, 2.0F, 2.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(208, 219).addBox(7.0F, -46.0F, -4.5F, 3.0F, 2.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(216, 219).addBox(-10.0F, -46.0F, -4.5F, 3.0F, 2.0F, 1.0F, CubeDeformation.NONE)
-            .texOffs(36, 219).addBox(-1.0F, -49.0F, 8.0F, 2.0F, 2.0F, 2.0F, CubeDeformation.NONE), PartPose.offset(-0.0F, 24.0F, 0.0F));
+            .texOffs(152, 219).addBox(-3.0F, -26.0F, -0.25F, 6.0F, 2.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(88, 221).addBox(3.5F, -20.0F, -27.5F, 2.0F, 2.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(94, 221).addBox(-5.5F, -20.0F, -27.5F, 2.0F, 2.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(122, 221).addBox(13.5F, -22.0F, 24.25F, 2.0F, 2.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(128, 221).addBox(-15.5F, -22.0F, 24.25F, 2.0F, 2.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(134, 221).addBox(10.0F, -26.0F, 4.75F, 2.0F, 2.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(186, 221).addBox(-12.0F, -26.0F, 4.75F, 2.0F, 2.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(72, 221).addBox(7.0F, -46.0F, -4.5F, 3.0F, 2.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(80, 221).addBox(-10.0F, -46.0F, -4.5F, 3.0F, 2.0F, 1.0F, CubeDeformation.NONE)
+            .texOffs(166, 219).addBox(-1.0F, -49.0F, 8.0F, 2.0F, 2.0F, 2.0F, CubeDeformation.NONE), PartPose.offset(-0.0F, 24.0F, 0.0F));
         PartDefinition wheel_fl = partdefinition.addOrReplaceChild("wheel_fl", CubeListBuilder.create()
             .texOffs(120, 192).addBox(-2.0F, 4.0F, -3.0F, 4.0F, 1.0F, 6.0F, CubeDeformation.NONE)
             .texOffs(116, 158).addBox(-2.0F, 3.0F, -4.0F, 4.0F, 1.0F, 8.0F, CubeDeformation.NONE)
@@ -136,7 +136,7 @@ public final class FarmTractorModel {
             .texOffs(0, 159).addBox(-2.0F, -4.0F, -4.0F, 4.0F, 1.0F, 8.0F, CubeDeformation.NONE)
             .texOffs(140, 192).addBox(-2.0F, -5.0F, -3.0F, 4.0F, 1.0F, 6.0F, CubeDeformation.NONE)
             .texOffs(172, 166).addBox(0.0F, -3.0F, -3.0F, 1.0F, 6.0F, 6.0F, CubeDeformation.NONE)
-            .texOffs(150, 219).addBox(0.75F, -1.0F, -1.0F, 1.0F, 2.0F, 2.0F, CubeDeformation.NONE)
+            .texOffs(216, 219).addBox(0.75F, -1.0F, -1.0F, 1.0F, 2.0F, 2.0F, CubeDeformation.NONE)
             .texOffs(186, 166).addBox(-1.5F, -3.0F, -3.0F, 1.0F, 6.0F, 6.0F, CubeDeformation.NONE)
             .texOffs(112, 167).addBox(-2.0F, -3.0F, -3.0F, 1.0F, 6.0F, 6.0F, CubeDeformation.NONE), PartPose.offset(8.0F, 19.0F, -18.0F));
         PartDefinition wheel_fr = partdefinition.addOrReplaceChild("wheel_fr", CubeListBuilder.create()
@@ -151,7 +151,7 @@ public final class FarmTractorModel {
             .texOffs(48, 159).addBox(-2.0F, -4.0F, -4.0F, 4.0F, 1.0F, 8.0F, CubeDeformation.NONE)
             .texOffs(0, 193).addBox(-2.0F, -5.0F, -3.0F, 4.0F, 1.0F, 6.0F, CubeDeformation.NONE)
             .texOffs(126, 167).addBox(-1.0F, -3.0F, -3.0F, 1.0F, 6.0F, 6.0F, CubeDeformation.NONE)
-            .texOffs(156, 219).addBox(-1.75F, -1.0F, -1.0F, 1.0F, 2.0F, 2.0F, CubeDeformation.NONE)
+            .texOffs(244, 220).addBox(-1.75F, -1.0F, -1.0F, 1.0F, 2.0F, 2.0F, CubeDeformation.NONE)
             .texOffs(0, 168).addBox(0.5F, -3.0F, -3.0F, 1.0F, 6.0F, 6.0F, CubeDeformation.NONE)
             .texOffs(14, 168).addBox(1.0F, -3.0F, -3.0F, 1.0F, 6.0F, 6.0F, CubeDeformation.NONE), PartPose.offset(-8.0F, 19.0F, -18.0F));
         PartDefinition wheel_rl = partdefinition.addOrReplaceChild("wheel_rl", CubeListBuilder.create()
@@ -182,7 +182,7 @@ public final class FarmTractorModel {
             .texOffs(0, 135).addBox(-3.0F, -10.0F, -6.0F, 6.0F, 1.0F, 12.0F, CubeDeformation.NONE)
             .texOffs(88, 149).addBox(-3.0F, -11.0F, -4.0F, 6.0F, 1.0F, 8.0F, CubeDeformation.NONE)
             .texOffs(88, 72).addBox(1.0F, -7.0F, -7.0F, 1.0F, 14.0F, 14.0F, CubeDeformation.NONE)
-            .texOffs(162, 219).addBox(1.75F, -1.0F, -1.0F, 1.0F, 2.0F, 2.0F, CubeDeformation.NONE)
+            .texOffs(250, 220).addBox(1.75F, -1.0F, -1.0F, 1.0F, 2.0F, 2.0F, CubeDeformation.NONE)
             .texOffs(192, 75).addBox(-0.5F, -7.0F, -7.0F, 1.0F, 14.0F, 14.0F, CubeDeformation.NONE)
             .texOffs(222, 75).addBox(-3.0F, -7.0F, -7.0F, 1.0F, 14.0F, 14.0F, CubeDeformation.NONE), PartPose.offset(13.0F, 13.0F, 13.0F));
         PartDefinition wheel_rr = partdefinition.addOrReplaceChild("wheel_rr", CubeListBuilder.create()
@@ -213,9 +213,15 @@ public final class FarmTractorModel {
             .texOffs(190, 135).addBox(-3.0F, -10.0F, -6.0F, 6.0F, 1.0F, 12.0F, CubeDeformation.NONE)
             .texOffs(206, 152).addBox(-3.0F, -11.0F, -4.0F, 6.0F, 1.0F, 8.0F, CubeDeformation.NONE)
             .texOffs(118, 79).addBox(-2.0F, -7.0F, -7.0F, 1.0F, 14.0F, 14.0F, CubeDeformation.NONE)
-            .texOffs(168, 219).addBox(-2.75F, -1.0F, -1.0F, 1.0F, 2.0F, 2.0F, CubeDeformation.NONE)
+            .texOffs(46, 221).addBox(-2.75F, -1.0F, -1.0F, 1.0F, 2.0F, 2.0F, CubeDeformation.NONE)
             .texOffs(148, 79).addBox(-0.5F, -7.0F, -7.0F, 1.0F, 14.0F, 14.0F, CubeDeformation.NONE)
             .texOffs(0, 85).addBox(2.0F, -7.0F, -7.0F, 1.0F, 14.0F, 14.0F, CubeDeformation.NONE), PartPose.offset(-13.0F, 13.0F, 13.0F));
+        PartDefinition signal_l = partdefinition.addOrReplaceChild("signal_l", CubeListBuilder.create()
+            .texOffs(244, 215).addBox(3.35F, -20.15F, -27.65F, 2.3F, 2.3F, 1.3F, CubeDeformation.NONE)
+            .texOffs(188, 216).addBox(13.35F, -22.15F, 24.1F, 2.3F, 2.3F, 1.3F, CubeDeformation.NONE), PartPose.offset(-0.0F, 24.0F, 0.0F));
+        PartDefinition signal_r = partdefinition.addOrReplaceChild("signal_r", CubeListBuilder.create()
+            .texOffs(142, 218).addBox(-5.65F, -20.15F, -27.65F, 2.3F, 2.3F, 1.3F, CubeDeformation.NONE)
+            .texOffs(36, 219).addBox(-15.65F, -22.15F, 24.1F, 2.3F, 2.3F, 1.3F, CubeDeformation.NONE), PartPose.offset(-0.0F, 24.0F, 0.0F));
         return LayerDefinition.create(meshdefinition, 256, 256);
     }
 }

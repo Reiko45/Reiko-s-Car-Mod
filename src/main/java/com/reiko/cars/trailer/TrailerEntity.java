@@ -600,7 +600,8 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
     /** Lit while it's hitched to a tractor with its engine running. */
     public boolean lightsOn() {
         CarEntity tractor = tractor();
-        return (tractor != null && (tractor.isEngineRunning() || tractor.lightsFlashing())) || (flashTicks > 0 && (flashTicks / 3) % 2 == 1);
+        return (tractor != null && (tractor.isEngineRunning() || tractor.lightsFlashing()
+                || (tractor.alarmOn() && com.reiko.cars.car.CarSignals.blinkOn(tractor)))) || (flashTicks > 0 && (flashTicks / 3) % 2 == 1);
     }
 
     // ---- cars riding a car hauler ----

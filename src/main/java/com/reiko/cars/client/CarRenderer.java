@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.reiko.cars.ReikoCars;
 import com.reiko.cars.car.CarEntity;
+import com.reiko.cars.car.CarSignals;
 import com.reiko.cars.car.CarType;
 import com.reiko.cars.car.WorkVehicles;
 import com.reiko.cars.client.model.CarModel;
@@ -56,9 +57,14 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         int overlay = OverlayTexture.NO_OVERLAY;
         model.renderBody(poseStack, buffers.getBuffer(RenderType.entityCutoutNoCull(texture)), light, overlay, 0xFF000000 | car.color());
         model.renderTrim(poseStack, buffers.getBuffer(RenderType.entityTranslucent(texture)), light, overlay);
-        boolean lit = car.isEngineRunning() || car.lightsFlashing();
+        boolean lit = car.isEngineRunning() || car.lightsFlashing() || (car.alarmOn() && CarSignals.blinkOn(car));
         model.renderLights(poseStack, buffers.getBuffer(lit ? RenderType.entityTranslucentEmissive(texture) : RenderType.entityTranslucent(texture)),
                 lit ? LightTexture.FULL_BRIGHT : light, overlay);
+        for (boolean left : new boolean[] {true, false}) {
+            if (CarSignals.lit(car, left)) {
+                model.renderSignal(left, poseStack, buffers.getBuffer(RenderType.entityTranslucentEmissive(texture)), LightTexture.FULL_BRIGHT, overlay);
+            }
+        }
         if (model.hasBeacons()) {
             // With the siren on, the two sets of beacons flash in turn, a few times a second.
             boolean firstOn = (car.level().getGameTime() + car.getId()) / 4 % 2 == 0;

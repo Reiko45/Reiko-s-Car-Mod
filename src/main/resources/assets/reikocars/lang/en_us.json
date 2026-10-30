@@ -726,5 +726,12 @@
   "icecream.reikocars.price_changed": "The price just changed: it's %s now.",
   "icecream.reikocars.priced": "%s now sells for %s.",
   "icecream.reikocars.sold_out": "%s is sold out.",
-  "icecream.reikocars.yours": "It's your truck: sneak and right-click to open the freezer."
+  "icecream.reikocars.yours": "It's your truck: sneak and right-click to open the freezer.",
+  "key.reikocars.signal_left": "Turn Signal Left",
+  "key.reikocars.signal_right": "Turn Signal Right",
+  "key.reikocars.hazards": "Hazard Lights",
+  "subtitles.reikocars.car.signal": "Turn signal ticks",
+  "subtitles.reikocars.car.alarm": "Car alarm blares",
+  "car.reikocars.alarm_off": "Alarm off",
+  "car.reikocars.alarm_going_off": "Your %s's alarm is going off at %s, %s, %s: %s set it off."
 }

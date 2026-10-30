@@ -29,6 +29,9 @@ public final class ModSounds {
     public static final Supplier<SoundEvent> HYDRAULIC = register("car.hydraulic");
     /** The garbage truck's packer crushing a load. */
     public static final Supplier<SoundEvent> COMPACTOR = register("car.compactor");
+    public static final Supplier<SoundEvent> SIGNAL_TICK = register("car.signal_tick");
+    public static final Supplier<SoundEvent> SIGNAL_TOCK = register("car.signal_tock");
+    public static final Supplier<SoundEvent> ALARM = register("car.alarm");
 
     private ModSounds() {
     }

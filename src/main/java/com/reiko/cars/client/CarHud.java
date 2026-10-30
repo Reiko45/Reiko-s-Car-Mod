@@ -30,7 +30,10 @@ public final class CarHud implements LayeredDraw.Layer {
             {".#.###.#.", "#.#...#.#", "#.#.#.#.#", "#.#.#.#.#", "#.#...#.#", "#.#.#.#.#", ".#.###.#."},
             {".........", "..####...", ".#..#.#..", "#########", "#########", ".##...##.", "........."},
     };
-    private static final int LIGHT_SPACING = 19;
+    private static final int LIGHT_SPACING = 17;
+    /** The turn signal arrows, 7 by 7, either side of the warning lights: left, then right. */
+    private static final String[] LEFT_ARROW = {"...#...", "..##...", ".######", "#######", ".######", "..##...", "...#..."};
+    private static final String[] RIGHT_ARROW = {"...#...", "...##..", "######.", "#######", "######.", "...##..", "...#..."};
     /** A trailer, for the start of the trailer's row of lights. */
     private static final String[] TRAILER = {".........", "#######..", "#######..", "#########", "#######..", ".##.##...", "........."};
     /** The trailer's row of lights adds this much to the dashboard. */
@@ -134,6 +137,9 @@ public final class CarHud implements LayeredDraw.Layer {
         for (Part part : Part.values()) {
             drawLight(graphics, LIGHTS[part.ordinal()], lightsX + part.ordinal() * LIGHT_SPACING, lightsY, lightColor(condition.level(part), flash));
         }
+        // The turn signal arrows, green while they blink.
+        drawLight(graphics, LEFT_ARROW, x + 3, lightsY, com.reiko.cars.car.CarSignals.lit(car, true) ? 0xFF5BE35B : 0x38FFFFFF);
+        drawLight(graphics, RIGHT_ARROW, x + WIDTH - 10, lightsY, com.reiko.cars.car.CarSignals.lit(car, false) ? 0xFF5BE35B : 0x38FFFFFF);
         if (towed != null) {
             // The trailer's own row: a trailer, then its tires, brakes and body under the car's.
             CarCondition trailerWear = towed.condition();

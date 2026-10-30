@@ -144,6 +144,8 @@ public final class DevShowcase {
             insuranceScript();
         } else if (MODE.equals("work")) {
             workScript();
+        } else if (MODE.equals("signals")) {
+            signalsScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -1923,5 +1925,92 @@ public final class DevShowcase {
         });
         at(585, mc -> shot(mc, "122_items"));
         at(590, mc -> mc.stop());
+    }
+
+    // ---- turn signals, hazards and the alarm: ./gradlew runClient -Pshowcase=signals ----
+
+    /** The back of the semi's trailer, along z. */
+    private static double trailerZ(Minecraft minecraft) {
+        TrailerEntity trailer = minecraft.level.getEntitiesOfClass(TrailerEntity.class, new net.minecraft.world.phys.AABB(10, -70, -30, 30, -50, 20)).getFirst();
+        return trailer.getZ() - TrailerType.LENGTH / 2.0;
+    }
+
+    private static void signalsScript() {
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                tile(level, -16, -24, 40, 34);
+                // Two rows with their hazards on, facing south.
+                CarType[][] rows = {{CarType.SEDAN, CarType.MUSCLE_CAR, CarType.PICKUP_TRUCK}, {CarType.DELIVERY_VAN, CarType.CRUISER, CarType.SCOOTER}};
+                for (int row = 0; row < rows.length; row++) {
+                    for (int i = 0; i < rows[row].length; i++) {
+                        spawn(level, rows[row][i], 0.5 + i * 4.0, 0.5 + row * 12.0, 0.0F, 0.6);
+                        car(level, rows[row][i]).setSignal(com.reiko.cars.car.CarSignals.HAZARDS);
+                    }
+                }
+                // A semi and trailer signalling right, and a hatchback signalling left.
+                spawn(level, CarType.SEMI_TRUCK, 20.5, 6.5, 0.0F, 0.6);
+                CarEntity semi = car(level, CarType.SEMI_TRUCK);
+                behind(level, TrailerType.BOX_TRAILER, semi, 0.0F).startRiding(semi, true);
+                semi.setSignal(com.reiko.cars.car.CarSignals.RIGHT);
+                spawn(level, CarType.HATCHBACK, 30.5, 14.5, 0.0F, 0.6);
+                car(level, CarType.HATCHBACK).setSignal(com.reiko.cars.car.CarSignals.LEFT);
+                // A sports car for the alarm.
+                spawn(level, CarType.SPORTS_CAR, 4.5, 24.5, 0.0F, 0.6);
+                player.getInventory().clearContent();
+            });
+        });
+        at(60, mc -> aim(mc, 4.5, -59.3, 0.5, 1.0, 1.6, 6.0));
+        at(100, mc -> shot(mc, "123_hazards_front_a"));
+        at(108, mc -> shot(mc, "124_hazards_front_b"));
+        at(110, mc -> aim(mc, 4.5, -59.3, 0.5, -1.0, 1.6, -6.0));
+        at(140, mc -> shot(mc, "125_hazards_rear_a"));
+        at(148, mc -> shot(mc, "126_hazards_rear_b"));
+        at(150, mc -> aim(mc, 4.5, -59.4, 12.5, -0.6, 1.3, -4.8));
+        at(180, mc -> shot(mc, "127_hazards_bikes_a"));
+        at(188, mc -> shot(mc, "128_hazards_bikes_b"));
+        at(190, mc -> aim(mc, 20.5, -59.0, trailerZ(mc), -2.5, 1.8, -5.5));
+        at(220, mc -> shot(mc, "129_semi_right_a"));
+        at(228, mc -> shot(mc, "130_semi_right_b"));
+        at(230, mc -> aim(mc, 30.5, -59.4, 14.5, 2.5, 1.4, -4.0));
+        at(260, mc -> shot(mc, "131_hatchback_left_a"));
+        at(268, mc -> shot(mc, "132_hatchback_left_b"));
+        at(270, mc -> server(mc, player -> player.serverLevel().setDayTime(18000)));
+        at(295, mc -> shot(mc, "133_hatchback_night_a"));
+        at(303, mc -> shot(mc, "134_hatchback_night_b"));
+        at(305, mc -> aim(mc, 4.5, -59.3, 0.5, -1.0, 1.6, -6.0));
+        at(335, mc -> shot(mc, "135_hazards_night_a"));
+        at(343, mc -> shot(mc, "136_hazards_night_b"));
+        at(345, mc -> server(mc, player -> player.serverLevel().setDayTime(6000)));
+        // Driving with the left signal on: the dashboard arrow.
+        at(350, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                player.startRiding(car(player.serverLevel(), CarType.HATCHBACK), true);
+            });
+        });
+        at(375, mc -> shot(mc, "137_dash_left_a"));
+        at(383, mc -> shot(mc, "138_dash_left_b"));
+        // The alarm: the player's locked sports car, and Mo trying its door.
+        at(386, mc -> server(mc, player -> {
+            player.stopRiding();
+            ServerPlayer mo = extraPlayer(player.server, "Mo");
+            CarEntity sports = car(player.serverLevel(), CarType.SPORTS_CAR);
+            sports.setOwner(player);
+            sports.setLocked(true);
+            mo.teleportTo(player.serverLevel(), sports.getX() + 2.0, sports.getY(), sports.getZ(), 0.0F, 0.0F);
+            sports.interact(mo, net.minecraft.world.InteractionHand.MAIN_HAND);
+        }));
+        at(390, mc -> aim(mc, 4.5, -59.4, 24.5, 2.5, 1.5, 3.5));
+        at(415, mc -> shot(mc, "139_alarm_a"));
+        at(423, mc -> shot(mc, "140_alarm_b"));
+        at(425, mc -> server(mc, player -> car(player.serverLevel(), CarType.SPORTS_CAR).toggleLock(player)));
+        at(440, mc -> shot(mc, "141_alarm_off"));
+        at(445, mc -> mc.stop());
     }
 }

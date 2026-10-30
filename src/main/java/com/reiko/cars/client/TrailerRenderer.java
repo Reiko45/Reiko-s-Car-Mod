@@ -47,6 +47,15 @@ public final class TrailerRenderer extends EntityRenderer<TrailerEntity> {
         boolean lit = trailer.lightsOn();
         model.renderLights(poseStack, buffers.getBuffer(lit ? RenderType.entityTranslucentEmissive(texture) : RenderType.entityCutoutNoCull(texture)),
                 lit ? LightTexture.FULL_BRIGHT : light, overlay);
+        com.reiko.cars.car.CarEntity tractor = trailer.tractor();
+        if (tractor != null) {
+            // The tractor's turn signals and hazards blink on the trailer's tail and marker lights too.
+            for (boolean left : new boolean[] {true, false}) {
+                if (com.reiko.cars.car.CarSignals.lit(tractor, left)) {
+                    model.renderSignal(left, poseStack, buffers.getBuffer(RenderType.entityTranslucentEmissive(texture)), LightTexture.FULL_BRIGHT, overlay);
+                }
+            }
+        }
         poseStack.popPose();
         super.render(trailer, entityYaw, partialTick, poseStack, buffers, light);
     }

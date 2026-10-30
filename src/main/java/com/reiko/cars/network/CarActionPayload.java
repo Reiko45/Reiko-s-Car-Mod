@@ -14,6 +14,10 @@ public record CarActionPayload(int action) implements CustomPacketPayload {
     public static final int HITCH = 2;
     /** A police car's or ambulance's lights and siren, on or off. */
     public static final int SIREN = 3;
+    /** The turn signals, left or right, and the hazards: on, or off if they already were. */
+    public static final int SIGNAL_LEFT = 4;
+    public static final int SIGNAL_RIGHT = 5;
+    public static final int HAZARDS = 6;
 
     public static final Type<CarActionPayload> TYPE = new Type<>(ReikoCars.id("car_action"));
     public static final StreamCodec<ByteBuf, CarActionPayload> STREAM_CODEC =

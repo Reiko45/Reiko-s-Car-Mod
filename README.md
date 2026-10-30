@@ -10,6 +10,7 @@ Cars wear out as they're driven, and a **Repair Bench** fixes them: fit your own
 charge for repairs. Tow trucks haul broken-down cars to it, and mailboxes and the mail van carry parcels between
 players for postage. Parking meters ticket cars that overstay, toll gates lift for drivers who pay, insurance offices
 cover crash repairs, and the job board pays drivers, mail carriers, mechanics, truckers and garbage collectors.
+Every vehicle has turn signals and hazard lights, and a locked car's alarm catches anyone without a key.
 
 ## Requirements
 
@@ -59,7 +60,8 @@ blocks on a bucket; a semi about 250, or 180 pulling a trailer; the bus about 30
 (see [Car keys](#car-keys)). The movement keys drive and steer, **jump**
 is the handbrake and **sneak** gets out. **H** sounds the horn, **L** locks or unlocks the car and **G** hitches a
 trailer, loads a car onto a car hauler, picks up or drops a car in a tow truck, stops the mail van for the mail, or
-does a work vehicle's job. **K** works a police car's or ambulance's lights and siren. While you're
+does a work vehicle's job. **K** works a police car's or ambulance's lights and siren. The **left and right arrow
+keys** work the turn signals and the **down arrow** the hazards (see [Turn signals, hazards and alarms](#turn-signals-hazards-and-alarms)). While you're
 in a car, a dashboard in the bottom right shows your speed and a fuel gauge.
 
 - **Fuel:** cars burn fuel for every block they cover, and a little while idling with someone at the wheel. The cars
@@ -99,6 +101,22 @@ the engine won't turn over and the dashboard says **NO KEY**.
 
 A server can set `driving.requireKeys` to `false`, so cars start without keys and keys only share locked cars.
 Cars from before 1.12.0 have no keys yet: cut one before driving.
+
+## Turn signals, hazards and alarms
+
+- **Turn signals:** the driver's **left arrow** and **right arrow** signal left and right (press again to cancel).
+  That side's indicators, taillights, mirror repeaters and side markers blink amber, an arrow blinks on the
+  dashboard, and the relay ticks. A signal cancels itself once the car has turned at least 40° that way and is
+  running straight again, so a lane change doesn't cancel it but a corner does. A semi's trailer blinks with it. Motorcycles have indicators on little stalks either side of their headlight and taillight.
+- **Hazards:** the **down arrow** blinks both sides until it's pressed again. A car that **breaks down** puts its
+  hazards on by itself.
+- **Car alarm:** a **locked** car's alarm goes off when someone without its key hits it, tries to get in or tries to
+  open its trunk. It blares for half a minute with every light flashing, and its owner (if they're on) gets a chat
+  message saying where it is and who set it off. The owner or anyone with its key stops it with **L**, with the
+  key's lock button (right-click with the key; the car stays locked), or by getting in. Unlocked cars have no alarm.
+  A server can change how long alarms sound, or turn them off, with `driving.alarmSeconds`.
+
+All the keys can be changed under Controls, in the Reiko's Car Mod section.
 
 ## Fares
 
@@ -540,6 +558,7 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `driving.runOverDamage` | `6.0` | Damage per block-per-tick of speed (0 turns it off) |
 | `driving.lockNewCars` | `true` | New cars start locked |
 | `driving.requireKeys` | `true` | A car needs one of its keys to start, even for its owner. If false, keys only share locked cars |
+| `driving.alarmSeconds` | `30` | How long a locked car's alarm sounds (0 turns alarms off) |
 | `pumps.defaultPricePerBucket` | `4.0` | Starting price of a new pump |
 | `pumps.capacityBuckets` | `16` | Buckets a pump holds |
 | `pumps.hoseLength` | `6.0` | How close a car must be to a pump |
@@ -605,6 +624,12 @@ relies on:
 - `lights`: head- and taillights, which glow while the engine runs.
 - `wheel_fl`, `wheel_fr`, `wheel_rl`, `wheel_rr`: each pivoting on its axle. They roll, and the front pair steers.
 - `wheel_rl2`, `wheel_rr2` (the semi only): the second rear axle, which rolls with the first.
+- `signal_l`, `signal_r`: amber copies of each side's turn lamps, a shade bigger than the lamps they cover, drawn
+  glowing only while that side blinks. Trailers have them too, over their tail and marker lights.
+
+The work vehicles have a few optional bones as well: `beacon_a` and `beacon_b` (emergency lights that flash in turn),
+`bed` (the dump truck's, pivoting at its hinge at the back) and `drum_mount` holding `drum` (the mixer's, turning about
+its own length).
 
 The tow trucks' decks and wheel-lift are part of `trim`, so a towed car must sit where the code puts it: the
 flatbed's deck top 20 pixels up, running from 4 pixels ahead of the middle to 59 behind, and the wrecker's forks 61
@@ -641,7 +666,7 @@ sign glow (`neoforge_data` light on those elements).
 ```text
 src/main/java/com/reiko/cars/
 ├── ReikoCars.java        mod entry point
-├── car/                  the car entity and its types, fuel (CarFuel, CarTank), wear and tear (CarCondition), the car item, and WorkVehicles (sirens, healing, tipping, mixing)
+├── car/                  the car entity and its types, fuel (CarFuel, CarTank), wear and tear (CarCondition), the car item, WorkVehicles (sirens, healing, tipping, mixing) and CarSignals (turn signals, hazards, the alarm)
 ├── garbage/              the Trash Can block and block entity, and GarbageService (the garbage truck's round)
 ├── icecream/             the ice cream truck's shop: its menu and IceCreamService (pricing and selling)
 ├── pump/                 the gas and diesel pump block, its block entity, menu, protection, and PumpService (selling fuel)
@@ -658,10 +683,10 @@ src/main/java/com/reiko/cars/
 ├── toll/                 the toll booth and toll gate blocks, their block entities and menus, protection, and TollService (paying and the gate)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
-├── network/              packets: pump, repair bench, mailbox, parking meter, toll, insurance and ice cream actions, horn, lock, hitch and siren, the driver's wear reports, tanker load and unload
+├── network/              packets: pump, repair bench, mailbox, parking meter, toll, insurance and ice cream actions, horn, lock, hitch, siren, signals and hazards, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, ice cream and tanker screens, the toll gate's arm, pump display, engine and siren sounds, keys
+├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, ice cream and tanker screens, the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)

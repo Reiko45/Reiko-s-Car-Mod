@@ -98,5 +98,31 @@
       }
     ],
     "subtitle": "subtitles.reikocars.car.compactor"
+  },
+  "car.signal_tick": {
+    "sounds": [
+      {
+        "name": "reikocars:signal_tick"
+      }
+    ],
+    "subtitle": "subtitles.reikocars.car.signal"
+  },
+  "car.signal_tock": {
+    "sounds": [
+      {
+        "name": "reikocars:signal_tock"
+      }
+    ],
+    "subtitle": "subtitles.reikocars.car.signal"
+  },
+  "car.alarm": {
+    "sounds": [
+      {
+        "name": "reikocars:alarm",
+        "attenuation_distance": 48,
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.reikocars.car.alarm"
   }
 }
