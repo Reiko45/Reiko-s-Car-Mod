@@ -209,6 +209,8 @@ public final class CarItem extends Item {
         }
         if (type.isTractor()) {
             tooltip.add(Component.translatable("item.reikocars.car.tractor").withStyle(ChatFormatting.DARK_GRAY));
+        } else if (type.hasTowBall()) {
+            tooltip.add(Component.translatable("item.reikocars.car.tow_ball").withStyle(ChatFormatting.DARK_GRAY));
         }
         if (type.takesFares()) {
             tooltip.add(Component.translatable("item.reikocars.car.fares").withStyle(ChatFormatting.DARK_GRAY));

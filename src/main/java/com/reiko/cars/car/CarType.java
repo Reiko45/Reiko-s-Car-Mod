@@ -385,9 +385,51 @@ public enum CarType {
         };
     }
 
-    /** Whether it can pull a trailer. */
+    /** Whether it has a fifth wheel, to pull a semi trailer. */
     public boolean isTractor() {
         return fifthWheel != null;
+    }
+
+    /**
+     * How far behind its middle the tow ball is, in pixels, for the pickups, SUVs (and the farm tractor) that pull the
+     * bumper-pull trailers; 0 for a vehicle without one. Every ball is {@link com.reiko.cars.trailer.TrailerType#BALL_HEIGHT}
+     * up, on a hitch out behind the bumper.
+     */
+    private float towBallBack() {
+        return switch (this) {
+            case PICKUP_TRUCK -> 35.5F;
+            case OFF_ROADER -> 33.5F;
+            case MINIVAN -> 36.5F;
+            case HEAVY_PICKUP, ELECTRIC_PICKUP -> 39.5F;
+            case FARM_TRACTOR -> 27.0F;
+            default -> 0.0F;
+        };
+    }
+
+    /** Whether it has a tow ball, for the camper and livestock trailer. */
+    public boolean hasTowBall() {
+        return towBallBack() > 0.0F;
+    }
+
+    /** Whether it can pull a trailer of {@code trailer}'s kind: a semi trailer on a fifth wheel, a bumper-pull on a ball. */
+    public boolean canTow(com.reiko.cars.trailer.TrailerType trailer) {
+        return trailer.isSemiTrailer() ? isTractor() : hasTowBall();
+    }
+
+    /** Whether it can pull any trailer at all. */
+    public boolean canTowTrailers() {
+        return isTractor() || hasTowBall();
+    }
+
+    /**
+     * Where a trailer hitches, relative to the car's position facing south (+z), in blocks: the top of the fifth wheel,
+     * or the tow ball. Rotate it by the car's yaw before use.
+     */
+    public Vec3 hitchOffset() {
+        if (fifthWheel != null) {
+            return fifthWheelOffset();
+        }
+        return new Vec3(0.0, com.reiko.cars.trailer.TrailerType.BALL_HEIGHT / 16.0, -towBallBack() / 16.0);
     }
 
     /**

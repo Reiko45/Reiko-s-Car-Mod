@@ -23,13 +23,16 @@ public final class TrailerRenderer extends EntityRenderer<TrailerEntity> {
 
     public TrailerRenderer(EntityRendererProvider.Context context, TrailerType type, ModelLayerLocation layer) {
         super(context);
-        this.model = new TrailerModel(context.bakeLayer(layer));
+        this.model = new TrailerModel(context.bakeLayer(layer), rampOpen(type));
         this.texture = ReikoCars.id("textures/entity/trailer/" + type.id() + ".png");
         this.shadowRadius = 1.6F;
     }
 
     @Override
     public void render(TrailerEntity trailer, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource buffers, int light) {
+        if (trailer.isInvisible()) {
+            return;
+        }
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - entityYaw));
         float hurt = trailer.getHurtTime() - partialTick;
@@ -41,12 +44,31 @@ public final class TrailerRenderer extends EntityRenderer<TrailerEntity> {
         poseStack.translate(0.0F, -1.501F, 0.0F);
 
         model.pose(trailer.wheelAngle(partialTick));
+        float deployed = trailer.deployAmount(partialTick);
+        model.poseCamp(deployed);
+        com.reiko.cars.car.CarEntity puller = trailer.tractor();
+        if (puller != null && !trailer.trailerType().isSemiTrailer()) {
+            // The tow ball's hitch bar points into the pickup, which may be turned from the trailer.
+            float pickupYaw = Mth.rotLerp(partialTick, puller.yRotO, puller.getYRot());
+            model.poseBallMount(true, Mth.wrapDegrees(pickupYaw - entityYaw) * Mth.DEG_TO_RAD);
+        } else {
+            model.poseBallMount(false, 0.0F);
+        }
         int overlay = OverlayTexture.NO_OVERLAY;
         model.renderBody(poseStack, buffers.getBuffer(RenderType.entityCutoutNoCull(texture)), light, overlay, 0xFF000000 | trailer.color());
         model.renderTrim(poseStack, buffers.getBuffer(RenderType.entityCutoutNoCull(texture)), light, overlay);
         boolean lit = trailer.lightsOn();
         model.renderLights(poseStack, buffers.getBuffer(lit ? RenderType.entityTranslucentEmissive(texture) : RenderType.entityCutoutNoCull(texture)),
                 lit ? LightTexture.FULL_BRIGHT : light, overlay);
+        if (model.hasCampLights() && deployed > 0.03F) {
+            // After dark, the string of lights under the awning and the windows glow.
+            boolean night = trailer.level() instanceof net.minecraft.client.multiplayer.ClientLevel client && client.getSkyDarken(partialTick) < 0.6F;
+            model.renderCampLights(poseStack, buffers.getBuffer(night ? RenderType.entityTranslucentEmissive(texture) : RenderType.entityCutoutNoCull(texture)),
+                    night ? LightTexture.FULL_BRIGHT : light, overlay);
+            if (night) {
+                model.renderWindowGlow(poseStack, buffers.getBuffer(RenderType.entityTranslucentEmissive(texture)), LightTexture.FULL_BRIGHT, overlay);
+            }
+        }
         com.reiko.cars.car.CarEntity tractor = trailer.tractor();
         if (tractor != null) {
             // The tractor's turn signals and hazards blink on the trailer's tail and marker lights too.
@@ -58,6 +80,18 @@ public final class TrailerRenderer extends EntityRenderer<TrailerEntity> {
         }
         poseStack.popPose();
         super.render(trailer, entityYaw, partialTick, poseStack, buffers, light);
+    }
+
+    /**
+     * How far a livestock trailer's ramp swings, in radians: from standing up as the back gate, round past level until
+     * its end rests on the ground. 0 for the rest.
+     */
+    public static float rampOpen(TrailerType type) {
+        if (!type.carriesLivestock()) {
+            return 0.0F;
+        }
+        double drop = Math.asin(Math.min(1.0, type.stockFloor() / (double) type.rampLength()));
+        return (float) -(Math.PI / 2.0 + drop);
     }
 
     @Override

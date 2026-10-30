@@ -31,7 +31,7 @@ public final class ModEntities {
         for (TrailerType type : TrailerType.values()) {
             TRAILERS.put(type, ENTITIES.register(type.id(), () -> EntityType.Builder
                     .<TrailerEntity>of((entityType, level) -> new TrailerEntity(entityType, level, type), MobCategory.MISC)
-                    .sized(TrailerType.WIDTH, type.height)
+                    .sized(type.width, type.height)
                     .clientTrackingRange(10)
                     .build(ReikoCars.id(type.id()).toString())));
         }

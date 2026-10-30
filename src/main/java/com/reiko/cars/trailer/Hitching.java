@@ -18,12 +18,13 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * The hitch key (G). Driving a semi: hitches the trailer whose front you've backed up to, or drops off the one you're
- * pulling. Driving a tow truck: picks up the car behind, or puts it down ({@link Towing}). Driving the mail van:
+ * pulling; a pickup or SUV does the same with the bumper-pull trailers (campers and livestock trailers) on its tow
+ * ball. Driving a tow truck: picks up the car behind, or puts it down ({@link Towing}). Driving the mail van:
  * collects and delivers the mail at the mailboxes beside it ({@link MailService}). Driving a car: drives it onto a car
  * hauler you've pulled up behind, or back off one you're on.
  */
 public final class Hitching {
-    /** How close the kingpin must be to the fifth wheel, across the ground, in blocks. */
+    /** How close the kingpin must be to the fifth wheel (or the coupler to the ball), across the ground, in blocks. */
     public static final double HITCH_REACH = 1.5;
     /** How far a trailer may be turned from the tractor's heading to hitch it, in degrees. */
     public static final float HITCH_ANGLE = 45.0F;
@@ -92,28 +93,40 @@ public final class Hitching {
         if (car.getVehicle() instanceof TrailerEntity) {
             return Action.UNLOAD;
         }
+        if (car.carType().hasTowBall()) {
+            if (car.trailer() != null) {
+                return Action.UNHITCH;
+            }
+            if (hitchable(car, driver) != null) {
+                return Action.HITCH;
+            }
+        }
         return haulerFor(car, driver) != null ? Action.LOAD : null;
     }
 
-    /** The nearest trailer {@code tractor} could hitch: unhitched, usable, its kingpin over the fifth wheel. */
+    /**
+     * The nearest trailer {@code tractor} could hitch: unhitched, usable, of a kind it can pull, its kingpin over the
+     * fifth wheel (or its coupler over the tow ball).
+     */
     @Nullable
     public static TrailerEntity hitchable(CarEntity tractor, Player driver) {
-        Vec3 fifthWheel = tractor.fifthWheel();
-        return tractor.level().getEntitiesOfClass(TrailerEntity.class, new AABB(fifthWheel, fifthWheel).inflate(8.0),
+        Vec3 hitch = tractor.hitchPoint();
+        return tractor.level().getEntitiesOfClass(TrailerEntity.class, new AABB(hitch, hitch).inflate(8.0),
                         trailer -> !trailer.isPassenger() && trailer.isAlive() && trailer.canBeUsedBy(driver)
-                                && horizontalDistance(trailer.kingpin(), fifthWheel) <= HITCH_REACH
-                                && Math.abs(trailer.kingpin().y - fifthWheel.y) <= 1.0
+                                && tractor.carType().canTow(trailer.trailerType())
+                                && horizontalDistance(trailer.coupler(), hitch) <= HITCH_REACH
+                                && Math.abs(trailer.coupler().y - hitch.y) <= 1.0
                                 && Math.abs(Mth.wrapDegrees(trailer.getYRot() - tractor.getYRot())) <= HITCH_ANGLE)
-                .stream().min(Comparator.comparingDouble(trailer -> horizontalDistance(trailer.kingpin(), fifthWheel))).orElse(null);
+                .stream().min(Comparator.comparingDouble(trailer -> horizontalDistance(trailer.coupler(), hitch))).orElse(null);
     }
 
     /** The car hauler {@code car} could drive onto: one with room, whose back end its front is up against. */
     @Nullable
     public static TrailerEntity haulerFor(CarEntity car, Player driver) {
         Vec3 front = car.position().add(car.forward().scale(car.carType().length / 2.0));
-        return car.level().getEntitiesOfClass(TrailerEntity.class, car.getBoundingBox().inflate(TrailerType.LENGTH),
+        return car.level().getEntitiesOfClass(TrailerEntity.class, car.getBoundingBox().inflate(TrailerType.MAX_LENGTH),
                         hauler -> hauler.trailerType().carSlots > 0 && hauler.isAlive() && hauler.cars().size() < hauler.trailerType().carSlots
-                                && hauler.canBeUsedBy(driver) && car.carType().fitsOnHauler()
+                                && hauler.canBeUsedBy(driver) && car.carType().fitsOnHauler() && car.trailer() == null
                                 && horizontalDistance(hauler.rear(), front) <= LOAD_REACH
                                 && Math.abs(hauler.rear().y - front.y) <= 1.5
                                 && Math.abs(Mth.wrapDegrees(hauler.getYRot() - car.getYRot())) <= 60.0F)
@@ -174,7 +187,8 @@ public final class Hitching {
             default -> {
             }
         }
-        if (car.carType().isTractor()) {
+        if (car.carType().isTractor() || (car.carType().hasTowBall() && !(car.getVehicle() instanceof TrailerEntity)
+                && (car.trailer() != null || hitchable(car, player) != null))) {
             TrailerEntity hitched = car.trailer();
             if (hitched != null) {
                 hitched.stopRiding();

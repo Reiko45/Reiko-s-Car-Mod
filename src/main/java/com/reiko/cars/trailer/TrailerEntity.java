@@ -12,7 +12,10 @@ import com.reiko.cars.registry.ModDataSerializers;
 import com.reiko.cars.registry.ModItems;
 import com.reiko.cars.registry.ModSounds;
 import com.reiko.cars.repair.Repairable;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -41,6 +44,8 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.VehicleEntity;
 import net.minecraft.world.inventory.ChestMenu;
@@ -63,15 +68,20 @@ import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A semi trailer: a box trailer full of cargo, a tanker full of any fluid, or a car hauler carrying two cars.
+ * A trailer: a semi's box trailer full of cargo, tanker full of any fluid or car hauler carrying two cars; a camper
+ * (bumper-pull, or a fifth-wheel one for the semi) to sleep and cook in; or a livestock trailer full of farm animals.
  *
  * <p>Hitched, a trailer rides its tractor the way a player rides a car: it's one of the tractor's passengers, so
  * Minecraft moves it straight after the tractor, every tick, on every side, and saves it with the tractor. Where it
- * goes is worked out here ({@link #followTractor}): the kingpin stays on the tractor's fifth wheel and the axles at the
- * back trail behind, so the trailer swings out on turns and cuts corners as a real one does. Unhitched, it stands on
+ * goes is worked out here ({@link #followTractor}): the kingpin stays on the tractor's fifth wheel (or the coupler on a
+ * pickup's tow ball) and the axles at the back trail behind, so the trailer swings out on turns and cuts corners as a real one does. Unhitched, it stands on
  * its landing legs where it was left.
  *
- * <p>Cars ride a car hauler the same way, as its passengers, so they go wherever it goes.
+ * <p>Cars ride a car hauler the same way, as its passengers, so they go wherever it goes; and so do the animals in a
+ * livestock trailer ({@link Livestock}).
+ *
+ * <p>A camper parked on its own sets up camp: its awning, steps, stabilizer jacks and camp chairs fold out (and the
+ * chairs can be sat in). Its stove cooks food while it's parked, and its beds can be slept in ({@link CamperLife}).
  *
  * <p>Trailers wear out too, though they have no engine: their tires wear as they're towed (faster loaded and off the
  * road), their brakes whenever the tractor brakes, and their body when the rig crashes or jackknifes. Worn trailer
@@ -88,6 +98,10 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
     private static final EntityDataAccessor<Integer> DATA_FLUID = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_FLUID_AMOUNT = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<CarCondition> DATA_CONDITION = SynchedEntityData.defineId(TrailerEntity.class, ModDataSerializers.CONDITION);
+    /** A camper's camp set up, or a livestock trailer's ramp down. */
+    private static final EntityDataAccessor<Boolean> DATA_DEPLOYED = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.BOOLEAN);
+    /** A camper's stove alight. */
+    private static final EntityDataAccessor<Boolean> DATA_STOVE_LIT = SynchedEntityData.defineId(TrailerEntity.class, EntityDataSerializers.BOOLEAN);
     /** A trailer's two axles carry four wheels. */
     public static final int WHEELS = 4;
     /** The share of a crash the rig's trailer takes: its load shoves it into the cab. */
@@ -97,13 +111,17 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
     public static Consumer<TrailerEntity> openTankerScreen = trailer -> {
     };
 
-    /** The parts' distance ahead of and behind the middle, in blocks. With the hitbox they cover the whole length. */
-    private static final double PART_OFFSET = 3.0;
+    /** How long a camper stands unhitched before its camp unfolds, in ticks. */
+    private static final int CAMP_DELAY = 20;
+    /** How long a livestock trailer stands unhitched before its ramp drops, in ticks. */
+    private static final int RAMP_DELAY = 10;
 
     private final TrailerType type;
     private final SimpleContainer cargo;
     private final FluidTank tank;
     private final TrailerPart[] parts;
+    /** A camper's stove: food, fuel, and what's cooked. */
+    private final CamperStove stove;
     private String ownerName = "";
     /** Ticks left of the lights flashing for a key's lock or unlock. Client-side. */
     private int flashTicks;
@@ -124,12 +142,34 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
     // Client-side animation
     private float wheelAngle;
     private float wheelAngleO;
+    /** How far a camper's camp, or a livestock trailer's ramp, has unfolded, 0 to 1. Client-side. */
+    private float deployAnim;
+    private float deployAnimO;
+
+    /** Ticks it has stood unhitched, up to a while. Server side. */
+    private int parkedTicks;
+    /** Ticks it has stood still, hitched or not, up to a while. */
+    private int stillTicks;
+    @Nullable
+    private Vec3 lastPosition;
+    /** Ticks left of a hitched livestock trailer's ramp being down, while animals go in or out. Server side. */
+    private int rampTicks;
+    /** Animals just let out on a lead, and the game time until which they won't walk back in up the ramp. Server side. */
+    private final Map<UUID, Long> justLetOut = new HashMap<>();
+    /** Who's asleep in a camper's beds, and in which. Server side, not saved (sleepers wake when they leave). */
+    private final Map<Player, CamperLife.Sleeper> sleepers = new HashMap<>();
 
     public TrailerEntity(EntityType<? extends TrailerEntity> entityType, Level level, TrailerType type) {
         super(entityType, level);
         this.type = type;
         this.blocksBuilding = true;
-        this.parts = new TrailerPart[] {new TrailerPart(this, 3.2F, type.height, true), new TrailerPart(this, 3.2F, type.height, false)};
+        List<TrailerPart> pieces = new ArrayList<>();
+        pieces.add(new TrailerPart(this, type.partWidth(), type.height, TrailerPart.Role.FRONT, 0));
+        pieces.add(new TrailerPart(this, type.partWidth(), type.height, TrailerPart.Role.BACK, 0));
+        for (int chair = 0; chair < CampLayout.chairs(type).size(); chair++) {
+            pieces.add(new TrailerPart(this, 0.8F, 1.0F, TrailerPart.Role.CHAIR, chair));
+        }
+        this.parts = pieces.toArray(TrailerPart[]::new);
         // Part ids follow the trailer's, so the client can match them up (as the ender dragon's do).
         setId(ENTITY_COUNTER.getAndAdd(parts.length + 1) + 1);
         this.cargo = new SimpleContainer(Math.max(1, type.cargoRows) * 9) {
@@ -144,6 +184,7 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
                 syncFluid();
             }
         };
+        this.stove = new CamperStove(this);
         this.entityData.set(DATA_COLOR, type.defaultColor);
     }
 
@@ -157,6 +198,8 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_FLUID, 0);
         builder.define(DATA_FLUID_AMOUNT, 0);
         builder.define(DATA_CONDITION, CarCondition.NEW);
+        builder.define(DATA_DEPLOYED, false);
+        builder.define(DATA_STOVE_LIT, false);
     }
 
     public TrailerType trailerType() {
@@ -394,7 +437,15 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
         if (type.tankBuckets > 0) {
             return tank.getFluidAmount() / (double) tank.getCapacity();
         }
+        if (type.carriesLivestock()) {
+            return Livestock.fullness(this);
+        }
         return type.carSlots > 0 ? cars().size() / (double) type.carSlots : 0.0;
+    }
+
+    /** The farm animals riding in a livestock trailer, front first. */
+    public List<Entity> animals() {
+        return getPassengers().stream().filter(passenger -> !(passenger instanceof CarEntity)).toList();
     }
 
     /** The tractor braked: the trailer's brakes did their share, and a skid scrubbed its tires. Server side. */
@@ -415,7 +466,7 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
             level().playSound(null, getX(), getY(), getZ(), SoundEvents.ZOMBIE_ATTACK_IRON_DOOR, SoundSource.NEUTRAL,
                     (float) Math.min(1.2, 0.4 + impact), 0.6F);
             if (level() instanceof ServerLevel server) {
-                Vec3 nose = position().add(forward().scale(TrailerType.KINGPIN_FORWARD));
+                Vec3 nose = position().add(forward().scale(type.length / 2.0));
                 server.sendParticles(ParticleTypes.CRIT, nose.x, getY() + 1.5, nose.z, 10, 0.8, 0.4, 0.8, 0.2);
             }
         }
@@ -444,14 +495,25 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
         return new Vec3(-Mth.sin(radians), 0.0, Mth.cos(radians));
     }
 
-    /** The kingpin, which sits on a tractor's fifth wheel. */
-    public Vec3 kingpin() {
-        return position().add(forward().scale(TrailerType.KINGPIN_FORWARD)).add(0.0, TrailerType.KINGPIN_HEIGHT, 0.0);
+    /** The way to the trailer's right (its curb side, where a camper's door is), flat. */
+    public Vec3 right() {
+        Vec3 forward = forward();
+        return new Vec3(-forward.z, 0.0, forward.x);
     }
 
-    /** The middle of the back end, where cars drive onto a car hauler. */
+    /** The kingpin, which sits on a tractor's fifth wheel, or a bumper-pull's coupler, which sits on a tow ball. */
+    public Vec3 coupler() {
+        return position().add(forward().scale(type.couplerForward())).add(0.0, type.couplerHeight(), 0.0);
+    }
+
+    /** The middle of the back end, where cars drive onto a car hauler and animals walk into a livestock trailer. */
     public Vec3 rear() {
-        return position().add(forward().scale(-TrailerType.LENGTH / 2.0));
+        return position().add(forward().scale(-type.length / 2.0));
+    }
+
+    /** {@code spot} (in the model's pixels: x to the right, y up, z toward the back) where the trailer stands now. */
+    public Vec3 toWorld(CampLayout.Spot spot) {
+        return position().add(right().scale(spot.x() / 16.0)).add(0.0, spot.y() / 16.0, 0.0).add(forward().scale(-spot.z() / 16.0));
     }
 
     /** The tractor pulling it, if it's hitched. */
@@ -461,14 +523,15 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
     }
 
     /**
-     * Puts the trailer behind {@code tractor}: kingpin on the fifth wheel, pointing from where its axles were toward
-     * the fifth wheel. Called by the tractor every tick while hitched, on the server and on every client.
+     * Puts the trailer behind {@code tractor}: kingpin on the fifth wheel (or coupler on the ball), pointing from where
+     * its axles were toward the hitch. Called by the tractor every tick while hitched, on the server and on every
+     * client.
      */
     public void followTractor(CarEntity tractor) {
-        Vec3 hitch = tractor.fifthWheel();
+        Vec3 hitch = tractor.hitchPoint();
         if (axle == null) {
             Vec3 forward = forward();
-            axle = new Vec3(getX() - forward.x * TrailerType.AXLE_BACK, 0.0, getZ() - forward.z * TrailerType.AXLE_BACK);
+            axle = new Vec3(getX() - forward.x * type.axleBack(), 0.0, getZ() - forward.z * type.axleBack());
         }
         double dx = hitch.x - axle.x;
         double dz = hitch.z - axle.z;
@@ -476,18 +539,17 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
         // No folding back on itself: a trailer can only swing so far round. Getting there (usually backing up
         // badly) jackknifes it: it slams into the cab.
         float relative = Mth.wrapDegrees(yaw - tractor.getYRot());
-        boolean folded = Math.abs(relative) > TrailerType.MAX_ARTICULATION;
+        boolean folded = Math.abs(relative) > type.maxArticulation();
         if (folded) {
-            yaw = tractor.getYRot() + Math.copySign(TrailerType.MAX_ARTICULATION, relative);
+            yaw = tractor.getYRot() + Math.copySign(type.maxArticulation(), relative);
         }
         yaw = getYRot() + Mth.wrapDegrees(yaw - getYRot()); // keep turning smoothly, never jumping by 360
         Vec3 direction = fromYaw(yaw);
-        double kingpinToAxle = TrailerType.KINGPIN_FORWARD + TrailerType.AXLE_BACK;
-        axle = new Vec3(hitch.x - direction.x * kingpinToAxle, 0.0, hitch.z - direction.z * kingpinToAxle);
+        double couplerToAxle = type.couplerForward() + type.axleBack();
+        axle = new Vec3(hitch.x - direction.x * couplerToAxle, 0.0, hitch.z - direction.z * couplerToAxle);
         Vec3 before = position();
         setYRot(yaw);
-        setPos(hitch.x - direction.x * TrailerType.KINGPIN_FORWARD, hitch.y - TrailerType.KINGPIN_HEIGHT,
-                hitch.z - direction.z * TrailerType.KINGPIN_FORWARD);
+        setPos(hitch.x - direction.x * type.couplerForward(), hitch.y - type.couplerHeight(), hitch.z - direction.z * type.couplerForward());
         updateParts();
         Vec3 moved = position().subtract(before);
         if (level().isClientSide) {
@@ -504,22 +566,27 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
 
     private void spinWheels(Vec3 moved) {
         if (moved.lengthSqr() < 64.0) { // not a teleport
-            wheelAngle += (float) (moved.dot(forward()) / TrailerType.WHEEL_RADIUS);
+            wheelAngle += (float) (moved.dot(forward()) / type.wheelRadius());
         }
     }
 
     private void updateParts() {
         Vec3 forward = forward();
-        for (int i = 0; i < parts.length; i++) {
-            double along = i == 0 ? PART_OFFSET : -PART_OFFSET;
-            TrailerPart part = parts[i];
+        List<CampLayout.Spot> chairs = CampLayout.chairs(type);
+        for (TrailerPart part : parts) {
             part.xo = part.getX();
             part.yo = part.getY();
             part.zo = part.getZ();
             part.xOld = part.xo;
             part.yOld = part.yo;
             part.zOld = part.zo;
-            part.setPos(getX() + forward.x * along, getY(), getZ() + forward.z * along);
+            if (part.role() == TrailerPart.Role.CHAIR) {
+                Vec3 chair = toWorld(chairs.get(part.index()));
+                part.setPos(chair.x, getY(), chair.z);
+            } else {
+                double along = part.front() ? type.partOffset() : -type.partOffset();
+                part.setPos(getX() + forward.x * along, getY(), getZ() + forward.z * along);
+            }
         }
     }
 
@@ -538,6 +605,7 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
         }
         super.tick();
         wheelAngleO = wheelAngle;
+        tickStanding();
         if (!isPassenger()) {
             axle = null;
             if (level().isClientSide) {
@@ -555,6 +623,111 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
                 spinWheels(position().subtract(xo, yo, zo));
             }
         }
+    }
+
+    /** Camp, stove, ramp and sleepers: what a trailer does standing (or, for some of it, rolling) along. */
+    private void tickStanding() {
+        Vec3 here = position();
+        stillTicks = lastPosition != null && here.distanceToSqr(lastPosition) < 1.0E-4 ? Math.min(stillTicks + 1, 1000) : 0;
+        lastPosition = here;
+        if (level().isClientSide) {
+            deployAnimO = deployAnim;
+            float target = deployed() ? 1.0F : 0.0F;
+            float step = type.camper ? 1.0F / 30.0F : 1.0F / 12.0F;
+            if (tickCount < 3) {
+                deployAnim = deployAnimO = target; // just come into view: as it is, without unfolding all over again
+            }
+            deployAnim = deployAnim < target ? Math.min(target, deployAnim + step) : Math.max(target, deployAnim - step);
+            if (stoveLit() && random.nextInt(6) == 0) {
+                Vec3 vent = toWorld(CampLayout.vent(type));
+                level().addParticle(ParticleTypes.SMOKE, vent.x, vent.y, vent.z, 0.0, 0.04, 0.0);
+            }
+            return;
+        }
+        parkedTicks = isPassenger() ? 0 : Math.min(parkedTicks + 1, 1000);
+        if (type.camper) {
+            entityData.set(DATA_DEPLOYED, parkedTicks >= CAMP_DELAY);
+            stove.tick(!isPassenger());
+            entityData.set(DATA_STOVE_LIT, stove.lit() && !isPassenger());
+            CamperLife.tickSleepers(this, sleepers);
+        } else if (type.carriesLivestock()) {
+            if (rampTicks > 0) {
+                rampTicks--;
+            }
+            entityData.set(DATA_DEPLOYED, parkedTicks >= RAMP_DELAY || rampTicks > 0);
+            if (deployed() && tickCount % 5 == 0) {
+                long now = level().getGameTime();
+                justLetOut.values().removeIf(until -> until < now);
+                Livestock.loadAtRamp(this);
+            }
+        }
+    }
+
+    /** A camper's camp is set up, or a livestock trailer's ramp is down. */
+    public boolean deployed() {
+        return entityData.get(DATA_DEPLOYED);
+    }
+
+    /** A camper's camp is set up: awning out, chairs out. */
+    public boolean campOut() {
+        return type.camper && deployed();
+    }
+
+    /** How far the camp (or ramp) has unfolded, 0 to 1. Client-side. */
+    public float deployAmount(float partialTick) {
+        return Mth.lerp(partialTick, deployAnimO, deployAnim);
+    }
+
+    /** Drops a hitched livestock trailer's ramp for {@code ticks}, while animals go in or out. */
+    public void openRampFor(int ticks) {
+        rampTicks = Math.max(rampTicks, ticks);
+        entityData.set(DATA_DEPLOYED, true);
+    }
+
+    /** Remembers that {@code animal} was just led out, so it doesn't walk straight back in up the ramp. */
+    public void letOut(Entity animal) {
+        justLetOut.put(animal.getUUID(), level().getGameTime() + 100);
+    }
+
+    /** Whether {@code animal} was let out on a lead a moment ago. */
+    public boolean justLetOut(Entity animal) {
+        Long until = justLetOut.get(animal.getUUID());
+        return until != null && until >= level().getGameTime();
+    }
+
+    /** Whether it's being pulled along (or has been, in the last quarter second). Unhitched, it stands still. */
+    public boolean isMoving() {
+        return isPassenger() && stillTicks < 5;
+    }
+
+    /** Whether it's been parked, unhitched, for a while. Server side. */
+    public boolean isParked() {
+        return !isPassenger() && parkedTicks >= CAMP_DELAY;
+    }
+
+    /** A camper's stove. */
+    public CamperStove stove() {
+        return stove;
+    }
+
+    public boolean stoveLit() {
+        return entityData.get(DATA_STOVE_LIT);
+    }
+
+    /** Who's asleep in a camper. Server side. */
+    public Map<Player, CamperLife.Sleeper> sleepers() {
+        return sleepers;
+    }
+
+    /** Sits {@code player} in camp chair {@code chair}, if the camp is set up. */
+    public InteractionResult sitOnChair(Player player, int chair) {
+        if (!campOut()) {
+            return InteractionResult.PASS;
+        }
+        if (!level().isClientSide) {
+            CamperLife.sit(player, this, chair);
+        }
+        return InteractionResult.sidedSuccess(level().isClientSide);
     }
 
     private void tickLerp() {
@@ -608,11 +781,37 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
 
     @Override
     protected boolean canAddPassenger(Entity passenger) {
+        if (type.carriesLivestock()) {
+            return Livestock.is(passenger) && Livestock.fits(this, passenger);
+        }
         return type.carSlots > 0 && passenger instanceof CarEntity car && car.carType().fitsOnHauler() && cars().size() < type.carSlots;
     }
 
+    /** Where the animals stand, worked out once a tick (for the passengers as they are then). */
+    @Nullable
+    private List<Livestock.Place> stockPlaces;
+    private List<Entity> stockPlacesFor = List.of();
+
     @Override
     protected void positionRider(Entity passenger, MoveFunction callback) {
+        if (type.carriesLivestock()) {
+            List<Entity> animals = animals();
+            if (stockPlaces == null || !animals.equals(stockPlacesFor)) {
+                stockPlaces = Livestock.layout(type, animals);
+                stockPlacesFor = animals;
+            }
+            int index = animals.indexOf(passenger);
+            Livestock.Place place = stockPlaces != null && index >= 0 && index < stockPlaces.size() ? stockPlaces.get(index) : new Livestock.Place(0, 0);
+            Vec3 at = position().add(forward().scale(place.along() / 16.0)).add(right().scale(place.across() / 16.0))
+                    .add(0.0, type.stockFloor() / 16.0, 0.0);
+            callback.accept(passenger, at.x, at.y, at.z);
+            passenger.setYRot(getYRot());
+            passenger.setYBodyRot(getYRot());
+            if (passenger instanceof LivingEntity living) {
+                living.yBodyRotO = getYRot();
+            }
+            return;
+        }
         if (!(passenger instanceof CarEntity car)) {
             super.positionRider(passenger, callback);
             return;
@@ -627,6 +826,21 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
     @Override
     public net.minecraft.world.entity.LivingEntity getControllingPassenger() {
         return null;
+    }
+
+    /** Animals getting out (or tipped out when the trailer's picked up) go down the ramp. */
+    @Override
+    public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
+        if (type.carriesLivestock()) {
+            return Livestock.outside(this, passenger, 0);
+        }
+        return super.getDismountLocationForPassenger(passenger);
+    }
+
+    @Override
+    protected void removePassenger(Entity passenger) {
+        super.removePassenger(passenger);
+        stockPlaces = null;
     }
 
     // ---- interaction ----
@@ -683,6 +897,16 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
                     player.displayClientMessage(Component.translatable("trailer.reikocars.hauler_help", cars().size(), type.carSlots), true);
                 }
             }
+            case CAMPER, FIFTH_WHEEL_CAMPER -> {
+                if (player instanceof ServerPlayer serverPlayer) {
+                    CamperMenu.open(serverPlayer, this);
+                }
+            }
+            case LIVESTOCK_TRAILER, SEMI_LIVESTOCK_TRAILER -> {
+                if (player instanceof ServerPlayer serverPlayer) {
+                    Livestock.interact(serverPlayer, hand, this);
+                }
+            }
         }
         return InteractionResult.sidedSuccess(level().isClientSide);
     }
@@ -722,7 +946,7 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
         if (trailer.getRootVehicle() == car.getRootVehicle()) {
             return false;
         }
-        if (car.carType().isTractor() && trailer.tractor() == null) {
+        if (trailer.trailerType().isSemiTrailer() && car.carType().isTractor() && trailer.tractor() == null) {
             return piece instanceof TrailerPart part && !part.front();
         }
         return true;
@@ -730,23 +954,23 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
 
     // ---- walls ----
 
-    /** Where it would stand, and which way it'd face, if its tractor's fifth wheel were at {@code hitch}. */
+    /** Where it would stand, and which way it'd face, if its tractor's hitch were at {@code hitch}. */
     public record Pose(Vec3 position, float yaw) {
     }
 
-    /** {@link #followTractor}'s sums, without moving it: where it'd go behind a fifth wheel at {@code hitch}. */
+    /** {@link #followTractor}'s sums, without moving it: where it'd go behind a hitch at {@code hitch}. */
     public Pose poseBehind(Vec3 hitch, float tractorYaw) {
-        Vec3 from = axle != null ? axle : position().subtract(forward().scale(TrailerType.AXLE_BACK));
+        Vec3 from = axle != null ? axle : position().subtract(forward().scale(type.axleBack()));
         double dx = hitch.x - from.x;
         double dz = hitch.z - from.z;
         float yaw = dx * dx + dz * dz < 1.0E-6 ? getYRot() : (float) (Mth.atan2(-dx, dz) * Mth.RAD_TO_DEG);
         float relative = Mth.wrapDegrees(yaw - tractorYaw);
-        if (Math.abs(relative) > TrailerType.MAX_ARTICULATION) {
-            yaw = tractorYaw + Math.copySign(TrailerType.MAX_ARTICULATION, relative);
+        if (Math.abs(relative) > type.maxArticulation()) {
+            yaw = tractorYaw + Math.copySign(type.maxArticulation(), relative);
         }
         Vec3 direction = fromYaw(yaw);
-        return new Pose(new Vec3(hitch.x - direction.x * TrailerType.KINGPIN_FORWARD, hitch.y - TrailerType.KINGPIN_HEIGHT,
-                hitch.z - direction.z * TrailerType.KINGPIN_FORWARD), yaw);
+        return new Pose(new Vec3(hitch.x - direction.x * type.couplerForward(), hitch.y - type.couplerHeight(),
+                hitch.z - direction.z * type.couplerForward()), yaw);
     }
 
     /**
@@ -755,10 +979,10 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
      */
     public boolean blockedAt(Pose pose) {
         Vec3 forward = fromYaw(pose.yaw());
-        double half = TrailerType.WIDTH * 0.42;
+        double half = type.width * 0.42;
         double bottom = pose.position().y + 1.01;
         double top = pose.position().y + Math.min(trailerType().height - 0.1, 3.4);
-        for (double along = -TrailerType.LENGTH / 2.0 + half; along <= TrailerType.LENGTH / 2.0 - half + 1.0E-3; along += 1.0) {
+        for (double along = -type.length / 2.0 + half; along <= type.length / 2.0 - half + 1.0E-3; along += 1.0) {
             double x = pose.position().x + forward.x * along;
             double z = pose.position().z + forward.z * along;
             if (!level().noBlockCollision(this, new AABB(x - half, bottom, z - half, x + half, top, z + half))) {
@@ -783,10 +1007,14 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
         fallDistance = 0.0F;
     }
 
-    /** It's far longer than its hitbox: don't stop drawing it while any of it could be on screen. */
+    /**
+     * It's far longer than its hitbox (and a camper's camp spreads out beside it): don't stop drawing it while any of
+     * it could be on screen.
+     */
     @Override
     public AABB getBoundingBoxForCulling() {
-        return getBoundingBox().inflate(TrailerType.LENGTH / 2.0, 0.5, TrailerType.LENGTH / 2.0);
+        double reach = Math.max(type.length / 2.0, type.couplerForward()) + (type.camper ? 2.5 : 1.0);
+        return getBoundingBox().inflate(reach, 0.5, reach);
     }
 
     // ---- damage and dropping ----
@@ -818,6 +1046,12 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
     public void remove(RemovalReason reason) {
         if (!level().isClientSide && reason.shouldDestroy() && type.cargoRows > 0) {
             Containers.dropContents(level(), this, cargo);
+        }
+        if (!level().isClientSide && reason.shouldDestroy() && type.camper) {
+            Containers.dropContents(level(), this, stove.items());
+        }
+        if (!level().isClientSide && type.camper) {
+            CamperLife.wakeAll(this);
         }
         super.remove(reason);
     }
@@ -888,6 +1122,9 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
         if (!condition.isNew()) {
             CarCondition.CODEC.encodeStart(NbtOps.INSTANCE, condition).result().ifPresent(saved -> tag.put("Condition", saved));
         }
+        if (type.camper) {
+            tag.put("Stove", stove.save(registryAccess()));
+        }
     }
 
     @Override
@@ -909,5 +1146,8 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
         condition = tag.contains("Condition") ? CarCondition.CODEC.parse(NbtOps.INSTANCE, tag.get("Condition")).result().orElse(CarCondition.NEW)
                 : CarCondition.NEW;
         entityData.set(DATA_CONDITION, condition);
+        if (type.camper && tag.contains("Stove", Tag.TAG_COMPOUND)) {
+            stove.load(tag.getCompound("Stove"), registryAccess());
+        }
     }
 }

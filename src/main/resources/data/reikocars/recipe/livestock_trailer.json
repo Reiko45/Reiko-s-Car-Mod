@@ -1,0 +1,16 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:trailer_chassis"
+  },
+  "body": {
+    "item": "reikocars:livestock_trailer_body"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:livestock_trailer"
+  }
+}

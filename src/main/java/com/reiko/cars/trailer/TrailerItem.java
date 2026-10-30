@@ -28,7 +28,7 @@ import net.neoforged.neoforge.fluids.SimpleFluidContent;
 
 /**
  * A trailer, folded up. Use it on the ground to stand the trailer there on its legs, facing the way you look (so back
- * a semi up to its front to hitch it). Whoever puts it down owns it.
+ * a semi, or for a camper or livestock trailer a pickup, up to its front to hitch it). Whoever puts it down owns it.
  */
 public final class TrailerItem extends Item {
     private final TrailerType type;
@@ -90,6 +90,7 @@ public final class TrailerItem extends Item {
         }
         CarItem.addConditionLines(tooltip, CarItem.conditionOf(stack),
                 part -> part == CarCondition.Part.TIRES || part == CarCondition.Part.BRAKES || part == CarCondition.Part.BODY);
-        tooltip.add(Component.translatable("item.reikocars.trailer.hitch_hint").withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.add(Component.translatable(type.isSemiTrailer() ? "item.reikocars.trailer.hitch_hint" : "item.reikocars.trailer.ball_hitch_hint")
+                .withStyle(ChatFormatting.DARK_GRAY));
     }
 }

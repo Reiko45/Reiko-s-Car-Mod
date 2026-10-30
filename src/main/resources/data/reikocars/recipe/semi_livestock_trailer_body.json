@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "R": {
+      "item": "minecraft:iron_bars"
+    },
+    "H": {
+      "item": "minecraft:hay_block"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "pattern": [
+    "RIR",
+    "RHR",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:semi_livestock_trailer_body"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "reikocars:item/semi_livestock_trailer_paint",
+    "layer1": "reikocars:item/semi_livestock_trailer_trim"
+  }
+}

@@ -209,6 +209,16 @@ public final class CarGameTests {
         helper.assertTrue(condition, what);
     }
 
+    /** Runs one step of a test: if it fails, {@code done} runs (sending the test's players away) before the failure goes on. */
+    private static void run(GameTestHelper helper, Runnable done, Runnable step) {
+        try {
+            step.run();
+        } catch (RuntimeException e) {
+            done.run();
+            throw e;
+        }
+    }
+
     private static void near(GameTestHelper helper, double actual, double expected, String what) {
         helper.assertTrue(Math.abs(actual - expected) < 1.0E-3 * Math.max(1.0, Math.abs(expected)),
                 what + ": expected " + expected + " but was " + actual);
@@ -658,6 +668,248 @@ public final class CarGameTests {
         helper.succeed();
     }
 
+
+    // ---- campers and livestock trailers ----
+
+    @GameTest(template = YARD, timeoutTicks = 120)
+    public static void pickupTowsACamperThatCampsOut(GameTestHelper helper) {
+        check(helper, CarType.PICKUP_TRUCK.canTow(TrailerType.CAMPER) && CarType.OFF_ROADER.canTow(TrailerType.LIVESTOCK_TRAILER)
+                && CarType.SEMI_TRUCK.canTow(TrailerType.FIFTH_WHEEL_CAMPER) && CarType.SEMI_TRUCK.canTow(TrailerType.SEMI_LIVESTOCK_TRAILER),
+                "pickups and SUVs pull the bumper-pulls, the semi its own");
+        check(helper, !CarType.SEMI_TRUCK.canTow(TrailerType.CAMPER) && !CarType.PICKUP_TRUCK.canTow(TrailerType.BOX_TRAILER)
+                && !CarType.SEDAN.canTowTrailers(), "and not each other's");
+        ServerPlayer driver = join(helper);
+        ServerPlayer guest = join(helper);
+        CarEntity pickup = vehicle(helper, CarType.PICKUP_TRUCK, 5.0, 20.0);
+        pickup.setFuel(CarType.PICKUP_TRUCK.tankCapacity());
+        TrailerEntity camper = readyToHitch(helper, TrailerType.CAMPER, pickup);
+        driver.startRiding(pickup, true);
+        guest.moveTo(helper.absoluteVec(new Vec3(8.5, 1.0, 10.0)));
+        Runnable done = () -> leave(helper, driver, guest);
+        try {
+            check(helper, Hitching.available(pickup, driver) == Hitching.Action.HITCH, "the camper can be hitched to the ball");
+            Hitching.use(driver);
+            check(helper, camper.getVehicle() == pickup && pickup.trailer() == camper, "hitched");
+            check(helper, pickup.getControllingPassenger() == driver, "the driver still drives");
+        } catch (RuntimeException e) {
+            done.run();
+            throw e;
+        }
+        Vec3 start = pickup.position();
+        // 8 ticks straight on, then 8 turning: the coupler stays on the ball.
+        for (int tick = 1; tick <= 17; tick++) {
+            int now = tick;
+            helper.runAtTickTime(tick, () -> run(helper, done, () -> {
+                if (now > 1) {
+                    double gap = flatDistance(camper.coupler(), pickup.hitchPoint());
+                    helper.assertTrue(gap < 0.01, "coupler " + gap + " blocks off the ball after tick " + (now - 1));
+                    near(helper, camper.getY(), pickup.getY(), "the camper's on the same ground as the pickup");
+                }
+                if (now <= 16) {
+                    float yaw = now <= 8 ? 0.0F : (now - 8) * 5.0F;
+                    Vec3 at = start.add(0.0, 0.0, Math.min(now, 8) * 0.8).add(facing(yaw).scale(Math.max(0, now - 8) * 0.5));
+                    pickup.setYRot(yaw);
+                    pickup.setPos(at.x, at.y, at.z);
+                    return;
+                }
+                helper.assertTrue(camper.getYRot() > 5.0F && camper.getYRot() < 40.0F, "the camper follows round the bend: " + camper.getYRot());
+                check(helper, !camper.campOut(), "no camp while hitched");
+                Hitching.use(driver);
+                check(helper, !camper.isPassenger(), "unhitched");
+            }));
+        }
+        helper.runAtTickTime(45, () -> run(helper, done, () -> {
+            check(helper, camper.campOut(), "parked a while, the camp unfolds");
+            check(helper, camper.getParts().length == 4, "two end parts and two camp chairs");
+            net.minecraft.world.entity.Entity chair = java.util.Arrays.stream(camper.getParts())
+                    .filter(part -> ((com.reiko.cars.trailer.TrailerPart) part).role() == com.reiko.cars.trailer.TrailerPart.Role.CHAIR).findFirst()
+                    .orElseThrow();
+            check(helper, chair.isPickable() && !chair.canBeCollidedWith(), "a chair can be clicked, not bumped into");
+            chair.interact(guest, InteractionHand.MAIN_HAND);
+            check(helper, guest.getVehicle() instanceof com.reiko.cars.bus.BenchSeatEntity, "the guest sits in the camp chair");
+            Vec3 seat = camper.toWorld(com.reiko.cars.trailer.CampLayout.chairs(TrailerType.CAMPER).get(0));
+            helper.assertTrue(guest.getVehicle().position().distanceTo(seat) < 0.01, "at the chair");
+            helper.assertTrue(flatDistance(seat, camper.position()) > 2.0, "out under the awning, beside the camper");
+            Hitching.use(driver);
+            check(helper, camper.getVehicle() == pickup, "hitched again");
+        }));
+        helper.runAtTickTime(48, () -> run(helper, done, () -> {
+            check(helper, !camper.campOut(), "hitched, the camp folds away");
+            check(helper, !guest.isPassenger(), "and the chairs with it: the guest is up");
+            done.run();
+            helper.succeed();
+        }));
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 160)
+    public static void camperStoveCooksWhileParked(GameTestHelper helper) {
+        TrailerEntity parked = trailer(helper, TrailerType.CAMPER, new Vec3(2.5, 1.0, 8.0), 0.0F);
+        CarEntity pickup = vehicle(helper, CarType.PICKUP_TRUCK, 7.5, 28.0);
+        TrailerEntity towed = readyToHitch(helper, TrailerType.CAMPER, pickup);
+        towed.startRiding(pickup, true);
+        for (TrailerEntity camper : new TrailerEntity[] {parked, towed}) {
+            camper.stove().items().setItem(com.reiko.cars.trailer.CamperStove.FOOD, new ItemStack(Items.BEEF, 2));
+            camper.stove().items().setItem(com.reiko.cars.trailer.CamperStove.FUEL, new ItemStack(Items.COAL, 1));
+        }
+        check(helper, parked.stove().recipeFor(new ItemStack(Items.POTATO)) != null && parked.stove().recipeFor(new ItemStack(Items.COBBLESTONE)) == null,
+                "it cooks food, not stone");
+        helper.runAtTickTime(115, () -> {
+            ItemStack cooked = parked.stove().items().getItem(com.reiko.cars.trailer.CamperStove.COOKED);
+            check(helper, cooked.is(Items.COOKED_BEEF) && cooked.getCount() == 1, "a steak's done in five seconds, as in a smoker: " + cooked);
+            helper.assertValueEqual(parked.stove().items().getItem(com.reiko.cars.trailer.CamperStove.FUEL).getCount(), 0, "the coal's burning");
+            check(helper, parked.stoveLit(), "the flame shows");
+            check(helper, towed.stove().items().getItem(com.reiko.cars.trailer.CamperStove.COOKED).isEmpty()
+                    && towed.stove().items().getItem(com.reiko.cars.trailer.CamperStove.FUEL).getCount() == 1, "nothing cooks on the road");
+            check(helper, !towed.stoveLit(), "its flame's out");
+            CompoundTag saved = new CompoundTag();
+            parked.saveWithoutId(saved);
+            TrailerEntity loaded = ModEntities.trailer(TrailerType.CAMPER).create(helper.getLevel());
+            loaded.load(saved);
+            check(helper, loaded.stove().items().getItem(com.reiko.cars.trailer.CamperStove.FOOD).getCount() == 1
+                    && loaded.stove().items().getItem(com.reiko.cars.trailer.CamperStove.COOKED).is(Items.COOKED_BEEF), "the stove's kept when saved");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 60, batch = "camper_night")
+    public static void camperBedsSleepAndSetSpawn(GameTestHelper helper) {
+        net.minecraft.server.level.ServerLevel level = helper.getLevel();
+        long time = level.getDayTime();
+        ServerPlayer sleeper = join(helper);
+        ServerPlayer partner = join(helper);
+        ServerPlayer third = join(helper);
+        TrailerEntity camper = trailer(helper, TrailerType.CAMPER, new Vec3(4.0, 1.0, 12.0), 0.0F);
+        CarEntity pickup = vehicle(helper, CarType.PICKUP_TRUCK, 7.5, 28.0);
+        TrailerEntity hitched = readyToHitch(helper, TrailerType.CAMPER, pickup);
+        hitched.startRiding(pickup, true);
+        for (ServerPlayer player : new ServerPlayer[] {sleeper, partner, third}) {
+            player.moveTo(helper.absoluteVec(new Vec3(7.0, 1.0, 12.0)));
+        }
+        Runnable done = () -> {
+            level.setDayTime(time);
+            leave(helper, sleeper, partner, third);
+        };
+        level.setDayTime(6000);
+        helper.runAtTickTime(3, () -> run(helper, done, () -> {
+            com.reiko.cars.trailer.CamperLife.sleep(sleeper, camper);
+            check(helper, !sleeper.isSleeping(), "no sleeping in the day");
+            Vec3 door = com.reiko.cars.trailer.CamperLife.door(camper);
+            check(helper, sleeper.getRespawnPosition() != null && sleeper.getRespawnPosition().equals(net.minecraft.core.BlockPos.containing(door.x,
+                    camper.getY() + 0.1, door.z)) && sleeper.isRespawnForced(), "but trying sets your spawn, outside the door");
+            com.reiko.cars.trailer.CamperLife.sleep(partner, hitched);
+            check(helper, !partner.isSleeping(), "no sleeping in a hitched camper");
+            level.setDayTime(18000);
+        }));
+        helper.runAtTickTime(6, () -> run(helper, done, () -> {
+            com.reiko.cars.trailer.CamperLife.sleep(sleeper, camper);
+            com.reiko.cars.trailer.CamperLife.sleep(partner, camper);
+            com.reiko.cars.trailer.CamperLife.sleep(third, camper);
+            check(helper, sleeper.isSleeping() && partner.isSleeping(), "at night, two go to bed");
+            check(helper, !third.isSleeping(), "and a third finds the beds taken");
+            check(helper, com.reiko.cars.trailer.CamperLife.camperOf(sleeper) == camper, "asleep in the camper");
+        }));
+        helper.runAtTickTime(10, () -> run(helper, done, () -> {
+            Vec3 bed = com.reiko.cars.trailer.CamperLife.bedSpot(camper, 0);
+            helper.assertTrue(sleeper.position().distanceTo(bed) < 0.01, "lying on the mattress: " + sleeper.position() + " vs " + bed);
+            helper.assertTrue(partner.position().distanceTo(com.reiko.cars.trailer.CamperLife.bedSpot(camper, 1)) < 0.01, "side by side");
+            check(helper, net.neoforged.neoforge.event.EventHooks.canEntityContinueSleeping(sleeper, net.minecraft.world.entity.player.Player.BedSleepingProblem.NOT_POSSIBLE_HERE),
+                    "a camper's bed counts as a bed");
+            check(helper, !net.neoforged.neoforge.event.EventHooks.canEntityContinueSleeping(sleeper, net.minecraft.world.entity.player.Player.BedSleepingProblem.NOT_POSSIBLE_NOW),
+                    "but morning still wakes you");
+            sleeper.stopSleepInBed(false, true); // morning
+        }));
+        helper.runAtTickTime(12, () -> run(helper, done, () -> {
+            Vec3 door = com.reiko.cars.trailer.CamperLife.door(camper);
+            helper.assertTrue(flatDistance(sleeper.position(), door) < 0.01 && Math.abs(sleeper.getY() - camper.getY()) < 0.01,
+                    "up and out of the door: " + sleeper.position());
+            check(helper, partner.isSleeping(), "the other sleeps on");
+            camper.discard();
+        }));
+        helper.runAtTickTime(14, () -> run(helper, done, () -> {
+            check(helper, !partner.isSleeping(), "the camper's gone: everyone's up");
+            done.run();
+            helper.succeed();
+        }));
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 80)
+    public static void livestockTrailerCarriesFarmAnimals(GameTestHelper helper) {
+        net.minecraft.server.level.ServerLevel level = helper.getLevel();
+        ServerPlayer farmer = join(helper);
+        farmer.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+        TrailerEntity trailer = trailer(helper, TrailerType.LIVESTOCK_TRAILER, new Vec3(5.0, 1.0, 20.0), 0.0F);
+        farmer.moveTo(helper.absoluteVec(new Vec3(5.0, 1.0, 13.0)));
+        java.util.List<net.minecraft.world.entity.Mob> herd = new java.util.ArrayList<>();
+        for (net.minecraft.world.entity.EntityType<? extends net.minecraft.world.entity.Mob> type : java.util.List.of(
+                net.minecraft.world.entity.EntityType.COW, net.minecraft.world.entity.EntityType.COW, net.minecraft.world.entity.EntityType.HORSE,
+                net.minecraft.world.entity.EntityType.CHICKEN, net.minecraft.world.entity.EntityType.CHICKEN, net.minecraft.world.entity.EntityType.CHICKEN)) {
+            net.minecraft.world.entity.Mob animal = type.create(level);
+            Vec3 at = helper.absoluteVec(new Vec3(2.0 + herd.size(), 1.0, 11.0));
+            animal.moveTo(at.x, at.y, at.z, 0.0F, 0.0F);
+            level.addFreshEntity(animal);
+            animal.setLeashedTo(farmer, true);
+            herd.add(animal);
+        }
+        net.minecraft.world.entity.Mob pig = net.minecraft.world.entity.EntityType.ZOMBIE.create(level);
+        Runnable done = () -> leave(helper, farmer);
+        helper.runAtTickTime(2, () -> run(helper, done, () -> {
+            check(helper, !com.reiko.cars.trailer.Livestock.is(pig), "zombies aren't livestock");
+            com.reiko.cars.trailer.Livestock.interact(farmer, InteractionHand.MAIN_HAND, trailer);
+            helper.assertValueEqual(trailer.animals().size(), 6, "the whole herd goes in");
+            check(helper, herd.stream().noneMatch(net.minecraft.world.entity.Mob::isLeashed), "off their leads");
+            helper.assertValueEqual(count(farmer, Items.LEAD), 6, "and the leads come back");
+            net.minecraft.world.entity.Mob cow = net.minecraft.world.entity.EntityType.COW.create(level);
+            net.minecraft.world.entity.Mob chick = net.minecraft.world.entity.EntityType.CHICKEN.create(level);
+            check(helper, !com.reiko.cars.trailer.Livestock.fits(trailer, cow), "two cows, a horse and three chickens fill all but a corner");
+            check(helper, com.reiko.cars.trailer.Livestock.fits(trailer, chick), "one more chicken would fit");
+        }));
+        helper.runAtTickTime(4, () -> run(helper, done, () -> {
+            double floor = trailer.getY() + TrailerType.LIVESTOCK_TRAILER.stockFloor() / 16.0;
+            java.util.Set<Long> spots = new java.util.HashSet<>();
+            for (net.minecraft.world.entity.Mob animal : herd) {
+                near(helper, animal.getY(), floor, "standing on the floor");
+                Vec3 offset = animal.position().subtract(trailer.position());
+                double along = offset.dot(trailer.forward());
+                double across = offset.dot(trailer.right());
+                helper.assertTrue(Math.abs(along) < TrailerType.LIVESTOCK_TRAILER.length / 2.0 && Math.abs(across) < 1.0,
+                        "inside the trailer: " + along + ", " + across);
+                spots.add(Math.round(along * 8) * 1000 + Math.round(across * 8));
+            }
+            helper.assertValueEqual(spots.size(), 6, "each in its own spot");
+            trailer.setPos(trailer.getX(), trailer.getY(), trailer.getZ() + 1.0);
+        }));
+        helper.runAtTickTime(6, () -> run(helper, done, () -> {
+            check(helper, herd.stream().allMatch(animal -> animal.getVehicle() == trailer), "they ride along");
+            near(helper, herd.getFirst().position().subtract(trailer.position()).dot(trailer.forward()),
+                    com.reiko.cars.trailer.Livestock.layout(TrailerType.LIVESTOCK_TRAILER, trailer.animals()).getFirst().along() / 16.0, "still in their pens");
+        }));
+        helper.runAtTickTime(16, () -> run(helper, done, () -> {
+            farmer.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.LEAD));
+            com.reiko.cars.trailer.Livestock.interact(farmer, InteractionHand.MAIN_HAND, trailer);
+            net.minecraft.world.entity.Mob led = herd.getLast();
+            check(helper, !led.isPassenger() && led.isLeashed() && led.getLeashHolder() == farmer, "the last one in comes out on the lead");
+            helper.assertValueEqual(trailer.animals().size(), 5, "five left");
+            farmer.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            com.reiko.cars.trailer.Livestock.interact(farmer, InteractionHand.MAIN_HAND, trailer);
+        }));
+        helper.runAtTickTime(17, () -> run(helper, done, () -> {
+            check(helper, trailer.animals().isEmpty(), "all out");
+            for (net.minecraft.world.entity.Mob animal : herd) {
+                double behind = animal.position().subtract(trailer.rear()).dot(trailer.forward());
+                helper.assertTrue(behind < -1.0, "out the back, down the ramp: " + behind);
+            }
+            check(helper, trailer.deployed(), "the ramp's down");
+            // Led onto the ramp, a cow walks in.
+            herd.getFirst().setLeashedTo(farmer, true);
+        }));
+        helper.runAtTickTime(28, () -> run(helper, done, () -> {
+            check(helper, herd.getFirst().getVehicle() == trailer, "the cow on the ramp walked in");
+            check(helper, herd.getLast().getVehicle() == null, "the chicken just led out stays out");
+            done.run();
+            helper.succeed();
+        }));
+    }
+
     // ---- semis and trailers ----
 
     /** A long empty yard (10 x 34 blocks) for the semi tests: a rig is 15 blocks long. */
@@ -684,12 +936,11 @@ public final class CarGameTests {
         return trailer;
     }
 
-    /** A trailer standing right behind {@code tractor}, lined up, its kingpin over the fifth wheel. */
+    /** A trailer standing right behind {@code tractor}, lined up, its kingpin over the fifth wheel (or coupler over the ball). */
     private static TrailerEntity readyToHitch(GameTestHelper helper, TrailerType type, CarEntity tractor) {
-        Vec3 fifthWheel = tractor.fifthWheel();
+        Vec3 hitch = tractor.hitchPoint();
         Vec3 forward = tractor.forward();
-        Vec3 at = new Vec3(fifthWheel.x - forward.x * TrailerType.KINGPIN_FORWARD, tractor.getY(),
-                fifthWheel.z - forward.z * TrailerType.KINGPIN_FORWARD);
+        Vec3 at = new Vec3(hitch.x - forward.x * type.couplerForward(), tractor.getY(), hitch.z - forward.z * type.couplerForward());
         return trailerAt(helper, type, at, tractor.getYRot());
     }
 
@@ -770,12 +1021,12 @@ public final class CarGameTests {
             helper.runAtTickTime(tick, () -> {
                 try {
                     if (now > 1) {
-                        double gap = flatDistance(trailer.kingpin(), semi.fifthWheel());
+                        double gap = flatDistance(trailer.coupler(), semi.fifthWheel());
                         helper.assertTrue(gap < 0.01, "kingpin " + gap + " blocks off the fifth wheel after tick " + (now - 1));
                     }
                     if (now == 11) {
                         near(helper, trailer.getYRot(), 0.0, "straight behind on the straight");
-                        near(helper, flatDistance(trailer.position(), semi.position()), 32 / 16.0 + TrailerType.KINGPIN_FORWARD,
+                        near(helper, flatDistance(trailer.position(), semi.position()), 32 / 16.0 + TrailerType.BOX_TRAILER.couplerForward(),
                                 "trailer middle behind the semi's");
                     }
                     if (now <= 20) {

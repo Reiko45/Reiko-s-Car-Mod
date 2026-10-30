@@ -13,16 +13,27 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * An invisible seat on a bus shelter's bench, made when someone sits down and gone as soon as they get up (or the
- * shelter does). Never saved.
+ * An invisible seat on a bus shelter's bench (or in a camper's camp chair), made when someone sits down and gone as
+ * soon as they get up (or the shelter, or the camp, does). Never saved.
  */
 public final class BenchSeatEntity extends Entity {
     /** How far above the seat entity a sitter's riding point is, so they sit on the bench rather than in it. */
     static final double SIT_HEIGHT = -0.1;
 
+    /** A camp chair beside a camper rather than a bus shelter's bench (server side). */
+    private boolean campChair;
+
     public BenchSeatEntity(EntityType<?> type, Level level) {
         super(type, level);
         noPhysics = true;
+    }
+
+    /** A seat in a camp chair at {@code at}, facing {@code yaw}: it lasts while a camper's camp is set up beside it. */
+    public static BenchSeatEntity campChair(Level level, Vec3 at, float yaw) {
+        BenchSeatEntity seat = new BenchSeatEntity(ModEntities.BENCH_SEAT.get(), level);
+        seat.moveTo(at.x, at.y, at.z, yaw, 0.0F);
+        seat.campChair = true;
+        return seat;
     }
 
     /** A seat on the bench at {@code pos}, the lower block of a shelter facing {@code state}'s way. */
@@ -40,10 +51,16 @@ public final class BenchSeatEntity extends Entity {
     @Override
     public void tick() {
         super.tick();
-        if (!level().isClientSide && (getPassengers().isEmpty() || !(level().getBlockState(blockPosition()).getBlock() instanceof BusShelterBlock))) {
+        if (!level().isClientSide && (getPassengers().isEmpty() || !(campChair ? campNear() : level().getBlockState(blockPosition()).getBlock() instanceof BusShelterBlock))) {
             ejectPassengers();
             discard();
         }
+    }
+
+    /** Whether the camper whose chair this is still has its camp set up. */
+    private boolean campNear() {
+        return !level().getEntitiesOfClass(com.reiko.cars.trailer.TrailerEntity.class, getBoundingBox().inflate(4.0),
+                com.reiko.cars.trailer.TrailerEntity::campOut).isEmpty();
     }
 
     @Override

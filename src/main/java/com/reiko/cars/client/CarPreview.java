@@ -107,7 +107,7 @@ public final class CarPreview {
 
     private static TrailerModel model(TrailerType type) {
         return TRAILER_MODELS.computeIfAbsent(type,
-                key -> new TrailerModel(Minecraft.getInstance().getEntityModels().bakeLayer(ReikoCarsClient.layer(key))));
+                key -> new TrailerModel(Minecraft.getInstance().getEntityModels().bakeLayer(ReikoCarsClient.layer(key)), TrailerRenderer.rampOpen(key)));
     }
 
     /**
@@ -117,7 +117,7 @@ public final class CarPreview {
      */
     public static void draw(GuiGraphics graphics, TrailerType type, float cx, float cy, float scale, float yaw, Fitted fitted) {
         TrailerModel model = model(type);
-        scale *= 0.55F;
+        scale *= Math.min(0.85F, 5.0F / type.length);
         ResourceLocation texture = ReikoCars.id("textures/entity/trailer/" + type.id() + ".png");
         PoseStack pose = graphics.pose();
         pose.pushPose();

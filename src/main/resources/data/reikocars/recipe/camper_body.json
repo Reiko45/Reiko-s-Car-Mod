@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "B": {
+      "tag": "minecraft:beds"
+    },
+    "C": {
+      "tag": "c:chests/wooden"
+    },
+    "F": {
+      "item": "minecraft:smoker"
+    }
+  },
+  "pattern": [
+    "IGI",
+    "BCF",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:camper_body"
+  }
+}

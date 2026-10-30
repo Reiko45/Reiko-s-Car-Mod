@@ -47,7 +47,7 @@ public final class TankerService {
 
     private static List<Tank> nearby(TrailerEntity tanker, ServerPlayer player) {
         Level level = tanker.level();
-        double half = TrailerType.LENGTH / 2.0 + REACH;
+        double half = tanker.trailerType().length / 2.0 + REACH;
         AABB area = new AABB(tanker.getX() - half, tanker.getY() - 1, tanker.getZ() - half,
                 tanker.getX() + half, tanker.getY() + 4, tanker.getZ() + half);
         Vec3 middle = tanker.position();
@@ -76,7 +76,7 @@ public final class TankerService {
         Vec3 forward = tanker.forward();
         double along = Math.abs(offset.x * forward.x + offset.z * forward.z);
         double across = Math.abs(offset.x * forward.z - offset.z * forward.x);
-        return along <= TrailerType.LENGTH / 2.0 + REACH && across <= TrailerType.WIDTH / 2.0 + REACH;
+        return along <= tanker.trailerType().length / 2.0 + REACH && across <= tanker.trailerType().width / 2.0 + REACH;
     }
 
     public static void load(ServerPlayer player, TrailerEntity tanker) {

@@ -116,6 +116,7 @@ public final class ReikoCarsClient {
         NeoForge.EVENT_BUS.addListener(CarGlass::onRenderStage);
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::lowerActionBar);
         NeoForge.EVENT_BUS.addListener(GpsClient::onClientTick);
+        CamperClient.register();
         NeoForge.EVENT_BUS.addListener(GpsClient::onLoggingOut);
         NeoForge.EVENT_BUS.addListener(GpsHud::onFrame);
         NeoForge.EVENT_BUS.addListener(GpsHud::onBossBar);
@@ -135,6 +136,10 @@ public final class ReikoCarsClient {
             case BOX_TRAILER -> BoxTrailerModel::createBodyLayer;
             case TANKER_TRAILER -> TankerTrailerModel::createBodyLayer;
             case CAR_HAULER -> CarHaulerModel::createBodyLayer;
+            case CAMPER -> com.reiko.cars.client.model.CamperModel::createBodyLayer;
+            case LIVESTOCK_TRAILER -> com.reiko.cars.client.model.LivestockTrailerModel::createBodyLayer;
+            case FIFTH_WHEEL_CAMPER -> com.reiko.cars.client.model.FifthWheelCamperModel::createBodyLayer;
+            case SEMI_LIVESTOCK_TRAILER -> com.reiko.cars.client.model.SemiLivestockTrailerModel::createBodyLayer;
         };
     }
 
@@ -226,6 +231,7 @@ public final class ReikoCarsClient {
         event.register(ModMenus.WASH_OWNER.get(), WashOwnerScreen::new);
         event.register(ModMenus.ROAD_SIGN.get(), RoadSignScreen::new);
         event.register(ModMenus.BUS_STOP.get(), BusStopScreen::new);
+        event.register(ModMenus.CAMPER.get(), CamperScreen::new);
         event.register(ModMenus.RADIO.get(), RadioScreen::new);
         event.register(ModMenus.INSURANCE.get(), InsuranceScreen::new);
         event.register(ModMenus.ICE_CREAM.get(), IceCreamScreen::new);
@@ -366,7 +372,7 @@ public final class ReikoCarsClient {
     private static void pullCameraBack(CalculateDetachedCameraDistanceEvent event) {
         Entity viewer = event.getCamera().getEntity();
         if (viewer.getRootVehicle() instanceof CarEntity car && car != viewer) {
-            double length = car.carType().length + (car.trailer() != null ? TrailerType.LENGTH : 0.0);
+            double length = car.carType().length + (car.trailer() != null ? car.trailer().trailerType().length + 1.0 : 0.0);
             event.setDistance(Math.max(event.getDistance(), (float) (length * 0.75 + 1.0)));
         }
     }

@@ -1436,10 +1436,15 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return position().add(type.fifthWheelOffset().yRot(-getYRot() * Mth.DEG_TO_RAD));
     }
 
+    /** Where a trailer hitches: a semi's fifth wheel, or a pickup's tow ball. */
+    public Vec3 hitchPoint() {
+        return position().add(type.hitchOffset().yRot(-getYRot() * Mth.DEG_TO_RAD));
+    }
+
     @Override
     protected boolean canAddPassenger(Entity passenger) {
-        if (passenger instanceof TrailerEntity) {
-            return type.isTractor() && trailer() == null;
+        if (passenger instanceof TrailerEntity trailer) {
+            return type.canTow(trailer.trailerType()) && trailer() == null;
         }
         if (passenger instanceof CarEntity car) {
             return type.isTowTruck() && towed() == null && car.carType().towableBy(type);
@@ -1594,7 +1599,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             // The pivot shift moves the car but isn't speed: it mustn't carry over into next tick's velocity.
             move(MoverType.SELF, getDeltaMovement().add(pivotShift));
             if (endsWereClear && endsBlocked() || trailerWasClear && towing != null
-                    && towing.blockedAt(towing.poseBehind(fifthWheel(), getYRot()))) {
+                    && towing.blockedAt(towing.poseBehind(hitchPoint(), getYRot()))) {
                 // A long vehicle's nose or tail ran into a wall, or its trailer did: stop it there, as its hitbox alone
                 // wouldn't.
                 noteImpact(Math.abs(speed));
@@ -1908,7 +1913,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     /** Driving on with a loaded trailer: every 100 blocks pays the Trucker job. */
     private void haul(LivingEntity driver, double moved) {
         TrailerEntity hauled = trailer();
-        if (moved <= 0.0 || hauled == null || !(driver instanceof ServerPlayer player) || hauled.fullness() < com.reiko.cars.job.CarJobs.LOADED) {
+        if (moved <= 0.0 || hauled == null || !(driver instanceof ServerPlayer player) || !hauled.trailerType().isFreight()
+                || hauled.fullness() < com.reiko.cars.job.CarJobs.LOADED) {
             return;
         }
         haulBlocks += moved;

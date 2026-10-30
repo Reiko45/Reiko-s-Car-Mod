@@ -176,6 +176,8 @@ public final class DevShowcase {
             gpsScript();
         } else if (MODE.equals("busstops")) {
             busScript();
+        } else if (MODE.equals("campers")) {
+            campScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -566,9 +568,8 @@ public final class DevShowcase {
     private static TrailerEntity behind(ServerLevel level, TrailerType type, CarEntity tractor, float angle) {
         float yaw = tractor.getYRot() + angle;
         float radians = yaw * net.minecraft.util.Mth.DEG_TO_RAD;
-        net.minecraft.world.phys.Vec3 fifthWheel = tractor.fifthWheel();
-        return trailer(level, type, fifthWheel.x + Math.sin(radians) * TrailerType.KINGPIN_FORWARD,
-                fifthWheel.z - Math.cos(radians) * TrailerType.KINGPIN_FORWARD, yaw);
+        net.minecraft.world.phys.Vec3 hitch = tractor.hitchPoint();
+        return trailer(level, type, hitch.x + Math.sin(radians) * type.couplerForward(), hitch.z - Math.cos(radians) * type.couplerForward(), yaw);
     }
 
     private static CarEntity spawned(ServerLevel level, CarType type, double x, double z, float yaw, double fuel) {
@@ -969,8 +970,8 @@ public final class DevShowcase {
             }
             for (TrailerType type : TrailerType.values()) {
                 if (type.id().equals(name)) {
-                    length = TrailerType.LENGTH;
-                    height = 3.0;
+                    length = type.length;
+                    height = type.height * 0.8;
                 }
             }
             double far = Math.max(3.0, length * 0.8);
@@ -1102,7 +1103,7 @@ public final class DevShowcase {
             semi.setOwner(player);
             net.minecraft.world.phys.Vec3 fifthWheel = semi.fifthWheel();
             TrailerEntity trailer = ModEntities.trailer(TrailerType.BOX_TRAILER).create(level);
-            trailer.moveTo(fifthWheel.x, -60.0, fifthWheel.z - com.reiko.cars.trailer.TrailerType.KINGPIN_FORWARD, 0.0F, 0.0F);
+            trailer.moveTo(fifthWheel.x, -60.0, fifthWheel.z - com.reiko.cars.trailer.TrailerType.BOX_TRAILER.couplerForward(), 0.0F, 0.0F);
             level.addFreshEntity(trailer);
             trailer.setCondition(new CarCondition(1.0F, 1.0F, 0.15F, 0.08F, 0.4F));
             trailer.startRiding(semi, true);
@@ -1962,7 +1963,7 @@ public final class DevShowcase {
     /** The back of the semi's trailer, along z. */
     private static double trailerZ(Minecraft minecraft) {
         TrailerEntity trailer = minecraft.level.getEntitiesOfClass(TrailerEntity.class, new net.minecraft.world.phys.AABB(10, -70, -30, 30, -50, 20)).getFirst();
-        return trailer.getZ() - TrailerType.LENGTH / 2.0;
+        return trailer.getZ() - trailer.trailerType().length / 2.0;
     }
 
     private static void signalsScript() {
@@ -3951,5 +3952,160 @@ public final class DevShowcase {
         at(478, mc -> look(mc, 5.6, -59.1, -1.5, -90.0F, 14.0F));
         at(500, mc -> shot(mc, "342_bus_stop_sign_night"));
         at(508, mc -> mc.stop());
+    }
+
+    // ---- campers and livestock trailers: ./gradlew runClient -Pshowcase=campers ----
+
+    private static TrailerEntity trailerNear(ServerLevel level, TrailerType type, double x, double z) {
+        return level.getEntitiesOfClass(TrailerEntity.class, new net.minecraft.world.phys.AABB(x - 6, -70, z - 6, x + 6, -40, z + 6),
+                trailer -> trailer.trailerType() == type).getFirst();
+    }
+
+    private static void loadAnimals(ServerLevel level, TrailerEntity trailer, double x, double z,
+            net.minecraft.world.entity.EntityType<?>... types) {
+        for (net.minecraft.world.entity.EntityType<?> type : types) {
+            net.minecraft.world.entity.Mob animal = (net.minecraft.world.entity.Mob) type.create(level);
+            animal.moveTo(x, -60.0, z, 0.0F, 0.0F);
+            level.addFreshEntity(animal);
+            com.reiko.cars.trailer.Livestock.load(trailer, animal);
+        }
+    }
+
+    private static void campScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                // A pickup with a camper on its ball, and one parked with its camp out
+                CarEntity pickup = spawned(level, CarType.PICKUP_TRUCK, 0.5, 6.5, 180.0F, 0.9);
+                behind(level, TrailerType.CAMPER, pickup, 0.0F).startRiding(pickup, true);
+                TrailerEntity camp = trailer(level, TrailerType.CAMPER, 14.5, 0.5, 0.0F);
+                camp.stove().items().setItem(com.reiko.cars.trailer.CamperStove.FOOD, new ItemStack(net.minecraft.world.item.Items.BEEF, 6));
+                camp.stove().items().setItem(com.reiko.cars.trailer.CamperStove.FUEL, new ItemStack(net.minecraft.world.item.Items.COAL, 8));
+                camp.cargo().setItem(0, new ItemStack(net.minecraft.world.item.Items.BREAD, 12));
+                camp.cargo().setItem(1, new ItemStack(net.minecraft.world.item.Items.TORCH, 32));
+                camp.cargo().setItem(9, new ItemStack(net.minecraft.world.item.Items.FISHING_ROD));
+                camp.setOwner(player);
+                // A livestock trailer, parked, with cows, a horse and sheep in it
+                TrailerEntity stock = trailer(level, TrailerType.LIVESTOCK_TRAILER, -14.5, 0.5, 0.0F);
+                loadAnimals(level, stock, -14.5, -4.0, net.minecraft.world.entity.EntityType.COW, net.minecraft.world.entity.EntityType.COW,
+                        net.minecraft.world.entity.EntityType.HORSE, net.minecraft.world.entity.EntityType.SHEEP,
+                        net.minecraft.world.entity.EntityType.SHEEP);
+                for (int i = 0; i < 2; i++) {
+                    net.minecraft.world.entity.animal.Pig pig = net.minecraft.world.entity.EntityType.PIG.create(level);
+                    pig.moveTo(-15.5 + i * 2.0, -60.0, -6.5, 180.0F, 0.0F);
+                    pig.setNoAi(true);
+                    level.addFreshEntity(pig);
+                }
+                // The semi with a fifth-wheel camper, another parked with its camp out, and a semi livestock trailer
+                CarEntity semi = spawned(level, CarType.SEMI_TRUCK, 34.5, 6.5, 180.0F, 0.9);
+                behind(level, TrailerType.FIFTH_WHEEL_CAMPER, semi, 0.0F).startRiding(semi, true);
+                trailer(level, TrailerType.FIFTH_WHEEL_CAMPER, 52.5, 0.5, 0.0F);
+                CarEntity hauler = spawned(level, CarType.SEMI_TRUCK, -34.5, 6.5, 180.0F, 0.9);
+                TrailerEntity pot = behind(level, TrailerType.SEMI_LIVESTOCK_TRAILER, hauler, 0.0F);
+                pot.startRiding(hauler, true);
+                loadAnimals(level, pot, -34.5, 14.0, net.minecraft.world.entity.EntityType.COW, net.minecraft.world.entity.EntityType.COW,
+                        net.minecraft.world.entity.EntityType.COW, net.minecraft.world.entity.EntityType.COW,
+                        net.minecraft.world.entity.EntityType.HORSE, net.minecraft.world.entity.EntityType.LLAMA,
+                        net.minecraft.world.entity.EntityType.LLAMA, net.minecraft.world.entity.EntityType.GOAT,
+                        net.minecraft.world.entity.EntityType.CHICKEN, net.minecraft.world.entity.EntityType.CHICKEN,
+                        net.minecraft.world.entity.EntityType.CHICKEN);
+                // An off-roader with a livestock trailer swung round behind it, for the hitch close up
+                CarEntity offRoader = spawned(level, CarType.OFF_ROADER, 20.5, 30.5, 180.0F, 0.9);
+                behind(level, TrailerType.LIVESTOCK_TRAILER, offRoader, 35.0F).startRiding(offRoader, true);
+                player.getInventory().setItem(0, new ItemStack(ModItems.trailer(TrailerType.CAMPER)));
+                player.getInventory().setItem(1, new ItemStack(ModItems.trailer(TrailerType.LIVESTOCK_TRAILER)));
+                player.setGameMode(GameType.CREATIVE);
+            });
+        });
+        at(22, mc -> mc.player.getInventory().selected = 8);
+        at(30, mc -> look(mc, -5.0, -58.0, -2.0, -32.0F, 12.0F));
+        at(54, mc -> shot(mc, "343_pickup_with_camper"));
+        at(56, mc -> look(mc, 7.5, -58.4, -5.5, -48.0F, 10.0F));
+        at(80, mc -> shot(mc, "344_camper_camp"));
+        at(82, mc -> look(mc, -9.0, -58.6, 0.5, 90.0F, 8.0F));
+        at(100, mc -> shot(mc, "345_livestock_trailer"));
+        at(102, mc -> look(mc, -11.0, -57.6, -8.5, 25.0F, 18.0F));
+        at(120, mc -> shot(mc, "346_livestock_ramp"));
+        at(122, mc -> look(mc, 28.0, -57.0, -3.0, -32.0F, 12.0F));
+        at(142, mc -> shot(mc, "347_semi_fifth_wheel_camper"));
+        at(144, mc -> look(mc, 44.0, -57.0, -7.0, -38.0F, 10.0F));
+        at(164, mc -> shot(mc, "348_fifth_wheel_camp"));
+        at(166, mc -> look(mc, -28.0, -57.4, 14.0, 105.0F, 8.0F));
+        at(186, mc -> shot(mc, "349_semi_livestock_trailer"));
+        // The tow ball, close up, with the trailer swung round
+        at(188, mc -> server(mc, player -> {
+            CarEntity offRoader = carAt(player.serverLevel(), 20.5, 30.5);
+            net.minecraft.world.phys.Vec3 hitch = offRoader.hitchPoint();
+            player.teleportTo(player.serverLevel(), hitch.x, hitch.y + 1.6, hitch.z, 180.0F, 90.0F); // straight down on it
+            player.getAbilities().flying = true;
+            player.onUpdateAbilities();
+        }));
+        at(208, mc -> shot(mc, "350_tow_ball_close_up"));
+        at(210, mc -> look(mc, 14.0, -55.5, 35.0, -125.0F, 28.0F));
+        at(230, mc -> shot(mc, "351_offroader_turning_trailer"));
+        // Inside the camper: cupboards and the stove
+        at(232, mc -> look(mc, 11.0, -60.0, 0.5, -90.0F, 0.0F));
+        at(236, mc -> server(mc, player -> com.reiko.cars.trailer.CamperMenu.open(player,
+                trailerNear(player.serverLevel(), TrailerType.CAMPER, 14.5, 0.5))));
+        at(260, mc -> shot(mc, "352_camper_screen"));
+        // Sitting in a camp chair
+        at(262, mc -> {
+            mc.setScreen(null);
+            server(mc, player -> {
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                player.teleportTo(player.serverLevel(), 11.0, -60.0, 0.5, -90.0F, 0.0F);
+                trailerNear(player.serverLevel(), TrailerType.CAMPER, 14.5, 0.5).sitOnChair(player, 0);
+            });
+        });
+        at(266, mc -> {
+            mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+            mc.player.setXRot(18.0F);
+        });
+        at(286, mc -> shot(mc, "353_camp_chair"));
+        // Night at camp: the lights and windows glow
+        at(288, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                player.stopRiding();
+                player.serverLevel().setDayTime(18000);
+            });
+        });
+        at(292, mc -> look(mc, 7.5, -58.4, -5.5, -48.0F, 10.0F));
+        at(316, mc -> shot(mc, "354_camper_camp_night"));
+        // To bed
+        at(318, mc -> server(mc, player -> {
+            player.getAbilities().flying = false;
+            player.onUpdateAbilities();
+            player.setGameMode(GameType.SURVIVAL);
+            player.teleportTo(player.serverLevel(), 11.0, -60.0, 0.5, -90.0F, 0.0F);
+            com.reiko.cars.trailer.CamperLife.sleep(player, trailerNear(player.serverLevel(), TrailerType.CAMPER, 14.5, 0.5));
+        }));
+        at(350, mc -> shot(mc, "355_camper_sleeping"));
+        at(352, mc -> {
+            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+            mc.player.setYRot(-150.0F);
+            mc.player.setXRot(40.0F);
+            for (TrailerEntity trailer : mc.level.getEntitiesOfClass(TrailerEntity.class, mc.player.getBoundingBox().inflate(8.0))) {
+                trailer.setInvisible(true); // a cutaway, to see the sleeper lying on the mattress
+            }
+        });
+        at(370, mc -> mc.level.setDayTime(6000)); // lit up, for the cutaway (the server puts night back soon)
+        at(372, mc -> shot(mc, "356_camper_sleeper_cutaway"));
+        at(374, mc -> {
+            for (TrailerEntity trailer : mc.level.getEntitiesOfClass(TrailerEntity.class, mc.player.getBoundingBox().inflate(8.0))) {
+                trailer.setInvisible(false);
+            }
+            ReikoCars.LOGGER.info("Showcase camper: sleeping {} at {}", mc.player.isSleeping(), mc.player.position());
+        });
+        at(376, mc -> server(mc, player -> player.stopSleepInBed(false, true)));
+        at(382, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> ReikoCars.LOGGER.info("Showcase camper: up at {}, spawn {}", player.position(), player.getRespawnPosition()));
+        });
+        at(386, mc -> mc.stop());
     }
 }

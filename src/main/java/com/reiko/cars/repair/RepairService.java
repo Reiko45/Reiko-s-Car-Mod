@@ -54,7 +54,7 @@ public final class RepairService {
         double reach = CarsConfig.get(CarsConfig.BENCH_REACH);
         Vec3 center = bench.getBlockPos().getCenter();
         // A trailer is far longer than its hitbox, so look further out for those.
-        List<Entity> found = level.getEntities((Entity) null, new AABB(bench.getBlockPos()).inflate(reach + TrailerType.LENGTH / 2.0),
+        List<Entity> found = level.getEntities((Entity) null, new AABB(bench.getBlockPos()).inflate(reach + TrailerType.MAX_LENGTH / 2.0),
                 entity -> entity instanceof Repairable && inReach(bench, (Repairable) entity));
         return found.stream()
                 .sorted(Comparator.<Entity>comparingDouble(entity -> distance(center, (Repairable) entity)).thenComparingInt(Entity::getId))

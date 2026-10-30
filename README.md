@@ -44,6 +44,11 @@ leads you back to where you parked. With **Xaero's Minimap**, its destination an
 owner's stops in order, opens its doors for whoever's waiting, lets off whoever rang the bell, carries villagers between
 stops for a fare, and the job board pays its driver for each stop served.
 
+**Campers** hitch to a pickup's tow ball (or the semi's fifth wheel): sleep in one to skip the night and set your spawn,
+stock its cupboards, cook on its stove, and when it's parked its awning, steps and camp chairs fold out. **Livestock
+trailers** carry cows, sheep, pigs, goats, horses, llamas and chickens: lead them up the ramp and watch them ride
+between the slats.
+
 ## Requirements
 
 - Minecraft 1.21.1, NeoForge 21.1.265 or newer (as Reiko's Economy Mod needs)
@@ -60,17 +65,17 @@ stops for a fare, and the job board pays its driver for each stop served.
 | Sedan | 4 | 40 mph | 8 buckets | All-rounder |
 | Taxi | 4 | 40 mph | 8 buckets | Runs a fare meter (see [Fares](#fares)); lit TAXI sign |
 | Sports Car | 2 | 58 mph | 6 buckets | Fast, quick to accelerate, thirsty |
-| Pickup Truck | 2 | 36 mph | 12 buckets | 27-slot truck bed (sneak + use) |
-| Off-Roader | 4 | 38 mph | 10 buckets | Keeps full speed on grass, sand and snow |
+| Pickup Truck | 2 | 36 mph | 12 buckets | 27-slot truck bed (sneak + use), tow ball |
+| Off-Roader | 4 | 38 mph | 10 buckets | Keeps full speed on grass, sand and snow; tow ball |
 | Hatchback | 4 | 36 mph | 6 buckets | Small and cheap, about 800 blocks to a bucket |
 | Muscle Car | 2 | 54 mph | 8 buckets | Big V8: quick off the line, slow to turn, thirsty |
 | Convertible | 2 | 51 mph | 6 buckets | Open-top roadster |
-| Minivan | 6 | 34 mph | 10 buckets | Three rows of seats, 9-slot trunk (sneak + use) |
+| Minivan | 6 | 34 mph | 10 buckets | Three rows of seats, 9-slot trunk (sneak + use), tow ball |
 | Semi Truck | 2 | 38 mph | 12 buckets of diesel | Runs on diesel and pulls a trailer (see [Semis and trailers](#semis-and-trailers)) |
 | Delivery Van | 2 | 34 mph | 10 buckets of diesel | 54-slot cargo area (sneak + use) |
 | City Bus | 10 | 29 mph | 16 buckets of diesel | A driver and nine passengers, who pay a fare (see [Fares](#fares)); turns about its back axle, so swing wide |
-| Heavy-Duty Pickup | 4 | 38 mph | 14 buckets of diesel | Lifted crew-cab 4x4: 27-slot truck bed, full speed off-road |
-| Farm Tractor | 1 | 20 mph | 6 buckets of diesel | Slow, but at home in a field: full speed on grass, dirt and farmland |
+| Heavy-Duty Pickup | 4 | 38 mph | 14 buckets of diesel | Lifted crew-cab 4x4: 27-slot truck bed, full speed off-road, tow ball |
+| Farm Tractor | 1 | 20 mph | 6 buckets of diesel | Slow, but at home in a field: full speed on grass, dirt and farmland; tow ball |
 | Flatbed Tow Truck | 2 | 36 mph | 14 buckets of diesel | Carries a car on its deck (see [Tow trucks](#tow-trucks)); 9-slot toolboxes |
 | Wrecker Tow Truck | 2 | 38 mph | 12 buckets of diesel | Tows a car on its wheel-lift by the front wheels; 18-slot toolboxes |
 | Mail Van | 2 | 35 mph | 9 buckets | Right-hand drive; collects and delivers parcels (see [Mail](#mail)); 36-slot mail compartment |
@@ -87,7 +92,7 @@ stops for a fare, and the job board pays its driver for each stop served.
 | Scooter | 1 | 27 mph | 2 buckets | Slow, but about 2,500 blocks to a bucket |
 | City EV | 2 | 33 mph | 80,000 MJ battery | Electric (see [Electric cars](#electric-cars-and-charging-stations)): nippy, turns tight, 9-slot trunk |
 | Electric Sedan | 4 | 56 mph | 160,000 MJ battery | The quickest car off the line; glass roof, 9-slot frunk |
-| Electric Pickup | 4 | 42 mph | 200,000 MJ battery | Crew cab, 27-slot truck bed, full speed off-road |
+| Electric Pickup | 4 | 42 mph | 200,000 MJ battery | Crew cab, 27-slot truck bed, full speed off-road, tow ball |
 | Electric Van | 2 | 36 mph | 160,000 MJ battery | 54-slot cargo area |
 | Electric Moped | 2 | 31 mph | 30,000 MJ battery | Room for two; quiet, and goes a long way on a charge |
 
@@ -462,7 +467,8 @@ Engine** and **two** tires: the front wheel goes in the front left slot and the 
 
 ## Semis and trailers
 
-The **Semi Truck** pulls one trailer at a time. There are three:
+The **Semi Truck** pulls one trailer at a time. There are three (and a camper and a livestock trailer, in
+[Campers and livestock trailers](#campers-and-livestock-trailers)):
 
 | Trailer | Carries |
 | --- | --- |
@@ -506,6 +512,52 @@ to drive it off the back. Hitch the hauler to a semi and its cars go wherever it
 owner, or anyone with its key), and a locked trailer can only be opened, hitched or loaded by its owner or someone
 with its key. Right-click with a dye to
 paint it. Punch it to pick it up. A box trailer spills its cargo.
+
+## Campers and livestock trailers
+
+Pickups and SUVs have a **tow ball**: the **Pickup Truck**, **Heavy-Duty Pickup**, **Electric Pickup**, **Off-Roader**,
+**Minivan** and the **Farm Tractor**. They pull the two bumper-pull trailers, and the semi pulls bigger versions of
+both on its fifth wheel:
+
+| Trailer | Pulled by | Has |
+| --- | --- | --- |
+| **Camper** | a tow ball | a double bed, 27 cupboard slots, a stove, an awning and two camp chairs |
+| **Fifth-Wheel Camper** | the semi | a bedroom over the fifth wheel, 45 cupboard slots, a stove, a slide-out, an awning and two camp chairs |
+| **Livestock Trailer** | a tow ball | pens for 6 cows, 3 horses or 12 chickens |
+| **Semi Livestock Trailer** | the semi | pens for 12 cows, 6 horses or 24 chickens |
+
+**Hitching to a tow ball:** put the trailer down, then back the pickup up to its tongue, so the ball is under the
+coupler at the tongue's tip and the two are roughly in line, and press **G** (the dashboard shows **[G] Hitch
+trailer**). Press G again to unhitch. A bumper-pull swings round behind on bends like the semi's trailers do, and can
+swing up to 85° before it jackknifes. Pulling one, a pickup is a little slower and burns more fuel.
+
+**Camping:** right-click a camper to go inside: its **cupboards** hold your things (a picked-up camper spills them),
+its **stove** cooks food as a smoker does (anything a smoker cooks, with any fuel, but only while the camper's
+parked: hitched up, the flame's out), and the **Sleep** button goes to bed. Sleeping in a camper works like a bed:
+it sets your spawn to the ground outside its door, and once enough players are asleep the night passes. You can only
+sleep in a parked camper, at night, with no monsters close by, and each camper sleeps two. You wake up outside the
+door; moving or hitching the camper wakes everyone in it.
+
+**Camp:** a camper standing unhitched for a moment sets up camp. Its **awning** rolls out with a string of **lights**
+that glow at night (and so do its windows), its **steps** fold down under the door, its **stabilizer jacks** wind
+down, and two **camp chairs**, a table and a cooler come out under the awning. Right-click a chair to sit in it.
+The fifth-wheel camper's **slide-out** slides out too. Hitch it and it all folds away.
+
+**Livestock:** cows, mooshrooms, sheep, pigs, goats, horses, donkeys, mules, llamas and chickens (the
+`reikocars:livestock` entity tag, so a data pack can add more) ride in a livestock trailer, in pens down its length:
+each pen holds one horse, two cows (or sheep, pigs, goats, llamas), or four chickens or young animals. Parked, the
+trailer's back gate drops down as a **ramp**:
+
+- Lead animals up the ramp on leads and they walk in, or right-click the trailer with them following you on leads to
+  load them all. The leads come back to you.
+- Right-click with an empty hand to let them all out down the ramp, or with a lead to take the last one in out on it.
+- A hitched trailer opens its ramp while animals go in or out, but only once it's stopped.
+
+Inside, they stand in their pens, seen between the slats, and go wherever the trailer goes. A full livestock trailer
+counts as a load for the Trucker's pay; a camper doesn't.
+
+**Building them:** as the other trailers, from the Trailer Chassis, the trailer's own body and four Tires (see
+[Recipes](#recipes)).
 
 ## Building a car
 
@@ -907,6 +959,10 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | Box Trailer Body | iron ingots top and bottom, chests in the outer middle slots |
 | Tanker Trailer Tank | four BuildCraft **Tanks** around an empty middle, iron ingots in the corners |
 | Car Hauler Deck | iron bars in the corners, iron ingots across the middle |
+| Camper Body | iron ingot, glass pane, iron ingot on top; bed, chest, smoker across the middle; iron ingots along the bottom |
+| Fifth-Wheel Camper Body | as the Camper Body, with a second chest in the bottom middle |
+| Livestock Trailer Body | iron bars in the top corners, iron bar, hay bale, iron bar across the middle, iron ingots along the bottom |
+| Semi Livestock Trailer Body | as the Livestock Trailer Body, with an iron ingot in the top middle |
 | Repair Bench | iron ingot, anvil, iron ingot on top, iron gear, chest, iron gear across the middle, iron legs |
 | Mailbox | iron ingot, blue dye, red dye on top, iron ingot, chest, iron ingot across the middle, a wooden fence below |
 | Blank Key ×2 | an iron ingot and a gold nugget (shapeless) |
@@ -1251,7 +1307,7 @@ src/main/java/com/reiko/cars/
 ├── icecream/             the ice cream truck's shop: its menu and IceCreamService (pricing and selling)
 ├── pump/                 the gas and diesel pump block, its block entity, menu, protection, and PumpService (selling fuel)
 ├── charge/               the Charging Station block, block entity, menu and protection, and ChargerService (selling charge)
-├── trailer/              the trailers, their item, hitching and car hauling (Hitching), and the tanker (TankerService)
+├── trailer/              the trailers, their item, hitching and car hauling (Hitching), the tanker (TankerService), campers (CamperMenu, CamperStove, CamperLife for the beds and camp chairs, CampLayout) and livestock (Livestock)
 ├── workbench/            the Car Workbench block and menu, the car parts, and the car_assembly recipe type
 ├── repair/               the Repair Bench block, block entity, menu and protection, the jobs (RepairJobs), and RepairService (repairs and paying)
 ├── tow/                  the tow trucks' picking up, carrying and dropping off (Towing)
@@ -1279,7 +1335,7 @@ src/main/java/com/reiko/cars/
 ├── network/              packets: the GPS's places and cars, a bus stop's name and routes, pump, repair bench, mailbox, parking meter, toll, car wash, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, and the wipers and raindrops on the windscreen, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the GPS (GpsClient, its screen and panel, and GpsXaero for Xaero's Minimap), the bus stop's screen and lettering, the toll gate's arm, pump display, engine, siren and alarm sounds, keys
+├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, and the wipers and raindrops on the windscreen, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the GPS (GpsClient, its screen and panel, and GpsXaero for Xaero's Minimap), the bus stop's screen and lettering, the camper's screen and its sleepers (CamperClient), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)
