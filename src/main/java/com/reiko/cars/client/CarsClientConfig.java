@@ -7,11 +7,19 @@ public final class CarsClientConfig {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.EnumValue<SpeedUnit> SPEED_UNIT;
     public static final ModConfigSpec.BooleanValue SHOW_HUD;
+    public static final ModConfigSpec.BooleanValue GPS_ON_MINIMAP;
+    public static final ModConfigSpec.BooleanValue CARS_ON_MINIMAP;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         SPEED_UNIT = builder.comment("Speedometer units: MPH or KMH.").defineEnum("speedUnit", SpeedUnit.MPH);
         SHOW_HUD = builder.comment("Show the speedometer and fuel gauge while in a car.").define("showHud", true);
+        builder.comment("With Xaero's Minimap installed.").push("minimap");
+        GPS_ON_MINIMAP = builder.comment("Show where the GPS is taking you as a waypoint on the minimap, in the world and on the world map.")
+                .define("gpsDestination", true);
+        CARS_ON_MINIMAP = builder.comment("Show your cars (and any you're renting) as waypoints on the minimap and in the world.")
+                .define("yourCars", true);
+        builder.pop();
         SPEC = builder.build();
     }
 
@@ -38,5 +46,13 @@ public final class CarsClientConfig {
 
     public static boolean showHud() {
         return !SPEC.isLoaded() || SHOW_HUD.get();
+    }
+
+    public static boolean gpsOnMinimap() {
+        return !SPEC.isLoaded() || GPS_ON_MINIMAP.get();
+    }
+
+    public static boolean carsOnMinimap() {
+        return !SPEC.isLoaded() || CARS_ON_MINIMAP.get();
     }
 }

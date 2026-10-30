@@ -15,6 +15,13 @@ sourceSets.main.resources {
     exclude("**/*.bbmodel") // Blockbench project files live in blockbench/, but keep any stray ones out of the jar
 }
 
+sourceSets {
+    // Compile-time stand-ins for the few classes of Xaero's Minimap that the GPS uses (gps/XaeroCompat). Xaero's mod is
+    // optional and isn't ours to redistribute, so these are compiled against instead; they never go in the jar or on the
+    // dev runs' classpath, where the real mod is used if it's there.
+    xaeroStubs
+}
+
 base {
     archivesName = mod_id
 }
@@ -63,6 +70,8 @@ neoForge {
     }
 }
 
+neoForge.addModdingDependenciesTo(sourceSets.xaeroStubs)
+
 configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
@@ -89,6 +98,15 @@ dependencies {
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
     localRuntime("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}") {
         transitive = false // the mod jar has everything it needs inside it
+    }
+
+    // Xaero's Minimap is optional too: the GPS shows its destination and your cars on it, and lists its waypoints.
+    // It's compiled against stand-ins (see sourceSets.xaeroStubs); to try it in a dev run, pass the folder its jar
+    // (and World Map's, if you like) is in: ./gradlew runClient -PxaeroJars=/path/to/folder
+    compileOnly sourceSets.xaeroStubs.output
+    def xaeroJars = project.findProperty('xaeroJars')
+    if (xaeroJars != null) {
+        localRuntime fileTree(xaeroJars.toString()) { include '*.jar' }
     }
 
     testImplementation platform('org.junit:junit-bom:5.11.4')

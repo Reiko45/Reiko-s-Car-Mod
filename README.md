@@ -37,12 +37,17 @@ Cars get **dirty** off-road, in mud and in the rain, and it shows. A drive-throu
 brushes, a coin-op **Wash Bay** with a pressure washer, or a bucket of water gets them clean again; left filthy, a car
 rusts and dealers pay less for it.
 
+A **GPS** (**N**, in a car or on foot) finds the nearest gas station, mechanic or car wash, with their prices, and
+leads you back to where you parked. With **Xaero's Minimap**, its destination and your cars show on the minimap too.
+
 ## Requirements
 
 - Minecraft 1.21.1, NeoForge 21.1.265 or newer (as Reiko's Economy Mod needs)
 - [BuildCraft Reborn](https://github.com/Reiko45/BuildCraft-Reborn) 2.1.0 or newer
 - [Reiko's Economy Mod](https://github.com/Reiko45/Reiko-s-Economy-Mod) 1.1.0 or newer (for the car jobs)
 - Optional: [JEI](https://www.curseforge.com/minecraft/mc-mods/jei) 19.21 or newer, for the recipe pages below
+- Optional: [Xaero's Minimap](https://www.curseforge.com/minecraft/mc-mods/xaeros-minimap) 24.x (made with 24.7.1),
+  and its World Map, for the [GPS](#gps) on the map
 
 ## The cars
 
@@ -94,7 +99,7 @@ is the handbrake and **sneak** gets out. **H** sounds the horn, **L** locks or u
 trailer, loads a car onto a car hauler, picks up or drops a car in a tow truck, stops the mail van for the mail, or
 does a work vehicle's job. **K** works a police car's, ambulance's or fire truck's lights and siren. The **left and right arrow
 keys** work the turn signals and the **down arrow** the hazards (see [Turn signals, hazards and alarms](#turn-signals-hazards-and-alarms)).
-**R** opens the [radio](#car-radio). While you're
+**R** opens the [radio](#car-radio) and **N** the [GPS](#gps). While you're
 in a car, a dashboard in the bottom right shows your speed and a fuel gauge. (If the screen's too narrow for it to
 fit beside the hotbar, at a big GUI scale, it moves to the top right, under your status effects.)
 
@@ -373,7 +378,7 @@ car's owner can have it tuned.
   button with the bench's price for one from its stock. Pick several and pay the bill by card or cash (plus sales
   tax); the money goes to the bench's owner, whose own jobs are free. One set of tires and one set of springs: fitting
   another kind hands the old ones back.
-- **Livery tab:** a **race number** (1 to 99) on a white roundel on both doors, and **racing stripes** in any dye colour
+- **Livery tab:** a **race number** (1 to 99) on a white roundel on both doors, and **racing stripes** in any dye color
   along the hood, roof and trunk. Free. Motorcycles don't take a livery.
 - **The owner's Stock and Prices tabs:** load the bench with kits (hoppers and pipes can fill it too) and set what
   fitting each costs ($40.00 to start). Fitting kits to someone else's car pays the Mechanic job.
@@ -493,7 +498,7 @@ If JEI is installed, it gets a **Car Workbench** recipe page for each car and tr
 workbench, the vehicle turning in 3D, and a car's seats, top speed and tank size, or what a trailer carries. Look up a car's recipe (R), or what a part, tire or engine
 is used for (U). Clicking the arrow in the workbench's screen lists every car. With the workbench open, JEI's **+**
 button puts that car's parts in from your inventory, the same as clicking the car's button; if you're missing any,
-the button is greyed out and JEI marks the missing parts in red.
+the button is grayed out and JEI marks the missing parts in red.
 
 ## Gas and diesel pumps
 
@@ -662,6 +667,32 @@ slides wide in hard turns:
   hour): a bolt, and 8% off its body. The people inside are safe, as in a real car, even from a bolt that strikes them
   there.
 - **Headlights** come on by themselves in rain, snow and storms, lighting the road by day as well as at night.
+
+## GPS
+
+Press **N** (in a car or on foot) to open the GPS and pick somewhere to go:
+
+- **Places:** the gas stations, charging stations, mechanics (Repair Benches), car washes, dealerships, car rentals,
+  tuning shops, parking, DMVs, insurance offices, impound lots and race tracks in this dimension, nearest first. A gas
+  station's pumps are one place, with its cheapest gasoline and diesel a bucket (and **Out of fuel** if they're dry);
+  a car wash shows its prices, and a charging station its price per 1,000 MJ. Type in the search box to narrow it
+  down: *diesel*, *mechanic* or the owner's name. The GPS knows of a place once its area has been loaded since this
+  version, however far away it is now.
+- **My Cars:** the cars you own, and any you're renting, wherever you left them (even in another dimension, or far
+  out of range). A car that's driven, towed or delivered somewhere else is followed there.
+- **Waypoints** (with Xaero's Minimap): your waypoints in this dimension, and where you last died.
+- **Coordinates:** type an X and a Z (and a Y, if you like), or **Use my spot** to remember where you are.
+
+Once you've picked, a panel at the top of the screen shows where you're going, an **arrow** pointing the way (from
+the way your car's facing, or you are, on foot), how far it is, how long at the speed you're going, and how far up or
+down it is if that's more than a few blocks. You've arrived when you're within 12 blocks in a car or 4 on foot: a
+chime, and the GPS turns off. **Stop** in the GPS turns it off before then. Distances are in feet and miles, or
+meters and kilometers if your speedometer's in km/h.
+
+**With Xaero's Minimap:** the destination is a waypoint (**GPS**) on the minimap, in the world and on Xaero's World
+Map, until you get there; it isn't saved with your waypoints. Your cars show on the minimap and in the world too,
+lettered by type (**S** for a sedan, **PT** for a pickup truck) in the nearest color to their paint. Either can be
+turned off in `config/reikocars-client.toml`.
 
 ## Tow trucks
 
@@ -908,7 +939,7 @@ The second lot of cars' parts, the same way:
 | Part | Hatchback | Muscle Car | Convertible | Minivan |
 | --- | --- | --- | --- | --- |
 | **Chassis**: iron rails (`I I`) around a middle | copper ingot | piston | gold ingot | iron bars |
-| **Body** | glass panes over lime dye and iron | two glass panes over orange dye and iron | a glass pane over cyan dye and iron | glass all round light grey dye, iron below |
+| **Body** | glass panes over lime dye and iron | two glass panes over orange dye and iron | a glass pane over cyan dye and iron | glass all round light gray dye, iron below |
 | **Interior** | clock, redstone, wool seats | clock, redstone, leather seats | clock, redstone, leather and wool | clock, two rows of wool and redstone |
 
 | Part | Delivery Van | City Bus | Heavy-Duty Pickup | Farm Tractor |
@@ -937,7 +968,7 @@ every interior is a clock on top over leather, redstone, leather, with iron ingo
 | Part | Police Car | Ambulance | Garbage Truck | Ice Cream Truck | Dump Truck | Cement Mixer | Fire Truck |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Chassis** middle | iron, redstone torch, iron | iron block, glistering melon slice, iron block | iron block, hopper, iron block | iron, snow block, iron | iron block, sticky piston, iron block | iron block, cauldron, iron block | iron block, BuildCraft **Tank**, iron block |
-| **Body** below the glass | red, black and blue dye over iron | red dye between white dye over iron | green dye between iron over iron, a composter, iron | pink dye between white dye over iron | orange dye between iron over three iron trapdoors | light grey dye between iron over iron, a cauldron, iron | red dye between ladders over iron, a BuildCraft **Pump**, iron |
+| **Body** below the glass | red, black and blue dye over iron | red dye between white dye over iron | green dye between iron over iron, a composter, iron | pink dye between white dye over iron | orange dye between iron over three iron trapdoors | light gray dye between iron over iron, a cauldron, iron | red dye between ladders over iron, a BuildCraft **Pump**, iron |
 | **Interior** bottom middle | iron bars | white bed | hopper | packed ice | gravel | water bucket | bell |
 
 The police car and ice cream truck take a Car Engine; the rest take a Diesel Engine.
@@ -1070,7 +1101,8 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `roads.redLightFine` | `15.0` | A new traffic light's red-light camera fine (its owner can change it) |
 | `roads.speedingFine` | `20.0` | A new speed limit sign's camera fine (its owner can change it) |
 
-Each player can pick **mph** or **km/h**, and turn the dashboard off, in `config/reikocars-client.toml`.
+Each player can pick **mph** or **km/h**, turn the dashboard off, and (with Xaero's Minimap) choose whether the GPS
+destination and their cars show on the minimap, in `config/reikocars-client.toml`.
 
 ## Building and testing
 
@@ -1078,6 +1110,10 @@ You need JDK 21. The two mods it builds on are in `libs/`: replace those jars to
 (and update the names in `gradle.properties`). JEI comes from its Maven repository: the build compiles against
 the API of `jei_version` in `gradle.properties` (19.21.2.313, so the plugin works with that and every newer 1.21.1
 JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
+
+Xaero's Minimap isn't ours to share, so the GPS compiles against stand-ins for the few of its classes it uses
+(`src/xaeroStubs/`), which never go in the jar. To try it in a dev client, put Xaero's Minimap's jar (and World
+Map's, if you like) in a folder and pass it: `./gradlew runClient -PxaeroJars=/path/to/folder`.
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
@@ -1097,6 +1133,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 ./gradlew runClient -Pshowcase=lots       # buying on finance, repossession to the impound lot, renting a car, the owners' screens
 ./gradlew runClient -Pshowcase=dmv        # plates, the DMV, taking the driving test, a custom plate, a plate check, NO LICENSE, the cards
 ./gradlew runClient -Pshowcase=tune       # the Tuning Bench and a livery, the race track, a time trial and a race start, the kits
+./gradlew runClient -Pshowcase=gps -PxaeroJars=/path/to/folder  # the GPS's tabs, driving and walking to a destination, arriving, the minimap
 ./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
 
@@ -1108,7 +1145,7 @@ hub, raked windscreens and rear windows, furnished cabins (seats, dashboards wit
 panels), and detailed lights, grilles, bumpers, mirrors and trim. Each has the same top-level bones, which the mod
 relies on:
 
-- `body`: the paintwork. Paint it light grey: the game tints it the car's colour.
+- `body`: the paintwork. Paint it light gray: the game tints it the car's color.
 - `trim`: glass (may be see-through), seats, bumpers, grille and so on, drawn as painted.
 - `lights`: head- and taillights, which glow while the engine runs.
 - `wheel_fl`, `wheel_fr`, `wheel_rl`, `wheel_rr`: each pivoting on its axle. They roll, and the front pair steers.
@@ -1179,6 +1216,7 @@ src/main/java/com/reiko/cars/
 ├── sale/                 the For Sale Sign, a car's sale screen, the Car Dealership block, its lot and tabs, and SaleService (buying, selling, trade-ins)
 ├── finance/              car loans: the Loan, where they're kept (LoanData), and LoanService (terms, daily payments, repossession, paying off)
 ├── impound/              the Impound Office block, block entity, menu and protection, the lots (ImpoundRegistry), and ImpoundService (towing in, fees, releasing)
+├── gps/                  the GPS: the places it knows of (PlacesRegistry, PlaceKind), where every car is (CarLocator), GpsService (gas stations and their prices, your cars) and GpsMath
 ├── weather/              the road's grip in rain, storms, snow and ice (RoadWeather), snow on cars and lightning (CarWeather), and spray off the tires (TireSpray)
 ├── wash/                 dirt (Dirt), washing by hand (HandWash), the Car Wash arch and the Wash Bay with their block entities and menus, CarWashService and WashBayService (paying, washing, spraying), and the Pressure Washer
 ├── tuning/               upgrades (Upgrades) and the tuning kits, the Tuning Bench block, block entity and menu, TuningService, and liveries (Livery)
@@ -1195,13 +1233,14 @@ src/main/java/com/reiko/cars/
 ├── toll/                 the toll booth and toll gate blocks, their block entities and menus, protection, and TollService (paying and the gate)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
-├── network/              packets: pump, repair bench, mailbox, parking meter, toll, car wash, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
+├── network/              packets: the GPS's places and cars, pump, repair bench, mailbox, parking meter, toll, car wash, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, and the wipers and raindrops on the windscreen, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
+├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, and the wipers and raindrops on the windscreen, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the GPS (GpsClient, its screen and panel, and GpsXaero for Xaero's Minimap), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)
+src/xaeroStubs/java/       compile-time stand-ins for the few classes of Xaero's Minimap the GPS uses (not in the jar)
 ```
 
 ## License

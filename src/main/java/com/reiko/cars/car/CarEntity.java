@@ -1802,6 +1802,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             }
         }
         CarSignals.serverTick(this);
+        com.reiko.cars.gps.CarLocator.carTick(this);
         boolean listener = getPassengers().stream().anyMatch(passenger -> passenger instanceof Player);
         if (listener && !radioHadListener) {
             restartRadio();
@@ -2146,6 +2147,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (!level().isClientSide && reason != RemovalReason.UNLOADED_TO_CHUNK && reason != RemovalReason.UNLOADED_WITH_PLAYER) {
             headlights.clear(); // (an unloading car's lights see to themselves: no car, no light)
             com.reiko.cars.fire.FireLadder.clear(this);
+        }
+        if (!level().isClientSide) {
+            com.reiko.cars.gps.CarLocator.carRemoved(this, reason);
         }
         super.remove(reason);
     }

@@ -66,6 +66,18 @@ public final class ModNetwork {
         registrar.playToServer(InsuranceActionPayload.TYPE, InsuranceActionPayload.STREAM_CODEC, ModNetwork::handleInsurance);
         registrar.playToServer(IceCreamActionPayload.TYPE, IceCreamActionPayload.STREAM_CODEC, ModNetwork::handleIceCream);
         registrar.playToServer(RoadSignActionPayload.TYPE, RoadSignActionPayload.STREAM_CODEC, ModNetwork::handleRoadSign);
+        registrar.playToServer(GpsRequestPayload.TYPE, GpsRequestPayload.STREAM_CODEC, ModNetwork::handleGps);
+        // (Back to the client: kept in the GPS's inbox, for its screen and the minimap.)
+        registrar.playToClient(GpsPlacesPayload.TYPE, GpsPlacesPayload.STREAM_CODEC,
+                (payload, context) -> com.reiko.cars.gps.GpsInbox.receive(payload));
+        registrar.playToClient(GpsCarsPayload.TYPE, GpsCarsPayload.STREAM_CODEC,
+                (payload, context) -> com.reiko.cars.gps.GpsInbox.receive(payload));
+    }
+
+    private static void handleGps(GpsRequestPayload payload, IPayloadContext context) {
+        if (context.player() instanceof ServerPlayer player) {
+            com.reiko.cars.gps.GpsService.handle(player, payload);
+        }
     }
 
     private static void handleWear(CarWearPayload payload, IPayloadContext context) {

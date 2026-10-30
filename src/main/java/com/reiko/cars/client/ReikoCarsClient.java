@@ -115,6 +115,10 @@ public final class ReikoCarsClient {
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::raiseActionBar);
         NeoForge.EVENT_BUS.addListener(CarGlass::onRenderStage);
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::lowerActionBar);
+        NeoForge.EVENT_BUS.addListener(GpsClient::onClientTick);
+        NeoForge.EVENT_BUS.addListener(GpsClient::onLoggingOut);
+        NeoForge.EVENT_BUS.addListener(GpsHud::onFrame);
+        NeoForge.EVENT_BUS.addListener(GpsHud::onBossBar);
         TrailerEntity.openTankerScreen = tanker -> Minecraft.getInstance().setScreen(new TankerScreen(tanker));
     }
 
@@ -233,10 +237,12 @@ public final class ReikoCarsClient {
         event.register(SIGNAL_RIGHT);
         event.register(HAZARDS);
         event.register(RADIO);
+        event.register(GpsClient.KEY);
     }
 
     private static void registerHud(RegisterGuiLayersEvent event) {
         event.registerAbove(VanillaGuiLayers.HOTBAR, ReikoCars.id("car_dashboard"), new CarHud());
+        event.registerAbove(VanillaGuiLayers.BOSS_OVERLAY, ReikoCars.id("gps"), new GpsHud());
     }
 
     /** Layer 0 of a car item's icon is its paintwork, tinted the car's colour. */

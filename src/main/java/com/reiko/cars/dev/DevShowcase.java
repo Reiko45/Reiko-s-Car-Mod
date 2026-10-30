@@ -172,6 +172,8 @@ public final class DevShowcase {
             washScript();
         } else if (MODE.equals("weather")) {
             weatherScript();
+        } else if (MODE.equals("gps")) {
+            gpsScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -3592,5 +3594,195 @@ public final class DevShowcase {
         at(350, mc -> server(mc, player -> ReikoCars.LOGGER.info("Showcase weather: hatchback body {}",
                 carAt(player.serverLevel(), 12.5, 0.5).condition().body())));
         at(360, mc -> mc.stop());
+    }
+
+    // ---- the GPS ----
+
+    /** Places a business block at {@code pos}, owned by {@code owner}, and tells the GPS about it. */
+    private static void business(ServerLevel level, BlockPos pos, net.minecraft.world.level.block.Block block, ServerPlayer owner) {
+        BlockState state = block.defaultBlockState();
+        level.setBlockAndUpdate(pos, state);
+        block.setPlacedBy(level, pos, level.getBlockState(pos), owner, ItemStack.EMPTY);
+        com.reiko.cars.gps.PlacesRegistry.get(level.getServer()).scan(level.getChunkAt(pos));
+    }
+
+    @org.jetbrains.annotations.Nullable
+    private static com.reiko.cars.network.GpsPlacesPayload.Entry gpsPlace(com.reiko.cars.gps.PlaceKind kind, String owner) {
+        return com.reiko.cars.gps.GpsInbox.places().stream().filter(place -> place.kind() == kind && place.owner().equals(owner)).findFirst()
+                .orElse(null);
+    }
+
+    private static void gpsGoTo(Minecraft minecraft, com.reiko.cars.gps.PlaceKind kind, String owner) {
+        com.reiko.cars.network.GpsPlacesPayload.Entry place = gpsPlace(kind, owner);
+        if (place == null) {
+            ReikoCars.LOGGER.error("Showcase GPS: no {} of {}'s", kind, owner);
+            return;
+        }
+        com.reiko.cars.client.GpsClient.navigate(net.minecraft.network.chat.Component.translatable("gps.reikocars.place_owner", kind.displayName(),
+                owner), minecraft.level.dimension(), place.pos().getBottomCenter(), true, null, kind.color, "GPS");
+    }
+
+    /** A click on the GPS screen's tab {@code index} of {@code count}. */
+    private static void gpsTab(Minecraft minecraft, int index, int count) {
+        int left = (minecraft.getWindow().getGuiScaledWidth() - 284) / 2;
+        int top = (minecraft.getWindow().getGuiScaledHeight() - 226) / 2;
+        int tabWidth = (284 - 20) / count;
+        minecraft.screen.mouseClicked(left + 10 + tabWidth * index + tabWidth / 2.0, top + 28, 0);
+    }
+
+    private static void gpsScript() {
+        boolean xaero = com.reiko.cars.client.GpsClient.XAERO;
+        int tabs = xaero ? 4 : 3;
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                MinecraftServer server = level.getServer();
+                level.setDayTime(5000);
+                ServerPlayer mo = extraPlayer(server, "Mo");
+                ServerPlayer sam = extraPlayer(server, "Sam");
+                // A road north to Mo's gas station, with parking along it.
+                for (int x = 0; x <= 6; x++) {
+                    for (int z = -100; z <= 8; z++) {
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), ModBlocks.ASPHALT.get().defaultBlockState());
+                    }
+                }
+                for (int z = -40; z >= -52; z -= 6) {
+                    business(level, new BlockPos(-1, -60, z), ModBlocks.PARKING_METER.get(), player);
+                }
+                placePump(level, new BlockPos(10, -60, -92), mo, "fuel_light", 9_000, 249);
+                placePump(level, new BlockPos(13, -60, -92), mo, "fuel_light", 9_000, 259);
+                placePump(level, ModBlocks.DIESEL_PUMP.get(), new BlockPos(16, -60, -92), mo, "fuel_dense", 9_000, 289);
+                com.reiko.cars.gps.PlacesRegistry.get(server).scan(level.getChunkAt(new BlockPos(10, -60, -92)));
+                business(level, new BlockPos(20, -60, -92), ModBlocks.CHARGING_STATION.get(), mo);
+                business(level, new BlockPos(24, -60, -70), ModBlocks.REPAIR_BENCH.get(), mo);
+                business(level, new BlockPos(-30, -60, -40), ModBlocks.WASH_BAY.get(), mo);
+                business(level, new BlockPos(90, -60, 60), ModBlocks.DEALERSHIP.get(), sam);
+                business(level, new BlockPos(-60, -60, 140), ModBlocks.DMV_OFFICE.get(), sam);
+                business(level, new BlockPos(150, -60, -20), ModBlocks.TUNING_BENCH.get(), sam);
+                // Sam's cheaper station across town, out of diesel.
+                placePump(level, new BlockPos(-150, -60, 60), sam, "fuel_light", 9_000, 219);
+                placePump(level, ModBlocks.DIESEL_PUMP.get(), new BlockPos(-147, -60, 60), sam, "fuel_dense", 0, 279);
+                com.reiko.cars.gps.PlacesRegistry.get(server).scan(level.getChunkAt(new BlockPos(-150, -60, 60)));
+
+                // Your cars: the sedan you're in, and a pickup left on the far side of town.
+                CarEntity sedan = spawned(level, CarType.SEDAN, 3.5, 0.5, 180.0F, 0.8);
+                sedan.setOwner(player);
+                sedan.setColor(0xC62828);
+                CarEntity pickup = spawned(level, CarType.PICKUP_TRUCK, -180.5, 120.5, 90.0F, 0.6);
+                pickup.setOwner(player);
+                pickup.setColor(0x1565C0);
+                CarEntity ev = spawned(level, CarType.CITY_EV, 30.5, 30.5, 0.0F, 0.9);
+                ev.setOwner(player);
+                ev.setColor(0xF2F2EE);
+                com.reiko.cars.gps.CarLocator locator = com.reiko.cars.gps.CarLocator.get(server);
+                locator.note(sedan);
+                locator.note(pickup);
+                locator.note(ev);
+                player.setGameMode(GameType.SURVIVAL);
+                player.startRiding(sedan, true);
+            });
+        });
+        if (xaero) {
+            at(30, mc -> GpsShowcaseXaero.addWaypoints(mc));
+        }
+        at(40, mc -> mc.setScreen(new com.reiko.cars.client.GpsScreen()));
+        at(60, mc -> shot(mc, "310_gps_places"));
+        at(62, mc -> {
+            for (char c : "gas".toCharArray()) {
+                mc.screen.charTyped(c, 0);
+            }
+        });
+        at(70, mc -> shot(mc, "311_gps_search"));
+        at(72, mc -> {
+            for (int i = 0; i < 3; i++) {
+                mc.screen.keyPressed(259, 0, 0); // backspace
+            }
+            gpsTab(mc, 1, tabs);
+        });
+        at(82, mc -> shot(mc, "312_gps_cars"));
+        if (xaero) {
+            at(84, mc -> gpsTab(mc, 2, tabs));
+            at(94, mc -> shot(mc, "313_gps_waypoints"));
+        }
+        at(96, mc -> gpsTab(mc, tabs - 1, tabs));
+        at(106, mc -> shot(mc, "314_gps_coordinates"));
+        at(108, mc -> {
+            gpsTab(mc, 0, tabs);
+            mc.setScreen(null);
+            gpsGoTo(mc, com.reiko.cars.gps.PlaceKind.GAS, "Mo");
+        });
+        at(140, mc -> shot(mc, "315_gps_driving"));
+        at(142, mc -> {
+            mc.options.keyUp.setDown(true);
+            mc.options.keyLeft.setDown(true);
+        });
+        at(156, mc -> mc.options.keyLeft.setDown(false));
+        at(196, mc -> shot(mc, "316_gps_driving_2"));
+        at(198, mc -> {
+            mc.options.keyUp.setDown(false);
+            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+        });
+        at(226, mc -> shot(mc, "317_gps_third_person"));
+        if (xaero) {
+            at(228, mc -> {
+                mc.options.setCameraType(CameraType.FIRST_PERSON);
+                for (net.minecraft.client.KeyMapping key : mc.options.keyMappings) {
+                    if (key.getName().equals("gui.xaero_open_map")) {
+                        net.minecraft.client.KeyMapping.click(key.getKey());
+                    }
+                }
+            });
+            at(268, mc -> shot(mc, "318_gps_world_map"));
+            at(270, mc -> mc.setScreen(null));
+        }
+        // On foot, back to the pickup.
+        at(274, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> player.stopRiding());
+            for (com.reiko.cars.network.GpsCarsPayload.Entry car : com.reiko.cars.gps.GpsInbox.cars()) {
+                if (car.type() == CarType.PICKUP_TRUCK) {
+                    com.reiko.cars.client.GpsClient.navigate(net.minecraft.network.chat.Component.translatable("entity.reikocars.pickup_truck"),
+                            car.dimension(), car.pos().getBottomCenter(), true, car.id(), 0xFF000000 | car.color(), "PT");
+                }
+            }
+        });
+        at(300, mc -> shot(mc, "319_gps_on_foot"));
+        // Driving into Mo's station: there.
+        at(302, mc -> {
+            gpsGoTo(mc, com.reiko.cars.gps.PlaceKind.GAS, "Mo");
+            server(mc, player -> {
+                // (a fresh car, facing north: a car someone's been driving keeps its own idea of where it's facing)
+                CarEntity hatchback = spawned(player.serverLevel(), CarType.HATCHBACK, 13.5, -66.5, 180.0F, 0.8);
+                hatchback.setOwner(player);
+                player.teleportTo(player.serverLevel(), 13.5, -60.0, -64.0, 180.0F, 0.0F);
+            });
+        });
+        at(308, mc -> server(mc, player -> player.startRiding(carAt(player.serverLevel(), 13.5, -66.5), true)));
+        at(312, mc -> mc.options.keyUp.setDown(true));
+        at(358, mc -> mc.options.keyUp.setDown(false));
+        at(368, mc -> shot(mc, "320_gps_arrived"));
+        at(370, mc -> ReikoCars.LOGGER.info("Showcase GPS: destination now {}", com.reiko.cars.client.GpsClient.destination()));
+        at(378, mc -> mc.stop());
+    }
+
+    /** Some waypoints in Xaero's Minimap, to pick from. Only loaded when that mod is there. */
+    private static final class GpsShowcaseXaero {
+        static void addWaypoints(Minecraft minecraft) {
+            xaero.hud.minimap.module.MinimapSession session = xaero.hud.minimap.BuiltInHudModules.MINIMAP.getCurrentSession();
+            xaero.hud.minimap.world.MinimapWorld world = session == null ? null : session.getWorldManager().getCurrentWorld();
+            if (world == null) {
+                ReikoCars.LOGGER.error("Showcase GPS: no Xaero world yet");
+                return;
+            }
+            xaero.hud.minimap.waypoint.set.WaypointSet set = world.getCurrentWaypointSet();
+            set.add(new xaero.common.minimap.waypoints.Waypoint(-40, -60, 30, "Home", "H", xaero.hud.minimap.waypoint.WaypointColor.GREEN,
+                    xaero.hud.minimap.waypoint.WaypointPurpose.NORMAL, false, true));
+            set.add(new xaero.common.minimap.waypoints.Waypoint(120, -60, -150, "Iron mine", "M", xaero.hud.minimap.waypoint.WaypointColor.GRAY,
+                    xaero.hud.minimap.waypoint.WaypointPurpose.NORMAL, false, true));
+            set.add(new xaero.common.minimap.waypoints.Waypoint(-90, -60, -20, "Village", "V", xaero.hud.minimap.waypoint.WaypointColor.GOLD,
+                    xaero.hud.minimap.waypoint.WaypointPurpose.NORMAL, false, true));
+        }
     }
 }

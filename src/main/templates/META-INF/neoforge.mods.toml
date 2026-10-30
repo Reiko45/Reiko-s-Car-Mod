@@ -43,3 +43,11 @@ Cars wear out as they're driven; fix them at a Repair Bench, with your own parts
     versionRange="${buildcraft_version_range}"
     ordering="AFTER"
     side="BOTH"
+
+# Optional: with Xaero's Minimap, the GPS shows its destination and your cars on the minimap and lists your waypoints.
+[[dependencies.${mod_id}]]
+    modId="xaerominimap"
+    type="optional"
+    versionRange="[24,)"
+    ordering="NONE"
+    side="CLIENT"

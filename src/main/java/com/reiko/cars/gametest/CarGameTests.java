@@ -50,6 +50,13 @@ import com.reiko.cars.wash.WashBayBlock;
 import com.reiko.cars.wash.WashBayBlockEntity;
 import com.reiko.cars.wash.WashBayService;
 import com.reiko.cars.weather.RoadWeather;
+import com.reiko.cars.gps.CarLocator;
+import com.reiko.cars.gps.GpsMath;
+import com.reiko.cars.gps.GpsService;
+import com.reiko.cars.gps.PlaceKind;
+import com.reiko.cars.gps.PlacesRegistry;
+import com.reiko.cars.network.GpsCarsPayload;
+import com.reiko.cars.network.GpsPlacesPayload;
 import com.reiko.cars.repair.RepairBenchBlock;
 import com.reiko.cars.repair.RepairBenchBlockEntity;
 import com.reiko.cars.repair.RepairBenchMenu;
@@ -4362,6 +4369,124 @@ public final class CarGameTests {
             player.stopRiding();
         } finally {
             leave(helper, player);
+        }
+        helper.succeed();
+    }
+
+    // ---- GPS ----
+
+    /** A gas or diesel pump at {@code rel}, owned by {@code owner}, at {@code cents} a bucket, with fuel in it or not. */
+    private static GasPumpBlockEntity pumpAt(GameTestHelper helper, BlockPos rel, GasPumpBlock block, ServerPlayer owner, long cents, boolean fuel) {
+        BlockState lower = block.defaultBlockState().setValue(GasPumpBlock.FACING, Direction.NORTH);
+        helper.setBlock(rel, lower);
+        helper.setBlock(rel.above(), lower.setValue(GasPumpBlock.HALF, DoubleBlockHalf.UPPER));
+        GasPumpBlockEntity pump = (GasPumpBlockEntity) helper.getBlockEntity(rel);
+        pump.setOwner(owner);
+        pump.setPrice(cents);
+        if (fuel) {
+            pump.tank().fill(new FluidStack(block == ModBlocks.DIESEL_PUMP.get() ? bc("fuel_dense") : bc("fuel_light"), 4_000),
+                    IFluidHandler.FluidAction.EXECUTE);
+        }
+        return pump;
+    }
+
+    /** The GPS's entries within the test's yard. */
+    private static List<GpsPlacesPayload.Entry> inYard(GameTestHelper helper, List<GpsPlacesPayload.Entry> entries) {
+        net.minecraft.world.phys.AABB yard = new net.minecraft.world.phys.AABB(helper.absolutePos(BlockPos.ZERO)).expandTowards(10, 4, 34);
+        return entries.stream().filter(entry -> yard.contains(entry.pos().getCenter())).toList();
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 100)
+    public static void gpsFindsPlacesAndCars(GameTestHelper helper) {
+        ServerPlayer owner = join(helper);
+        ServerPlayer rival = join(helper);
+        try {
+            MinecraftServer server = helper.getLevel().getServer();
+            Vec3 middle = helper.absoluteVec(new Vec3(5.0, 1.0, 17.0));
+            owner.moveTo(middle.x, middle.y, middle.z, 0.0F, 0.0F);
+
+            // A gas station: a gas pump and a diesel pump of the owner's, side by side; a rival's empty pump beside them;
+            // and a mechanic's bench down the yard.
+            pumpAt(helper, new BlockPos(2, 1, 3), ModBlocks.GAS_PUMP.get(), owner, 250, true);
+            pumpAt(helper, new BlockPos(4, 1, 3), ModBlocks.DIESEL_PUMP.get(), owner, 310, true);
+            GasPumpBlockEntity spare = pumpAt(helper, new BlockPos(6, 1, 3), ModBlocks.GAS_PUMP.get(), owner, 199, false);
+            pumpAt(helper, new BlockPos(8, 1, 3), ModBlocks.GAS_PUMP.get(), rival, 100, false);
+            BlockPos bench = new BlockPos(5, 1, 30);
+            helper.setBlock(bench, ModBlocks.REPAIR_BENCH.get().defaultBlockState());
+
+            PlacesRegistry registry = PlacesRegistry.get(server);
+            for (BlockPos rel : List.of(new BlockPos(2, 1, 3), new BlockPos(8, 1, 3), bench)) {
+                registry.scan(helper.getLevel().getChunkAt(helper.absolutePos(rel)));
+            }
+            BlockPos benchAt = helper.absolutePos(bench);
+            check(helper, registry.in(helper.getLevel().dimension()).stream().anyMatch(place -> place.pos().equals(benchAt)
+                    && place.kind() == PlaceKind.MECHANIC), "the bench is known");
+
+            List<GpsPlacesPayload.Entry> places = inYard(helper, GpsService.placesFor(owner));
+            List<GpsPlacesPayload.Entry> stations = places.stream().filter(entry -> entry.kind() == PlaceKind.GAS).toList();
+            helper.assertValueEqual(stations.size(), 2, "the owner's pumps are one station, the rival's another");
+            GpsPlacesPayload.Entry station = stations.stream().filter(entry -> entry.owner().equals(owner.getGameProfile().getName())).findFirst()
+                    .orElseThrow();
+            String detail = station.detail().getString();
+            check(helper, detail.contains("$2.50") && detail.contains("$3.10") && !detail.contains("$1.99"),
+                    "its cheapest gasoline and diesel with fuel in: " + detail);
+            check(helper, station.open(), "it's open");
+            GpsPlacesPayload.Entry rivals = stations.stream().filter(entry -> entry != station).findFirst().orElseThrow();
+            check(helper, !rivals.open(), "an empty pump's no use");
+            check(helper, places.stream().anyMatch(entry -> entry.kind() == PlaceKind.MECHANIC), "and the mechanic");
+            check(helper, places.getFirst().pos().distSqr(owner.blockPosition()) <= places.getLast().pos().distSqr(owner.blockPosition()),
+                    "nearest first");
+
+            // A pump that's taken away is gone from the GPS (the loaded chunks are read again when it's opened).
+            helper.setBlock(new BlockPos(8, 2, 3), Blocks.AIR);
+            helper.setBlock(new BlockPos(8, 1, 3), Blocks.AIR);
+            helper.assertValueEqual(inYard(helper, GpsService.placesFor(owner)).stream().filter(entry -> entry.kind() == PlaceKind.GAS).count(),
+                    1L, "the rival's pump is gone");
+            check(helper, spare.price() == 199, "(the spare pump's still there)");
+
+            // Your cars: where they are, till they're gone for good.
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.5, 20.5);
+            car.setOwner(owner);
+            car.setColor(0x3366CC);
+            CarLocator.get(server).note(car);
+            List<GpsCarsPayload.Entry> cars = GpsService.carsFor(owner);
+            check(helper, cars.size() == 1 && cars.getFirst().id().equals(car.getUUID()) && cars.getFirst().type() == CarType.SEDAN
+                    && cars.getFirst().color() == 0x3366CC && !cars.getFirst().rented(), "the owner's sedan");
+            check(helper, cars.getFirst().pos().equals(car.blockPosition()), "where it's parked");
+            check(helper, GpsService.carsFor(rival).isEmpty(), "not someone else's");
+            car.moveTo(car.getX(), car.getY(), car.getZ() + 3.0);
+            CarLocator.carTick(car);
+            for (int i = 0; i < 40; i++) {
+                car.tickCount++;
+                CarLocator.carTick(car);
+            }
+            check(helper, GpsService.carsFor(owner).getFirst().pos().equals(car.blockPosition()), "it keeps track as the car moves");
+            car.discard();
+            check(helper, GpsService.carsFor(owner).isEmpty(), "a car that's gone is forgotten");
+
+            // The arrow and the readings.
+            Vec3 south = GpsMath.forward(0.0F);
+            near(helper, GpsMath.relativeAngle(south, 0, 10), 0.0, "straight ahead");
+            near(helper, GpsMath.relativeAngle(south, -10, 0), 90.0, "facing south, west is to the right");
+            near(helper, GpsMath.relativeAngle(south, 10, 0), -90.0, "and east to the left");
+            near(helper, Math.abs(GpsMath.relativeAngle(south, 0, -10)), 180.0, "north's behind");
+            near(helper, GpsMath.relativeAngle(GpsMath.forward(90.0F), 0, 10), -90.0, "facing west, south is to the left");
+            helper.assertValueEqual(GpsMath.compass(0, -10), "N", "north");
+            helper.assertValueEqual(GpsMath.compass(10, 0), "E", "east");
+            helper.assertValueEqual(GpsMath.compass(5, 5), "SE", "southeast");
+            helper.assertValueEqual(GpsMath.compass(-5, -5), "NW", "northwest");
+            helper.assertValueEqual(GpsMath.distance(85.2, true), "85 m", "metres");
+            helper.assertValueEqual(GpsMath.distance(343, true), "340 m", "tens of metres");
+            helper.assertValueEqual(GpsMath.distance(1234, true), "1.2 km", "kilometres");
+            helper.assertValueEqual(GpsMath.distance(30, false), "100 ft", "feet");
+            helper.assertValueEqual(GpsMath.distance(1609.344, false), "1.0 mi", "miles");
+            helper.assertValueEqual(GpsMath.duration(45), "0:45", "seconds");
+            helper.assertValueEqual(GpsMath.duration(3725), "1 h 02", "hours");
+            check(helper, GpsMath.arrived(2, 2, 3, false) && !GpsMath.arrived(5, 0, 0, false), "there on foot");
+            check(helper, GpsMath.arrived(8, 0, 8, true) && !GpsMath.arrived(10, 0, 10, true), "there in a car");
+            check(helper, !GpsMath.arrived(0, 20, 0, true), "not if it's well above you");
+        } finally {
+            leave(helper, owner, rival);
         }
         helper.succeed();
     }
