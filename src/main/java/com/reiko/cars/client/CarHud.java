@@ -99,7 +99,8 @@ public final class CarHud implements LayeredDraw.Layer {
         // Broken down or out of fuel: in red, at the top right, where the unit gives way to it if need be.
         Component warning = car.isBrokenDown() ? Component.translatable("hud.reikocars.broken_down")
                 : car.getControllingPassenger() != null && !car.keyedIn() ? Component.translatable("hud.reikocars.no_key")
-                : car.fuelFraction() <= 0 ? Component.translatable("hud.reikocars.out_of_fuel") : null;
+                : car.fuelFraction() <= 0 ? Component.translatable(car.carType().isElectric() ? "hud.reikocars.battery_flat" : "hud.reikocars.out_of_fuel")
+                : null;
         int unitX = x + 8 + font.width(number) * 2;
         int warningX = warning == null ? x + WIDTH : x + WIDTH - 6 - font.width(warning);
         if (warning != null) {
@@ -121,15 +122,26 @@ public final class CarHud implements LayeredDraw.Layer {
             graphics.drawString(font, locked, x + WIDTH - 6 - font.width(locked), y + 16, 0x9E9E9E, false);
         }
 
-        // Fuel gauge
+        // Fuel gauge, or an electric car's battery: a battery outline and its charge in percent
         float fuel = car.fuelFraction();
         int barX = x + 14;
         int barY = y + 28;
         int barWidth = WIDTH - 28;
-        graphics.drawString(font, "E", x + 5, barY - 1, 0xE57373, false);
-        graphics.drawString(font, "F", x + WIDTH - 10, barY - 1, 0xA5D6A7, false);
+        boolean electric = car.carType().isElectric();
+        int color = fuel < 0.15F ? 0xFFE53935 : fuel < 0.35F ? 0xFFFDD835 : electric ? 0xFF29B6F6 : 0xFF43A047;
+        if (electric) {
+            graphics.fill(x + 4, barY, x + 11, barY + 6, 0xFF9E9E9E);
+            graphics.fill(x + 5, barY + 1, x + 10, barY + 5, 0xFF2A2A2A);
+            graphics.fill(x + 11, barY + 2, x + 12, barY + 4, 0xFF9E9E9E);
+            graphics.fill(x + 6, barY + 2, x + 6 + Math.max(fuel > 0 ? 1 : 0, Math.round(3 * fuel)), barY + 4, color);
+            String percent = Math.round(fuel * 100) + "%";
+            barWidth = WIDTH - 22 - font.width(percent);
+            graphics.drawString(font, percent, x + WIDTH - 5 - font.width(percent), barY - 1, 0xB3E5FC, false);
+        } else {
+            graphics.drawString(font, "E", x + 5, barY - 1, 0xE57373, false);
+            graphics.drawString(font, "F", x + WIDTH - 10, barY - 1, 0xA5D6A7, false);
+        }
         graphics.fill(barX, barY, barX + barWidth, barY + 6, 0xFF2A2A2A);
-        int color = fuel < 0.15F ? 0xFFE53935 : fuel < 0.35F ? 0xFFFDD835 : 0xFF43A047;
         boolean blink = fuel < 0.15F && (minecraft.player.tickCount / 10) % 2 == 0;
         if (fuel > 0 && !blink) {
             graphics.fill(barX, barY, barX + Math.max(1, Mth.floor(barWidth * fuel)), barY + 6, color);
@@ -145,7 +157,9 @@ public final class CarHud implements LayeredDraw.Layer {
         int lightsY = y + 38;
         boolean flash = (minecraft.player.tickCount / 5) % 2 == 0;
         for (Part part : Part.values()) {
-            drawLight(graphics, LIGHTS[part.ordinal()], lightsX + part.ordinal() * LIGHT_SPACING, lightsY, lightColor(condition.level(part), flash));
+            if (car.hasPart(part)) { // (an electric car has no oil light)
+                drawLight(graphics, LIGHTS[part.ordinal()], lightsX + part.ordinal() * LIGHT_SPACING, lightsY, lightColor(condition.level(part), flash));
+            }
         }
         // The turn signal arrows, green while they blink.
         drawLight(graphics, LEFT_ARROW, x + 3, lightsY, com.reiko.cars.car.CarSignals.lit(car, true) ? 0xFF5BE35B : 0x38FFFFFF);

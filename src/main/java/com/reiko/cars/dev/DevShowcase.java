@@ -158,6 +158,8 @@ public final class DevShowcase {
             waterScript();
         } else if (MODE.equals("headlights")) {
             headlightsScript();
+        } else if (MODE.equals("ev")) {
+            evScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -2310,6 +2312,7 @@ public final class DevShowcase {
             }
         }));
         at(115, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
+        at(118, mc -> hoverOn(mc, 2, 2)); // the mouse out of the way, so no tooltip covers the icons
         at(125, mc -> shot(mc, "160_icons"));
         at(130, mc -> mc.stop());
     }
@@ -2484,5 +2487,66 @@ public final class DevShowcase {
         at(247, mc -> server(mc, player -> player.serverLevel().setDayTime(6000)));
         at(275, mc -> server(mc, player -> ReikoCars.LOGGER.info("Showcase headlights: {} lights by day", glowCount(player.serverLevel()))));
         at(280, mc -> mc.stop());
+    }
+
+    private static com.reiko.cars.charge.ChargingStationBlockEntity station(ServerLevel level) {
+        return (com.reiko.cars.charge.ChargingStationBlockEntity) level.getBlockEntity(new BlockPos(3, -60, 1));
+    }
+
+    /** A charging station by a city EV low on charge: the station, its screen, a paid charge, the battery on the dashboard. */
+    private static void evScript() {
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                tile(level, -12, -12, 12, 20);
+                BlockState lower = ModBlocks.CHARGING_STATION.get().defaultBlockState()
+                        .setValue(com.reiko.cars.charge.ChargingStationBlock.FACING, Direction.WEST);
+                level.setBlockAndUpdate(new BlockPos(3, -60, 1), lower);
+                level.setBlockAndUpdate(new BlockPos(3, -59, 1), lower.setValue(com.reiko.cars.charge.ChargingStationBlock.HALF, DoubleBlockHalf.UPPER));
+                var station = station(level);
+                station.setPrice(5);
+                station.addMj(350_000);
+                spawn(level, CarType.CITY_EV, 0.5, 1.0, 0.0F, 0.15);
+                spawn(level, CarType.ELECTRIC_SEDAN, -4.0, 1.5, 0.0F, 0.6);
+                spawn(level, CarType.ELECTRIC_MOPED, 6.5, 2.5, 180.0F, 0.6);
+                player.getInventory().clearContent();
+                com.reiko.economy.bank.Purse.give(player, 5000);
+            });
+        });
+        at(40, mc -> look(mc, -3.5, -59.0, -6.0, -25.0F, 15.0F));
+        at(60, mc -> shot(mc, "175_charger"));
+        at(62, mc -> look(mc, 0.5, -60.0, -1.2, -90.0F, 12.0F));
+        at(75, mc -> shot(mc, "176_charger_display"));
+        at(77, mc -> server(mc, player -> com.reiko.cars.charge.ChargerMenu.open(player, station(player.serverLevel()))));
+        at(90, mc -> shot(mc, "177_charger_screen"));
+        at(92, mc -> server(mc, player -> {
+            var station = station(player.serverLevel());
+            CarEntity ev = car(player.serverLevel(), CarType.CITY_EV);
+            var result = com.reiko.cars.charge.ChargerService.charge(player, station, ev, 40_000, 5, com.reiko.economy.shop.Payment.cash());
+            ReikoCars.LOGGER.info("Showcase charge: {} {}", result.success(), result.message().getString());
+            com.reiko.economy.network.ShopFeedback.send(player, result);
+            if (player.containerMenu instanceof com.reiko.cars.charge.ChargerMenu menu) {
+                menu.refresh();
+            }
+        }));
+        at(105, mc -> shot(mc, "178_charged"));
+        at(107, mc -> {
+            mc.setScreen(null);
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                player.startRiding(car(player.serverLevel(), CarType.CITY_EV), true);
+            });
+        });
+        at(125, mc -> {
+            mc.player.setYRot(0.0F);
+            mc.player.setXRot(15.0F);
+        });
+        at(135, mc -> shot(mc, "179_ev_dashboard"));
+        at(140, mc -> mc.stop());
     }
 }

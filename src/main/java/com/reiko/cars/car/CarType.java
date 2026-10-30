@@ -1,6 +1,7 @@
 package com.reiko.cars.car;
 
 import static com.reiko.cars.car.FuelType.DIESEL;
+import static com.reiko.cars.car.FuelType.ELECTRIC;
 import static com.reiko.cars.car.FuelType.GASOLINE;
 
 import java.util.List;
@@ -15,7 +16,8 @@ import org.jetbrains.annotations.Nullable;
  * on the ground: {@code x} toward the car's left (the driver's side), {@code y} up, {@code z} toward the front. They
  * match the seats in the Blockbench models in {@code blockbench/}; move both together.
  *
- * <p>Tank sizes are in buckets of the car's own fuel: light fuel for gasoline cars, dense fuel for diesel ones. A
+ * <p>Tank sizes are in buckets of the car's own fuel: light fuel for gasoline cars, dense fuel for diesel ones; an
+ * electric car's battery is in 10,000s of MJ. A
  * tractor's fifth wheel, where a trailer's kingpin sits, is given in pixels behind the middle and up from the ground.
  */
 public enum CarType {
@@ -86,6 +88,20 @@ public enum CarType {
     CEMENT_MIXER(2.5f,  3.4f,  7.9f,  7,    0.68f, 0.009f, 0.033f, 0.18f, 2.9f, 16, 1150, 0xF4F5F7, 26, false, 2, 4, DIESEL, noFifthWheel(),
             seat(8, -17), seat(-8, -17)),
 
+    // Electric: charged at a charging station. Quick off the line, quiet, and they get a little back when braking.
+    /** A tall little two-seater for town: nippy, turns on a coin, and sips its battery. */
+    CITY_EV(     2.0f,  1.75f, 2.8f,  5,    0.75f, 0.018f, 0.042f, 0.25f, 5.2f,  8,  32, 0x4FC3F7,  7, false, 1, 4, ELECTRIC, noFifthWheel(),
+            seat(6, 1), seat(-6, 1)),
+    /** A fast, smooth electric fastback: the quickest car off the line, a glass roof and a frunk. */
+    ELECTRIC_SEDAN(2.25f, 1.65f, 3.8f, 5,   1.25f, 0.030f, 0.050f, 0.25f, 4.3f, 16,  45, 0xEDEEF0,  7, false, 1, 4, ELECTRIC, noFifthWheel(),
+            seat(6, -2), seat(-6, -2), seat(6, 10), seat(-6, 10)),
+    /** A crew-cab electric pickup with a motor on each axle: at home off-road, with a truck bed. */
+    ELECTRIC_PICKUP(2.5f, 2.2f, 4.3f,  7,   0.95f, 0.021f, 0.042f, 0.22f, 3.7f, 20,  70, 0x3C6E57, 12, true,  3, 4, ELECTRIC, noFifthWheel(),
+            seat(7, -6), seat(-7, -6), seat(7, 4), seat(-7, 4)),
+    /** An electric delivery van with a 54-slot cargo area. */
+    ELECTRIC_VAN(2.4f,  2.7f,  4.6f,  6,    0.80f, 0.016f, 0.036f, 0.22f, 3.6f, 16,  60, 0x5FB4E5, 16, false, 6, 4, ELECTRIC, noFifthWheel(),
+            seat(7, -17), seat(-7, -17)),
+
     // Motorcycles: two wheels, lean into turns, a rider and maybe a passenger behind.
     /** The fastest thing on the road, and quick off the line. */
     SPORT_BIKE(  1.1f,  1.4f,  2.25f, 6,    1.45f, 0.026f, 0.055f, 0.10f, 5.5f,  4, 110, 0x1E88E5, 15, false, 0, 2, GASOLINE, noFifthWheel(),
@@ -98,7 +114,10 @@ public enum CarType {
             seat(0, 3)),
     /** Slow, but goes a long way on a little fuel. */
     SCOOTER(     1.0f,  1.3f,  1.8f,  4,    0.60f, 0.014f, 0.040f, 0.08f, 6.5f,  2,  36, 0x7FD1C6, 13, false, 0, 2, GASOLINE, noFifthWheel(),
-            seat(0, 6));
+            seat(0, 6)),
+    /** A step-through electric moped with room for two: quiet, and goes a long way on a charge. */
+    ELECTRIC_MOPED(1.0f, 1.3f, 2.0f,  4,    0.70f, 0.020f, 0.045f, 0.08f, 6.5f,  3,  12, 0xF2F2F2, 13, false, 0, 2, ELECTRIC, noFifthWheel(),
+            seat(0, 5), seat(0, 12));
 
     /**
      * How far a seated player's model hangs below the attachment point, in pixels: a player sits 0.6 blocks lower
@@ -195,9 +214,14 @@ public enum CarType {
                 : net.minecraft.network.chat.Component.translatable("gui.reikocars.seats", seats.size());
     }
 
-    /** What it runs on: gasoline, or diesel for the semi. */
+    /** What it runs on: gasoline, diesel or electricity. */
     public FuelType fuel() {
         return fuel;
+    }
+
+    /** Runs on a battery, charged at a charging station. */
+    public boolean isElectric() {
+        return fuel.isElectric();
     }
 
     /** Fuel a full tank holds, in MJ. */
@@ -228,6 +252,9 @@ public enum CarType {
             case ICE_CREAM_TRUCK -> "container.reikocars.freezer";
             case DUMP_TRUCK -> "container.reikocars.dump_bed";
             case CEMENT_MIXER -> "container.reikocars.drum";
+            case CITY_EV -> "container.reikocars.trunk";
+            case ELECTRIC_SEDAN -> "container.reikocars.frunk";
+            case ELECTRIC_VAN -> "container.reikocars.cargo_area";
             default -> "container.reikocars.truck_bed";
         };
     }
@@ -271,7 +298,7 @@ public enum CarType {
 
     /** Whether it fits on a car hauler: anything up to a minivan's size, but no trucks, vans or buses. */
     public boolean fitsOnHauler() {
-        return !isTractor() && length <= 4.1f && fuel == FuelType.GASOLINE;
+        return !isTractor() && length <= 4.1f && fuel != FuelType.DIESEL;
     }
 
     /**
@@ -305,11 +332,16 @@ public enum CarType {
             case POLICE_CAR -> 1.05F;
             case AMBULANCE -> 0.95F;
             case GARBAGE_TRUCK, DUMP_TRUCK, CEMENT_MIXER -> 0.68F;
+            case CITY_EV -> 1.3F;
+            case ELECTRIC_SEDAN -> 1.1F;
+            case ELECTRIC_PICKUP -> 0.85F;
+            case ELECTRIC_VAN -> 0.95F;
+            case ELECTRIC_MOPED -> 1.5F;
             default -> 1.0F;
         };
     }
 
-    /** The engine sound's pitch at idle, against a car's 1.0. */
+    /** The engine sound's pitch at idle, against a car's 1.0 (an electric motor's whine, for the electric ones). */
     public float enginePitch() {
         return switch (this) {
             case SEMI_TRUCK, CITY_BUS -> 0.7F;
@@ -327,6 +359,10 @@ public enum CarType {
             case POLICE_CAR -> 0.92F;
             case AMBULANCE -> 0.85F;
             case GARBAGE_TRUCK, DUMP_TRUCK, CEMENT_MIXER -> 0.72F;
+            case CITY_EV -> 1.15F;
+            case ELECTRIC_PICKUP -> 0.85F;
+            case ELECTRIC_VAN -> 0.9F;
+            case ELECTRIC_MOPED -> 1.4F;
             default -> 1.0F;
         };
     }

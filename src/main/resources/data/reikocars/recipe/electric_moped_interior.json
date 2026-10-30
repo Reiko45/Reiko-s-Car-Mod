@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "buildcraftreborn:redstone_iron_chipset"
+    },
+    "L": {
+      "tag": "c:leathers"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    }
+  },
+  "pattern": [
+    " C ",
+    "LRL",
+    " L "
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:electric_moped_interior"
+  }
+}

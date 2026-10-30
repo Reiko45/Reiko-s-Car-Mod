@@ -23,6 +23,8 @@ public final class ModMenus {
     public static final DeferredRegister<MenuType<?>> MENUS = DeferredRegister.create(Registries.MENU, ReikoCars.MODID);
 
     public static final Supplier<MenuType<PumpMenu>> PUMP = MENUS.register("gas_pump", () -> IMenuTypeExtension.create(PumpMenu::new));
+    public static final Supplier<MenuType<com.reiko.cars.charge.ChargerMenu>> CHARGER = MENUS.register("charging_station",
+            () -> IMenuTypeExtension.create(com.reiko.cars.charge.ChargerMenu::new));
     public static final Supplier<MenuType<CarWorkbenchMenu>> CAR_WORKBENCH = MENUS.register("car_workbench",
             () -> new MenuType<>(CarWorkbenchMenu::new, FeatureFlags.DEFAULT_FLAGS));
 

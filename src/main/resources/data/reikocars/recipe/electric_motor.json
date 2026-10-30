@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "tag": "c:ingots/copper"
+    },
+    "G": {
+      "tag": "c:gears/gold"
+    },
+    "B": {
+      "item": "minecraft:redstone_block"
+    },
+    "R": {
+      "item": "buildcraftreborn:redstone_gold_chipset"
+    }
+  },
+  "pattern": [
+    "CGC",
+    "CBC",
+    "CRC"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:electric_motor"
+  }
+}

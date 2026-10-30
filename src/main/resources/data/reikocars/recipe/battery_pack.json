@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "R": {
+      "item": "minecraft:redstone_block"
+    },
+    "C": {
+      "tag": "c:ingots/copper"
+    },
+    "X": {
+      "item": "buildcraftreborn:redstone_crystal"
+    }
+  },
+  "pattern": [
+    "IRI",
+    "CXC",
+    "IRI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:battery_pack"
+  }
+}

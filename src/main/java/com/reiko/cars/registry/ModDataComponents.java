@@ -32,7 +32,11 @@ public final class ModDataComponents {
     public static final Supplier<DataComponentType<SimpleFluidContent>> TANK_FLUID = COMPONENTS.registerComponentType("tank_fluid",
             builder -> builder.persistent(SimpleFluidContent.CODEC).networkSynchronized(SimpleFluidContent.STREAM_CODEC));
 
-    /** A gas pump's price per bucket, in cents. */
+    /** MJ stored in a charging station when it was broken. */
+    public static final Supplier<DataComponentType<Long>> CHARGER_ENERGY = COMPONENTS.registerComponentType("charger_energy",
+            builder -> builder.persistent(Codec.LONG).networkSynchronized(ByteBufCodecs.VAR_LONG));
+
+    /** A gas pump's price per bucket, or a charging station's per 1,000 MJ, in cents. */
     public static final Supplier<DataComponentType<Long>> PUMP_PRICE = COMPONENTS.registerComponentType("pump_price",
             builder -> builder.persistent(Codec.LONG).networkSynchronized(ByteBufCodecs.VAR_LONG));
 

@@ -50,6 +50,7 @@ public final class ModNetwork {
     static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
         registrar.playToServer(PumpActionPayload.TYPE, PumpActionPayload.STREAM_CODEC, ModNetwork::handlePump);
+        registrar.playToServer(ChargerActionPayload.TYPE, ChargerActionPayload.STREAM_CODEC, ModNetwork::handleCharger);
         registrar.playToServer(CarActionPayload.TYPE, CarActionPayload.STREAM_CODEC, ModNetwork::handleCar);
         registrar.playToServer(TrailerActionPayload.TYPE, TrailerActionPayload.STREAM_CODEC, ModNetwork::handleTrailer);
         registrar.playToServer(CarWearPayload.TYPE, CarWearPayload.STREAM_CODEC, ModNetwork::handleWear);
@@ -300,6 +301,31 @@ public final class ModNetwork {
             }
             default -> ShopActionResult.fail(Component.literal("?"));
         };
+        ShopFeedback.send(player, result);
+    }
+
+    private static void handleCharger(ChargerActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player)
+                || !(player.containerMenu instanceof com.reiko.cars.charge.ChargerMenu menu)
+                || menu.containerId != payload.containerId()
+                || !menu.stillValid(player)
+                || menu.station() == null) {
+            return;
+        }
+        com.reiko.cars.charge.ChargingStationBlockEntity station = menu.station();
+        ShopActionResult result = switch (payload.action()) {
+            case ChargerActionPayload.CHARGE -> com.reiko.cars.charge.ChargerService.charge(player, station, menu.car(),
+                    Math.max(0, payload.mj()), payload.expectedPrice(), payload.payment());
+            case ChargerActionPayload.SET_PRICE -> {
+                ShopActionResult set = com.reiko.cars.charge.ChargerService.setPrice(player, station, payload.priceText());
+                if (set.success()) {
+                    com.reiko.cars.charge.ChargerMenu.open(player, station); // reopen so the screen shows the new price
+                }
+                yield set;
+            }
+            default -> ShopActionResult.fail(Component.literal("?"));
+        };
+        menu.refresh();
         ShopFeedback.send(player, result);
     }
 

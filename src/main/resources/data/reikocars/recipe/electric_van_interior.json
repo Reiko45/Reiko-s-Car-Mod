@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "buildcraftreborn:redstone_iron_chipset"
+    },
+    "W": {
+      "tag": "minecraft:wool"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    }
+  },
+  "pattern": [
+    " C ",
+    "WRW",
+    "WWW"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:electric_van_interior"
+  }
+}

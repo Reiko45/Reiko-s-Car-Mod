@@ -18,6 +18,9 @@ public final class ModBlockEntities {
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, ReikoCars.MODID);
 
     /** Gas and diesel pumps share it. Only the bottom half of a pump has one. */
+    public static final Supplier<BlockEntityType<com.reiko.cars.charge.ChargingStationBlockEntity>> CHARGING_STATION =
+            BLOCK_ENTITIES.register("charging_station", () -> BlockEntityType.Builder.of(com.reiko.cars.charge.ChargingStationBlockEntity::new,
+                    ModBlocks.CHARGING_STATION.get()).build(null));
     public static final Supplier<BlockEntityType<GasPumpBlockEntity>> GAS_PUMP = BLOCK_ENTITIES.register("gas_pump",
             () -> BlockEntityType.Builder.of(GasPumpBlockEntity::new, ModBlocks.GAS_PUMP.get(), ModBlocks.DIESEL_PUMP.get()).build(null));
 

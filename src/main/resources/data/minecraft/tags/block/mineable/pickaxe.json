@@ -17,6 +17,7 @@
     "reikocars:traffic_light",
     "reikocars:stop_sign",
     "reikocars:speed_sign",
-    "reikocars:street_lamp"
+    "reikocars:street_lamp",
+    "reikocars:charging_station"
   ]
 }

@@ -25,6 +25,14 @@ public final class ModCapabilities {
             GasPumpBlockEntity pump = GasPumpBlock.pumpAt(level, pos, state);
             return pump == null ? null : pump.pipeInput();
         }, ModBlocks.GAS_PUMP.get(), ModBlocks.DIESEL_PUMP.get());
+        // BuildCraft engines and kinesis pipes (and, as BuildCraft's config allows, other mods' energy) charge either
+        // half of a charging station, from any side.
+        for (var capability : java.util.List.<net.neoforged.neoforge.capabilities.BlockCapability<?, net.minecraft.core.Direction>>of(
+                buildcraftreborn.api.mj.MjAPI.CAP_CONNECTOR, buildcraftreborn.api.mj.MjAPI.CAP_RECEIVER,
+                buildcraftreborn.api.mj.MjAPI.CAP_REDSTONE_RECEIVER, buildcraftreborn.api.mj.MjAPI.CAP_READABLE,
+                Capabilities.EnergyStorage.BLOCK)) {
+            registerStation(event, capability);
+        }
         // Hoppers and pipes can fill a trash can.
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.TRASH_CAN.get(),
                 (can, side) -> new net.neoforged.neoforge.items.wrapper.InvWrapper(can));
@@ -34,5 +42,12 @@ public final class ModCapabilities {
         for (CarType type : CarType.values()) {
             event.registerEntity(Capabilities.FluidHandler.ENTITY, ModEntities.car(type), (car, context) -> new CarTank(car));
         }
+    }
+
+    private static <T> void registerStation(RegisterCapabilitiesEvent event, net.neoforged.neoforge.capabilities.BlockCapability<T, net.minecraft.core.Direction> capability) {
+        event.registerBlock(capability, (level, pos, state, blockEntity, side) -> {
+            com.reiko.cars.charge.ChargingStationBlockEntity station = com.reiko.cars.charge.ChargingStationBlock.stationAt(level, pos, state);
+            return station == null ? null : station.capabilities().getCapability(capability);
+        }, ModBlocks.CHARGING_STATION.get());
     }
 }

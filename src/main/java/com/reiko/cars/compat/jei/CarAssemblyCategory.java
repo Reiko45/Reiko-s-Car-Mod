@@ -123,8 +123,11 @@ final class CarAssemblyCategory implements IRecipeCategory<RecipeHolder<CarAssem
             CarPreview.draw(graphics, type, (PREVIEW_LEFT + PREVIEW_RIGHT) / 2.0F, PREVIEW_BOTTOM / 2.0F + 2.0F, 14.0F, yaw, CarPreview.Fitted.all());
             CarsClientConfig.SpeedUnit unit = CarsClientConfig.speedUnit();
             long speed = Math.round(type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * unit.perBlockPerTick);
-            Component stats = Component.translatable("gui.reikocars.workbench.jei_stats", type.seatsText(), speed,
-                    Component.translatable(unit.translationKey), type.tankBuckets);
+            Component stats = type.isElectric()
+                    ? Component.translatable("gui.reikocars.workbench.jei_stats_ev", type.seatsText(), speed,
+                            Component.translatable(unit.translationKey), Math.round(type.tankCapacity() / 1000.0))
+                    : Component.translatable("gui.reikocars.workbench.jei_stats", type.seatsText(), speed,
+                            Component.translatable(unit.translationKey), type.tankBuckets);
             graphics.drawString(font, stats, (WIDTH - font.width(stats)) / 2, HEIGHT - 9, 0xFF606060, false);
         } else if (result.getItem() instanceof TrailerItem trailer) {
             float yaw = 215.0F + (Util.getMillis() % 12_000L) / 12_000.0F * 360.0F;

@@ -32,6 +32,12 @@ public final class ModSounds {
     public static final Supplier<SoundEvent> SIGNAL_TICK = register("car.signal_tick");
     public static final Supplier<SoundEvent> SIGNAL_TOCK = register("car.signal_tock");
     public static final Supplier<SoundEvent> ALARM = register("car.alarm");
+    /** An electric car's motor: a whine, looped, rising with speed. */
+    public static final Supplier<SoundEvent> ELECTRIC_MOTOR = register("car.electric_motor");
+    /** An electric car's chime as it comes on, where a fuel car's starter would turn. */
+    public static final Supplier<SoundEvent> EV_READY = register("car.ev_ready");
+    /** A charging station's connector going in and the power coming up. */
+    public static final Supplier<SoundEvent> CHARGE = register("charging_station.charge");
 
     private ModSounds() {
     }

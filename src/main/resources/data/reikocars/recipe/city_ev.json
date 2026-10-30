@@ -1,0 +1,22 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:city_ev_chassis"
+  },
+  "body": {
+    "item": "reikocars:city_ev_body"
+  },
+  "interior": {
+    "item": "reikocars:city_ev_interior"
+  },
+  "engine": {
+    "item": "reikocars:electric_motor"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:city_ev"
+  }
+}

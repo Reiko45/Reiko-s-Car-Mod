@@ -9,14 +9,16 @@ import net.minecraft.util.Mth;
 
 /**
  * The engine's loop, one per car the client can see. It follows the car, goes quiet while nobody's driving or the
- * tank's empty, and rises in pitch with speed. Starts silent (like a minecart's rolling sound) so it can fade in.
+ * tank's empty, and rises in pitch with speed. Starts silent (like a minecart's rolling sound) so it can fade in. An
+ * electric car's is its motor's whine instead, next to silent standing still.
  */
 public final class EngineSound extends AbstractTickableSoundInstance {
     private final CarEntity car;
     private float level;
 
     public EngineSound(CarEntity car) {
-        super(ModSounds.ENGINE.get(), SoundSource.NEUTRAL, SoundInstance.createUnseededRandom());
+        super(car.carType().isElectric() ? ModSounds.ELECTRIC_MOTOR.get() : ModSounds.ENGINE.get(), SoundSource.NEUTRAL,
+                SoundInstance.createUnseededRandom());
         this.car = car;
         this.looping = true;
         this.delay = 0;
@@ -48,7 +50,12 @@ public final class EngineSound extends AbstractTickableSoundInstance {
         float target = car.isEngineRunning() ? 1.0F : 0.0F;
         level += (target - level) * 0.15F;
         float pace = (float) Mth.clamp(Math.abs(car.displaySpeed()) / car.carType().topSpeed, 0.0, 1.2);
-        volume = level * (0.35F + 0.35F * pace);
-        pitch = (0.7F + 0.9F * pace) * car.carType().enginePitch();
+        if (car.carType().isElectric()) {
+            volume = level * (0.06F + 0.5F * pace);
+            pitch = (0.55F + 1.1F * pace) * car.carType().enginePitch();
+        } else {
+            volume = level * (0.35F + 0.35F * pace);
+            pitch = (0.7F + 0.9F * pace) * car.carType().enginePitch();
+        }
     }
 }

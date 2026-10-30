@@ -10,14 +10,17 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The two kinds of fuel: gasoline (BuildCraft's light fuels, and other mods' gasoline, ethanol and the like) and
- * diesel (BuildCraft's heavy fuels, Dense Fuel and the Mixed Heavy Fuels it's refined from, and other mods' diesel and
- * biodiesel). Each is a fluid tag, {@code reikocars:gasoline} and {@code reikocars:diesel}, so data packs can move
- * fluids between them. Each car runs on one kind ({@link CarType#fuel()}) and each pump sells one kind.
+ * What cars run on: gasoline (BuildCraft's light fuels, and other mods' gasoline, ethanol and the like), diesel
+ * (BuildCraft's heavy fuels, Dense Fuel and the Mixed Heavy Fuels it's refined from, and other mods' diesel and
+ * biodiesel), or electricity. The two fuels are fluid tags, {@code reikocars:gasoline} and {@code reikocars:diesel},
+ * so data packs can move fluids between them. Each car runs on one kind ({@link CarType#fuel()}); each pump sells one
+ * fuel, and charging stations sell electricity: BuildCraft MJ, stored in the car's battery as it comes.
  */
 public enum FuelType {
     GASOLINE("gas_pump", 0xFFC62828, 90_000),
-    DIESEL("diesel_pump", 0xFF2E7D32, 360_000);
+    DIESEL("diesel_pump", 0xFF2E7D32, 360_000),
+    /** An electric car's battery is measured in tens of thousands of MJ (its "tank" in {@link CarType}). */
+    ELECTRIC("charging_station", 0xFF0288D1, 10_000);
 
     private final String id = name().toLowerCase(Locale.ROOT);
     private final TagKey<Fluid> tag = FluidTags.create(ReikoCars.id(id));
@@ -25,7 +28,8 @@ public enum FuelType {
     /** The colour of the fuel's name on a pump's sign. */
     public final int signColor;
     /**
-     * MJ in a bucket of BuildCraft's own fuel of this kind (light fuel, dense fuel), the unit car tanks are measured in.
+     * MJ in a bucket of BuildCraft's own fuel of this kind (light fuel, dense fuel), the unit car tanks are measured
+     * in; for electricity, the unit battery sizes are given in.
      */
     public final double bucketEnergy;
 
@@ -70,5 +74,10 @@ public enum FuelType {
 
     public boolean matches(FluidStack stack) {
         return of(stack) == this;
+    }
+
+    /** Runs on electricity, from a charging station, rather than a fluid fuel. */
+    public boolean isElectric() {
+        return this == ELECTRIC;
     }
 }

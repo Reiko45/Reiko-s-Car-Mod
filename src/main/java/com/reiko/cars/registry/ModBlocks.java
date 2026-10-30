@@ -27,6 +27,10 @@ public final class ModBlocks {
     public static final DeferredBlock<GasPumpBlock> DIESEL_PUMP = BLOCKS.register("diesel_pump",
             () -> new GasPumpBlock(FuelType.DIESEL, pump(MapColor.COLOR_GREEN)));
 
+    /** Sells electric cars their charge: power from BuildCraft engines and pipes, sold like fuel. Two blocks tall. */
+    public static final DeferredBlock<com.reiko.cars.charge.ChargingStationBlock> CHARGING_STATION = BLOCKS.register("charging_station",
+            () -> new com.reiko.cars.charge.ChargingStationBlock(pump(MapColor.COLOR_LIGHT_BLUE)));
+
     private static BlockBehaviour.Properties pump(MapColor color) {
         return BlockBehaviour.Properties.of()
                 .mapColor(color)

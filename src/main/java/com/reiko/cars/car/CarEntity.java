@@ -382,10 +382,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return Component.translatable("car.reikocars.trailer_broke_down." + (trailers == null ? Part.BODY : trailers).id());
     }
 
-    /** A car has every part. */
+    /** A car has every part, but an electric one has no oil to change. */
     @Override
     public boolean hasPart(Part part) {
-        return true;
+        return part != Part.OIL || !type.isElectric();
     }
 
     @Override
@@ -448,6 +448,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             double skidded = Mth.clamp(skidSpeed, 0.0, most);
             lastBrakeReport = tickCount;
             setCondition(condition.afterBraking(braked, skidded, load, rate));
+            regenerate(braked - skidded);
             TrailerEntity towed = trailer();
             if (towed != null) {
                 towed.brakeWear(braked, skidded);
@@ -460,6 +461,25 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             lastCrashReport = tickCount;
             crash(Math.min(impact, type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * 1.6));
         }
+    }
+
+    /**
+     * An electric car's motor brakes it too, charging the battery: a stop from top speed gets back what 5 to 10 blocks
+     * of driving take (8 blocks' worth per block-per-tick of speed). Not with the wheels locked.
+     */
+    private void regenerate(double braked) {
+        if (!type.isElectric() || braked <= 0.0 || !keyedIn()) {
+            return;
+        }
+        setFuel(fuel + braked * type.fuelPerBlock * REGEN_BLOCKS_PER_SPEED * CarsConfig.get(CarsConfig.FUEL_USE));
+    }
+
+    /** MJ a full stop gives back, in blocks' worth of driving per block-per-tick of speed taken off. */
+    static final double REGEN_BLOCKS_PER_SPEED = 8.0;
+
+    /** The starter, or an electric car's chime. */
+    private net.minecraft.sounds.SoundEvent startSound() {
+        return type.isElectric() ? ModSounds.EV_READY.get() : ModSounds.ENGINE_START.get();
     }
 
     /** The car hit something at {@code impact} blocks per tick: dents its body (and its engine, if hard), with a bang. */
@@ -726,7 +746,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (keyed != was) {
             entityData.set(DATA_KEYED, keyed);
             if (announce && keyed && hasFuel() && !isBrokenDown()) {
-                playSound(ModSounds.ENGINE_START.get(), 1.0F, 1.0F);
+                playSound(startSound(), 1.0F, 1.0F);
             }
         }
         return keyed;
@@ -1051,7 +1071,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
                     playSound(ModSounds.BREAKDOWN.get(), 0.6F, 1.2F); // turns over, won't start
                     tellDriver(brokenDownMessage());
                 } else {
-                    playSound(ModSounds.ENGINE_START.get(), 1.0F, 1.0F);
+                    playSound(startSound(), 1.0F, 1.0F);
                 }
             }
         }
@@ -1421,16 +1441,19 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         double load = trailer() != null ? 1.4 : towed() != null ? 1.3 : 1.0;
         if (driver != null && fuel > 0 && !isBrokenDown() && keyedIn()) {
             haul(driver, moved);
+            // An electric car draws next to nothing standing still.
             double burn = moved * type.fuelPerBlock * load * CarsConfig.get(CarsConfig.FUEL_USE) * condition.fuelUse()
-                    + CarsConfig.get(CarsConfig.IDLE_FUEL_USE);
+                    + (type.isElectric() ? 0.0 : CarsConfig.get(CarsConfig.IDLE_FUEL_USE));
             setFuel(fuel - burn);
             if (fuel <= 0 && driver instanceof Player player) {
-                player.displayClientMessage(Component.translatable("car.reikocars.out_of_fuel"), true);
+                player.displayClientMessage(Component.translatable(type.isElectric() ? "car.reikocars.battery_flat" : "car.reikocars.out_of_fuel"),
+                        true);
             }
         }
         if (driver != null && moved > 0.0) {
             double tires = isOnRoad() ? 0.75 : isOffRoad() ? (type.offRoad ? 1.5 : 2.5) : 1.0;
-            setCondition(condition.afterDriving(moved, tires, load, CarsConfig.get(CarsConfig.WEAR)));
+            CarCondition worn = condition.afterDriving(moved, tires, load, CarsConfig.get(CarsConfig.WEAR));
+            setCondition(type.isElectric() ? worn.with(Part.OIL, 1.0F) : worn); // no oil in an electric motor
         }
         if (moved > 0.3) {
             runOver(driver, moved);
@@ -1514,7 +1537,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
 
         engineSmoke();
-        if (isEngineRunning() && tickCount % 3 == 0) {
+        if (isEngineRunning() && tickCount % 3 == 0 && !type.isElectric()) {
             if (!type.exhaustStacks().isEmpty()) {
                 // Out of the tops of its exhaust stacks (the semi's behind the cab, the tractor's on the hood).
                 for (Vec3 local : type.exhaustStacks()) {
@@ -1543,6 +1566,15 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
         boolean bad = wear.engine() < 0.1F;
         if (tickCount % (dead ? 8 : bad ? 2 : 5) != 0) {
+            return;
+        }
+        if (type.isElectric()) {
+            // A worn electric motor sparks rather than smokes.
+            double along = type.isBike() ? 0.3 : type.length * 0.3;
+            Vec3 at = forward().scale(along);
+            var random = level().getRandom();
+            level().addParticle(ParticleTypes.ELECTRIC_SPARK, getX() + at.x + (random.nextDouble() - 0.5) * type.width * 0.5,
+                    getY() + 0.5, getZ() + at.z + (random.nextDouble() - 0.5) * type.width * 0.5, 0.0, 0.05, 0.0);
             return;
         }
         // Over the engine: under the bonnet, the bus's at its back, a motorcycle's low in the middle.

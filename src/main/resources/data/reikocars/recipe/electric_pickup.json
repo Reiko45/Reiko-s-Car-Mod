@@ -1,0 +1,22 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:electric_pickup_chassis"
+  },
+  "body": {
+    "item": "reikocars:electric_pickup_body"
+  },
+  "interior": {
+    "item": "reikocars:electric_pickup_interior"
+  },
+  "engine": {
+    "item": "reikocars:electric_motor"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:electric_pickup"
+  }
+}

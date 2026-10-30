@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "item": "reikocars:battery_pack"
+    }
+  },
+  "pattern": [
+    "I I",
+    "IBI",
+    "I I"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:city_ev_chassis"
+  }
+}

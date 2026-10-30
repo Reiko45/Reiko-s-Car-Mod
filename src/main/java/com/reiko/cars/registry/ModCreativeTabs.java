@@ -29,6 +29,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.CAR_WORKBENCH.get());
                 output.accept(ModItems.GAS_PUMP.get());
                 output.accept(ModItems.DIESEL_PUMP.get());
+                output.accept(ModItems.CHARGING_STATION.get());
                 output.accept(ModItems.REPAIR_BENCH.get());
                 output.accept(ModItems.MAILBOX.get());
                 output.accept(ModItems.BLANK_KEY.get());
@@ -57,6 +58,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.CAR_ENGINE.get());
                 output.accept(ModItems.DIESEL_ENGINE.get());
                 output.accept(ModItems.MOTORCYCLE_ENGINE.get());
+                output.accept(ModItems.ELECTRIC_MOTOR.get());
+                output.accept(ModItems.BATTERY_PACK.get());
                 output.accept(ModItems.TIRE.get());
                 output.accept(ModItems.MOTOR_OIL.get());
                 output.accept(ModItems.ENGINE_PARTS.get());

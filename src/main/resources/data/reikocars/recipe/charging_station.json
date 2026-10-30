@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "X": {
+      "item": "buildcraftreborn:redstone_gold_chipset"
+    },
+    "C": {
+      "tag": "c:ingots/copper"
+    },
+    "B": {
+      "item": "reikocars:battery_pack"
+    },
+    "P": {
+      "item": "buildcraftreborn:pipe_gold_power"
+    }
+  },
+  "pattern": [
+    "IXI",
+    "CBC",
+    "IPI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:charging_station"
+  }
+}

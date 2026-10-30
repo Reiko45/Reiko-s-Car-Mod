@@ -184,5 +184,31 @@
       }
     ],
     "subtitle": "subtitles.reikocars.radio"
+  },
+  "car.electric_motor": {
+    "sounds": [
+      {
+        "name": "reikocars:electric_motor",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "car.ev_ready": {
+    "sounds": [
+      {
+        "name": "reikocars:ev_ready",
+        "attenuation_distance": 12
+      }
+    ],
+    "subtitle": "subtitles.reikocars.car.ev_ready"
+  },
+  "charging_station.charge": {
+    "sounds": [
+      {
+        "name": "reikocars:charge",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.reikocars.charging_station.charge"
   }
 }

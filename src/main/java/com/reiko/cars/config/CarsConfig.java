@@ -27,6 +27,9 @@ public final class CarsConfig {
     public static final ModConfigSpec.IntValue PUMP_CAPACITY;
     public static final ModConfigSpec.DoubleValue HOSE_LENGTH;
 
+    public static final ModConfigSpec.DoubleValue DEFAULT_CHARGE_PRICE;
+    public static final ModConfigSpec.IntValue CHARGER_CAPACITY;
+
     public static final ModConfigSpec.DoubleValue WEAR;
     public static final ModConfigSpec.DoubleValue CRASH_DAMAGE;
     public static final ModConfigSpec.BooleanValue BREAKDOWNS;
@@ -121,6 +124,18 @@ public final class CarsConfig {
         HOSE_LENGTH = builder
                 .comment("How close, in blocks, a car must be to a pump to fill up.")
                 .defineInRange("hoseLength", 6.0, 1.0, 32.0);
+        builder.pop();
+
+        builder.push("charging");
+        DEFAULT_CHARGE_PRICE = builder
+                .comment("Price per 1,000 MJ a newly placed charging station starts at. The owner can change it. An electric car's",
+                        "battery holds 30,000 to 200,000 MJ.")
+                .defineInRange("defaultPricePer1000MJ", 0.05, 0.0, 1_000_000.0);
+        CHARGER_CAPACITY = builder
+                .comment("MJ a charging station stores, from BuildCraft engines and kinesis pipes (or other mods' energy cables). It",
+                        "charges cars from that store, so a few engines can keep it topped up between customers. Cars must be",
+                        "within pumps.hoseLength blocks of it to charge.")
+                .defineInRange("capacityMJ", 500_000, 1_000, 100_000_000);
         builder.pop();
 
         builder.push("wear");

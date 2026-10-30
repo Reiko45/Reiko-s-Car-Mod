@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "L": {
+      "item": "minecraft:glowstone_dust"
+    },
+    "D": {
+      "tag": "c:dyes/white"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "A": {
+      "tag": "c:ingots/gold"
+    }
+  },
+  "pattern": [
+    "GGG",
+    "LDL",
+    "IAI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:electric_sedan_body"
+  }
+}

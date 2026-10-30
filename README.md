@@ -14,6 +14,9 @@ Every vehicle has turn signals and hazard lights, and a locked car's alarm catch
 **asphalt** roads and paint them, and put up **traffic lights**, signs and street lamps; red-light and speed cameras
 fine drivers for their owners. And every car has a **radio**: three stations of original music, or your own discs.
 
+There are **electric cars** too, charged at **charging stations** that BuildCraft engines and kinesis pipes power, and
+that sell the charge for cash or card the same way.
+
 ## Requirements
 
 - Minecraft 1.21.1, NeoForge 21.1.265 or newer (as Reiko's Economy Mod needs)
@@ -52,11 +55,17 @@ fine drivers for their owners. And every car has a **radio**: three stations of 
 | Cruiser | 2 | 45 mph | 5 buckets | 9-slot saddlebags (sneak + use) |
 | Dirt Bike | 1 | 42 mph | 3 buckets | Keeps full speed on grass, sand and snow |
 | Scooter | 1 | 27 mph | 2 buckets | Slow, but about 2,500 blocks to a bucket |
+| City EV | 2 | 33 mph | 80,000 MJ battery | Electric (see [Electric cars](#electric-cars-and-charging-stations)): nippy, turns tight, 9-slot trunk |
+| Electric Sedan | 4 | 56 mph | 160,000 MJ battery | The quickest car off the line; glass roof, 9-slot frunk |
+| Electric Pickup | 4 | 42 mph | 200,000 MJ battery | Crew cab, 27-slot truck bed, full speed off-road |
+| Electric Van | 2 | 36 mph | 160,000 MJ battery | 54-slot cargo area |
+| Electric Moped | 2 | 31 mph | 30,000 MJ battery | Room for two; quiet, and goes a long way on a charge |
 
 Tank sizes are in buckets of the car's own fuel: BuildCraft's **light fuel** for the gasoline cars, **dense fuel**
 for the diesel ones (the semi, delivery van, city bus, heavy-duty pickup, farm tractor, tow trucks and the big work
 vehicles). A sedan goes about 600
-blocks on a bucket; a semi about 250, or 180 pulling a trailer; the bus about 300.
+blocks on a bucket; a semi about 250, or 180 pulling a trailer; the bus about 300. The electric cars' batteries are in
+BuildCraft MJ: a full charge takes the City EV about 2,500 blocks, the Electric Sedan about 3,500.
 
 **Driving:** right-click a car to get in (the first person in drives), with one of its **keys** in your inventory
 (see [Car keys](#car-keys)). The movement keys drive and steer, **jump**
@@ -347,6 +356,34 @@ of their own pump in buckets.
 **Setting the price:** the owner sees a price row at the bottom of the screen. Type a price per bucket and press
 **Set**. The lit display on the front of the pump shows the price, or EMPTY.
 
+## Electric cars and charging stations
+
+Five vehicles run on electricity: the **City EV**, the **Electric Sedan**, the **Electric Pickup**, the **Electric
+Van** and the **Electric Moped** (see [The cars](#the-cars)). They drive like the rest, with a few differences:
+
+- **The battery** is charged at a charging station, never with fuel; the dashboard shows it as a battery and a
+  percentage, and a car's tooltip as "Battery". Out of charge, the dashboard says **BATTERY FLAT**.
+- **No idling:** standing still with someone at the wheel uses nothing.
+- **Regenerative braking:** braking puts some charge back (a stop from top speed gives back what 5 to 10 blocks of
+  driving took), except with the wheels locked by the handbrake.
+- **No oil** to change; the motor still wears like an engine, and a worn one throws sparks instead of smoke.
+- **Quiet:** a soft chime instead of a starter, and a motor's whine that rises with speed instead of an engine.
+
+**The Charging Station** is two blocks tall, like a pump; whoever places it owns it, and only they (or an admin) can
+break it, which keeps its stored power and price on the item. It stores up to **500,000 MJ**, which comes in from
+BuildCraft **engines** (any of them, redstone engines too) and **kinesis pipes** on either half, from any side, or,
+as BuildCraft's config allows (it does by default, 10 FE to 1 MJ), from other mods' energy cables. So a few engines
+can keep it topped up between customers. Nothing comes back out except into a car.
+
+**Charging up:** park within 6 blocks of it (the same reach as the pumps' hose) and right-click it. The screen shows
+the station's stored power, its price per 1,000 MJ, and your car's battery. Choose an amount (steps of 5,000 MJ, or
+1,000 with shift held) or **Fill up**, then pay by card or cash, with sales tax, as at a pump. The money goes to the
+owner, who charges for free. The owner sets the price per 1,000 MJ at the bottom of the screen; the display on the
+front shows the price and how full the station is, or NO POWER.
+
+A full charge costs much less than a tank of gasoline at the default prices (5 cents per 1,000 MJ: about $4 for the
+City EV, $8 for the Electric Sedan).
+
 ## Wear and repairs
 
 Cars wear out like real ones. Each car has five parts, each from 100% (new) down to 0%:
@@ -368,6 +405,9 @@ trailer into the cab) or jackknifes (backing up until it folds against the cab).
 the whole rig slower to stop, and a battered trailer slows it down. A trailer with a part at 0% can't be towed: the
 rig breaks down until you unhitch it (G), and it won't hitch again until it's fixed, so put a repair bench down
 beside it (or pick it up and set it down by one).
+
+**Electric cars** have no oil, so they wear on four parts: their motor counts as the engine, and a worn one throws
+sparks instead of smoke. Their dashboards leave out the oil light.
 
 **Seeing it:** the dashboard has five warning lights (oil can, engine, tire, brake, car). They come on amber when a
 part is worn (25%), orange when badly worn (10%), and flash red when it has given out, with **BROKEN DOWN** on
@@ -558,6 +598,9 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | Engine Parts ×2 | iron ingot, piston, iron ingot over iron gear, iron ingot, iron gear |
 | Brake Pads ×2 | three iron ingots over three flint |
 | Body Panel ×2 | four iron ingots in a square |
+| Electric Motor | copper ingots down both sides, a gold gear over a redstone block over a BuildCraft **Gold Chipset** in the middle |
+| Battery Pack | iron ingots in the corners, redstone blocks top and bottom middle, copper ingots either side of a BuildCraft **Redstone Crystal** |
+| Charging Station | iron ingots in the corners, a BuildCraft **Gold Chipset** on top, copper ingots either side of a Battery Pack, a BuildCraft **gold kinesis pipe** below |
 
 The car parts, crafted on an ordinary crafting table:
 
@@ -619,6 +662,17 @@ The motorcycles' parts:
 
 At the Car Workbench: frame + bodywork + seat + Motorcycle Engine + 2 Tires = the motorcycle.
 
+The electric vehicles' parts. Their chassis carry Battery Packs, their bodies glowstone dust (the light bars), and
+their interiors a BuildCraft **Iron Chipset** (the computer):
+
+| Part | City EV | Electric Sedan | Electric Pickup | Electric Van | Electric Moped |
+| --- | --- | --- | --- | --- | --- |
+| **Chassis** | iron rails (`I I`) round a Battery Pack | as the City EV, a gold gear between iron below | Battery Packs top and bottom middle, iron ingots in the other edge slots (centre empty) | as the pickup, with an iron gear in the centre | a Battery Pack in the centre, iron top left, either side of it and bottom right |
+| **Body** | glass panes over glowstone, light blue dye, glowstone, iron below | as the City EV with white dye, iron, gold ingot, iron below | as the City EV with green dye | iron, glass, iron over glowstone, blue dye, glowstone, iron below | glass pane over glowstone, white dye, glowstone, iron below |
+| **Interior** | chipset over wool, redstone, wool, wool below | chipset over leather, redstone, leather, leather, glass pane, leather below | chipset over leather, redstone, leather, three leather below | chipset over wool, redstone, wool, three wool below | chipset over leather, redstone, leather, leather below |
+
+They all take an **Electric Motor**; the moped takes 2 Tires, the rest 4.
+
 The workbench recipes are data files (`data/reikocars/recipe/sedan.json` and so on, type `reikocars:car_assembly`),
 so a data pack can change a car's parts or add new vehicles. Each one names a `chassis`, `body`, `interior`, `engine`
 and `wheel` (an item or a tag) and a `result`. The `interior` and `engine` can be left out, as the trailers'
@@ -644,7 +698,9 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `driving.realHeadlights` | `true` | Whether headlights (and police and ambulance beacons) light up the world in the dark |
 | `pumps.defaultPricePerBucket` | `4.0` | Starting price of a new pump |
 | `pumps.capacityBuckets` | `16` | Buckets a pump holds |
-| `pumps.hoseLength` | `6.0` | How close a car must be to a pump |
+| `pumps.hoseLength` | `6.0` | How close a car must be to a pump (or a charging station) |
+| `charging.defaultPricePer1000MJ` | `0.05` | Starting price of a new charging station, per 1,000 MJ |
+| `charging.capacityMJ` | `500000` | MJ a charging station stores |
 | `wear.wearMultiplier` | `1.0` | How fast oil, engines, tires and brakes wear (0 turns wear off) |
 | `wear.crashDamageMultiplier` | `1.0` | Body damage from crashes (0 turns it off) |
 | `wear.breakdowns` | `true` | A part at 0% breaks the car down. If false, worn parts only make it drive worse |

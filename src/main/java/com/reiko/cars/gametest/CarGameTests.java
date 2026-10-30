@@ -210,7 +210,8 @@ public final class CarGameTests {
         check(helper, !CarFuel.isFuel(new FluidStack(Fluids.WATER, 1)), "nor is water");
         for (CarType type : CarType.values()) {
             boolean diesel = type.fuel() == FuelType.DIESEL;
-            check(helper, CarFuel.runs(type, new FluidStack(bc("fuel_light"), 1)) != diesel, type.id() + " runs on gasoline unless it's diesel");
+            boolean gasoline = type.fuel() == FuelType.GASOLINE;
+            check(helper, CarFuel.runs(type, new FluidStack(bc("fuel_light"), 1)) == gasoline, type.id() + " runs on light fuel only if it's gasoline");
             check(helper, CarFuel.runs(type, new FluidStack(bc("fuel_dense"), 1)) == diesel, type.id() + " runs on diesel only if it's diesel");
         }
         check(helper, CarType.SEMI_TRUCK.fuel() == FuelType.DIESEL, "the semi runs on diesel");
@@ -2973,5 +2974,141 @@ public final class CarGameTests {
                     leave(helper, driver);
                 }))
                 .thenSucceed();
+    }
+
+    // ---- electric cars and charging stations ----
+
+    /** A charging station owned by {@code owner}, holding {@code mj} MJ, at 5 cents per 1,000 MJ, where the pumps go. */
+    private static com.reiko.cars.charge.ChargingStationBlockEntity station(GameTestHelper helper, ServerPlayer owner, long mj) {
+        BlockState lower = ModBlocks.CHARGING_STATION.get().defaultBlockState()
+                .setValue(com.reiko.cars.charge.ChargingStationBlock.FACING, Direction.NORTH);
+        helper.setBlock(PUMP, lower);
+        helper.setBlock(PUMP.above(), lower.setValue(com.reiko.cars.charge.ChargingStationBlock.HALF, DoubleBlockHalf.UPPER));
+        var station = (com.reiko.cars.charge.ChargingStationBlockEntity) helper.getBlockEntity(PUMP);
+        station.setOwner(owner);
+        station.setPrice(5);
+        station.addMj(mj);
+        return station;
+    }
+
+    @GameTest(template = EMPTY)
+    public static void chargingStationsTakeBuildcraftPower(GameTestHelper helper) {
+        ServerPlayer owner = join(helper);
+        try {
+            var station = station(helper, owner, 0);
+            var level = helper.getLevel();
+            BlockPos lower = helper.absolutePos(PUMP);
+            long mj = buildcraftreborn.api.mj.MjAPI.MJ;
+            var receiver = level.getCapability(buildcraftreborn.api.mj.MjAPI.CAP_RECEIVER, lower, Direction.EAST);
+            check(helper, receiver != null, "an engine sees a receiver beside it");
+            check(helper, level.getCapability(buildcraftreborn.api.mj.MjAPI.CAP_RECEIVER, lower.above(), Direction.WEST) != null,
+                    "beside the top half too");
+            check(helper, level.getCapability(buildcraftreborn.api.mj.MjAPI.CAP_REDSTONE_RECEIVER, lower, Direction.SOUTH) != null,
+                    "redstone engines can charge it too");
+            check(helper, level.getCapability(buildcraftreborn.api.mj.MjAPI.CAP_CONNECTOR, lower, Direction.DOWN) != null,
+                    "kinesis pipes connect to it");
+
+            // Other mods' energy, if BuildCraft's config converts it.
+            var energy = level.getCapability(net.neoforged.neoforge.capabilities.Capabilities.EnergyStorage.BLOCK, lower, Direction.EAST);
+            if (energy != null) {
+                int took = energy.receiveEnergy(1000, false);
+                check(helper, took > 0 && station.storedMj() > 0, "energy goes in as MJ: took " + took + ", stored " + station.storedMj());
+                check(helper, energy.extractEnergy(1000, true) == 0, "and never comes out");
+            }
+            long before = station.storedMj();
+            helper.assertValueEqual(receiver.receivePower(5_000 * mj, false), 0L, "it takes all 5,000 MJ");
+            helper.assertValueEqual(station.storedMj(), before + 5_000, "and stores it");
+            helper.assertValueEqual(receiver.getPowerRequested(), (station.capacityMj() - station.storedMj()) * mj, "asks for the rest");
+            long room = station.capacityMj() - station.storedMj();
+            helper.assertValueEqual(receiver.receivePower((room + 2_000) * mj, false), 2_000 * mj, "hands back what doesn't fit");
+            helper.assertValueEqual(station.storedMj(), station.capacityMj(), "full");
+            var readable = level.getCapability(buildcraftreborn.api.mj.MjAPI.CAP_READABLE, lower, Direction.EAST);
+            check(helper, readable != null && readable.getStored() == station.capacityMj() * mj, "gauges can read it");
+        } finally {
+            leave(helper, owner);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY)
+    public static void chargingAnElectricCar(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer owner = join(helper);
+        ServerPlayer buyer = join(helper);
+        try {
+            var station = station(helper, owner, 100_000);
+            CarEntity ev = car(helper, CarType.CITY_EV);
+            check(helper, ev.carType().isElectric(), "the city EV is electric");
+            near(helper, ev.carType().tankCapacity(), 80_000, "an 80,000 MJ battery");
+            check(helper, !ev.hasPart(com.reiko.cars.car.CarCondition.Part.OIL) && ev.hasPart(com.reiko.cars.car.CarCondition.Part.ENGINE),
+                    "no oil to change, but a motor");
+            check(helper, !CarFuel.runs(CarType.CITY_EV, new FluidStack(bc("fuel_light"), 1)), "no gasoline in it");
+            check(helper, CarType.CITY_EV.fitsOnHauler() && !CarType.ELECTRIC_PICKUP.fitsOnHauler(), "small electric cars fit a hauler");
+            long ownerBefore = ECO.getBalance(server, owner.getUUID());
+            Purse.give(buyer, 1000); // $10.00 in cash
+
+            ShopActionResult result = com.reiko.cars.charge.ChargerService.charge(buyer, station, ev, 20_000, 5, Payment.cash());
+            check(helper, result.success(), "cash charge: " + result.message().getString());
+            near(helper, ev.fuel(), 20_000, "20,000 MJ in the battery");
+            helper.assertValueEqual(station.storedMj(), 80_000L, "taken from the station's store");
+            helper.assertValueEqual(Purse.value(buyer), 900L, "$1.00 cash spent");
+            helper.assertValueEqual(ECO.getBalance(server, owner.getUUID()), ownerBefore + 100, "owner paid $1.00");
+            helper.assertValueEqual(station.mjSold(), 20_000L, "sale recorded");
+            helper.assertValueEqual(station.earned(), 100L, "earnings recorded");
+
+            check(helper, com.reiko.cars.charge.ChargerService.charge(buyer, station, ev, 1_000_000, 5, Payment.cash()).success(), "fill it up");
+            near(helper, ev.fuel(), 80_000, "only what fits");
+            helper.assertValueEqual(Purse.value(buyer), 600L, "60,000 MJ for $3.00");
+            check(helper, !com.reiko.cars.charge.ChargerService.charge(buyer, station, ev, 1000, 5, Payment.cash()).success(),
+                    "a full battery takes no more");
+
+            station.setPrice(7);
+            ev.setFuel(0);
+            check(helper, !com.reiko.cars.charge.ChargerService.charge(buyer, station, ev, 1000, 5, Payment.cash()).success(),
+                    "a price change is caught");
+            CarEntity sedan = car(helper, CarType.SEDAN);
+            ShopActionResult gas = com.reiko.cars.charge.ChargerService.charge(buyer, station, sedan, 1000, 7, Payment.cash());
+            check(helper, !gas.success(), "a gasoline car can't charge");
+            near(helper, sedan.fuel(), 0, "and gets nothing");
+
+            ShopActionResult own = com.reiko.cars.charge.ChargerService.charge(owner, station, ev, 15_000, 7, Payment.cash());
+            check(helper, own.success(), "the owner charges: " + own.message().getString());
+            helper.assertValueEqual(station.earned(), 400L, "free: nothing earned");
+            ShopActionResult last = com.reiko.cars.charge.ChargerService.charge(buyer, station, ev, 50_000, 7, Payment.cash());
+            check(helper, last.success(), "the last of the store");
+            near(helper, ev.fuel(), 20_000, "only what was left, 5,000 MJ");
+            check(helper, !com.reiko.cars.charge.ChargerService.charge(buyer, station, ev, 1000, 7, Payment.cash()).success(),
+                    "an empty station charges nothing");
+        } finally {
+            leave(helper, owner, buyer);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD)
+    public static void electricCarsIdleFreeAndRegenerate(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        CarEntity ev = vehicle(helper, CarType.ELECTRIC_SEDAN, 5.0, 8.0);
+        ev.setFuel(50_000);
+        driver.startRiding(ev, true);
+        helper.runAfterDelay(20, () -> {
+            try {
+                check(helper, ev.isEngineRunning(), "it's on");
+                near(helper, ev.fuel(), 50_000, "no draw standing still");
+                ev.applyWearReport(driver, 0.5F, 0.0F, 0.0F);
+                near(helper, ev.fuel(), 50_000 + 0.5 * CarType.ELECTRIC_SEDAN.fuelPerBlock * 8, "braking puts some back");
+                check(helper, ev.condition().oil() >= 1.0F, "never any oil wear");
+            } catch (RuntimeException e) {
+                leave(helper, driver);
+                throw e;
+            }
+            helper.runAfterDelay(8, () -> {
+                double before = ev.fuel();
+                ev.applyWearReport(driver, 0.4F, 0.4F, 0.0F);
+                near(helper, ev.fuel(), before, "not with the wheels locked");
+                leave(helper, driver);
+                helper.succeed();
+            });
+        });
     }
 }

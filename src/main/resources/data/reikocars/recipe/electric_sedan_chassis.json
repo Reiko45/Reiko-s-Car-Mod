@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "item": "reikocars:battery_pack"
+    },
+    "G": {
+      "tag": "c:gears/gold"
+    }
+  },
+  "pattern": [
+    "I I",
+    "IBI",
+    "IGI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:electric_sedan_chassis"
+  }
+}

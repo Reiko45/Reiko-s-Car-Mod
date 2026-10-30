@@ -58,6 +58,12 @@ public final class ModItems {
     public static final DeferredItem<Item> DIESEL_ENGINE = ITEMS.registerSimpleItem("diesel_engine");
     /** Every motorcycle's engine. */
     public static final DeferredItem<Item> MOTORCYCLE_ENGINE = ITEMS.registerSimpleItem("motorcycle_engine");
+    /** Every electric vehicle's engine. */
+    public static final DeferredItem<Item> ELECTRIC_MOTOR = ITEMS.registerSimpleItem("electric_motor");
+    /** An electric vehicle's battery, built into its chassis; the charging station takes one too. */
+    public static final DeferredItem<Item> BATTERY_PACK = ITEMS.registerSimpleItem("battery_pack");
+    public static final DeferredItem<DoubleHighBlockItem> CHARGING_STATION = ITEMS.register("charging_station",
+            () -> new DoubleHighBlockItem(ModBlocks.CHARGING_STATION.get(), new Item.Properties()));
     public static final DeferredItem<DoubleHighBlockItem> GAS_PUMP = ITEMS.register("gas_pump",
             () -> new DoubleHighBlockItem(ModBlocks.GAS_PUMP.get(), new Item.Properties()));
     public static final DeferredItem<DoubleHighBlockItem> DIESEL_PUMP = ITEMS.register("diesel_pump",

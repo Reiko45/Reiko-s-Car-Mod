@@ -163,6 +163,11 @@ public final class ReikoCarsClient {
             case CRUISER -> CruiserModel::createBodyLayer;
             case DIRT_BIKE -> DirtBikeModel::createBodyLayer;
             case SCOOTER -> ScooterModel::createBodyLayer;
+            case CITY_EV -> com.reiko.cars.client.model.CityEvModel::createBodyLayer;
+            case ELECTRIC_SEDAN -> com.reiko.cars.client.model.ElectricSedanModel::createBodyLayer;
+            case ELECTRIC_PICKUP -> com.reiko.cars.client.model.ElectricPickupModel::createBodyLayer;
+            case ELECTRIC_VAN -> com.reiko.cars.client.model.ElectricVanModel::createBodyLayer;
+            case ELECTRIC_MOPED -> com.reiko.cars.client.model.ElectricMopedModel::createBodyLayer;
         };
     }
 
@@ -183,12 +188,14 @@ public final class ReikoCarsClient {
             event.registerEntityRenderer(ModEntities.trailer(type), context -> new TrailerRenderer(context, type, layer(type)));
         }
         BlockEntityRenderers.register(ModBlockEntities.GAS_PUMP.get(), GasPumpRenderer::new);
+        BlockEntityRenderers.register(ModBlockEntities.CHARGING_STATION.get(), ChargingStationRenderer::new);
         BlockEntityRenderers.register(ModBlockEntities.TOLL_GATE.get(), TollGateRenderer::new);
         BlockEntityRenderers.register(ModBlockEntities.SPEED_SIGN.get(), SpeedSignRenderer::new);
     }
 
     private static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenus.PUMP.get(), PumpScreen::new);
+        event.register(ModMenus.CHARGER.get(), ChargerScreen::new);
         event.register(ModMenus.CAR_WORKBENCH.get(), CarWorkbenchScreen::new);
         event.register(ModMenus.REPAIR_BENCH.get(), RepairBenchScreen::new);
         event.register(ModMenus.MAILBOX.get(), MailboxScreen::new);

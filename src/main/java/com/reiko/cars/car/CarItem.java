@@ -152,12 +152,19 @@ public final class CarItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         int percent = (int) Math.round(fuelOf(stack) / type.tankCapacity() * 100.0);
-        tooltip.add(Component.translatable("item.reikocars.car.fuel", type.fuel().displayName(), percent).withStyle(ChatFormatting.GRAY));
-        addConditionLines(tooltip, conditionOf(stack), part -> true);
+        tooltip.add((type.isElectric() ? Component.translatable("item.reikocars.car.battery", percent)
+                : Component.translatable("item.reikocars.car.fuel", type.fuel().displayName(), percent)).withStyle(ChatFormatting.GRAY));
+        addConditionLines(tooltip, conditionOf(stack), part -> part != CarCondition.Part.OIL || !type.isElectric());
         CarsClientConfig.SpeedUnit unit = CarsClientConfig.speedUnit();
-        tooltip.add(Component.translatable("item.reikocars.car.stats", type.seatsText(),
-                Math.round(type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * unit.perBlockPerTick),
-                Component.translatable(unit.translationKey), type.tankBuckets).withStyle(ChatFormatting.DARK_GRAY));
+        long speed = Math.round(type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * unit.perBlockPerTick);
+        tooltip.add((type.isElectric()
+                ? Component.translatable("item.reikocars.car.stats_ev", type.seatsText(), speed, Component.translatable(unit.translationKey),
+                        Math.round(type.tankCapacity() / 1000.0))
+                : Component.translatable("item.reikocars.car.stats", type.seatsText(), speed, Component.translatable(unit.translationKey),
+                        type.tankBuckets)).withStyle(ChatFormatting.DARK_GRAY));
+        if (type.isElectric()) {
+            tooltip.add(Component.translatable("item.reikocars.car.electric").withStyle(ChatFormatting.DARK_GRAY));
+        }
         if (type.storageRows > 0) {
             tooltip.add(Component.translatable("item.reikocars.car.storage", Component.translatable(type.storageKey()), type.storageRows * 9)
                     .withStyle(ChatFormatting.DARK_GRAY));
