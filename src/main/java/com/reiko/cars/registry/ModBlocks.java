@@ -77,6 +77,22 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .noOcclusion()
                     .pushReaction(PushReaction.BLOCK)));
+    /** A DMV's counter: driving tests, license cards and custom plates. Blast-proof, like the shops. */
+    public static final DeferredBlock<com.reiko.cars.dmv.DmvOfficeBlock> DMV_OFFICE = BLOCKS.register("dmv_office",
+            () -> new com.reiko.cars.dmv.DmvOfficeBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_LIGHT_BLUE)
+                    .strength(3.0F, 1200.0F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .pushReaction(PushReaction.BLOCK)));
+    /** A traffic cone, which cars go through; numbered, a mark on a DMV's test route. */
+    public static final DeferredBlock<com.reiko.cars.road.TrafficConeBlock> TRAFFIC_CONE = BLOCKS.register("traffic_cone",
+            () -> new com.reiko.cars.road.TrafficConeBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_ORANGE)
+                    .strength(0.5F, 6.0F)
+                    .sound(SoundType.WOOL)
+                    .noOcclusion()
+                    .pushReaction(PushReaction.DESTROY)));
     public static final DeferredBlock<com.reiko.cars.rental.RentalDeskBlock> RENTAL_DESK = BLOCKS.register("rental_desk",
             () -> new com.reiko.cars.rental.RentalDeskBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLUE)

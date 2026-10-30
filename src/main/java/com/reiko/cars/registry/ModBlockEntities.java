@@ -32,6 +32,10 @@ public final class ModBlockEntities {
 
     public static final Supplier<BlockEntityType<com.reiko.cars.impound.ImpoundOfficeBlockEntity>> IMPOUND_OFFICE = BLOCK_ENTITIES.register(
             "impound_office", () -> BlockEntityType.Builder.of(com.reiko.cars.impound.ImpoundOfficeBlockEntity::new, ModBlocks.IMPOUND_OFFICE.get()).build(null));
+    public static final Supplier<BlockEntityType<com.reiko.cars.dmv.DmvOfficeBlockEntity>> DMV_OFFICE = BLOCK_ENTITIES.register(
+            "dmv_office", () -> BlockEntityType.Builder.of(com.reiko.cars.dmv.DmvOfficeBlockEntity::new, ModBlocks.DMV_OFFICE.get()).build(null));
+    public static final Supplier<BlockEntityType<com.reiko.cars.road.TrafficConeBlockEntity>> TRAFFIC_CONE = BLOCK_ENTITIES.register(
+            "traffic_cone", () -> BlockEntityType.Builder.of(com.reiko.cars.road.TrafficConeBlockEntity::new, ModBlocks.TRAFFIC_CONE.get()).build(null));
     public static final Supplier<BlockEntityType<com.reiko.cars.rental.RentalDeskBlockEntity>> RENTAL_DESK = BLOCK_ENTITIES.register(
             "rental_desk", () -> BlockEntityType.Builder.of(com.reiko.cars.rental.RentalDeskBlockEntity::new, ModBlocks.RENTAL_DESK.get()).build(null));
     public static final Supplier<BlockEntityType<DealershipBlockEntity>> DEALERSHIP = BLOCK_ENTITIES.register("dealership",

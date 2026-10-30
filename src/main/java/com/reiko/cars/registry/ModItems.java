@@ -83,6 +83,14 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> DEALERSHIP = ITEMS.registerSimpleBlockItem(ModBlocks.DEALERSHIP);
     public static final DeferredItem<BlockItem> IMPOUND_OFFICE = ITEMS.registerSimpleBlockItem(ModBlocks.IMPOUND_OFFICE);
     public static final DeferredItem<BlockItem> RENTAL_DESK = ITEMS.registerSimpleBlockItem(ModBlocks.RENTAL_DESK);
+    public static final DeferredItem<BlockItem> DMV_OFFICE = ITEMS.registerSimpleBlockItem(ModBlocks.DMV_OFFICE);
+    public static final DeferredItem<BlockItem> TRAFFIC_CONE = ITEMS.registerSimpleBlockItem(ModBlocks.TRAFFIC_CONE);
+    /** A driver's license card, from passing the test at a DMV. */
+    public static final DeferredItem<com.reiko.cars.license.DriversLicenseItem> DRIVERS_LICENSE = ITEMS.register("drivers_license",
+            () -> new com.reiko.cars.license.DriversLicenseItem(new Item.Properties().stacksTo(1)));
+    /** A police officer's Ticket Book: plate and license checks. */
+    public static final DeferredItem<com.reiko.cars.license.TicketBookItem> TICKET_BOOK = ITEMS.register("ticket_book",
+            () -> new com.reiko.cars.license.TicketBookItem(new Item.Properties().stacksTo(1)));
     /** Puts a car up for sale anywhere. A tool: it isn't used up. */
     public static final DeferredItem<ForSaleSignItem> FOR_SALE_SIGN = ITEMS.register("for_sale_sign",
             () -> new ForSaleSignItem(new Item.Properties().stacksTo(16)));

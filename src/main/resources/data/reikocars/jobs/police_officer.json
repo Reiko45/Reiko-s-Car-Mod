@@ -1,0 +1,35 @@
+{
+  "name": "Police Officer",
+  "icon": "reikocars:ticket_book",
+  "order": 26,
+  "work": [
+    {
+      "action": "reikocars:unlicensed_ticket",
+      "label": "Unlicensed driver ticketed",
+      "pay": 3.0,
+      "xp": 15
+    }
+  ],
+  "contracts": [
+    {
+      "work": "reikocars:unlicensed_ticket",
+      "label": "Unlicensed Drivers Stopped",
+      "icon": "reikocars:police_car",
+      "count": [
+        1,
+        3
+      ],
+      "pay": 4.0,
+      "xp": 12
+    },
+    {
+      "deliver": "minecraft:paper",
+      "count": [
+        8,
+        24
+      ],
+      "pay": 0.1,
+      "xp": 1
+    }
+  ]
+}

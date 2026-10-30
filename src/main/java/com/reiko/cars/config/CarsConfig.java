@@ -47,6 +47,19 @@ public final class CarsConfig {
     public static final ModConfigSpec.DoubleValue RENTAL_LOT_RADIUS;
     public static final ModConfigSpec.DoubleValue RENTAL_PRICE;
     public static final ModConfigSpec.IntValue RENTAL_MAX_DAYS;
+    public static final ModConfigSpec.BooleanValue LICENSE_REQUIRED;
+    public static final ModConfigSpec.DoubleValue UNLICENSED_FINE;
+    public static final ModConfigSpec.IntValue RED_LIGHT_POINTS;
+    public static final ModConfigSpec.IntValue SPEEDING_POINTS;
+    public static final ModConfigSpec.IntValue MAX_POINTS;
+    public static final ModConfigSpec.IntValue POINTS_DAYS;
+    public static final ModConfigSpec.IntValue SUSPENSION_DAYS;
+    public static final ModConfigSpec.IntValue TEST_MINUTES;
+    public static final ModConfigSpec.DoubleValue ROUTE_RADIUS;
+    public static final ModConfigSpec.DoubleValue TEST_FEE;
+    public static final ModConfigSpec.DoubleValue REPLACE_FEE;
+    public static final ModConfigSpec.DoubleValue DMV_REACH;
+    public static final ModConfigSpec.DoubleValue CUSTOM_PLATE_PRICE;
 
     public static final ModConfigSpec.DoubleValue WEAR;
     public static final ModConfigSpec.DoubleValue CRASH_DAMAGE;
@@ -225,6 +238,53 @@ public final class CarsConfig {
         RENTAL_MAX_DAYS = builder
                 .comment("The most Minecraft days (20 minutes each) a car can be rented for at once.")
                 .defineInRange("maxDays", 7, 1, 100);
+        builder.pop();
+
+        builder.push("licenses");
+        LICENSE_REQUIRED = builder
+                .comment("Whether a player needs a valid driver's license (passed at a DMV, not suspended) to drive at all. If false,",
+                        "anyone can drive, but cameras and police fine unlicensed drivers (see unlicensedFine).")
+                .define("required", false);
+        UNLICENSED_FINE = builder
+                .comment("The fine for driving without a valid license: added when a red-light or speed camera catches an unlicensed",
+                        "driver (paid to the camera's owner), and what a police officer's Ticket Book charges. 0 turns both off.")
+                .defineInRange("unlicensedFine", 25.0, 0.0, 1_000_000.0);
+        RED_LIGHT_POINTS = builder
+                .comment("Penalty points on the driver's license for running a red light caught on camera.")
+                .defineInRange("redLightPoints", 3, 0, 100);
+        SPEEDING_POINTS = builder
+                .comment("Penalty points on the driver's license for speeding caught on camera.")
+                .defineInRange("speedingPoints", 2, 0, 100);
+        MAX_POINTS = builder
+                .comment("Points that suspend a license.")
+                .defineInRange("maxPoints", 12, 1, 1000);
+        POINTS_DAYS = builder
+                .comment("How many Minecraft days (20 minutes each) penalty points stay on a license.")
+                .defineInRange("pointsLastDays", 7, 1, 1000);
+        SUSPENSION_DAYS = builder
+                .comment("How many Minecraft days a suspension lasts.")
+                .defineInRange("suspensionDays", 3, 1, 1000);
+        TEST_MINUTES = builder
+                .comment("Minutes (real time) a driving test allows to get round the DMV's cones.")
+                .defineInRange("testMinutes", 5, 1, 60);
+        ROUTE_RADIUS = builder
+                .comment("How far from a DMV its owner's numbered traffic cones can be and still be on its test route.")
+                .defineInRange("routeRadius", 128.0, 8.0, 1024.0);
+        TEST_FEE = builder
+                .comment("What a newly placed DMV charges for the driving test (the license comes with passing). Its owner can change it.")
+                .defineInRange("defaultTestFee", 25.0, 0.0, 1_000_000.0);
+        REPLACE_FEE = builder
+                .comment("What a newly placed DMV charges for a replacement license card. Its owner can change it.")
+                .defineInRange("defaultReplaceFee", 10.0, 0.0, 1_000_000.0);
+        DMV_REACH = builder
+                .comment("How close to a DMV a car must be parked for its owner to buy it a custom plate there.")
+                .defineInRange("dmvReach", 10.0, 2.0, 64.0);
+        builder.pop();
+
+        builder.push("plates");
+        CUSTOM_PLATE_PRICE = builder
+                .comment("What a newly placed DMV charges for a custom license plate. Its owner can change it.")
+                .defineInRange("defaultCustomPlatePrice", 100.0, 0.0, 1_000_000.0);
         builder.pop();
 
         builder.push("wear");

@@ -9,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The car work the economy mod's job board pays for. Each action is reported once the work is really done (a paid
  * taxi ride, a parcel delivered, a part fitted to someone else's car), and the job files in
- * {@code data/reikocars/jobs} (Driver, Firefighter, Garbage Collector, Mail Carrier, Mechanic, Trucker) say what it pays.
+ * {@code data/reikocars/jobs} (Driver, Firefighter, Garbage Collector, Mail Carrier, Mechanic, Police Officer, Trucker) say what it pays.
  */
 public final class CarJobs {
     /** A taxi ride the rider paid for. */
@@ -28,6 +28,8 @@ public final class CarJobs {
     public static final ResourceLocation TRASH_COLLECTED = ReikoCars.id("trash_collected");
     /** A badly parked car towed to an impound lot. */
     public static final ResourceLocation IMPOUND_TOW = ReikoCars.id("impound_tow");
+    /** A driver without a valid license ticketed by a police officer. */
+    public static final ResourceLocation UNLICENSED_TICKET = ReikoCars.id("unlicensed_ticket");
     /** A fire put out with the fire hose. */
     public static final ResourceLocation FIRE_PUT_OUT = ReikoCars.id("fire_put_out");
     /** 100 blocks driven towing a loaded trailer. */

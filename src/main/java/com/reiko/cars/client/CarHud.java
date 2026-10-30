@@ -107,6 +107,7 @@ public final class CarHud implements LayeredDraw.Layer {
         Component warning = car.isImpounded() ? Component.translatable("hud.reikocars.impounded")
                 : car.isBrokenDown() ? Component.translatable("hud.reikocars.broken_down")
                 : renting && rentalLeft <= 0 ? Component.translatable("hud.reikocars.rental_over")
+                : car.getControllingPassenger() != null && car.unlicensed() ? Component.translatable("hud.reikocars.no_license")
                 : car.getControllingPassenger() != null && !car.keyedIn() ? Component.translatable("hud.reikocars.no_key")
                 : car.fuelFraction() <= 0 ? Component.translatable(car.carType().isElectric() ? "hud.reikocars.battery_flat" : "hud.reikocars.out_of_fuel")
                 : null;

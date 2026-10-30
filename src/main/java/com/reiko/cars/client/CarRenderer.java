@@ -8,6 +8,7 @@ import com.reiko.cars.car.CarSignals;
 import com.reiko.cars.car.CarType;
 import com.reiko.cars.car.WorkVehicles;
 import com.reiko.cars.client.model.CarModel;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -28,12 +29,17 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
     private final CarModel model;
     private final ResourceLocation texture;
     private final CarGlass glass;
+    private final Font font;
+    @org.jetbrains.annotations.Nullable
+    private final PlateMounts.Mount[] plates;
 
     public CarRenderer(EntityRendererProvider.Context context, CarType type, ModelLayerLocation layer) {
         super(context);
         this.model = new CarModel(context.bakeLayer(layer));
         this.texture = ReikoCars.id("textures/entity/car/" + type.id() + ".png");
         this.glass = new CarGlass(texture);
+        this.font = context.getFont();
+        this.plates = PlateMounts.of(type.id());
         this.shadowRadius = type.width * 0.55F;
     }
 
@@ -51,6 +57,7 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         if (hurt > 0.0F) {
             poseStack.mulPose(Axis.XP.rotationDegrees(Mth.sin(hurt) * hurt * damage / 40.0F * car.getHurtDir()));
         }
+        drawPlates(car, poseStack, buffers, light);
         poseStack.scale(-1.0F, -1.0F, 1.0F);
         poseStack.translate(0.0F, -1.501F, 0.0F);
 
@@ -113,6 +120,54 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
             poseStack.popPose();
         }
         super.render(car, entityYaw, partialTick, poseStack, buffers, light);
+    }
+
+    /**
+     * Writes the car's plate number on its plate panels. The pose here has the model's pixels at (x, y, z) / 16, the
+     * front toward -z; the back plate is read from behind (+z), the front one from in front.
+     */
+    private void drawPlates(CarEntity car, PoseStack poseStack, MultiBufferSource buffers, int light) {
+        String number = car.plate();
+        if (plates == null || number.isEmpty()) {
+            return;
+        }
+        for (int i = 0; i < plates.length; i++) {
+            PlateMounts.Mount mount = plates[i];
+            if (mount == null) {
+                continue;
+            }
+            boolean back = i == 1;
+            poseStack.pushPose();
+            poseStack.translate(0.0F, mount.y() / 16.0F, (mount.z() + (back ? 0.01F : -0.01F)) / 16.0F);
+            if (!back) {
+                poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
+            }
+            writePlate(poseStack, buffers, number, mount.width(), mount.height(), light);
+            poseStack.popPose();
+        }
+    }
+
+    /** Plate letters: tall and narrow, like the real thing. A motorcycle's small plate takes them on two lines. */
+    private void writePlate(PoseStack poseStack, MultiBufferSource buffers, String number, float width, float height, int light) {
+        int space = number.indexOf(' ');
+        if (width < 5.0F && space > 0) {
+            float lineHeight = height * 0.36F;
+            line(poseStack, buffers, number.substring(0, space), width, lineHeight, height * 0.22F, light);
+            line(poseStack, buffers, number.substring(space + 1), width, lineHeight, -height * 0.22F, light);
+        } else {
+            line(poseStack, buffers, number, width, height * 0.6F, 0.0F, light);
+        }
+    }
+
+    private void line(PoseStack poseStack, MultiBufferSource buffers, String text, float width, float capHeight, float up, int light) {
+        float textWidth = Math.max(1, font.width(text) - 1);
+        float sy = capHeight / 16.0F / 7.0F;
+        float sx = Math.min(sy * 0.9F, (width - 0.8F) / 16.0F / textWidth);
+        poseStack.pushPose();
+        poseStack.translate(0.0F, up / 16.0F, 0.0F);
+        poseStack.scale(sx, -sy, sy);
+        font.drawInBatch(text, -textWidth / 2.0F, -3.5F, 0xFF1E2A6E, false, poseStack.last().pose(), buffers, Font.DisplayMode.POLYGON_OFFSET, 0, light);
+        poseStack.popPose();
     }
 
     /**

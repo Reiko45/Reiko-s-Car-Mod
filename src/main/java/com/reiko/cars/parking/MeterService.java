@@ -164,12 +164,12 @@ public final class MeterService {
         ServerPlayer driver = server.getPlayerList().getPlayer(payer);
         if (driver != null) {
             driver.sendSystemMessage(pay >= fine
-                    ? Component.translatable("parking.reikocars.ticket", eco.format(fine), car.kindName(), at.getX(), at.getY(), at.getZ())
-                    : Component.translatable("parking.reikocars.ticket_short", eco.format(fine), car.kindName(), at.getX(), at.getY(), at.getZ(), eco.format(pay)));
+                    ? Component.translatable("parking.reikocars.ticket", eco.format(fine), car.describe(), at.getX(), at.getY(), at.getZ())
+                    : Component.translatable("parking.reikocars.ticket_short", eco.format(fine), car.describe(), at.getX(), at.getY(), at.getZ(), eco.format(pay)));
         }
         ServerPlayer owner = server.getPlayerList().getPlayer(payee);
         if (owner != null && fine > 0) {
-            owner.sendSystemMessage(Component.translatable("parking.reikocars.ticket_owner", car.ownerName(), car.kindName(), eco.format(pay)));
+            owner.sendSystemMessage(Component.translatable("parking.reikocars.ticket_owner", car.ownerName(), car.describe(), eco.format(pay)));
         }
     }
 

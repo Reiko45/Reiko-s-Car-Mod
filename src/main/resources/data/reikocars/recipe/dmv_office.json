@@ -1,0 +1,36 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "P": {
+      "item": "minecraft:paper"
+    },
+    "S": {
+      "tag": "minecraft:signs"
+    },
+    "B": {
+      "item": "minecraft:book"
+    },
+    "D": {
+      "tag": "c:dyes/light_blue"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "C": {
+      "tag": "c:chests/wooden"
+    }
+  },
+  "pattern": [
+    "PSP",
+    "BDG",
+    "ICI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:dmv_office"
+  }
+}

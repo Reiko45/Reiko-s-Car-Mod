@@ -2619,6 +2619,7 @@ public final class CarGameTests {
         MinecraftServer server = helper.getLevel().getServer();
         ServerPlayer city = join(helper);
         ServerPlayer driver = join(helper);
+        com.reiko.cars.license.LicenseService.issue(driver, "City"); // licensed: the fines here are the cameras' own
         try {
             var light = (com.reiko.cars.traffic.TrafficLightBlockEntity) helper.getBlockEntity(lightAt);
             light.setOwner(city);
@@ -3635,5 +3636,213 @@ public final class CarGameTests {
                     leave(helper, agency, customer, stranger);
                 }))
                 .thenSucceed();
+    }
+
+    // ---- license plates, driver's licenses and the DMV ----
+
+    private static com.reiko.cars.dmv.DmvOfficeBlockEntity dmvAt(GameTestHelper helper, BlockPos pos, ServerPlayer owner) {
+        helper.setBlock(pos, ModBlocks.DMV_OFFICE.get().defaultBlockState());
+        com.reiko.cars.dmv.DmvOfficeBlockEntity dmv = (com.reiko.cars.dmv.DmvOfficeBlockEntity) helper.getBlockEntity(pos);
+        dmv.setOwner(owner);
+        return dmv;
+    }
+
+    private static BlockPos cone(GameTestHelper helper, BlockPos pos, ServerPlayer owner, int number) {
+        helper.setBlock(pos, ModBlocks.TRAFFIC_CONE.get().defaultBlockState());
+        com.reiko.cars.road.TrafficConeBlockEntity cone = (com.reiko.cars.road.TrafficConeBlockEntity) helper.getBlockEntity(pos);
+        cone.setOwner(owner);
+        cone.setNumber(number);
+        return helper.absolutePos(pos);
+    }
+
+    private static int cards(ServerPlayer player) {
+        int count = 0;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            if (player.getInventory().getItem(i).is(ModItems.DRIVERS_LICENSE.get())) {
+                count += player.getInventory().getItem(i).getCount();
+            }
+        }
+        return count;
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 100)
+    public static void licensePlatesOnEveryCar(GameTestHelper helper) {
+        CarEntity sedan = vehicle(helper, CarType.SEDAN, 3.0, 6.0);
+        CarEntity bike = vehicle(helper, CarType.SPORT_BIKE, 7.0, 6.0);
+        helper.runAfterDelay(2, () -> {
+            check(helper, sedan.plate().matches("[A-HJ-NPR-Z]{3} [0-9]{3}"), "a standard plate: " + sedan.plate());
+            check(helper, !bike.plate().isEmpty() && !bike.plate().equals(sedan.plate()), "every car its own: " + bike.plate());
+            var registry = com.reiko.cars.plate.PlateRegistry.get(helper.getLevel().getServer());
+            check(helper, registry.isTaken(sedan.plate()) && registry.isTaken(bike.plate()), "both on the books");
+            check(helper, sedan.describe().getString().contains(sedan.plate()), "tickets name the plate: " + sedan.describe().getString());
+            net.minecraft.world.item.ItemStack item = sedan.toItem();
+            helper.assertValueEqual(item.get(com.reiko.cars.registry.ModDataComponents.PLATE.get()), sedan.plate(), "kept on the item");
+            helper.assertValueEqual(com.reiko.cars.plate.Plates.clean("  reiko   1 "), "REIKO 1", "custom plates tidied up");
+            check(helper, com.reiko.cars.plate.Plates.clean("A") == null && com.reiko.cars.plate.Plates.clean("TOOLONGXX") == null
+                    && com.reiko.cars.plate.Plates.clean("AB-12") == null, "and bad ones refused");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 200)
+    public static void dmvDrivingTestAndPlates(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer city = join(helper);
+        ServerPlayer learner = join(helper);
+        ServerPlayer stranger = join(helper);
+        try {
+            com.reiko.cars.dmv.DmvOfficeBlockEntity dmv = dmvAt(helper, new BlockPos(2, 1, 2), city);
+            check(helper, com.reiko.cars.dmv.DmvService.route(dmv).isEmpty(), "no cones, no route");
+            Purse.give(learner, 5_000);
+            check(helper, !com.reiko.cars.dmv.DmvService.takeTest(learner, dmv, 2_500, Payment.cash()).success(), "no test without a route");
+            BlockPos second = cone(helper, new BlockPos(8, 1, 24), city, 2);
+            BlockPos first = cone(helper, new BlockPos(3, 1, 18), city, 1);
+            cone(helper, new BlockPos(6, 1, 12), stranger, 1);
+            cone(helper, new BlockPos(9, 1, 12), city, 0);
+            helper.assertValueEqual(com.reiko.cars.dmv.DmvService.route(dmv), List.of(first, second), "the owner's numbered cones, in order");
+
+            long cityBefore = ECO.getBalance(server, city.getUUID());
+            check(helper, !com.reiko.cars.dmv.DmvService.takeTest(learner, dmv, 2_000, Payment.cash()).success(), "a stale price is caught");
+            ShopActionResult paid = com.reiko.cars.dmv.DmvService.takeTest(learner, dmv, 2_500, Payment.cash());
+            check(helper, paid.success(), "paying for the test: " + paid.message().getString());
+            helper.assertValueEqual(ECO.getBalance(server, city.getUUID()), cityBefore + 2_500, "the fee to the DMV's owner");
+            check(helper, com.reiko.cars.dmv.DrivingTests.taking(learner), "the test's on");
+
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.0, 8.0);
+            learner.startRiding(car, true);
+            com.reiko.cars.dmv.DrivingTests.tick(server, true);
+            helper.assertValueEqual(com.reiko.cars.dmv.DrivingTests.progress(learner), 0, "in a car, no cones yet");
+            Vec3 at = helper.absoluteVec(new Vec3(4.5, 1.0, 19.0));
+            car.setPos(at.x, car.getY(), at.z);
+            com.reiko.cars.dmv.DrivingTests.tick(server, true);
+            helper.assertValueEqual(com.reiko.cars.dmv.DrivingTests.progress(learner), 1, "through cone 1");
+            at = helper.absoluteVec(new Vec3(8.5, 1.0, 22.0));
+            car.setPos(at.x, car.getY(), at.z);
+            com.reiko.cars.dmv.DrivingTests.tick(server, true);
+            check(helper, !com.reiko.cars.dmv.DrivingTests.taking(learner), "through cone 2: done");
+            check(helper, com.reiko.cars.license.LicenseService.valid(learner), "passed: a license");
+            helper.assertValueEqual(cards(learner), 1, "and the card");
+            check(helper, dmv.tests() == 1 && dmv.passes() == 1, "on the DMV's books");
+            check(helper, !com.reiko.cars.dmv.DmvService.takeTest(learner, dmv, 2_500, Payment.cash()).success(), "no second test with a license");
+            learner.stopRiding();
+
+            // A new card, and a custom plate.
+            check(helper, com.reiko.cars.dmv.DmvService.replace(learner, dmv, 1_000, Payment.cash()).success(), "a new card");
+            at = helper.absoluteVec(new Vec3(5.0, 1.0, 8.0));
+            car.setPos(at.x, car.getY(), at.z); // parked back by the DMV
+            helper.assertValueEqual(cards(learner), 2, "two cards now");
+            car.setOwner(learner);
+            Purse.give(learner, 20_000);
+            check(helper, !com.reiko.cars.dmv.DmvService.buyPlate(learner, dmv, car, "NO-WAY", 10_000, Payment.cash()).success(), "a bad plate");
+            String old = car.plate();
+            String custom = "t " + (100_000 + helper.getLevel().getRandom().nextInt(900_000)); // the server's plates are kept between runs
+            String wanted = custom.toUpperCase(java.util.Locale.ROOT);
+            ShopActionResult plate = com.reiko.cars.dmv.DmvService.buyPlate(learner, dmv, car, custom, 10_000, Payment.cash());
+            check(helper, plate.success(), "a custom plate: " + plate.message().getString());
+            helper.assertValueEqual(car.plate(), wanted, "on the car");
+            var plates = com.reiko.cars.plate.PlateRegistry.get(server);
+            check(helper, plates.isTaken(wanted) && !plates.isTaken(old), "the old one freed");
+            CarEntity other = vehicle(helper, CarType.HATCHBACK, 8.0, 6.0);
+            other.setOwner(learner);
+            check(helper, !com.reiko.cars.dmv.DmvService.buyPlate(learner, dmv, other, wanted, 10_000, Payment.cash()).success(), "one car to a plate");
+            check(helper, com.reiko.cars.dmv.DmvService.price(dmv, city, com.reiko.cars.dmv.DmvOfficeBlockEntity.PLATE_FEE) == 0, "free for the owner");
+            check(helper, com.reiko.cars.dmv.DmvService.setFee(city, dmv, 0, "40.00").success() && dmv.fee(0) == 4_000, "the owner sets the fee");
+            check(helper, !com.reiko.cars.dmv.DmvService.setFee(learner, dmv, 0, "1.00").success(), "nobody else");
+
+            // Failing: crashing, and getting out.
+            Purse.give(stranger, 10_000);
+            check(helper, com.reiko.cars.dmv.DmvService.takeTest(stranger, dmv, 4_000, Payment.cash()).success(), "another test");
+            CarEntity crash = vehicle(helper, CarType.SEDAN, 12.0, 8.0);
+            stranger.startRiding(crash, true);
+            com.reiko.cars.dmv.DrivingTests.tick(server, false);
+            CarCondition c = crash.condition();
+            crash.setCondition(new CarCondition(c.oil(), c.engine(), c.tires(), c.brakes(), c.body() - 0.05F));
+            com.reiko.cars.dmv.DrivingTests.tick(server, false);
+            check(helper, !com.reiko.cars.dmv.DrivingTests.taking(stranger) && !com.reiko.cars.license.LicenseService.valid(stranger), "a crash fails it");
+            check(helper, com.reiko.cars.dmv.DmvService.takeTest(stranger, dmv, 4_000, Payment.cash()).success(), "and again");
+            com.reiko.cars.dmv.DrivingTests.tick(server, false);
+            stranger.stopRiding();
+            com.reiko.cars.dmv.DrivingTests.tick(server, false);
+            check(helper, !com.reiko.cars.dmv.DrivingTests.taking(stranger), "getting out fails it");
+        } finally {
+            com.reiko.cars.dmv.DrivingTests.cancel(learner);
+            com.reiko.cars.dmv.DrivingTests.cancel(stranger);
+            leave(helper, city, learner, stranger);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 100)
+    public static void licensePointsSuspensionAndTickets(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer driver = join(helper);
+        ServerPlayer nobody = join(helper);
+        ServerPlayer camera = join(helper);
+        ServerPlayer officer = worker(helper, "police_officer");
+        ServerPlayer civilian = join(helper);
+        try {
+            var license = com.reiko.cars.license.LicenseService.issue(driver, "City");
+            check(helper, license.number().matches("D \\d{3}-\\d{3}"), "a license number: " + license.number());
+            CarEntity car = vehicle(helper, CarType.SEDAN, 4.0, 8.0); // nobody's: no key needed
+            driver.startRiding(car, true);
+
+            // A camera puts points on the driver's license...
+            com.reiko.cars.license.LicenseService.cameraCaught(car, camera.getUUID(), true);
+            com.reiko.cars.license.LicenseService.cameraCaught(car, camera.getUUID(), false);
+            helper.assertValueEqual(com.reiko.cars.license.LicenseService.points(server, license), 5, "3 for a red light, 2 for speeding");
+            // ...and enough suspends it.
+            com.reiko.cars.license.LicenseService.addPoints(server, driver.getUUID(), 4, "license.reikocars.reason.speeding");
+            check(helper, com.reiko.cars.license.LicenseService.valid(driver), "9 of 12: still good");
+            com.reiko.cars.license.LicenseService.addPoints(server, driver.getUUID(), 3, "license.reikocars.reason.red_light");
+            helper.assertValueEqual(com.reiko.cars.license.LicenseService.status(server, driver.getUUID()),
+                    com.reiko.cars.license.LicenseService.Status.SUSPENDED, "12: suspended");
+            helper.assertValueEqual(com.reiko.cars.license.LicenseService.points(server, license), 0, "the points wiped");
+            var card = driver.getInventory().items.stream().filter(stack -> stack.is(ModItems.DRIVERS_LICENSE.get())).findFirst().orElseThrow()
+                    .get(com.reiko.cars.registry.ModDataComponents.LICENSE.get());
+            check(helper, card.suspendedUntil() > helper.getLevel().getGameTime(), "the card says so");
+
+            // Without a valid license, a camera adds a fine.
+            ECO.setBalance(server, driver.getUUID(), 10_000, "test");
+            long cameraBefore = ECO.getBalance(server, camera.getUUID());
+            com.reiko.cars.license.LicenseService.cameraCaught(car, camera.getUUID(), false);
+            helper.assertValueEqual(ECO.getBalance(server, driver.getUUID()), 7_500L, "$25 for driving suspended");
+            helper.assertValueEqual(ECO.getBalance(server, camera.getUUID()), cameraBefore + 2_500, "to the camera's owner");
+
+            // Licenses required: no driving without one.
+            check(helper, car.checkKey() && !car.unlicensed(), "not required: anyone drives");
+            com.reiko.cars.config.CarsConfig.LICENSE_REQUIRED.set(true);
+            try {
+                check(helper, !car.checkKey() && car.unlicensed(), "required: a suspended license can't");
+                com.reiko.cars.license.LicenseService.clear(server, driver.getUUID());
+                check(helper, car.checkKey() && !car.unlicensed(), "a good one can");
+            } finally {
+                com.reiko.cars.config.CarsConfig.LICENSE_REQUIRED.set(false);
+            }
+            car.checkKey();
+
+            // The police: a plate check tickets an unlicensed driver.
+            driver.stopRiding();
+            nobody.startRiding(car, true);
+            ECO.setBalance(server, nobody.getUUID(), 10_000, "test");
+            com.reiko.cars.license.TicketService.forget();
+            com.reiko.cars.license.TicketService.checkCar(civilian, car);
+            helper.assertValueEqual(ECO.getBalance(server, nobody.getUUID()), 10_000L, "only police can");
+            long xp = jobXp(officer, carJob("police_officer"));
+            com.reiko.cars.license.TicketService.checkCar(officer, car);
+            helper.assertValueEqual(ECO.getBalance(server, nobody.getUUID()), 7_500L, "ticketed $25");
+            check(helper, jobXp(officer, carJob("police_officer")) > xp, "paid as a Police Officer");
+            com.reiko.cars.license.TicketService.checkCar(officer, car);
+            helper.assertValueEqual(ECO.getBalance(server, nobody.getUUID()), 7_500L, "not twice in ten minutes");
+            nobody.stopRiding();
+            driver.startRiding(car, true);
+            ECO.setBalance(server, driver.getUUID(), 10_000, "test");
+            com.reiko.cars.license.TicketService.checkCar(officer, car);
+            helper.assertValueEqual(ECO.getBalance(server, driver.getUUID()), 10_000L, "a licensed driver goes on their way");
+        } finally {
+            com.reiko.cars.config.CarsConfig.LICENSE_REQUIRED.set(false);
+            com.reiko.cars.license.LicenseData.get(server).revoke(driver.getUUID());
+            leave(helper, driver, nobody, camera, officer, civilian);
+        }
+        helper.succeed();
     }
 }

@@ -149,6 +149,11 @@ public final class CarItem extends Item {
             car.setOwner(player);
             car.setPolicy(stack.get(ModDataComponents.INSURANCE.get())); // cover only counts while it's still the policyholder's
             car.setLocked(CarsConfig.get(CarsConfig.LOCK_NEW_CARS));
+            String plate = stack.get(ModDataComponents.PLATE.get());
+            if (plate != null && !plate.isEmpty() && level.getServer() != null) {
+                car.setPlate(plate); // the plate it had when it was picked up
+                com.reiko.cars.plate.PlateRegistry.get(level.getServer()).keep(plate);
+            }
             if (level instanceof ServerLevel serverLevel) {
                 EntityType.<CarEntity>createDefaultStackConfig(serverLevel, stack, player).accept(car); // name tag, entity data
             }
@@ -198,6 +203,10 @@ public final class CarItem extends Item {
         }
         if (stack.has(ModDataComponents.LOCK.get())) {
             tooltip.add(Component.translatable("item.reikocars.car.keyed").withStyle(ChatFormatting.DARK_GRAY));
+        }
+        String plate = stack.get(ModDataComponents.PLATE.get());
+        if (plate != null && !plate.isEmpty()) {
+            tooltip.add(Component.translatable("item.reikocars.car.plate", plate).withStyle(ChatFormatting.GRAY));
         }
         com.reiko.cars.insurance.Policy policy = stack.get(ModDataComponents.INSURANCE.get());
         if (policy != null && context.level() != null) {

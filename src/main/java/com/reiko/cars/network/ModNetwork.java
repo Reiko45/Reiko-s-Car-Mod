@@ -186,6 +186,38 @@ public final class ModNetwork {
             }
             return;
         }
+        if (player.containerMenu instanceof com.reiko.cars.dmv.DmvMenu menu && menu.dmv() != null) {
+            com.reiko.cars.dmv.DmvOfficeBlockEntity dmv = menu.dmv();
+            ShopActionResult result = switch (payload.action()) {
+                case LotActionPayload.TAKE_TEST -> {
+                    ShopActionResult started = com.reiko.cars.dmv.DmvService.takeTest(player, dmv, payload.expected(), payload.payment());
+                    if (started.success()) {
+                        player.closeContainer();
+                        player.sendSystemMessage(started.message());
+                        yield null;
+                    }
+                    yield started;
+                }
+                case LotActionPayload.REPLACE_LICENSE -> com.reiko.cars.dmv.DmvService.replace(player, dmv, payload.expected(), payload.payment());
+                case LotActionPayload.BUY_PLATE -> com.reiko.cars.dmv.DmvService.buyPlate(player, dmv, menu.selected(), payload.text(),
+                        payload.expected(), payload.payment());
+                case LotActionPayload.SET_DMV_FEE -> {
+                    ShopActionResult set = com.reiko.cars.dmv.DmvService.setFee(player, dmv, payload.value(), payload.text());
+                    if (set.success()) {
+                        com.reiko.cars.dmv.DmvMenu.open(player, dmv); // reopen to show the new fee
+                    }
+                    yield set;
+                }
+                default -> null;
+            };
+            if (result != null) {
+                if (player.containerMenu instanceof com.reiko.cars.dmv.DmvMenu open) {
+                    open.refresh();
+                }
+                ShopFeedback.send(player, result);
+            }
+            return;
+        }
         if (player.containerMenu instanceof com.reiko.cars.rental.RentalMenu menu && menu.desk() != null) {
             CarEntity car = menu.selected();
             ShopActionResult result = switch (payload.action()) {

@@ -40,6 +40,9 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.DEALERSHIP.get());
                 output.accept(ModItems.RENTAL_DESK.get());
                 output.accept(ModItems.IMPOUND_OFFICE.get());
+                output.accept(ModItems.DMV_OFFICE.get());
+                output.accept(ModItems.TRAFFIC_CONE.get());
+                output.accept(ModItems.TICKET_BOOK.get());
                 output.accept(ModItems.FOR_SALE_SIGN.get());
                 output.accept(ModItems.PARKING_METER.get());
                 output.accept(ModItems.TOLL_BOOTH.get());

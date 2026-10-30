@@ -23,5 +23,8 @@ public final class LotTicker {
         if (tick % 100 == 50) {
             LoanService.tick(server);
         }
+        if (tick % 5 == 0) {
+            com.reiko.cars.dmv.DrivingTests.tick(server, tick % 20 == 0);
+        }
     }
 }

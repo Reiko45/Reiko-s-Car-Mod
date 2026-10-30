@@ -1,6 +1,8 @@
 package com.reiko.cars.traffic;
 
 import com.reiko.cars.car.CarEntity;
+import com.reiko.cars.dmv.DrivingTests;
+import com.reiko.cars.license.LicenseService;
 import com.reiko.economy.api.EconomyApi;
 import com.reiko.economy.api.TransactionResult;
 import java.util.ArrayList;
@@ -88,36 +90,51 @@ public final class TrafficCameras {
      */
     public static void check(CarEntity car, Vec3 from, Vec3 to, double speed) {
         Level level = car.level();
-        if (car.owner() == null || car.getControllingPassenger() == null || car.sirenOn() || from.distanceToSqr(to) < 1.0E-6) {
+        if (car.getControllingPassenger() == null || car.sirenOn() || from.distanceToSqr(to) < 1.0E-6) {
+            return;
+        }
+        // Someone on their driving test fails it for running any red light or passing any speed sign too fast.
+        ServerPlayer examinee = car.getControllingPassenger() instanceof ServerPlayer driver && DrivingTests.taking(driver) ? driver : null;
+        if (car.owner() == null && examinee == null) {
             return;
         }
         long now = level.getGameTime();
         for (BlockPos pos : near(level, to, Math.max(LIGHT_REACH + 4.0, SPEED_REACH))) {
             if (level.getBlockEntity(pos) instanceof TrafficLightBlockEntity light) {
-                if (now - car.lastRedLightFine >= COOLDOWN && ranRed(light, from, to)) {
+                if (examinee != null && crossedOnRed(light, from, to)) {
+                    DrivingTests.caught(examinee, true);
+                }
+                if (car.owner() != null && now - car.lastRedLightFine >= COOLDOWN && ranRed(light, from, to)) {
                     car.lastRedLightFine = now;
-                    fine(light, car, Component.translatable("traffic.reikocars.red_light_ticket", car.kindName(), pos.getX(), pos.getY(), pos.getZ()),
+                    fine(light, car, Component.translatable("traffic.reikocars.red_light_ticket", car.describe(), pos.getX(), pos.getY(), pos.getZ()),
                             "reikocars.red_light_fine");
                 }
             } else if (level.getBlockEntity(pos) instanceof SpeedSignBlockEntity sign) {
                 double over = sign.inUnit(speed);
-                if (now - car.lastSpeedingFine >= COOLDOWN && sign.fine() > 0 && sign.owner() != null
+                if (examinee != null && to.distanceToSqr(pos.getCenter()) <= SPEED_REACH * SPEED_REACH && over > sign.limit() + sign.tolerance()) {
+                    DrivingTests.caught(examinee, false);
+                }
+                if (car.owner() != null && now - car.lastSpeedingFine >= COOLDOWN && sign.fine() > 0 && sign.owner() != null
                         && to.distanceToSqr(pos.getCenter()) <= SPEED_REACH * SPEED_REACH && over > sign.limit() + sign.tolerance()) {
                     car.lastSpeedingFine = now;
                     Component limit = Component.translatable(sign.kmh() ? "traffic.reikocars.kmh" : "traffic.reikocars.mph", sign.limit());
-                    fine(sign, car, Component.translatable("traffic.reikocars.speeding_ticket", car.kindName(), Math.round(over), limit,
+                    fine(sign, car, Component.translatable("traffic.reikocars.speeding_ticket", car.describe(), Math.round(over), limit,
                             pos.getX(), pos.getY(), pos.getZ()), "reikocars.speeding_fine");
                 }
             }
         }
     }
 
-    /** Whether a car going from {@code from} to {@code to} crossed {@code light}'s line toward it while it showed red. */
+    /** Whether a car going from {@code from} to {@code to} crossed {@code light}'s line toward it while it showed red, on its camera. */
     public static boolean ranRed(TrafficLightBlockEntity light, Vec3 from, Vec3 to) {
+        return light.owner() != null && light.fine() > 0 && crossedOnRed(light, from, to);
+    }
+
+    /** Whether a car going from {@code from} to {@code to} crossed {@code light}'s line toward it while it showed red. */
+    public static boolean crossedOnRed(TrafficLightBlockEntity light, Vec3 from, Vec3 to) {
         Level level = light.getLevel();
         BlockState state = light.getBlockState();
-        if (level == null || light.owner() == null || light.fine() <= 0 || !state.hasProperty(TrafficLightBlock.FACING)
-                || TrafficLightBlock.signal(level, state) != Signal.RED) {
+        if (level == null || !state.hasProperty(TrafficLightBlock.FACING) || TrafficLightBlock.signal(level, state) != Signal.RED) {
             return false;
         }
         Direction facing = state.getValue(TrafficLightBlock.FACING);
@@ -168,5 +185,6 @@ public final class TrafficCameras {
         if (cameraOwner != null) {
             cameraOwner.sendSystemMessage(Component.translatable("traffic.reikocars.camera_owner", car.ownerName(), what, eco.format(pay)));
         }
+        LicenseService.cameraCaught(car, payee, "reikocars.red_light_fine".equals(reason));
     }
 }

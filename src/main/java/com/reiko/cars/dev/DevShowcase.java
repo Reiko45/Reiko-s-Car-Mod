@@ -164,6 +164,8 @@ public final class DevShowcase {
             fireScript();
         } else if (MODE.equals("lots")) {
             lotsScript();
+        } else if (MODE.equals("dmv")) {
+            dmvScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -2767,7 +2769,7 @@ public final class DevShowcase {
     }
 
     private static List<CarEntity> carsOf(ServerLevel level, java.util.function.Predicate<CarEntity> which) {
-        return level.getEntitiesOfClass(CarEntity.class, new net.minecraft.world.phys.AABB(-40, -70, -40, 50, -40, 50), which);
+        return level.getEntitiesOfClass(CarEntity.class, new net.minecraft.world.phys.AABB(-60, -70, -60, 80, -40, 80), which);
     }
 
     private static void standAt(ServerPlayer player, BlockPos desk) {
@@ -2960,5 +2962,180 @@ public final class DevShowcase {
 
     private static com.reiko.cars.sale.DealershipBlockEntity desk2(ServerPlayer player) {
         return (com.reiko.cars.sale.DealershipBlockEntity) player.serverLevel().getBlockEntity(LOAN_DESK);
+    }
+
+    // ---- license plates, the DMV and driver's licenses ----
+
+    private static final BlockPos DMV = new BlockPos(0, -60, 0);
+    private static final int[] CONE_Z = {10, 22, 34, 46};
+
+    private static com.reiko.cars.dmv.DmvOfficeBlockEntity dmv(ServerPlayer player) {
+        return (com.reiko.cars.dmv.DmvOfficeBlockEntity) player.serverLevel().getBlockEntity(DMV);
+    }
+
+    private static void type(Minecraft minecraft, String text) {
+        if (minecraft.screen != null) {
+            for (char c : text.toCharArray()) {
+                minecraft.screen.charTyped(c, 0);
+            }
+        }
+    }
+
+    private static void dmvScript() {
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                MinecraftServer server = level.getServer();
+                level.setDayTime(6000);
+                tile(level, -16, -8, 32, 56);
+                level.setBlockAndUpdate(DMV, ModBlocks.DMV_OFFICE.get().defaultBlockState()
+                        .setValue(com.reiko.cars.dmv.DmvOfficeBlock.FACING, Direction.SOUTH));
+                ServerPlayer city = extraPlayer(server, "City");
+                dmv(player).setOwner(city);
+                // the test route: four cones down the road
+                for (int i = 0; i < CONE_Z.length; i++) {
+                    BlockPos at = new BlockPos(6, -60, CONE_Z[i]);
+                    level.setBlockAndUpdate(at, ModBlocks.TRAFFIC_CONE.get().defaultBlockState());
+                    var cone = (com.reiko.cars.road.TrafficConeBlockEntity) level.getBlockEntity(at);
+                    cone.setOwner(city);
+                    cone.setNumber(i + 1);
+                }
+                for (int z = 6; z <= 50; z += 4) {
+                    level.setBlockAndUpdate(new BlockPos(9, -60, z), ModBlocks.TRAFFIC_CONE.get().defaultBlockState()); // the kerb
+                }
+                // cars to show their plates
+                spawned(level, CarType.SEDAN, 20.0, 4.0, 180.0F, 0.6).setColor(0x1565C0);
+                spawned(level, CarType.SPORT_BIKE, 26.0, 4.0, 180.0F, 0.6);
+                spawned(level, CarType.PICKUP_TRUCK, 30.0, 4.0, 0.0F, 0.6).setColor(0xF4F5F7);
+                CarEntity mine = spawned(level, CarType.HATCHBACK, 6.0, 4.0, 0.0F, 0.9);
+                mine.setOwner(player);
+                mine.setColor(0xC62828);
+                player.getInventory().clearContent();
+                Purse.give(player, 50_000);
+                EconomyService.INSTANCE.deposit(server, player.getUUID(), 20_000, "showcase");
+            });
+        });
+        // the DMV and its cones, and plates
+        at(50, mc -> look(mc, -6.0, -55.5, 14.0, -140.0F, 18.0F));
+        at(70, mc -> shot(mc, "230_dmv_and_route"));
+        at(72, mc -> look(mc, 0.5, -58.5, 3.6, 180.0F, 15.0F));
+        at(90, mc -> shot(mc, "231_dmv_office"));
+        at(92, mc -> look(mc, 7.6, -59.6, 11.6, 140.0F, 25.0F));
+        at(110, mc -> shot(mc, "232_numbered_cone"));
+        at(112, mc -> look(mc, 20.0, -60.0, 8.4, 180.0F, 22.0F));
+        at(130, mc -> shot(mc, "233_sedan_plate"));
+        at(132, mc -> look(mc, 26.0, -60.0, 7.4, 180.0F, 24.0F));
+        at(150, mc -> shot(mc, "234_bike_plate"));
+        at(152, mc -> look(mc, 30.0, -60.0, 8.6, 180.0F, 26.0F));
+        at(170, mc -> shot(mc, "235_pickup_front_plate"));
+        // no license: the DMV's screen, and paying for the test
+        at(172, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                player.setGameMode(GameType.SURVIVAL);
+                standAt(player, DMV);
+                com.reiko.cars.dmv.DmvMenu.open(player, dmv(player));
+            });
+        });
+        at(192, mc -> shot(mc, "236_dmv_no_license"));
+        at(194, mc -> clickAt(mc, 142, 144));
+        at(210, mc -> shot(mc, "237_test_started"));
+        // the test: into the hatchback, and down the road through the cones
+        at(212, mc -> server(mc, player -> player.startRiding(car(player.serverLevel(), CarType.HATCHBACK), true)));
+        at(222, mc -> {
+            mc.player.setYRot(0.0F);
+            mc.player.setXRot(12.0F);
+            mc.options.keyUp.setDown(true);
+        });
+        at(250, mc -> shot(mc, "238_driving_test"));
+        at(300, mc -> {
+            mc.options.keyUp.setDown(false);
+            mc.options.keyDown.setDown(true);
+            ReikoCars.LOGGER.info("Showcase test drive: at {}", mc.player.position());
+        });
+        at(330, mc -> mc.options.keyDown.setDown(false));
+        at(336, mc -> shot(mc, "239_test_passed"));
+        at(338, mc -> server(mc, player -> {
+            ReikoCars.LOGGER.info("Showcase license: {}", com.reiko.cars.license.LicenseService.statusLine(player.server, player.getUUID()).getString());
+            player.stopRiding();
+            CarEntity hatch = carsOf(player.serverLevel(), c -> c.carType() == CarType.HATCHBACK).getFirst();
+            hatch.teleportTo(6.0, -60.0, 4.0);
+            standAt(player, DMV);
+            com.reiko.cars.dmv.DmvMenu.open(player, dmv(player));
+        }));
+        at(358, mc -> shot(mc, "240_dmv_licensed"));
+        // a custom plate for the hatchback
+        at(360, mc -> clickAt(mc, 97, 22));
+        at(366, mc -> clickAt(mc, 100, 70));
+        at(368, mc -> type(mc, "REIKO 1"));
+        at(376, mc -> shot(mc, "241_custom_plate"));
+        at(378, mc -> clickAt(mc, 142, 144));
+        at(392, mc -> shot(mc, "242_plate_bought"));
+        at(394, mc -> {
+            mc.player.closeContainer();
+            mc.options.hideGui = true;
+            look(mc, 6.0, -60.0, 0.6, 0.0F, 24.0F);
+        });
+        at(412, mc -> shot(mc, "243_custom_plate_on_car"));
+        // the owner's side
+        at(414, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                dmv(player).setOwner(player);
+                for (int z : CONE_Z) {
+                    ((com.reiko.cars.road.TrafficConeBlockEntity) player.serverLevel().getBlockEntity(new BlockPos(6, -60, z))).setOwner(player);
+                }
+                standAt(player, DMV);
+                com.reiko.cars.dmv.DmvMenu.open(player, dmv(player));
+            });
+        });
+        at(430, mc -> clickAt(mc, 157, 22));
+        at(440, mc -> shot(mc, "244_dmv_settings"));
+        // a police plate check on an unlicensed driver
+        at(442, mc -> {
+            mc.player.closeContainer();
+            server(mc, player -> {
+                ServerPlayer bo = extraPlayer(player.server, "Bo");
+                EconomyService.INSTANCE.deposit(player.server, bo.getUUID(), 10_000, "showcase");
+                CarEntity sedan = car(player.serverLevel(), CarType.SEDAN);
+                bo.startRiding(sedan, true);
+                player.getInventory().clearContent();
+                give(player, ModItems.TICKET_BOOK.get(), 1);
+                player.teleportTo(player.serverLevel(), 18.5, -60.0, 6.5, 160.0F, 20.0F);
+                com.reiko.cars.license.TicketService.checkCar(player, sedan);
+            });
+        });
+        at(462, mc -> shot(mc, "245_plate_check"));
+        // licenses required: no license, no driving
+        at(464, mc -> server(mc, player -> {
+            com.reiko.cars.license.LicenseData.get(player.server).revoke(player.getUUID());
+            com.reiko.cars.config.CarsConfig.LICENSE_REQUIRED.set(true);
+            player.startRiding(car(player.serverLevel(), CarType.PICKUP_TRUCK), true);
+        }));
+        at(480, mc -> {
+            mc.player.setYRot(0.0F);
+            mc.player.setXRot(10.0F);
+        });
+        at(486, mc -> shot(mc, "246_no_license_hud"));
+        at(488, mc -> server(mc, player -> {
+            com.reiko.cars.config.CarsConfig.LICENSE_REQUIRED.set(false);
+            player.stopRiding();
+            player.getInventory().clearContent();
+            give(player, ModItems.DMV_OFFICE.get(), 1);
+            give(player, ModItems.TRAFFIC_CONE.get(), 4);
+            give(player, ModItems.TICKET_BOOK.get(), 1);
+            var license = com.reiko.cars.license.LicenseService.issue(player, "City");
+            com.reiko.cars.license.LicenseService.addPoints(player.server, player.getUUID(), 3, "license.reikocars.reason.red_light");
+        }));
+        at(498, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
+        at(501, mc -> hoverOn(mc, 70, 150));
+        at(508, mc -> shot(mc, "247_license_card"));
+        at(510, mc -> hoverOn(mc, 52, 150));
+        at(516, mc -> shot(mc, "248_ticket_book"));
+        at(518, mc -> hoverOn(mc, 16, 150));
+        at(524, mc -> shot(mc, "249_dmv_item"));
+        at(530, mc -> mc.stop());
     }
 }

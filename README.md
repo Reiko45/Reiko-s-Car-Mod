@@ -22,6 +22,10 @@ Dealerships sell cars **on finance**, paid off a day at a time from the bank, an
 **repossessed** to an **impound lot**, where tow trucks also bring cars left at expired parking meters. **Rental
 desks** hire out cars by the day; a rented car goes back to its lot by itself when the time's up.
 
+Every car carries a **license plate**, and drivers earn a **driver's license** by passing a driving test at a **DMV**,
+round its owner's numbered traffic cones. Cameras put penalty points on it, enough points suspend it, and police
+officers with a **Ticket Book** check plates and fine unlicensed drivers.
+
 ## Requirements
 
 - Minecraft 1.21.1, NeoForge 21.1.265 or newer (as Reiko's Economy Mod needs)
@@ -200,6 +204,49 @@ into earshot, or joins a car that's already playing, hears the song from whereve
   camera's owner; both get a chat message, and the camera flashes. A car is fined at most once a minute by each kind
   of camera. The camera owner's own cars, cars with nobody driving, and police cars and ambulances with their sirens
   on aren't fined. Only the owner (or an admin) can break a traffic light or speed sign.
+- **On the driver's license:** a camera's fine also puts penalty points on the license of whoever was driving (3 for
+  a red light, 2 for speeding), and a driver with no valid license pays a $25 fine on top, to the camera's owner (see
+  [License plates and driver's licenses](#license-plates-and-drivers-licenses)).
+
+## License plates and driver's licenses
+
+**Plates.** Every car and motorcycle gets a license plate the first time it's in the world: three letters and three
+digits ("RKC 482"), different from every other car's, written on the plate panels on its back (and front, on cars
+that have one; a motorcycle's small plate takes it on two lines). It stays with the car when it's picked up and put
+down, and shows in its tooltip, on tickets and fines ("Sedan (RKC 482)") and in police plate checks.
+
+**The DMV.** Put down a **DMV Office** (a counter under a DMV sign, with a license camera and an eye chart). Whoever
+places it owns it, and only they (or an admin) can break it. Right-click it:
+
+- **License tab:** your license, its number and its points. Without one, pay for the **driving test** ($25.00 to start,
+  plus sales tax, by card or cash); with one, buy a **new card** ($10.00) if you've lost yours.
+- **Plates tab:** pick one of your cars parked within **10 blocks** and type a **custom plate** of 2 to 8 letters,
+  digits and spaces ($100.00). Nobody else can have the same plate; the old one is freed.
+- **Settings tab** (the owner): the three fees, the test route, and the books: tests taken and passed, plates sold and
+  what it's all earned. The owner pays nothing at their own DMV.
+
+**The driving test.** The route is the DMV owner's **numbered traffic cones** within 128 blocks of it. Put down
+**Traffic Cones** (cars and people go through them) and right-click each to number it 1, 2, 3... (sneak to count
+down; 0 takes it off the route). Numbered cones show their number, and only their owner can pick them up. Having paid,
+get into any car you may drive and go through every cone in order (within 3½ blocks of each) inside **5 minutes**.
+Sparkles over the next cone show the way, and the action bar shows which cone is next and the time left. Crashing (any
+body damage), running a red light, passing a speed limit sign too fast, getting out or into another car, or running
+out of time fails it; pay again to retry. Pass, and the license is yours, with a **Driver's License** card.
+
+**Points and suspension.** Red-light and speed cameras add penalty points to the driver's license (3 and 2). Points
+drop off after 7 Minecraft days; 12 at once **suspends** the license for 3 days and wipes them. The card shows its
+points or suspension, and right-clicking it checks it against the records. A lost card is only a card: the license is
+the record, and any DMV prints a new one.
+
+**Without a valid license** (none, or suspended):
+
+- a camera that catches you adds a **$25** fine on top, to its owner;
+- a **police officer** can ticket you: someone in the **Police Officer** job (or an admin) holding a **Ticket Book**
+  right-clicks a car to see its plate, its owner and who's driving with their license, or right-clicks a player to
+  see theirs. An unlicensed driver is fined $25 from their bank account (at most once every ten minutes); the fine
+  goes to nobody, and the ticket pays the officer's job;
+- and if the server sets `licenses.required`, you can't drive at all: the car won't start and the dashboard says
+  **NO LICENSE**. The driving test is the exception: you can drive on it.
 
 ## Fares
 
@@ -634,7 +681,7 @@ the insurer, and they pay the claims from their bank account.
 
 ## Car jobs
 
-With Reiko's Economy Mod 1.1.0 or newer, the **job board** has six car jobs. Join them like any other job: they pay
+With Reiko's Economy Mod 1.1.0 or newer, the **job board** has seven car jobs. Join them like any other job: they pay
 as you work, level up, and hand out daily contracts.
 
 | Job | Gets paid for |
@@ -645,11 +692,12 @@ as you work, level up, and hand out daily contracts.
 | Trucker | Each bucket of fuel unloaded from a tanker into a pump ($0.40), and every 100 blocks driven towing a trailer at least a quarter full ($0.50) |
 | Garbage Collector | Each trash can with something in it emptied by garbage truck ($1.50, once a day per can) |
 | Firefighter | Each fire put out with a fire hose ($0.50; not fires you lit, nor endless ones, and up to 64 a day: see [Fire trucks](#fire-trucks)) |
+| Police Officer | Each driver without a valid license ticketed with a Ticket Book ($3.00; see [License plates and driver's licenses](#license-plates-and-drivers-licenses)) |
 
 Their contracts ask for taxi rides, bus passengers, parcels, parts fitted, tow-ins, fuel delivered, loaded hauls,
-trash cans emptied, fires put out, or deliveries of tires, brake pads, motor oil, paper, rotten flesh and water buckets. The job files are in `data/reikocars/jobs`, so a datapack can
+trash cans emptied, fires put out, unlicensed drivers stopped, or deliveries of tires, brake pads, motor oil, paper, rotten flesh and water buckets. The job files are in `data/reikocars/jobs`, so a datapack can
 change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`, `parcel_delivered`, `repair_part`,
-`tow`, `impound_tow`, `fuel_delivered`, `haul_distance`, `trash_collected` and `fire_put_out`.
+`tow`, `impound_tow`, `fuel_delivered`, `haul_distance`, `trash_collected`, `fire_put_out` and `unlicensed_ticket`.
 
 ## Recipes
 
@@ -673,6 +721,9 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | For Sale Sign | any sign, red dye and paper (shapeless) |
 | Car Rental Desk | paper, any sign, paper on top, blank key, blue dye, blank key across the middle, iron ingot, chest, iron ingot below |
 | Impound Office | yellow dye, any sign, yellow dye on top, iron ingot, iron bars, iron ingot across the middle, iron ingot, chain, iron ingot below |
+| DMV Office | paper, any sign, paper on top, book, light blue dye, glass pane across the middle, iron ingot, chest, iron ingot below |
+| Traffic Cone ×4 | orange dye on top, white dye either side of orange dye in the middle, dried kelp, black dye, dried kelp below |
+| Ticket Book | a book, blue dye, an iron nugget and an ink sac (shapeless) |
 | Parking Meter | iron ingot, glass pane, iron ingot on top, gold nugget, redstone, gold nugget across the middle, an iron ingot below |
 | Toll Booth | yellow dye, glass pane, yellow dye on top, iron ingot, redstone, iron ingot across the middle, three smooth stone below |
 | Toll Gate | stick, red dye, stick on top, yellow dye, piston, yellow dye across the middle, iron ingots in the bottom corners |
@@ -827,6 +878,19 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `rentals.lotRadius` | `10.0` | How far from a rental desk its lot reaches |
 | `rentals.defaultPricePerDay` | `15.0` | A new rental desk's day rate for every kind of car (its owner can change each) |
 | `rentals.maxDays` | `7` | The most days a car can be rented for at once |
+| `licenses.required` | `false` | Whether a player needs a valid driver's license to drive at all (except on their test) |
+| `licenses.unlicensedFine` | `25.0` | The fine for driving without a valid license, from cameras (to their owner) and police tickets. 0 turns both off |
+| `licenses.redLightPoints` | `3` | Penalty points for running a red light on camera |
+| `licenses.speedingPoints` | `2` | Penalty points for speeding on camera |
+| `licenses.maxPoints` | `12` | Points that suspend a license |
+| `licenses.pointsLastDays` | `7` | Minecraft days points stay on a license |
+| `licenses.suspensionDays` | `3` | Minecraft days a suspension lasts |
+| `licenses.testMinutes` | `5` | Minutes the driving test allows |
+| `licenses.routeRadius` | `128.0` | How far from a DMV its owner's numbered cones can be and still be on its route |
+| `licenses.defaultTestFee` | `25.0` | A new DMV's fee for the driving test (its owner can change it) |
+| `licenses.defaultReplaceFee` | `10.0` | A new DMV's fee for a new license card |
+| `licenses.dmvReach` | `10.0` | How close to a DMV a car must be parked to buy it a custom plate |
+| `plates.defaultCustomPlatePrice` | `100.0` | A new DMV's price for a custom plate |
 | `parking.ratePer10Minutes` | `0.5` | What a new parking meter charges per 10 minutes (its owner can change it) |
 | `parking.fine` | `10.0` | A new meter's fine for overstaying, from the car owner's bank account (its owner can change it) |
 | `parking.graceSeconds` | `60` | How long a car can stand at a meter unpaid, or after its time runs out, before it's ticketed |
@@ -868,6 +932,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 ./gradlew runClient -Pshowcase=fares      # paying a bus fare, a taxi's meter running and paid, the owner's fare screen
 ./gradlew runClient -Pshowcase=sales      # a dealership's lot, buying a car, trading one in, the dealer's tabs, a For Sale Sign
 ./gradlew runClient -Pshowcase=lots       # buying on finance, repossession to the impound lot, renting a car, the owners' screens
+./gradlew runClient -Pshowcase=dmv        # plates, the DMV, taking the driving test, a custom plate, a plate check, NO LICENSE, the cards
 ./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
 
@@ -930,7 +995,7 @@ src/main/java/com/reiko/cars/
 ├── garbage/              the Trash Can block and block entity, and GarbageService (the garbage truck's round)
 ├── fire/                 the fire truck's water (FireTrucks), the fire hose and spraying (Firefighting), the ladder and its climbable blocks (FireLadder), the Fire Hydrant, and who lit what (FireEvents)
 ├── radio/                the car radio: its settings (CarRadio), the stations, and its menu
-├── road/                 asphalt and its markings, Road Paint, Street Poles, Stop Signs and Street Lamps
+├── road/                 asphalt and its markings, Road Paint, Street Poles, Stop Signs, Street Lamps and Traffic Cones
 ├── traffic/              traffic lights, speed limit signs, their owner screen's menu, and TrafficCameras (the fines)
 ├── icecream/             the ice cream truck's shop: its menu and IceCreamService (pricing and selling)
 ├── pump/                 the gas and diesel pump block, its block entity, menu, protection, and PumpService (selling fuel)
@@ -942,6 +1007,9 @@ src/main/java/com/reiko/cars/
 ├── sale/                 the For Sale Sign, a car's sale screen, the Car Dealership block, its lot and tabs, and SaleService (buying, selling, trade-ins)
 ├── finance/              car loans: the Loan, where they're kept (LoanData), and LoanService (terms, daily payments, repossession, paying off)
 ├── impound/              the Impound Office block, block entity, menu and protection, the lots (ImpoundRegistry), and ImpoundService (towing in, fees, releasing)
+├── plate/                license plate numbers (Plates) and every plate given out (PlateRegistry)
+├── license/              driver's licenses (DriverLicense, LicenseData), points, suspension and fines (LicenseService), the card, and the Ticket Book with its plate checks (TicketService)
+├── dmv/                  the DMV Office block, block entity and menu, DmvService (tests, cards, custom plates), the test routes (ConeRegistry) and DrivingTests
 ├── rental/               the Car Rental Desk block, block entity, menu and protection, and RentalService (the fleet, renting, returning)
 ├── fare/                 bus fares and the taxi meter (CarFares), the pay and fare screens' menus, and FareService
 ├── key/                  car keys: the key items, what a key fits (CarKey), and cutting, changing the locks and the key fob (CarKeys)
@@ -951,10 +1019,10 @@ src/main/java/com/reiko/cars/
 ├── toll/                 the toll booth and toll gate blocks, their block entities and menus, protection, and TollService (paying and the gate)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
-├── network/              packets: pump, repair bench, mailbox, parking meter, toll, insurance, impound, rental, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
+├── network/              packets: pump, repair bench, mailbox, parking meter, toll, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
+├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts), traffic cones' numbers, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)

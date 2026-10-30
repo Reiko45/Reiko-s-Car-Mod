@@ -123,6 +123,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     /** Who it's rented to, if anyone, and until when (game time). */
     private static final EntityDataAccessor<Optional<UUID>> DATA_RENTER = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.OPTIONAL_UUID);
     private static final EntityDataAccessor<Long> DATA_RENTAL_UNTIL = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
+    private static final EntityDataAccessor<String> DATA_PLATE = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Boolean> DATA_UNLICENSED = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
     /** Millibuckets of water in a fire truck's tank. */
     private static final EntityDataAccessor<Integer> DATA_WATER = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
     /** When a fire truck's ladder last started going up or down, in game time: -1 while it's stowed. */
@@ -255,6 +257,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_IMPOUNDED, false);
         builder.define(DATA_RENTER, Optional.empty());
         builder.define(DATA_RENTAL_UNTIL, 0L);
+        builder.define(DATA_PLATE, "");
+        builder.define(DATA_UNLICENSED, false);
         builder.define(DATA_LADDER_START, -1L);
         builder.define(DATA_LADDER_UP, false);
         builder.define(DATA_LADDER_HEIGHT, 0);
@@ -422,6 +426,28 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     @Override
     public Component kindName() {
         return Component.translatable("entity.reikocars." + type.id());
+    }
+
+    /** What kind of car it is, with its plate: "Sedan (RKC 482)". For tickets and fines. */
+    public Component describe() {
+        String plate = plate();
+        return plate.isEmpty() ? kindName() : Component.translatable("plate.reikocars.car_with_plate", kindName(), plate);
+    }
+
+    /** Its license plate number ("" until it's first been in a server world). */
+    public String plate() {
+        return entityData.get(DATA_PLATE);
+    }
+
+    public void setPlate(String plate) {
+        entityData.set(DATA_PLATE, plate);
+    }
+
+    /** Gives it a plate if it has none, on the server. */
+    private void issuePlate() {
+        if (plate().isEmpty() && getServer() != null) {
+            setPlate(com.reiko.cars.plate.PlateRegistry.get(getServer()).issue(random));
+        }
     }
 
     private void tellDriver(Component message) {
@@ -914,6 +940,11 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return "entity.reikocars." + type.id();
     }
 
+    /** Whether the driver can't drive it for want of a valid driver's license (with licenses required). */
+    public boolean unlicensed() {
+        return entityData.get(DATA_UNLICENSED);
+    }
+
     /** Whether the driver may start it: they carry its key, or it needs none (see {@link CarKeys#required}). */
     public boolean keyedIn() {
         return entityData.get(DATA_KEYED);
@@ -925,6 +956,14 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
                 && (isImpounded() ? holdsImpounded(driver)
                         : rental != null && driver.getUUID().equals(rental.renter()) ? rentedBy(driver) // out of time, out of luck
                         : !CarKeys.required(this) || CarKeys.holds(driver, lockCode()) || rentedBy(driver));
+        if (!level().isClientSide) {
+            // With licenses required, no license (or a suspended one), no driving: except on the driving test.
+            boolean unlicensed = getControllingPassenger() instanceof ServerPlayer driver && !com.reiko.cars.license.LicenseService.mayDrive(driver);
+            if (entityData.get(DATA_UNLICENSED) != unlicensed) {
+                entityData.set(DATA_UNLICENSED, unlicensed);
+            }
+            keyed &= !unlicensed;
+        }
         boolean was = entityData.get(DATA_KEYED);
         if (keyed != was) {
             entityData.set(DATA_KEYED, keyed);
@@ -1019,6 +1058,13 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
         ItemStack held = player.getItemInHand(hand);
+        if (held.getItem() instanceof com.reiko.cars.license.TicketBookItem) {
+            // A police officer's plate check.
+            if (player instanceof ServerPlayer officer) {
+                com.reiko.cars.license.TicketService.checkCar(officer, this);
+            }
+            return InteractionResult.sidedSuccess(level().isClientSide);
+        }
         InteractionResult keyed = CarKeys.useOn(this, player, hand);
         if (keyed != null) {
             return keyed;
@@ -1266,7 +1312,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (!level().isClientSide && !hadDriver && getControllingPassenger() instanceof Player driver) {
             if (!updateKey(false)) {
                 playSound(ModSounds.LOCK.get(), 0.4F, 0.6F); // no key: nothing happens
-                tellDriver(noKeyMessage(driver));
+                tellDriver(unlicensed() ? Component.translatable("license.reikocars.cant_drive") : noKeyMessage(driver));
             } else if (hasFuel()) {
                 if (isBrokenDown()) {
                     playSound(ModSounds.BREAKDOWN.get(), 0.6F, 1.2F); // turns over, won't start
@@ -1615,6 +1661,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (hornCooldown > 0) {
             hornCooldown--;
         }
+        issuePlate();
         updateKey(true);
         headlights.tick();
         WorkVehicles.serverTick(this);
@@ -1993,6 +2040,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (policy != null) {
             stack.set(ModDataComponents.INSURANCE.get(), policy);
         }
+        if (!plate().isEmpty()) {
+            stack.set(ModDataComponents.PLATE.get(), plate()); // it keeps its plate
+        }
         return stack;
     }
 
@@ -2042,6 +2092,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (towedBadlyParked) {
             tag.putBoolean("TowedBadlyParked", true);
         }
+        if (!plate().isEmpty()) {
+            tag.putString("Plate", plate());
+        }
         if (type.isFireTruck()) {
             tag.putInt("Water", water());
             if (ladderUp()) {
@@ -2088,6 +2141,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         setRental(tag.contains("Rental") ? com.reiko.cars.rental.Rental.CODEC.parse(NbtOps.INSTANCE, tag.get("Rental")).result().orElse(null) : null);
         loanId = tag.hasUUID("Loan") ? tag.getUUID("Loan") : null;
         towedBadlyParked = tag.getBoolean("TowedBadlyParked");
+        setPlate(tag.getString("Plate"));
         if (type.isFireTruck()) {
             setWater(tag.getInt("Water"));
             if (tag.contains("Ladder", Tag.TAG_INT)) {

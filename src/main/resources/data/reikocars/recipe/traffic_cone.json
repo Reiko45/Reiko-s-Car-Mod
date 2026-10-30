@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "O": {
+      "tag": "c:dyes/orange"
+    },
+    "W": {
+      "tag": "c:dyes/white"
+    },
+    "K": {
+      "item": "minecraft:dried_kelp"
+    },
+    "B": {
+      "tag": "c:dyes/black"
+    }
+  },
+  "pattern": [
+    " O ",
+    "WOW",
+    "KBK"
+  ],
+  "result": {
+    "count": 4,
+    "id": "reikocars:traffic_cone"
+  }
+}

@@ -68,6 +68,14 @@ public final class ModDataComponents {
     public static final Supplier<DataComponentType<com.reiko.cars.road.RoadMarking>> ROAD_MARKING = COMPONENTS.registerComponentType("road_marking",
             builder -> builder.persistent(com.reiko.cars.road.RoadMarking.CODEC).networkSynchronized(com.reiko.cars.road.RoadMarking.STREAM_CODEC));
 
+    /** A picked-up car's license plate, so it keeps it when it's put down again. */
+    public static final Supplier<DataComponentType<String>> PLATE = COMPONENTS.registerComponentType("plate",
+            builder -> builder.persistent(Codec.STRING).networkSynchronized(ByteBufCodecs.STRING_UTF8));
+
+    /** A driver's license card: whose, its number, and its points and suspension when last looked at. */
+    public static final Supplier<DataComponentType<com.reiko.cars.license.LicenseCard>> LICENSE = COMPONENTS.registerComponentType("license",
+            builder -> builder.persistent(com.reiko.cars.license.LicenseCard.CODEC).networkSynchronized(com.reiko.cars.license.LicenseCard.STREAM_CODEC));
+
     private ModDataComponents() {
     }
 }
