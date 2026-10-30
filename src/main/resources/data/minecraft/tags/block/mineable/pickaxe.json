@@ -22,6 +22,8 @@
     "reikocars:fire_hydrant",
     "reikocars:rental_desk",
     "reikocars:impound_office",
-    "reikocars:dmv_office"
+    "reikocars:dmv_office",
+    "reikocars:tuning_bench",
+    "reikocars:race_control"
   ]
 }

@@ -26,6 +26,10 @@ Every car carries a **license plate**, and drivers earn a **driver's license** b
 round its owner's numbered traffic cones. Cameras put penalty points on it, enough points suspend it, and police
 officers with a **Ticket Book** check plates and fine unlicensed drivers.
 
+A **Tuning Bench** fits engine stages, turbos, tires, brakes and suspension kits, and paints race numbers and stripes;
+a **Race Control** and numbered **race flags** make a race track, with timed laps, a best-lap board, and races for a
+pot of entry fees.
+
 ## Requirements
 
 - Minecraft 1.21.1, NeoForge 21.1.265 or newer (as Reiko's Economy Mod needs)
@@ -338,6 +342,57 @@ make up its fleet, unless they're up for sale or someone's in them.
 - **The owner's side:** the **Fleet** tab shows the cars on the lot and the ones out on rent, with the time each has
   left. The **Prices** tab sets a day's rent for each kind of car (0 stops renting that kind out), and both show the
   books: rentals and takings. A rented car can't be put up for sale until it's back.
+
+## Tuning
+
+Put down a **Tuning Bench** (a dark workbench with a turbo and a dyno screen, under a TUNING sign). Whoever places it
+owns it, and only they (or an admin) can break it. Park a car within **6 blocks** and right-click the bench. Only a
+car's owner can have it tuned.
+
+| Kit | What it does | What it costs the car |
+| --- | --- | --- |
+| Engine Tune Kit | One engine stage (up to 3): +6% top speed and +4% pull a stage | 8% more fuel and 15% more engine wear a stage |
+| Turbocharger | +25% acceleration | 10% more fuel and engine wear |
+| Sport Tires | Turns 15% sharper | Slower off-road, and they wear 30% faster |
+| Off-Road Tires | Far less slowed on grass, sand and snow | 3% off the top speed |
+| Performance Brakes | One stage (up to 2): stops 20% harder a stage | Nothing |
+| Lowering Springs | Turns 10% sharper | Slower off-road |
+| Lift Kit | Less slowed off-road | Turns 5% wider |
+
+- **Tune tab:** each kit, how far the car has it, a **Fit** button that fits one of your own kits for nothing, and a
+  button with the bench's price for one from its stock. Pick several and pay the bill by card or cash (plus sales
+  tax); the money goes to the bench's owner, whose own jobs are free. One set of tires and one set of springs: fitting
+  the other kind hands the old one back.
+- **Livery tab:** a **race number** (1 to 99) on a white roundel on both doors, and **racing stripes** in any dye colour
+  along the hood, roof and trunk. Free. Motorcycles don't take a livery.
+- **The owner's Stock and Prices tabs:** load the bench with kits (hoppers and pipes can fill it too) and set what
+  fitting each costs ($40.00 to start). Fitting kits to someone else's car pays the Mechanic job.
+
+A car keeps its tuning and livery when it's picked up; its tooltip lists them.
+
+## Racing
+
+Put down a **Race Control** (a booth with start lights on a checkered gantry): driving past it, within 8 blocks, is
+crossing the start and finish line. Then put down **Race Flags** and right-click each to number it 1, 2, 3... (sneak
+to count down). The track is the Race Control's owner's numbered flags within 256 blocks: a lap is every flag in order
+(passing within 5 blocks of each) and back over the line. Numbered flags show their number, and only their owner can
+pick them up. Cars and people go through flags.
+
+- **Time trials** are free: right-click the Race Control, pick **Time trial**, get into a car and cross the line to start
+  the clock. Every lap is timed; getting out ends it.
+- **Races:** right-click the Race Control and **enter**, paying the entry fee ($10.00 to start) into the pot. Once two
+  are in, an entrant presses **Start the race** (the owner can start it any time). Everyone who's in a car within 24
+  blocks of the line races (anyone who isn't gets their fee back); the start lights count down three seconds. First
+  over the line after the last lap wins the pot, less the track's cut (10% to start); the rest have a minute to finish.
+  Getting out puts you out. Up to 12 can race; if nobody finishes within 10 minutes, everyone gets their fee back.
+- **The stopwatch:** racing or on a time trial, the top of the screen shows the clock, your lap, the next checkpoint
+  and (racing) your place.
+- **Best laps:** the fastest laps driven at a Race Control, each driver's best in each kind of car, go on its board
+  (the top 10).
+- **The owner's Settings tab:** laps (1 to 10), the entry fee, the track's cut, and the books: races, time trials and
+  the track's takings. They can call a race off, and everyone gets their fee back.
+
+Races aren't saved: a restart calls them off, with the fees refunded.
 
 ## Motorcycles
 
@@ -688,7 +743,7 @@ as you work, level up, and hand out daily contracts.
 | --- | --- |
 | Driver | Each taxi ride a rider pays for ($1.50), and each bus passenger who pays the fare ($0.50) |
 | Mail Carrier | Each parcel delivered by mail van ($0.75) |
-| Mechanic | Each part fitted to someone else's vehicle at a Repair Bench ($0.60), whether from the bench's stock (paid to the bench's owner) or from your own pocket, each of someone else's broken-down cars towed in to a Repair Bench from at least 24 blocks away ($4.00, once per breakdown), and each badly parked car towed to an impound lot ($2.00) |
+| Mechanic | Each part fitted to someone else's vehicle at a Repair Bench, or tuning kit at a Tuning Bench ($0.60), whether from the bench's stock (paid to the bench's owner) or from your own pocket, each of someone else's broken-down cars towed in to a Repair Bench from at least 24 blocks away ($4.00, once per breakdown), and each badly parked car towed to an impound lot ($2.00) |
 | Trucker | Each bucket of fuel unloaded from a tanker into a pump ($0.40), and every 100 blocks driven towing a trailer at least a quarter full ($0.50) |
 | Garbage Collector | Each trash can with something in it emptied by garbage truck ($1.50, once a day per can) |
 | Firefighter | Each fire put out with a fire hose ($0.50; not fires you lit, nor endless ones, and up to 64 a day: see [Fire trucks](#fire-trucks)) |
@@ -724,6 +779,16 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | DMV Office | paper, any sign, paper on top, book, light blue dye, glass pane across the middle, iron ingot, chest, iron ingot below |
 | Traffic Cone ×4 | orange dye on top, white dye either side of orange dye in the middle, dried kelp, black dye, dried kelp below |
 | Ticket Book | a book, blue dye, an iron nugget and an ink sac (shapeless) |
+| Tuning Bench | red dye, any sign, red dye on top, iron gear, smithing table, iron gear across the middle, iron ingot, chest, iron ingot below |
+| Race Control | black dye, any sign, black dye on top, redstone lamp, glass pane, redstone lamp across the middle, three iron ingots below |
+| Race Flag ×4 | white wool, black wool over black wool, white wool, a stick below |
+| Engine Tune Kit | Engine Parts, a BuildCraft **Redstone Iron Chipset**, a gold gear and redstone (shapeless) |
+| Turbocharger | iron ingots in the top corners, copper ingot, iron gear, copper ingot across the middle, three iron ingots below |
+| Sport Tires | four Tires, red dye and a slime ball (shapeless) |
+| Off-Road Tires | four Tires, brown dye and flint (shapeless) |
+| Performance Brakes | two Brake Pads, red dye and a gold ingot (shapeless) |
+| Lowering Springs | three iron ingots and red dye (shapeless) |
+| Lift Kit | three iron ingots, blue dye and a piston (shapeless) |
 | Parking Meter | iron ingot, glass pane, iron ingot on top, gold nugget, redstone, gold nugget across the middle, an iron ingot below |
 | Toll Booth | yellow dye, glass pane, yellow dye on top, iron ingot, redstone, iron ingot across the middle, three smooth stone below |
 | Toll Gate | stick, red dye, stick on top, yellow dye, piston, yellow dye across the middle, iron ingots in the bottom corners |
@@ -891,6 +956,13 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `licenses.defaultReplaceFee` | `10.0` | A new DMV's fee for a new license card |
 | `licenses.dmvReach` | `10.0` | How close to a DMV a car must be parked to buy it a custom plate |
 | `plates.defaultCustomPlatePrice` | `100.0` | A new DMV's price for a custom plate |
+| `tuning.benchReach` | `6.0` | How close a car must be to a Tuning Bench |
+| `tuning.defaultKitPrice` | `40.0` | What a new Tuning Bench charges to fit each kit from its stock |
+| `racing.trackRadius` | `256.0` | How far from a Race Control its owner's numbered flags can be and still be on its track |
+| `racing.defaultEntryFee` | `10.0` | A new Race Control's entry fee |
+| `racing.defaultHouseCut` | `0.1` | The share of each pot a new Race Control's owner keeps |
+| `racing.defaultLaps` | `3` | Laps in a race at a new Race Control |
+| `racing.raceMinutes` | `10` | How long a race or time trial can run |
 | `parking.ratePer10Minutes` | `0.5` | What a new parking meter charges per 10 minutes (its owner can change it) |
 | `parking.fine` | `10.0` | A new meter's fine for overstaying, from the car owner's bank account (its owner can change it) |
 | `parking.graceSeconds` | `60` | How long a car can stand at a meter unpaid, or after its time runs out, before it's ticketed |
@@ -933,6 +1005,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 ./gradlew runClient -Pshowcase=sales      # a dealership's lot, buying a car, trading one in, the dealer's tabs, a For Sale Sign
 ./gradlew runClient -Pshowcase=lots       # buying on finance, repossession to the impound lot, renting a car, the owners' screens
 ./gradlew runClient -Pshowcase=dmv        # plates, the DMV, taking the driving test, a custom plate, a plate check, NO LICENSE, the cards
+./gradlew runClient -Pshowcase=tune       # the Tuning Bench and a livery, the race track, a time trial and a race start, the kits
 ./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
 
@@ -1007,6 +1080,8 @@ src/main/java/com/reiko/cars/
 ├── sale/                 the For Sale Sign, a car's sale screen, the Car Dealership block, its lot and tabs, and SaleService (buying, selling, trade-ins)
 ├── finance/              car loans: the Loan, where they're kept (LoanData), and LoanService (terms, daily payments, repossession, paying off)
 ├── impound/              the Impound Office block, block entity, menu and protection, the lots (ImpoundRegistry), and ImpoundService (towing in, fees, releasing)
+├── tuning/               upgrades (Upgrades) and the tuning kits, the Tuning Bench block, block entity and menu, TuningService, and liveries (Livery)
+├── racing/               race flags and their registry, the Race Control block, block entity and menu, and RaceService (time trials, races, the board)
 ├── plate/                license plate numbers (Plates) and every plate given out (PlateRegistry)
 ├── license/              driver's licenses (DriverLicense, LicenseData), points, suspension and fines (LicenseService), the card, and the Ticket Book with its plate checks (TicketService)
 ├── dmv/                  the DMV Office block, block entity and menu, DmvService (tests, cards, custom plates), the test routes (ConeRegistry) and DrivingTests
@@ -1022,7 +1097,7 @@ src/main/java/com/reiko/cars/
 ├── network/              packets: pump, repair bench, mailbox, parking meter, toll, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts), traffic cones' numbers, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
+├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, and liveries, LiveryMounts), traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)

@@ -59,6 +59,7 @@ public final class ModNetwork {
         registrar.playToServer(FareActionPayload.TYPE, FareActionPayload.STREAM_CODEC, ModNetwork::handleFare);
         registrar.playToServer(SaleActionPayload.TYPE, SaleActionPayload.STREAM_CODEC, ModNetwork::handleSale);
         registrar.playToServer(LotActionPayload.TYPE, LotActionPayload.STREAM_CODEC, ModNetwork::handleLot);
+        registrar.playToServer(TuningActionPayload.TYPE, TuningActionPayload.STREAM_CODEC, ModNetwork::handleTuning);
         registrar.playToServer(MeterActionPayload.TYPE, MeterActionPayload.STREAM_CODEC, ModNetwork::handleMeter);
         registrar.playToServer(TollActionPayload.TYPE, TollActionPayload.STREAM_CODEC, ModNetwork::handleToll);
         registrar.playToServer(InsuranceActionPayload.TYPE, InsuranceActionPayload.STREAM_CODEC, ModNetwork::handleInsurance);
@@ -156,6 +157,41 @@ public final class ModNetwork {
         ShopFeedback.send(player, result);
     }
 
+    private static void handleTuning(TuningActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || !(player.containerMenu instanceof com.reiko.cars.tuning.TuningBenchMenu menu)
+                || menu.containerId != payload.containerId() || !menu.stillValid(player) || menu.bench() == null) {
+            return;
+        }
+        com.reiko.cars.tuning.TuningKit[] kits = com.reiko.cars.tuning.TuningKit.values();
+        ShopActionResult result = switch (payload.action()) {
+            case TuningActionPayload.FIT -> payload.value() < 0 || payload.value() >= kits.length ? null
+                    : com.reiko.cars.tuning.TuningService.fitOwn(player, menu.bench(), menu.target(), kits[payload.value()]);
+            case TuningActionPayload.BUY -> com.reiko.cars.tuning.TuningService.buy(player, menu.bench(), menu.target(), payload.value(),
+                    payload.expected(), payload.payment());
+            case TuningActionPayload.SET_PRICE -> {
+                if (payload.value() < 0 || payload.value() >= kits.length) {
+                    yield null;
+                }
+                ShopActionResult set = com.reiko.cars.tuning.TuningService.setPrice(player, menu.bench(), kits[payload.value()], payload.text());
+                if (set.success()) {
+                    com.reiko.cars.tuning.TuningBenchMenu.open(player, menu.bench()); // reopen to show the new price
+                }
+                yield set;
+            }
+            case TuningActionPayload.LIVERY -> {
+                com.reiko.cars.tuning.Livery livery = com.reiko.cars.tuning.Livery.unpack(payload.value());
+                yield com.reiko.cars.tuning.TuningService.setLivery(player, menu.bench(), menu.target(), livery.number(), livery.stripeColor());
+            }
+            default -> null;
+        };
+        if (result != null) {
+            if (player.containerMenu instanceof com.reiko.cars.tuning.TuningBenchMenu open) {
+                open.refresh();
+            }
+            ShopFeedback.send(player, result);
+        }
+    }
+
     private static void handleLot(LotActionPayload payload, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player) || player.containerMenu.containerId != payload.containerId()
                 || !player.containerMenu.stillValid(player)) {
@@ -180,6 +216,42 @@ public final class ModNetwork {
             };
             if (result != null) {
                 if (player.containerMenu instanceof com.reiko.cars.impound.ImpoundMenu open) {
+                    open.refresh();
+                }
+                ShopFeedback.send(player, result);
+            }
+            return;
+        }
+        if (player.containerMenu instanceof com.reiko.cars.racing.RaceControlMenu menu && menu.control() != null) {
+            com.reiko.cars.racing.RaceControlBlockEntity control = menu.control();
+            ShopActionResult result = switch (payload.action()) {
+                case LotActionPayload.RACE_ENTER -> com.reiko.cars.racing.RaceService.enter(player, control, payload.expected(), payload.payment());
+                case LotActionPayload.RACE_LEAVE -> com.reiko.cars.racing.RaceService.leave(player, control);
+                case LotActionPayload.RACE_START -> com.reiko.cars.racing.RaceService.start(player, control);
+                case LotActionPayload.RACE_CANCEL -> com.reiko.cars.racing.RaceService.cancel(player, control);
+                case LotActionPayload.RACE_TRIAL -> {
+                    ShopActionResult started = com.reiko.cars.racing.RaceService.trial(player, control);
+                    if (started.success()) {
+                        player.closeContainer();
+                        player.sendSystemMessage(started.message());
+                        yield null;
+                    }
+                    yield started;
+                }
+                case LotActionPayload.RACE_END_TRIAL -> {
+                    com.reiko.cars.racing.RaceService.endTrial(player.server, player.getUUID());
+                    yield ShopActionResult.ok(net.minecraft.network.chat.Component.translatable("race.reikocars.trial_ended"));
+                }
+                case LotActionPayload.RACE_SET_LAPS -> com.reiko.cars.racing.RaceService.setLaps(player, control, payload.text());
+                case LotActionPayload.RACE_SET_FEE -> com.reiko.cars.racing.RaceService.setFee(player, control, payload.text());
+                case LotActionPayload.RACE_SET_CUT -> com.reiko.cars.racing.RaceService.setCut(player, control, payload.text());
+                default -> null;
+            };
+            if (result != null) {
+                if (result.success() && payload.action() != LotActionPayload.RACE_START) {
+                    com.reiko.cars.racing.RaceControlMenu.open(player, control); // reopen to show who's in, or the new settings
+                }
+                if (player.containerMenu instanceof com.reiko.cars.racing.RaceControlMenu open) {
                     open.refresh();
                 }
                 ShopFeedback.send(player, result);

@@ -3845,4 +3845,180 @@ public final class CarGameTests {
         }
         helper.succeed();
     }
+
+    // ---- tuning and racing ----
+
+    private static void giveKit(ServerPlayer player, com.reiko.cars.tuning.TuningKit kit, int count) {
+        player.getInventory().add(new net.minecraft.world.item.ItemStack(ModItems.kit(kit), count));
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 100)
+    public static void tuningBenchUpgradesCars(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer shop = join(helper);
+        ServerPlayer driver = join(helper);
+        ServerPlayer stranger = join(helper);
+        try {
+            com.reiko.cars.tuning.Upgrades stock = com.reiko.cars.tuning.Upgrades.STOCK;
+            check(helper, stock.topSpeed() == 1.0 && stock.acceleration() == 1.0 && stock.fuelUse() == 1.0 && stock.offRoad(0.6) == 0.6, "stock is stock");
+            var tuned = stock.withEngine(3).withTurbo(true).withTires(com.reiko.cars.tuning.Upgrades.Tires.OFF_ROAD);
+            near(helper, tuned.topSpeed(), 1.18 * 0.97, "stage 3 and off-road tires");
+            near(helper, tuned.acceleration(), 1.12 * 1.25, "with a turbo");
+            near(helper, tuned.fuelUse(), 1.34, "thirstier");
+            near(helper, tuned.offRoad(0.6), 0.84, "off-road tires keep more speed off-road");
+            helper.assertValueEqual(com.reiko.cars.tuning.Upgrades.unpack(tuned.pack()), tuned, "packs and unpacks");
+
+            helper.setBlock(new BlockPos(3, 1, 2), ModBlocks.TUNING_BENCH.get().defaultBlockState());
+            var bench = (com.reiko.cars.tuning.TuningBenchBlockEntity) helper.getBlockEntity(new BlockPos(3, 1, 2));
+            bench.setOwner(shop);
+            CarEntity car = vehicle(helper, CarType.SEDAN, 4.0, 6.0);
+            car.setOwner(driver);
+
+            // Your own kits, fitted free.
+            giveKit(driver, com.reiko.cars.tuning.TuningKit.ENGINE, 1);
+            giveKit(driver, com.reiko.cars.tuning.TuningKit.SPORT_TIRES, 1);
+            giveKit(driver, com.reiko.cars.tuning.TuningKit.OFF_ROAD_TIRES, 1);
+            check(helper, !com.reiko.cars.tuning.TuningService.fitOwn(stranger, bench, car, com.reiko.cars.tuning.TuningKit.ENGINE).success(),
+                    "only its owner tunes it");
+            check(helper, com.reiko.cars.tuning.TuningService.fitOwn(driver, bench, car, com.reiko.cars.tuning.TuningKit.ENGINE).success(), "a stage");
+            helper.assertValueEqual(car.upgrades().engine(), 1, "stage 1");
+            helper.assertValueEqual(com.reiko.cars.tuning.TuningService.carried(driver, com.reiko.cars.tuning.TuningKit.ENGINE), 0, "the kit's used");
+            check(helper, com.reiko.cars.tuning.TuningService.fitOwn(driver, bench, car, com.reiko.cars.tuning.TuningKit.SPORT_TIRES).success(), "sport tires");
+            check(helper, com.reiko.cars.tuning.TuningService.fitOwn(driver, bench, car, com.reiko.cars.tuning.TuningKit.OFF_ROAD_TIRES).success(),
+                    "then off-road tires");
+            helper.assertValueEqual(car.upgrades().tires(), com.reiko.cars.tuning.Upgrades.Tires.OFF_ROAD, "on");
+            helper.assertValueEqual(com.reiko.cars.tuning.TuningService.carried(driver, com.reiko.cars.tuning.TuningKit.SPORT_TIRES), 1,
+                    "the sport tires back in hand");
+
+            // Kits from the bench's stock, paid for.
+            bench.stock().insertItem(0, new net.minecraft.world.item.ItemStack(ModItems.kit(com.reiko.cars.tuning.TuningKit.TURBO), 2), false);
+            bench.stock().insertItem(1, new net.minecraft.world.item.ItemStack(ModItems.kit(com.reiko.cars.tuning.TuningKit.BRAKES), 2), false);
+            int mask = 1 << com.reiko.cars.tuning.TuningKit.TURBO.ordinal() | 1 << com.reiko.cars.tuning.TuningKit.BRAKES.ordinal();
+            Purse.give(driver, 10_000);
+            long shopBefore = ECO.getBalance(server, shop.getUUID());
+            check(helper, !com.reiko.cars.tuning.TuningService.buy(driver, bench, car, mask, 5_000, Payment.cash()).success(), "a stale total is caught");
+            ShopActionResult bought = com.reiko.cars.tuning.TuningService.buy(driver, bench, car, mask, 8_000, Payment.cash());
+            check(helper, bought.success(), "a turbo and brakes: " + bought.message().getString());
+            helper.assertValueEqual(ECO.getBalance(server, shop.getUUID()), shopBefore + 8_000, "$40 each to the bench's owner");
+            check(helper, car.upgrades().turbo() && car.upgrades().brakes() == 1, "fitted");
+            check(helper, bench.count(com.reiko.cars.tuning.TuningKit.TURBO) == 1 && bench.count(com.reiko.cars.tuning.TuningKit.BRAKES) == 1,
+                    "from its stock");
+            check(helper, !com.reiko.cars.tuning.TuningService.buy(driver, bench, car, 1 << com.reiko.cars.tuning.TuningKit.TURBO.ordinal(), 4_000,
+                    Payment.cash()).success(), "no second turbo");
+
+            // A livery, and both kept on the item.
+            check(helper, com.reiko.cars.tuning.TuningService.setLivery(driver, bench, car, 7, net.minecraft.world.item.DyeColor.RED).success(), "number 7");
+            helper.assertValueEqual(car.livery(), com.reiko.cars.tuning.Livery.of(7, net.minecraft.world.item.DyeColor.RED), "red stripes");
+            net.minecraft.world.item.ItemStack item = car.toItem();
+            helper.assertValueEqual(item.get(com.reiko.cars.registry.ModDataComponents.UPGRADES.get()), car.upgrades(), "the item keeps the tuning");
+            helper.assertValueEqual(item.get(com.reiko.cars.registry.ModDataComponents.LIVERY.get()), car.livery(), "and the livery");
+
+            // A tuned engine wears faster and drinks more.
+            CarEntity plain = vehicle(helper, CarType.SEDAN, 8.0, 12.0);
+            check(helper, car.upgrades().engineWear() > 1.0 && car.upgrades().fuelUse() > plain.upgrades().fuelUse(), "the price of speed");
+        } finally {
+            leave(helper, shop, driver, stranger);
+        }
+        helper.succeed();
+    }
+
+    private static com.reiko.cars.racing.RaceControlBlockEntity raceTrack(GameTestHelper helper, ServerPlayer owner) {
+        helper.setBlock(new BlockPos(2, 1, 2), ModBlocks.RACE_CONTROL.get().defaultBlockState());
+        var control = (com.reiko.cars.racing.RaceControlBlockEntity) helper.getBlockEntity(new BlockPos(2, 1, 2));
+        control.setOwner(owner);
+        for (int[] at : new int[][] {{6, 16, 1}, {6, 28, 2}}) {
+            helper.setBlock(new BlockPos(at[0], 1, at[1]), ModBlocks.RACE_FLAG.get().defaultBlockState());
+            var flag = (com.reiko.cars.racing.RaceFlagBlockEntity) helper.getBlockEntity(new BlockPos(at[0], 1, at[1]));
+            flag.setOwner(owner);
+            flag.setNumber(at[2]);
+        }
+        return control;
+    }
+
+    private static void driveTo(GameTestHelper helper, CarEntity car, double x, double z) {
+        Vec3 at = helper.absoluteVec(new Vec3(x, 1.0, z));
+        car.setPos(at.x, car.getY(), at.z);
+        com.reiko.cars.racing.RaceService.tick(helper.getLevel().getServer());
+    }
+
+    /** Round the test track once: out of the line, through both flags, and back over the line. */
+    private static void lap(GameTestHelper helper, CarEntity car) {
+        driveTo(helper, car, 6.0, 14.0);
+        driveTo(helper, car, 6.0, 18.0);
+        driveTo(helper, car, 6.0, 28.0);
+        driveTo(helper, car, 6.0, 16.0);
+        driveTo(helper, car, 3.0, 4.0);
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 300)
+    public static void timeTrialsAndRaces(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer track = join(helper);
+        ServerPlayer a = join(helper);
+        ServerPlayer b = join(helper);
+        ServerPlayer c = join(helper);
+        var control = raceTrack(helper, track);
+        CarEntity carA = vehicle(helper, CarType.SPORTS_CAR, 3.0, 5.0);
+        CarEntity carB = vehicle(helper, CarType.SEDAN, 8.0, 6.0);
+        Runnable done = () -> leave(helper, track, a, b, c);
+        helper.startSequence()
+                .thenExecute(() -> {
+                    helper.assertValueEqual(com.reiko.cars.racing.RaceService.track(control).size(), 2, "two flags");
+                    // A time trial: the clock starts over the line, and the lap goes on the board.
+                    check(helper, com.reiko.cars.racing.RaceService.trial(a, control).success(), "a time trial");
+                    a.startRiding(carA, true);
+                    com.reiko.cars.racing.RaceService.tick(server);
+                    helper.assertValueEqual(carA.raceStart(), -1L, "waiting for the line");
+                    driveTo(helper, carA, 6.0, 14.0);
+                    driveTo(helper, carA, 3.0, 4.0);
+                    check(helper, carA.raceStart() > 0, "over the line: the clock's running");
+                    lap(helper, carA);
+                    helper.assertValueEqual(control.board().size(), 1, "a lap on the board");
+                    helper.assertValueEqual(control.board().get(0).name(), a.getGameProfile().getName(), "theirs");
+                    a.stopRiding();
+                    com.reiko.cars.racing.RaceService.tick(server);
+                    check(helper, !com.reiko.cars.racing.RaceService.onTrial(a.getUUID()) && carA.raceStart() == 0, "out of the car: over");
+
+                    // A race: entry fees into the pot.
+                    ECO.setBalance(server, a.getUUID(), 0, "test");
+                    ECO.setBalance(server, c.getUUID(), 0, "test");
+                    Purse.give(a, 5_000);
+                    Purse.give(b, 5_000);
+                    Purse.give(c, 5_000);
+                    check(helper, !com.reiko.cars.racing.RaceService.enter(a, control, 500, Payment.cash()).success(), "a stale fee is caught");
+                    check(helper, com.reiko.cars.racing.RaceService.enter(a, control, 1_000, Payment.cash()).success(), "a's in");
+                    check(helper, !com.reiko.cars.racing.RaceService.start(a, control).success(), "not alone");
+                    check(helper, com.reiko.cars.racing.RaceService.enter(b, control, 1_000, Payment.cash()).success(), "b's in");
+                    check(helper, com.reiko.cars.racing.RaceService.enter(c, control, 1_000, Payment.cash()).success(), "c's in");
+                    check(helper, com.reiko.cars.racing.RaceService.leave(c, control).success(), "c pulls out");
+                    helper.assertValueEqual(ECO.getBalance(server, c.getUUID()), 1_000L, "with the fee back");
+                    helper.assertValueEqual(com.reiko.cars.racing.RaceService.pot(control), 2_000L, "$20 in the pot");
+                    a.startRiding(carA, true);
+                    b.startRiding(carB, true);
+                    check(helper, com.reiko.cars.racing.RaceService.start(a, control).success(), "lights!");
+                    helper.assertValueEqual(com.reiko.cars.racing.RaceService.state(control), com.reiko.cars.racing.RaceService.State.COUNTDOWN, "counting down");
+                })
+                .thenIdle(com.reiko.cars.racing.RaceService.COUNTDOWN + 2)
+                .thenExecute(() -> {
+                    try {
+                        helper.assertValueEqual(com.reiko.cars.racing.RaceService.state(control), com.reiko.cars.racing.RaceService.State.RUNNING, "go!");
+                        var info = com.reiko.cars.racing.RaceInfo.unpack(carA.raceInfo());
+                        check(helper, info.laps() == 3 && info.racers() == 2 && carA.raceStart() > 0, "the dashboard knows: " + info);
+                        long trackBefore = ECO.getBalance(server, track.getUUID());
+                        for (int i = 0; i < 3; i++) {
+                            lap(helper, carA);
+                        }
+                        helper.assertValueEqual(ECO.getBalance(server, a.getUUID()), 1_800L, "a wins the pot, less 10%");
+                        helper.assertValueEqual(ECO.getBalance(server, track.getUUID()), trackBefore + 200, "the track's cut");
+                        helper.assertValueEqual(control.races(), 1, "on the books");
+                        b.stopRiding();
+                        com.reiko.cars.racing.RaceService.tick(server);
+                        check(helper, com.reiko.cars.racing.RaceService.state(control) == null, "b's out, and it's all over");
+                        check(helper, carA.raceStart() == 0 && carB.raceStart() == 0, "the clocks off");
+                    } finally {
+                        done.run();
+                    }
+                })
+                .thenSucceed();
+    }
 }

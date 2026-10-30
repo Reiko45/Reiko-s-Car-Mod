@@ -76,6 +76,14 @@ public final class ModDataComponents {
     public static final Supplier<DataComponentType<com.reiko.cars.license.LicenseCard>> LICENSE = COMPONENTS.registerComponentType("license",
             builder -> builder.persistent(com.reiko.cars.license.LicenseCard.CODEC).networkSynchronized(com.reiko.cars.license.LicenseCard.STREAM_CODEC));
 
+    /** A picked-up car's tuning, so it keeps it. */
+    public static final Supplier<DataComponentType<com.reiko.cars.tuning.Upgrades>> UPGRADES = COMPONENTS.registerComponentType("upgrades",
+            builder -> builder.persistent(com.reiko.cars.tuning.Upgrades.CODEC).networkSynchronized(com.reiko.cars.tuning.Upgrades.STREAM_CODEC));
+
+    /** A picked-up car's race number and stripes. */
+    public static final Supplier<DataComponentType<com.reiko.cars.tuning.Livery>> LIVERY = COMPONENTS.registerComponentType("livery",
+            builder -> builder.persistent(com.reiko.cars.tuning.Livery.CODEC).networkSynchronized(com.reiko.cars.tuning.Livery.STREAM_CODEC));
+
     private ModDataComponents() {
     }
 }

@@ -193,6 +193,7 @@ public final class ReikoCarsClient {
         BlockEntityRenderers.register(ModBlockEntities.TOLL_GATE.get(), TollGateRenderer::new);
         BlockEntityRenderers.register(ModBlockEntities.SPEED_SIGN.get(), SpeedSignRenderer::new);
         BlockEntityRenderers.register(ModBlockEntities.TRAFFIC_CONE.get(), TrafficConeRenderer::new);
+        BlockEntityRenderers.register(ModBlockEntities.RACE_FLAG.get(), RaceFlagRenderer::new);
     }
 
     private static void registerScreens(RegisterMenuScreensEvent event) {
@@ -207,6 +208,8 @@ public final class ReikoCarsClient {
         event.register(ModMenus.DEALERSHIP.get(), DealershipScreen::new);
         event.register(ModMenus.IMPOUND.get(), ImpoundScreen::new);
         event.register(ModMenus.DMV.get(), DmvScreen::new);
+        event.register(ModMenus.TUNING_BENCH.get(), TuningBenchScreen::new);
+        event.register(ModMenus.RACE_CONTROL.get(), RaceControlScreen::new);
         event.register(ModMenus.RENTAL.get(), RentalScreen::new);
         event.register(ModMenus.PARKING_METER.get(), ParkingMeterScreen::new);
         event.register(ModMenus.TOLL.get(), TollScreen::new);

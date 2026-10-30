@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "reikocars:brake_pads"
+    },
+    {
+      "item": "reikocars:brake_pads"
+    },
+    {
+      "tag": "c:dyes/red"
+    },
+    {
+      "tag": "c:ingots/gold"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:performance_brakes"
+  }
+}

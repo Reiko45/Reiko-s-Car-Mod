@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "reikocars:tire"
+    },
+    {
+      "item": "reikocars:tire"
+    },
+    {
+      "item": "reikocars:tire"
+    },
+    {
+      "item": "reikocars:tire"
+    },
+    {
+      "tag": "c:dyes/brown"
+    },
+    {
+      "item": "minecraft:flint"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:off_road_tires"
+  }
+}

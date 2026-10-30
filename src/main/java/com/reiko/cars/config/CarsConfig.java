@@ -60,6 +60,13 @@ public final class CarsConfig {
     public static final ModConfigSpec.DoubleValue REPLACE_FEE;
     public static final ModConfigSpec.DoubleValue DMV_REACH;
     public static final ModConfigSpec.DoubleValue CUSTOM_PLATE_PRICE;
+    public static final ModConfigSpec.DoubleValue TUNING_REACH;
+    public static final ModConfigSpec.DoubleValue DEFAULT_KIT_PRICE;
+    public static final ModConfigSpec.DoubleValue TRACK_RADIUS;
+    public static final ModConfigSpec.DoubleValue ENTRY_FEE;
+    public static final ModConfigSpec.DoubleValue HOUSE_CUT;
+    public static final ModConfigSpec.IntValue RACE_LAPS;
+    public static final ModConfigSpec.IntValue RACE_MINUTES;
 
     public static final ModConfigSpec.DoubleValue WEAR;
     public static final ModConfigSpec.DoubleValue CRASH_DAMAGE;
@@ -279,6 +286,33 @@ public final class CarsConfig {
         DMV_REACH = builder
                 .comment("How close to a DMV a car must be parked for its owner to buy it a custom plate there.")
                 .defineInRange("dmvReach", 10.0, 2.0, 64.0);
+        builder.pop();
+
+        builder.push("tuning");
+        TUNING_REACH = builder
+                .comment("How close a car must be to a Tuning Bench to be worked on.")
+                .defineInRange("benchReach", 6.0, 2.0, 32.0);
+        DEFAULT_KIT_PRICE = builder
+                .comment("What a newly placed Tuning Bench charges to fit each kind of kit from its stock. Its owner can change each.")
+                .defineInRange("defaultKitPrice", 40.0, 0.0, 1_000_000.0);
+        builder.pop();
+
+        builder.push("racing");
+        TRACK_RADIUS = builder
+                .comment("How far from a Race Control its owner's numbered race flags can be and still be on its track.")
+                .defineInRange("trackRadius", 256.0, 16.0, 2048.0);
+        ENTRY_FEE = builder
+                .comment("A newly placed Race Control's entry fee for a race (it all goes in the pot). Its owner can change it.")
+                .defineInRange("defaultEntryFee", 10.0, 0.0, 1_000_000.0);
+        HOUSE_CUT = builder
+                .comment("The share of a race's pot a newly placed Race Control's owner keeps (0.1 is 10%); the winner gets the rest.")
+                .defineInRange("defaultHouseCut", 0.1, 0.0, 1.0);
+        RACE_LAPS = builder
+                .comment("Laps in a race at a newly placed Race Control. Its owner can change it (1 to 10).")
+                .defineInRange("defaultLaps", 3, 1, 10);
+        RACE_MINUTES = builder
+                .comment("How long a race or time trial can run, in minutes, before whoever hasn't finished is out.")
+                .defineInRange("raceMinutes", 10, 1, 60);
         builder.pop();
 
         builder.push("plates");

@@ -149,6 +149,8 @@ public final class CarItem extends Item {
             car.setOwner(player);
             car.setPolicy(stack.get(ModDataComponents.INSURANCE.get())); // cover only counts while it's still the policyholder's
             car.setLocked(CarsConfig.get(CarsConfig.LOCK_NEW_CARS));
+            car.setUpgrades(stack.getOrDefault(ModDataComponents.UPGRADES.get(), com.reiko.cars.tuning.Upgrades.STOCK));
+            car.setLivery(stack.getOrDefault(ModDataComponents.LIVERY.get(), com.reiko.cars.tuning.Livery.PLAIN));
             String plate = stack.get(ModDataComponents.PLATE.get());
             if (plate != null && !plate.isEmpty() && level.getServer() != null) {
                 car.setPlate(plate); // the plate it had when it was picked up
@@ -207,6 +209,15 @@ public final class CarItem extends Item {
         String plate = stack.get(ModDataComponents.PLATE.get());
         if (plate != null && !plate.isEmpty()) {
             tooltip.add(Component.translatable("item.reikocars.car.plate", plate).withStyle(ChatFormatting.GRAY));
+        }
+        com.reiko.cars.tuning.Upgrades upgrades = stack.get(ModDataComponents.UPGRADES.get());
+        if (upgrades != null && !upgrades.isStock()) {
+            tooltip.add(Component.translatable("item.reikocars.car.tuned").withStyle(ChatFormatting.AQUA));
+            upgrades.describe().forEach(line -> tooltip.add(Component.literal("  ").append(line).withStyle(ChatFormatting.DARK_AQUA)));
+        }
+        com.reiko.cars.tuning.Livery livery = stack.get(ModDataComponents.LIVERY.get());
+        if (livery != null && livery.number() > 0) {
+            tooltip.add(Component.translatable("item.reikocars.car.race_number", livery.number()).withStyle(ChatFormatting.GRAY));
         }
         com.reiko.cars.insurance.Policy policy = stack.get(ModDataComponents.INSURANCE.get());
         if (policy != null && context.level() != null) {

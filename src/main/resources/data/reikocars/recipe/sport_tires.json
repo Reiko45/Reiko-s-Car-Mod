@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "reikocars:tire"
+    },
+    {
+      "item": "reikocars:tire"
+    },
+    {
+      "item": "reikocars:tire"
+    },
+    {
+      "item": "reikocars:tire"
+    },
+    {
+      "tag": "c:dyes/red"
+    },
+    {
+      "tag": "c:slime_balls"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:sport_tires"
+  }
+}

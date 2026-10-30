@@ -77,6 +77,30 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .noOcclusion()
                     .pushReaction(PushReaction.BLOCK)));
+    /** A tuning shop's bench. Blast-proof, like the Repair Bench. */
+    public static final DeferredBlock<com.reiko.cars.tuning.TuningBenchBlock> TUNING_BENCH = BLOCKS.register("tuning_bench",
+            () -> new com.reiko.cars.tuning.TuningBenchBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(3.0F, 1200.0F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .pushReaction(PushReaction.BLOCK)));
+    /** A race track's Race Control. Blast-proof, like the shops. */
+    public static final DeferredBlock<com.reiko.cars.racing.RaceControlBlock> RACE_CONTROL = BLOCKS.register("race_control",
+            () -> new com.reiko.cars.racing.RaceControlBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GRAY)
+                    .strength(3.0F, 1200.0F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .pushReaction(PushReaction.BLOCK)));
+    /** A race flag, which cars go through; numbered, a mark on a race track. */
+    public static final DeferredBlock<com.reiko.cars.racing.RaceFlagBlock> RACE_FLAG = BLOCKS.register("race_flag",
+            () -> new com.reiko.cars.racing.RaceFlagBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.SNOW)
+                    .strength(0.5F, 6.0F)
+                    .sound(SoundType.WOOL)
+                    .noOcclusion()
+                    .pushReaction(PushReaction.DESTROY)));
     /** A DMV's counter: driving tests, license cards and custom plates. Blast-proof, like the shops. */
     public static final DeferredBlock<com.reiko.cars.dmv.DmvOfficeBlock> DMV_OFFICE = BLOCKS.register("dmv_office",
             () -> new com.reiko.cars.dmv.DmvOfficeBlock(BlockBehaviour.Properties.of()

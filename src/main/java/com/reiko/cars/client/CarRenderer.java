@@ -32,6 +32,9 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
     private final Font font;
     @org.jetbrains.annotations.Nullable
     private final PlateMounts.Mount[] plates;
+    @org.jetbrains.annotations.Nullable
+    private final LiveryMounts.Mounts livery;
+    private static final ResourceLocation WHITE = ReikoCars.id("textures/misc/white.png");
 
     public CarRenderer(EntityRendererProvider.Context context, CarType type, ModelLayerLocation layer) {
         super(context);
@@ -40,6 +43,7 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         this.glass = new CarGlass(texture);
         this.font = context.getFont();
         this.plates = PlateMounts.of(type.id());
+        this.livery = LiveryMounts.of(type.id());
         this.shadowRadius = type.width * 0.55F;
     }
 
@@ -58,6 +62,7 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
             poseStack.mulPose(Axis.XP.rotationDegrees(Mth.sin(hurt) * hurt * damage / 40.0F * car.getHurtDir()));
         }
         drawPlates(car, poseStack, buffers, light);
+        drawLivery(car, poseStack, buffers, light);
         poseStack.scale(-1.0F, -1.0F, 1.0F);
         poseStack.translate(0.0F, -1.501F, 0.0F);
 
@@ -144,6 +149,70 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
             }
             writePlate(poseStack, buffers, number, mount.width(), mount.height(), light);
             poseStack.popPose();
+        }
+    }
+
+    /**
+     * The car's livery, in the same pose as the plates: stripes along the top of the bodywork, and its race number on a
+     * white roundel on each door.
+     */
+    private void drawLivery(CarEntity car, PoseStack poseStack, MultiBufferSource buffers, int light) {
+        com.reiko.cars.tuning.Livery paint = car.livery();
+        if (livery == null || paint.isPlain()) {
+            return;
+        }
+        net.minecraft.world.item.DyeColor stripes = paint.stripeColor();
+        if (stripes != null && livery.stripes().length > 0) {
+            com.mojang.blaze3d.vertex.VertexConsumer consumer = buffers.getBuffer(RenderType.entityCutoutNoCull(WHITE));
+            PoseStack.Pose pose = poseStack.last();
+            int color = 0xFF000000 | stripes.getTextureDiffuseColor();
+            float[] runs = livery.stripes();
+            for (int i = 0; i + 2 < runs.length; i += 3) {
+                float z0 = runs[i] / 16.0F;
+                float z1 = runs[i + 1] / 16.0F;
+                float y = runs[i + 2] / 16.0F + 0.004F;
+                for (float side : new float[] {1.0F, -1.0F}) {
+                    float x0 = side * 1.5F / 16.0F;
+                    float x1 = side * 3.5F / 16.0F;
+                    quad(consumer, pose, x0, y, z0, x0, y, z1, x1, y, z1, x1, y, z0, color, light, 0.0F, 1.0F, 0.0F);
+                }
+            }
+        }
+        float[] door = livery.door();
+        if (paint.number() > 0 && door != null) {
+            String number = Integer.toString(paint.number());
+            float size = door[3] / 16.0F;
+            for (int side : new int[] {1, -1}) {
+                poseStack.pushPose();
+                poseStack.translate(side * (door[0] / 16.0F + 0.006F), door[1] / 16.0F, door[2] / 16.0F);
+                poseStack.mulPose(Axis.YP.rotationDegrees(90.0F * side));
+                // Now the door faces +z here: a black-edged white roundel, and the number on it.
+                com.mojang.blaze3d.vertex.VertexConsumer consumer = buffers.getBuffer(RenderType.entityCutoutNoCull(WHITE));
+                PoseStack.Pose pose = poseStack.last();
+                float outer = size / 2.0F + 0.3F / 16.0F;
+                float inner = size / 2.0F;
+                quad(consumer, pose, -outer, -outer, 0.0F, outer, -outer, 0.0F, outer, outer, 0.0F, -outer, outer, 0.0F, 0xFF1A1A1A, light, 0, 0, 1);
+                quad(consumer, pose, -inner, -inner, 0.001F, inner, -inner, 0.001F, inner, inner, 0.001F, -inner, inner, 0.001F, 0xFFF4F4F0, light,
+                        0, 0, 1);
+                float textWidth = Math.max(1, font.width(number) - 1);
+                float sy = door[3] * 0.6F / 16.0F / 7.0F;
+                float sx = Math.min(sy, door[3] * 0.8F / 16.0F / textWidth);
+                poseStack.translate(0.0F, 0.0F, 0.002F);
+                poseStack.scale(sx, -sy, sy);
+                font.drawInBatch(number, -textWidth / 2.0F, -3.5F, 0xFF111111, false, poseStack.last().pose(), buffers, Font.DisplayMode.POLYGON_OFFSET,
+                        0, light);
+                poseStack.popPose();
+            }
+        }
+    }
+
+    private static void quad(com.mojang.blaze3d.vertex.VertexConsumer consumer, PoseStack.Pose pose, float x0, float y0, float z0, float x1,
+                             float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, int color, int light, float nx,
+                             float ny, float nz) {
+        float[][] corners = {{x0, y0, z0, 0, 0}, {x1, y1, z1, 0, 1}, {x2, y2, z2, 1, 1}, {x3, y3, z3, 1, 0}};
+        for (float[] c : corners) {
+            consumer.addVertex(pose, c[0], c[1], c[2]).setColor(color).setUv(c[3], c[4]).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
+                    .setNormal(pose, nx, ny, nz);
         }
     }
 

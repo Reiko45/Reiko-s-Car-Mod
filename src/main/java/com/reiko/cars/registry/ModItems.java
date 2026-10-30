@@ -27,6 +27,14 @@ public final class ModItems {
     private static final Map<CarType, Map<CarPart, DeferredItem<CarPartItem>>> PARTS = new EnumMap<>(CarType.class);
     private static final Map<TrailerType, DeferredItem<TrailerItem>> TRAILERS = new EnumMap<>(TrailerType.class);
     private static final Map<TrailerType, DeferredItem<TrailerPartItem>> TRAILER_BODIES = new EnumMap<>(TrailerType.class);
+    private static final Map<com.reiko.cars.tuning.TuningKit, DeferredItem<com.reiko.cars.tuning.TuningKitItem>> KITS =
+            new EnumMap<>(com.reiko.cars.tuning.TuningKit.class);
+
+    static {
+        for (com.reiko.cars.tuning.TuningKit kit : com.reiko.cars.tuning.TuningKit.values()) {
+            KITS.put(kit, ITEMS.register(kit.id(), () -> new com.reiko.cars.tuning.TuningKitItem(kit, new Item.Properties().stacksTo(16))));
+        }
+    }
 
     static {
         for (CarType type : CarType.values()) {
@@ -84,6 +92,9 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> IMPOUND_OFFICE = ITEMS.registerSimpleBlockItem(ModBlocks.IMPOUND_OFFICE);
     public static final DeferredItem<BlockItem> RENTAL_DESK = ITEMS.registerSimpleBlockItem(ModBlocks.RENTAL_DESK);
     public static final DeferredItem<BlockItem> DMV_OFFICE = ITEMS.registerSimpleBlockItem(ModBlocks.DMV_OFFICE);
+    public static final DeferredItem<BlockItem> TUNING_BENCH = ITEMS.registerSimpleBlockItem(ModBlocks.TUNING_BENCH);
+    public static final DeferredItem<BlockItem> RACE_CONTROL = ITEMS.registerSimpleBlockItem(ModBlocks.RACE_CONTROL);
+    public static final DeferredItem<BlockItem> RACE_FLAG = ITEMS.registerSimpleBlockItem(ModBlocks.RACE_FLAG);
     public static final DeferredItem<BlockItem> TRAFFIC_CONE = ITEMS.registerSimpleBlockItem(ModBlocks.TRAFFIC_CONE);
     /** A driver's license card, from passing the test at a DMV. */
     public static final DeferredItem<com.reiko.cars.license.DriversLicenseItem> DRIVERS_LICENSE = ITEMS.register("drivers_license",
@@ -150,6 +161,10 @@ public final class ModItems {
     }
 
     /** {@code type}'s chassis, body or interior, like {@code sedan_chassis}. */
+    public static com.reiko.cars.tuning.TuningKitItem kit(com.reiko.cars.tuning.TuningKit kit) {
+        return KITS.get(kit).get();
+    }
+
     public static CarPartItem part(CarType type, CarPart part) {
         return PARTS.get(type).get(part).get();
     }

@@ -32,6 +32,12 @@ public final class ModBlockEntities {
 
     public static final Supplier<BlockEntityType<com.reiko.cars.impound.ImpoundOfficeBlockEntity>> IMPOUND_OFFICE = BLOCK_ENTITIES.register(
             "impound_office", () -> BlockEntityType.Builder.of(com.reiko.cars.impound.ImpoundOfficeBlockEntity::new, ModBlocks.IMPOUND_OFFICE.get()).build(null));
+    public static final Supplier<BlockEntityType<com.reiko.cars.tuning.TuningBenchBlockEntity>> TUNING_BENCH = BLOCK_ENTITIES.register(
+            "tuning_bench", () -> BlockEntityType.Builder.of(com.reiko.cars.tuning.TuningBenchBlockEntity::new, ModBlocks.TUNING_BENCH.get()).build(null));
+    public static final Supplier<BlockEntityType<com.reiko.cars.racing.RaceControlBlockEntity>> RACE_CONTROL = BLOCK_ENTITIES.register(
+            "race_control", () -> BlockEntityType.Builder.of(com.reiko.cars.racing.RaceControlBlockEntity::new, ModBlocks.RACE_CONTROL.get()).build(null));
+    public static final Supplier<BlockEntityType<com.reiko.cars.racing.RaceFlagBlockEntity>> RACE_FLAG = BLOCK_ENTITIES.register(
+            "race_flag", () -> BlockEntityType.Builder.of(com.reiko.cars.racing.RaceFlagBlockEntity::new, ModBlocks.RACE_FLAG.get()).build(null));
     public static final Supplier<BlockEntityType<com.reiko.cars.dmv.DmvOfficeBlockEntity>> DMV_OFFICE = BLOCK_ENTITIES.register(
             "dmv_office", () -> BlockEntityType.Builder.of(com.reiko.cars.dmv.DmvOfficeBlockEntity::new, ModBlocks.DMV_OFFICE.get()).build(null));
     public static final Supplier<BlockEntityType<com.reiko.cars.road.TrafficConeBlockEntity>> TRAFFIC_CONE = BLOCK_ENTITIES.register(

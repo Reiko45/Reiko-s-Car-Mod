@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "tag": "c:dyes/black"
+    },
+    "S": {
+      "tag": "minecraft:signs"
+    },
+    "L": {
+      "item": "minecraft:redstone_lamp"
+    },
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "pattern": [
+    "BSB",
+    "LGL",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:race_control"
+  }
+}

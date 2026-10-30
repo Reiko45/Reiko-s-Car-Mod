@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "W": {
+      "item": "minecraft:white_wool"
+    },
+    "K": {
+      "item": "minecraft:black_wool"
+    },
+    "S": {
+      "tag": "c:rods/wooden"
+    }
+  },
+  "pattern": [
+    "WK",
+    "KW",
+    "S "
+  ],
+  "result": {
+    "count": 4,
+    "id": "reikocars:race_flag"
+  }
+}

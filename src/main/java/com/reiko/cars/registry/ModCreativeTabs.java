@@ -35,6 +35,10 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.DIESEL_PUMP.get());
                 output.accept(ModItems.CHARGING_STATION.get());
                 output.accept(ModItems.REPAIR_BENCH.get());
+                output.accept(ModItems.TUNING_BENCH.get());
+                for (com.reiko.cars.tuning.TuningKit kit : com.reiko.cars.tuning.TuningKit.values()) {
+                    output.accept(ModItems.kit(kit));
+                }
                 output.accept(ModItems.MAILBOX.get());
                 output.accept(ModItems.BLANK_KEY.get());
                 output.accept(ModItems.DEALERSHIP.get());
@@ -43,6 +47,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.DMV_OFFICE.get());
                 output.accept(ModItems.TRAFFIC_CONE.get());
                 output.accept(ModItems.TICKET_BOOK.get());
+                output.accept(ModItems.RACE_CONTROL.get());
+                output.accept(ModItems.RACE_FLAG.get());
                 output.accept(ModItems.FOR_SALE_SIGN.get());
                 output.accept(ModItems.PARKING_METER.get());
                 output.accept(ModItems.TOLL_BOOTH.get());

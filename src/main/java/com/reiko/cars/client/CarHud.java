@@ -65,6 +65,49 @@ public final class CarHud implements LayeredDraw.Layer {
         }
     }
 
+    /**
+     * On a race or time trial: a stopwatch at the top of the screen, with the lap, the next checkpoint and (racing) the
+     * place, and a big countdown before the start.
+     */
+    private static void drawRace(GuiGraphics graphics, Minecraft minecraft, CarEntity car, float partialTick) {
+        Font font = minecraft.font;
+        com.reiko.cars.racing.RaceInfo info = com.reiko.cars.racing.RaceInfo.unpack(car.raceInfo());
+        long start = car.raceStart();
+        double now = minecraft.level.getGameTime() + partialTick;
+        int mid = graphics.guiWidth() / 2;
+        int top = 4;
+        String clock;
+        if (start < 0) {
+            clock = "-:--.--";
+        } else {
+            clock = com.reiko.cars.racing.RaceService.lapTime((long) Math.max(0, now - start));
+            double toGo = start - now;
+            if (toGo > -20) {
+                // The countdown: 3, 2, 1, GO!
+                String big = toGo > 0 ? Integer.toString((int) Math.ceil(toGo / 20.0)) : Component.translatable("hud.reikocars.race_go").getString();
+                int color = toGo > 0 ? 0xFFFF5252 : 0xFF69F0AE;
+                graphics.pose().pushPose();
+                graphics.pose().translate(mid, graphics.guiHeight() / 3.0F, 0);
+                graphics.pose().scale(4.0F, 4.0F, 1.0F);
+                graphics.drawString(font, big, -font.width(big) / 2, -4, color, true);
+                graphics.pose().popPose();
+            }
+        }
+        Component line = info.laps() > 0
+                ? Component.translatable("hud.reikocars.race_line", info.lap(), info.laps(), info.checkpoint(), info.checkpoints(), info.place(), info.racers())
+                : start < 0 ? Component.translatable("hud.reikocars.trial_waiting")
+                : Component.translatable("hud.reikocars.trial_line", info.lap(), info.checkpoint(), info.checkpoints());
+        int width = Math.max(font.width(clock) * 2, font.width(line)) + 16;
+        graphics.fill(mid - width / 2, top, mid + width / 2, top + 32, 0xA0101010);
+        graphics.renderOutline(mid - width / 2, top, width, 32, 0x60FFFFFF);
+        graphics.pose().pushPose();
+        graphics.pose().translate(mid, top + 4, 0);
+        graphics.pose().scale(2.0F, 2.0F, 1.0F);
+        graphics.drawString(font, clock, -font.width(clock) / 2, 0, start < 0 ? 0xFF9E9E9E : 0xFFFFFFFF, true);
+        graphics.pose().popPose();
+        graphics.drawString(font, line, mid - font.width(line) / 2, top + 22, 0xFFFFD54F, false);
+    }
+
     @Override
     public void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -73,6 +116,9 @@ public final class CarHud implements LayeredDraw.Layer {
             return;
         }
         Font font = minecraft.font;
+        if (car.raceStart() != 0) {
+            drawRace(graphics, minecraft, car, deltaTracker.getGameTimeDeltaPartialTick(false));
+        }
         TrailerEntity towed = car.trailer();
         boolean fireTruck = car.carType().isFireTruck();
         int height = HEIGHT + (towed != null ? TRAILER_ROW : 0) + (fireTruck ? WATER_ROW : 0);

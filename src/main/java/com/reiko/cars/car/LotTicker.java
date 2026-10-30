@@ -13,6 +13,12 @@ public final class LotTicker {
     private LotTicker() {
     }
 
+    /** Races aren't saved: when the server stops they're called off, and the entry fees go back. */
+    @SubscribeEvent
+    static void onStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
+        com.reiko.cars.racing.RaceService.stopAll(event.getServer());
+    }
+
     @SubscribeEvent
     static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
@@ -26,5 +32,6 @@ public final class LotTicker {
         if (tick % 5 == 0) {
             com.reiko.cars.dmv.DrivingTests.tick(server, tick % 20 == 0);
         }
+        com.reiko.cars.racing.RaceService.tick(server);
     }
 }

@@ -166,6 +166,8 @@ public final class DevShowcase {
             lotsScript();
         } else if (MODE.equals("dmv")) {
             dmvScript();
+        } else if (MODE.equals("tune")) {
+            tuneScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -3136,6 +3138,181 @@ public final class DevShowcase {
         at(516, mc -> shot(mc, "248_ticket_book"));
         at(518, mc -> hoverOn(mc, 16, 150));
         at(524, mc -> shot(mc, "249_dmv_item"));
+        at(530, mc -> mc.stop());
+    }
+
+    // ---- tuning and racing ----
+
+    private static final BlockPos TUNER = new BlockPos(20, -60, 0);
+    private static final BlockPos CONTROL = new BlockPos(0, -60, 0);
+    private static final int[][] FLAGS = {{4, 20, 1}, {4, 36, 2}, {-10, 44, 3}, {-14, 20, 4}};
+
+    private static com.reiko.cars.tuning.TuningBenchBlockEntity tuner(ServerPlayer player) {
+        return (com.reiko.cars.tuning.TuningBenchBlockEntity) player.serverLevel().getBlockEntity(TUNER);
+    }
+
+    private static com.reiko.cars.racing.RaceControlBlockEntity control(ServerPlayer player) {
+        return (com.reiko.cars.racing.RaceControlBlockEntity) player.serverLevel().getBlockEntity(CONTROL);
+    }
+
+    private static void tuneScript() {
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                MinecraftServer server = level.getServer();
+                level.setDayTime(6000);
+                tile(level, -24, -16, 32, 56);
+                level.setBlockAndUpdate(TUNER, ModBlocks.TUNING_BENCH.get().defaultBlockState()
+                        .setValue(com.reiko.cars.tuning.TuningBenchBlock.FACING, Direction.SOUTH));
+                ServerPlayer mo = extraPlayer(server, "Mo");
+                tuner(player).setOwner(mo);
+                int slot = 0;
+                for (com.reiko.cars.tuning.TuningKit kit : com.reiko.cars.tuning.TuningKit.values()) {
+                    tuner(player).stock().insertItem(slot++, new ItemStack(ModItems.kit(kit), 3), false);
+                }
+                CarEntity sedan = spawned(level, CarType.SEDAN, 20.0, 6.0, -90.0F, 0.8);
+                sedan.setOwner(player);
+                sedan.setColor(0x1565C0);
+                level.setBlockAndUpdate(CONTROL, ModBlocks.RACE_CONTROL.get().defaultBlockState()
+                        .setValue(com.reiko.cars.racing.RaceControlBlock.FACING, Direction.SOUTH));
+                control(player).setOwner(player);
+                for (int[] f : FLAGS) {
+                    BlockPos at = new BlockPos(f[0], -60, f[1]);
+                    level.setBlockAndUpdate(at, ModBlocks.RACE_FLAG.get().defaultBlockState());
+                    var flag = (com.reiko.cars.racing.RaceFlagBlockEntity) level.getBlockEntity(at);
+                    flag.setOwner(player);
+                    flag.setNumber(f[2]);
+                }
+                CarEntity racer = spawned(level, CarType.SPORTS_CAR, 3.0, -10.0, 0.0F, 0.9);
+                racer.setOwner(player);
+                racer.setColor(0xC62828);
+                racer.setUpgrades(com.reiko.cars.tuning.Upgrades.STOCK.withEngine(3).withTurbo(true).withTires(com.reiko.cars.tuning.Upgrades.Tires.SPORT));
+                racer.setLivery(com.reiko.cars.tuning.Livery.of(27, net.minecraft.world.item.DyeColor.WHITE));
+                player.getInventory().clearContent();
+                Purse.give(player, 50_000);
+                give(player, ModItems.kit(com.reiko.cars.tuning.TuningKit.SPORT_TIRES), 1);
+            });
+        });
+        at(50, mc -> look(mc, 25.0, -56.0, 12.0, 155.0F, 22.0F));
+        at(70, mc -> shot(mc, "250_tuning_bench"));
+        // the Tuning Bench's screen
+        at(72, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                player.setGameMode(GameType.SURVIVAL);
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                player.teleportTo(player.serverLevel(), 20.5, -60.0, 2.5, 180.0F, 30.0F);
+                com.reiko.cars.tuning.TuningBenchMenu.open(player, tuner(player));
+            });
+        });
+        at(90, mc -> clickAt(mc, 160, 44 + 1 * 16 + 7));
+        at(92, mc -> clickAt(mc, 160, 44 + 4 * 16 + 7));
+        at(100, mc -> shot(mc, "251_tune_tab"));
+        at(102, mc -> clickAt(mc, 142, 44 + 7 * 16 + 3 + 12 + 12 + 20 + 5));
+        at(118, mc -> shot(mc, "252_tuned"));
+        at(120, mc -> clickAt(mc, 74, 22));
+        at(124, mc -> {
+            clickAt(mc, 125, 32 + 30);
+            if (mc.screen != null) {
+                for (char ch : "42".toCharArray()) {
+                    mc.screen.charTyped(ch, 0);
+                }
+            }
+        });
+        at(126, mc -> {
+            for (int i = 0; i < 12; i++) {
+                clickAt(mc, 180, 32 + 52); // through the colours to yellow
+            }
+        });
+        at(132, mc -> shot(mc, "253_livery_tab"));
+        at(134, mc -> clickAt(mc, 97, 32 + 80));
+        at(146, mc -> shot(mc, "254_livery_applied"));
+        at(148, mc -> {
+            mc.player.closeContainer();
+            mc.options.hideGui = true;
+            look(mc, 20.0, -59.0, 11.5, 180.0F, 12.0F);
+        });
+        at(166, mc -> shot(mc, "255_race_number_side"));
+        at(168, mc -> look(mc, 15.0, -52.0, 6.0, -90.0F, 55.0F));
+        at(186, mc -> shot(mc, "256_stripes_top"));
+        // the race track
+        at(188, mc -> look(mc, -2.0, -50.0, -14.0, -10.0F, 28.0F));
+        at(206, mc -> shot(mc, "257_race_track"));
+        at(208, mc -> look(mc, 1.5, -58.5, 4.5, 175.0F, 18.0F));
+        at(224, mc -> shot(mc, "258_race_control"));
+        at(226, mc -> look(mc, 5.8, -59.4, 22.4, 150.0F, 18.0F));
+        at(242, mc -> shot(mc, "259_race_flag"));
+        // a time trial in the tuned sports car
+        at(244, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                standAt(player, CONTROL);
+                com.reiko.cars.racing.RaceControlMenu.open(player, control(player));
+            });
+        });
+        at(262, mc -> shot(mc, "260_race_control_screen"));
+        at(264, mc -> clickAt(mc, 97, 188));
+        at(270, mc -> server(mc, player -> player.startRiding(car(player.serverLevel(), CarType.SPORTS_CAR), true)));
+        at(280, mc -> {
+            mc.player.setYRot(0.0F);
+            mc.player.setXRot(12.0F);
+            mc.options.keyUp.setDown(true);
+        });
+        at(318, mc -> shot(mc, "261_time_trial_hud"));
+        at(336, mc -> {
+            mc.options.keyUp.setDown(false);
+            mc.options.keyDown.setDown(true);
+        });
+        at(360, mc -> mc.options.keyDown.setDown(false));
+        at(362, mc -> server(mc, player -> {
+            com.reiko.cars.racing.RaceService.endTrial(player.server, player.getUUID());
+            player.stopRiding();
+            CarEntity racer = carsOf(player.serverLevel(), c -> c.carType() == CarType.SPORTS_CAR).getFirst();
+            ReikoCars.LOGGER.info("Showcase trial: car at {}", racer.position());
+            racer.teleportTo(3.0, -60.0, -2.0);
+            racer.setYRot(0.0F);
+            standAt(player, CONTROL);
+            com.reiko.cars.racing.RaceControlMenu.open(player, control(player));
+        }));
+        // a race: the owner enters and starts it alone
+        at(378, mc -> clickAt(mc, 142, 140));
+        at(390, mc -> shot(mc, "262_race_entered"));
+        at(392, mc -> {
+            mc.player.closeContainer();
+            server(mc, player -> player.startRiding(carsOf(player.serverLevel(), c -> c.carType() == CarType.SPORTS_CAR).getFirst(), true));
+        });
+        at(400, mc -> server(mc, player -> {
+            mc.execute(() -> {
+                mc.player.setYRot(0.0F);
+                mc.player.setXRot(12.0F);
+            });
+            ReikoCars.LOGGER.info("Showcase race start: {}", com.reiko.cars.racing.RaceService.start(player, control(player)).message().getString());
+        }));
+        at(424, mc -> shot(mc, "263_race_countdown"));
+        at(462, mc -> mc.options.keyUp.setDown(true));
+        at(482, mc -> shot(mc, "264_racing"));
+        at(484, mc -> mc.options.keyUp.setDown(false));
+        // the kits
+        at(486, mc -> server(mc, player -> {
+            com.reiko.cars.racing.RaceService.stopAll(player.server);
+            player.stopRiding();
+            player.getInventory().clearContent();
+            for (com.reiko.cars.tuning.TuningKit kit : com.reiko.cars.tuning.TuningKit.values()) {
+                give(player, ModItems.kit(kit), 1);
+            }
+            give(player, ModItems.TUNING_BENCH.get(), 1);
+            give(player, ModItems.RACE_CONTROL.get(), 1);
+        }));
+        at(496, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
+        at(499, mc -> hoverOn(mc, 16, 150));
+        at(505, mc -> shot(mc, "265_engine_kit"));
+        at(507, mc -> hoverOn(mc, 34, 150));
+        at(513, mc -> shot(mc, "266_turbo"));
+        at(515, mc -> hoverOn(mc, 124, 150));
+        at(521, mc -> shot(mc, "267_lift_kit"));
         at(530, mc -> mc.stop());
     }
 }

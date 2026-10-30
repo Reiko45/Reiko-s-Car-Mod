@@ -125,6 +125,12 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private static final EntityDataAccessor<Long> DATA_RENTAL_UNTIL = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     private static final EntityDataAccessor<String> DATA_PLATE = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Boolean> DATA_UNLICENSED = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Integer> DATA_UPGRADES = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_LIVERY = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
+    /** On a race or time trial: when the clock started (game time; -1 waiting to cross the line), 0 for none. */
+    private static final EntityDataAccessor<Long> DATA_RACE_START = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
+    /** On a race: lap, laps, checkpoint, checkpoints, place and racers, packed (see {@link com.reiko.cars.racing.RaceInfo}). */
+    private static final EntityDataAccessor<Integer> DATA_RACE_INFO = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
     /** Millibuckets of water in a fire truck's tank. */
     private static final EntityDataAccessor<Integer> DATA_WATER = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
     /** When a fire truck's ladder last started going up or down, in game time: -1 while it's stowed. */
@@ -259,6 +265,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_RENTAL_UNTIL, 0L);
         builder.define(DATA_PLATE, "");
         builder.define(DATA_UNLICENSED, false);
+        builder.define(DATA_UPGRADES, 0);
+        builder.define(DATA_LIVERY, 0);
+        builder.define(DATA_RACE_START, 0L);
+        builder.define(DATA_RACE_INFO, 0);
         builder.define(DATA_LADDER_START, -1L);
         builder.define(DATA_LADDER_UP, false);
         builder.define(DATA_LADDER_HEIGHT, 0);
@@ -432,6 +442,43 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     public Component describe() {
         String plate = plate();
         return plate.isEmpty() ? kindName() : Component.translatable("plate.reikocars.car_with_plate", kindName(), plate);
+    }
+
+    /** What's been fitted at a Tuning Bench. */
+    public com.reiko.cars.tuning.Upgrades upgrades() {
+        return com.reiko.cars.tuning.Upgrades.unpack(entityData.get(DATA_UPGRADES));
+    }
+
+    public void setUpgrades(com.reiko.cars.tuning.Upgrades upgrades) {
+        entityData.set(DATA_UPGRADES, upgrades.pack());
+    }
+
+    /** Its race number (0 for none) and stripes (see {@link com.reiko.cars.tuning.Livery}). */
+    public com.reiko.cars.tuning.Livery livery() {
+        return com.reiko.cars.tuning.Livery.unpack(entityData.get(DATA_LIVERY));
+    }
+
+    public void setLivery(com.reiko.cars.tuning.Livery livery) {
+        entityData.set(DATA_LIVERY, livery.pack());
+    }
+
+    /** When its race clock started (game time), -1 waiting at the line, or 0 if it isn't racing. */
+    public long raceStart() {
+        return entityData.get(DATA_RACE_START);
+    }
+
+    /** Where it is in its race: lap, checkpoint, place (packed; see {@link com.reiko.cars.racing.RaceInfo}). */
+    public int raceInfo() {
+        return entityData.get(DATA_RACE_INFO);
+    }
+
+    public void setRace(long start, int info) {
+        if (entityData.get(DATA_RACE_START) != start) {
+            entityData.set(DATA_RACE_START, start);
+        }
+        if (entityData.get(DATA_RACE_INFO) != info) {
+            entityData.set(DATA_RACE_INFO, info);
+        }
     }
 
     /** Its license plate number ("" until it's first been in a server world). */
@@ -1485,12 +1532,13 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         double grip = onGround() ? Mth.clamp((1.0 - friction) / 0.4, 0.1, 1.0) : 0.0;
         CarCondition wear = condition();
         double tires = wear.grip();
-        double top = type.topSpeed * speedScale * surfaceFactor() * wear.power() * wear.drag();
+        com.reiko.cars.tuning.Upgrades tuned = upgrades();
+        double top = type.topSpeed * tuned.topSpeed() * speedScale * surfaceFactor() * wear.power() * wear.drag();
         if (isInWater()) {
             top = Math.min(top, 0.1);
         }
-        double accel = type.acceleration * speedScale * wear.power() * tires;
-        double brakes = type.braking * wear.braking() * tires;
+        double accel = type.acceleration * tuned.acceleration() * speedScale * wear.power() * tires;
+        double brakes = type.braking * tuned.braking() * wear.braking() * tires;
         if (towed() != null) {
             top *= Towing.LOADED_SPEED; // a car on the back: slower, and slower to get going
             accel *= Towing.LOADED_ACCELERATION;
@@ -1544,7 +1592,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         steering += (steerTarget - steering) * 0.3F;
         double pace = Math.abs(speed);
         double turnFactor = Mth.clamp(pace / 0.15, 0.0, 1.0) * (1.0 - 0.35 * Math.min(1.0, pace / type.topSpeed));
-        float turn = (float) (steering * type.turnRate * turnFactor * Math.signum(speed) * (onGround() ? 1.0 : 0.2)
+        float turn = (float) (steering * type.turnRate * tuned.turning() * turnFactor * Math.signum(speed) * (onGround() ? 1.0 : 0.2)
                 * (0.75 + 0.25 * tires)); // bald tires don't bite into the turn
         Vec3 pivotBefore = forward().scale(-type.pivotBack());
         setYRot(getYRot() - turn);
@@ -1630,10 +1678,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (isOnRoad()) {
             return CarsConfig.get(CarsConfig.ROAD_SPEED);
         }
-        if (type.offRoad) {
+        if (!isOffRoad()) {
             return 1.0;
         }
-        return isOffRoad() ? CarsConfig.get(CarsConfig.OFF_ROAD_SPEED) : 1.0;
+        return upgrades().offRoad(type.offRoad ? 1.0 : CarsConfig.get(CarsConfig.OFF_ROAD_SPEED));
     }
 
     /** On asphalt. */
@@ -1714,7 +1762,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (driver != null && fuel > 0 && !isBrokenDown() && keyedIn()) {
             haul(driver, moved);
             // An electric car draws next to nothing standing still.
-            double burn = moved * type.fuelPerBlock * load * CarsConfig.get(CarsConfig.FUEL_USE) * condition.fuelUse()
+            double burn = moved * type.fuelPerBlock * load * CarsConfig.get(CarsConfig.FUEL_USE) * condition.fuelUse() * upgrades().fuelUse()
                     + (type.isElectric() ? 0.0 : CarsConfig.get(CarsConfig.IDLE_FUEL_USE));
             setFuel(fuel - burn);
             if (fuel <= 0 && driver instanceof Player player) {
@@ -1724,7 +1772,12 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
         if (driver != null && moved > 0.0) {
             double tires = isOnRoad() ? 0.75 : isOffRoad() ? (type.offRoad ? 1.5 : 2.5) : 1.0;
-            CarCondition worn = condition.afterDriving(moved, tires, load, CarsConfig.get(CarsConfig.WEAR));
+            com.reiko.cars.tuning.Upgrades tuned = upgrades();
+            CarCondition worn = condition.afterDriving(moved, tires * tuned.tireWear(), load, CarsConfig.get(CarsConfig.WEAR));
+            if (tuned.engineWear() != 1.0) {
+                // A tuned engine wears faster.
+                worn = worn.with(Part.ENGINE, (float) (condition.engine() - (condition.engine() - worn.engine()) * tuned.engineWear()));
+            }
             setCondition(type.isElectric() ? worn.with(Part.OIL, 1.0F) : worn); // no oil in an electric motor
         }
         if (moved > 0.3) {
@@ -2043,6 +2096,12 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (!plate().isEmpty()) {
             stack.set(ModDataComponents.PLATE.get(), plate()); // it keeps its plate
         }
+        if (!upgrades().isStock()) {
+            stack.set(ModDataComponents.UPGRADES.get(), upgrades()); // and its tuning
+        }
+        if (!livery().isPlain()) {
+            stack.set(ModDataComponents.LIVERY.get(), livery());
+        }
         return stack;
     }
 
@@ -2095,6 +2154,12 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (!plate().isEmpty()) {
             tag.putString("Plate", plate());
         }
+        if (entityData.get(DATA_UPGRADES) != 0) {
+            tag.putInt("Upgrades", entityData.get(DATA_UPGRADES));
+        }
+        if (entityData.get(DATA_LIVERY) != 0) {
+            tag.putInt("Livery", entityData.get(DATA_LIVERY));
+        }
         if (type.isFireTruck()) {
             tag.putInt("Water", water());
             if (ladderUp()) {
@@ -2142,6 +2207,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         loanId = tag.hasUUID("Loan") ? tag.getUUID("Loan") : null;
         towedBadlyParked = tag.getBoolean("TowedBadlyParked");
         setPlate(tag.getString("Plate"));
+        entityData.set(DATA_UPGRADES, tag.getInt("Upgrades"));
+        entityData.set(DATA_LIVERY, tag.getInt("Livery"));
         if (type.isFireTruck()) {
             setWater(tag.getInt("Water"));
             if (tag.contains("Ladder", Tag.TAG_INT)) {

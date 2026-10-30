@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "reikocars:engine_parts"
+    },
+    {
+      "item": "buildcraftreborn:redstone_iron_chipset"
+    },
+    {
+      "tag": "c:gears/gold"
+    },
+    {
+      "tag": "c:dusts/redstone"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:engine_tune_kit"
+  }
+}

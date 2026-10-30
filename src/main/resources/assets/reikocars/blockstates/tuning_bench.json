@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "reikocars:block/tuning_bench"
+    },
+    "facing=east": {
+      "model": "reikocars:block/tuning_bench",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "reikocars:block/tuning_bench",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "reikocars:block/tuning_bench",
+      "y": 270
+    }
+  }
+}

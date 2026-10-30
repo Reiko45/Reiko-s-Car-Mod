@@ -40,6 +40,8 @@ public final class ModCapabilities {
                 (can, side) -> new net.neoforged.neoforge.items.wrapper.InvWrapper(can));
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.REPAIR_BENCH.get(),
                 (bench, side) -> bench.pipeInput());
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.TUNING_BENCH.get(),
+                (bench, side) -> bench.pipeInput());
 
         for (CarType type : CarType.values()) {
             event.registerEntity(Capabilities.FluidHandler.ENTITY, ModEntities.car(type), (car, context) -> new CarTank(car));
