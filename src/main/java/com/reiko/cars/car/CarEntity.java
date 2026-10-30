@@ -209,6 +209,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private int flashTicks;
     /** A bus's or taxi's fares, on the server. */
     private final CarFares fares = new CarFares(this);
+    /** The light its headlights and beacons cast in the dark, on the server. */
+    private final Headlights headlights = new Headlights(this);
 
     public CarEntity(EntityType<? extends CarEntity> entityType, Level level, CarType type) {
         super(entityType, level);
@@ -246,6 +248,11 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
 
     public CarType carType() {
         return type;
+    }
+
+    /** The light its headlights (and beacons) cast in the dark, on the server. */
+    Headlights headlights() {
+        return headlights;
     }
 
     // ---- fuel ----
@@ -1381,6 +1388,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             hornCooldown--;
         }
         updateKey(true);
+        headlights.tick();
         WorkVehicles.serverTick(this);
         CarSignals.serverTick(this);
         boolean listener = getPassengers().stream().anyMatch(passenger -> passenger instanceof Player);
@@ -1693,6 +1701,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
         if (!level().isClientSide && reason.shouldDestroy()) {
             Containers.dropContents(level(), this, radioDisc);
+        }
+        if (!level().isClientSide && reason != RemovalReason.UNLOADED_TO_CHUNK && reason != RemovalReason.UNLOADED_WITH_PLAYER) {
+            headlights.clear(); // (an unloading car's lights see to themselves: no car, no light)
         }
         super.remove(reason);
     }

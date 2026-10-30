@@ -2872,4 +2872,106 @@ public final class CarGameTests {
         }
         helper.succeed();
     }
+
+    // ---- headlights ----
+
+    /** The yard's headlight lights, as positions relative to the test. */
+    private static List<BlockPos> glows(GameTestHelper helper) {
+        List<BlockPos> found = new java.util.ArrayList<>();
+        for (BlockPos pos : BlockPos.betweenClosed(0, 0, 0, 9, 3, 33)) {
+            if (helper.getBlockState(pos).getBlock() instanceof com.reiko.cars.car.HeadlightGlowBlock) {
+                found.add(pos.immutable());
+            }
+        }
+        return found;
+    }
+
+    private static int blockLight(GameTestHelper helper, int x, int y, int z) {
+        return helper.getLevel().getBrightness(net.minecraft.world.level.LightLayer.BLOCK, helper.absolutePos(new BlockPos(x, y, z)));
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 200)
+    public static void headlightsLightTheWayInTheDark(GameTestHelper helper) {
+        // A closed box over the whole yard (which stands on the ground, at y = -1): as dark as a tunnel.
+        net.minecraft.world.level.block.state.BlockState stone = net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
+        for (int x = 0; x <= 9; x++) {
+            for (int z = 0; z <= 33; z++) {
+                helper.setBlock(x, 3, z, stone);
+                if (x == 0 || x == 9 || z == 0 || z == 33) {
+                    for (int y = 0; y <= 2; y++) {
+                        helper.setBlock(x, y, z, stone);
+                    }
+                }
+            }
+        }
+        CarEntity car = vehicle(helper, CarType.SEDAN, 5.0, 8.5);
+        car.setFuel(CarType.SEDAN.tankCapacity());
+        ServerPlayer driver = join(helper);
+        driver.startRiding(car, true);
+        CarEntity[] police = new CarEntity[1];
+        java.util.function.Function<Runnable, Runnable> step = body -> () -> {
+            try {
+                body.run();
+            } catch (RuntimeException e) {
+                leave(helper, driver);
+                throw e;
+            }
+        };
+        helper.startSequence()
+                .thenIdle(20)
+                .thenExecute(step.apply(() -> {
+                    check(helper, car.isEngineRunning(), "the engine's running");
+                    check(helper, com.reiko.cars.car.Headlights.isDark(helper.getLevel(), car.blockPosition(), false), "it's dark in the box: "
+                            + helper.getLevel().getBrightness(net.minecraft.world.level.LightLayer.SKY, car.blockPosition()));
+                    List<BlockPos> lit = glows(helper);
+                    check(helper, lit.size() == 2, "two lights, near and far: " + lit);
+                    for (BlockPos pos : lit) {
+                        check(helper, pos.getZ() > 11 && pos.getY() == 0 && Math.abs(pos.getX() - 5) <= 1, "on the road ahead: " + pos);
+                    }
+                    check(helper, lit.stream().anyMatch(pos -> pos.getZ() >= 19), "the far one well ahead: " + lit);
+                    check(helper, blockLight(helper, 5, 0, 24) >= 10, "the road ahead is lit: " + blockLight(helper, 5, 0, 24));
+                    check(helper, blockLight(helper, 5, 0, 2) <= 2, "behind is dark: " + blockLight(helper, 5, 0, 2));
+                }))
+                .thenExecute(step.apply(() -> {
+                    for (int x = 1; x <= 8; x++) {
+                        for (int y = 0; y <= 2; y++) {
+                            helper.setBlock(x, y, 19, stone);
+                        }
+                    }
+                }))
+                .thenIdle(10)
+                .thenExecute(step.apply(() -> {
+                    List<BlockPos> lit = glows(helper);
+                    check(helper, lit.stream().noneMatch(pos -> pos.getZ() >= 19), "no light through the wall: " + lit);
+                    check(helper, lit.stream().anyMatch(pos -> pos.getZ() == 18), "the far one stops at it: " + lit);
+                    check(helper, blockLight(helper, 5, 0, 21) <= 2, "dark beyond it: " + blockLight(helper, 5, 0, 21));
+                    driver.stopRiding();
+                }))
+                .thenIdle(6)
+                .thenExecute(step.apply(() -> {
+                    check(helper, glows(helper).isEmpty(), "engine off, lights out");
+                    // A light nobody owns (left by a car that unloaded, say) takes itself away.
+                    helper.setBlock(2, 0, 30, ModBlocks.HEADLIGHT_GLOW.get().defaultBlockState());
+                }))
+                .thenIdle(45)
+                .thenExecute(step.apply(() -> {
+                    check(helper, glows(helper).isEmpty(), "a stray light goes out by itself");
+                    check(helper, helper.getBlockState(new BlockPos(2, 0, 30)).isAir(), "leaving air");
+                    car.discard();
+                    police[0] = vehicle(helper, CarType.POLICE_CAR, 5.0, 8.5);
+                    police[0].setSiren(true);
+                }))
+                .thenIdle(10)
+                .thenExecute(step.apply(() -> {
+                    List<BlockPos> lit = glows(helper);
+                    check(helper, lit.size() == 1, "the beacons light up the car: " + lit);
+                    BlockPos beacon = lit.getFirst();
+                    check(helper, helper.getBlockState(beacon).getValue(com.reiko.cars.car.HeadlightGlowBlock.LEVEL) == 10
+                            && Math.abs(beacon.getX() - 5) <= 1 && Math.abs(beacon.getZ() - 8) <= 1, "on the car: " + beacon);
+                    police[0].discard();
+                    check(helper, glows(helper).isEmpty(), "picked up, the light goes with it");
+                    leave(helper, driver);
+                }))
+                .thenSucceed();
+    }
 }

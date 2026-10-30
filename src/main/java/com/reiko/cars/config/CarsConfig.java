@@ -21,6 +21,7 @@ public final class CarsConfig {
     public static final ModConfigSpec.BooleanValue LOCK_NEW_CARS;
     public static final ModConfigSpec.BooleanValue REQUIRE_KEYS;
     public static final ModConfigSpec.IntValue ALARM_SECONDS;
+    public static final ModConfigSpec.BooleanValue REAL_HEADLIGHTS;
 
     public static final ModConfigSpec.DoubleValue DEFAULT_PUMP_PRICE;
     public static final ModConfigSpec.IntValue PUMP_CAPACITY;
@@ -103,6 +104,11 @@ public final class CarsConfig {
                 .comment("How long a car alarm sounds, in seconds, once someone without a key hits a locked car or tries to get in.",
                         "0 turns car alarms off.")
                 .defineInRange("alarmSeconds", 30, 0, 600);
+        REAL_HEADLIGHTS = builder
+                .comment("Whether headlights light up the road ahead in the dark (and police and ambulance beacons light up",
+                        "the car while the siren's on), with invisible light blocks that move along with the car. If false,",
+                        "the lights only glow.")
+                .define("realHeadlights", true);
         builder.pop();
 
         builder.push("pumps");

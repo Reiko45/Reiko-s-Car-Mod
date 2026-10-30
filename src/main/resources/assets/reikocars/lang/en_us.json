@@ -742,6 +742,7 @@
   "block.reikocars.stop_sign": "Stop Sign",
   "block.reikocars.speed_sign": "Speed Limit Sign",
   "block.reikocars.street_lamp": "Street Lamp",
+  "block.reikocars.headlight_glow": "Headlight Glow",
   "item.reikocars.road_paint": "Road Paint",
   "road.reikocars.marking.none": "Nothing",
   "road.reikocars.marking.center_dashed": "Center line (dashed yellow)",

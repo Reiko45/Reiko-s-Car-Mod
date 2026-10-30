@@ -81,6 +81,11 @@ fit beside the hotbar, at a big GUI scale, it moves to the top right, under your
   key can get in, though anyone can ride along with them. Only the owner (or an admin) can pick a car back up. Punch
   it a few times and it drops as an item, keeping its fuel, paint and locks. A pickup's bed spills its items.
 - **Paint:** right-click a car with any dye.
+- **Headlights:** the lights come on with the engine, and in the dark (at night, in a tunnel or a cave) they really
+  light the road: brightly about twelve blocks ahead and softly just in front, moving along as you drive. The light
+  stops at walls, so it doesn't shine through into buildings. It's real block light (from invisible light blocks
+  that follow the car and tidy themselves away), so it works with any shaders and mobs won't spawn where it falls. A
+  server can turn it off with `driving.realHeadlights`, leaving the lights to just glow.
 - **Off-road:** grass, dirt, sand, snow and the like (the `reikocars:off_road` block tag) slow every car but the
   off-roader, the heavy-duty pickup, the farm tractor and the dirt bike. Ice is slippery.
 - **Running things over** hurts mobs and knocks them aside, more the faster you go. Players only get hurt with PvP
@@ -425,7 +430,8 @@ driver's side.
 ## Work vehicles
 
 - **Police car and ambulance:** the driver's **K** turns on the **light bar and siren**: the beacons flash red and
-  blue (the ambulance's red and white) and the siren wails until **K** turns them off. The **ambulance** heals
+  blue (the ambulance's red and white) and the siren wails until **K** turns them off. In the dark the beacons light
+  up the ground around the car too. The **ambulance** heals
   everyone riding in it except the driver, half a heart every two and a half seconds.
 - **Garbage truck:** put **Trash Cans** out by the road (anyone can throw things in them; they hold 27 stacks). Back
   the truck's hopper up to them (within 3.5 blocks of its back end) and press **G**: every can in reach is emptied
@@ -635,6 +641,7 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `driving.lockNewCars` | `true` | New cars start locked |
 | `driving.requireKeys` | `true` | A car needs one of its keys to start, even for its owner. If false, keys only share locked cars |
 | `driving.alarmSeconds` | `30` | How long a locked car's alarm sounds (0 turns alarms off) |
+| `driving.realHeadlights` | `true` | Whether headlights (and police and ambulance beacons) light up the world in the dark |
 | `pumps.defaultPricePerBucket` | `4.0` | Starting price of a new pump |
 | `pumps.capacityBuckets` | `16` | Buckets a pump holds |
 | `pumps.hoseLength` | `6.0` | How close a car must be to a pump |

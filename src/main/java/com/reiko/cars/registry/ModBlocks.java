@@ -145,6 +145,17 @@ public final class ModBlocks {
             () -> new com.reiko.cars.road.StreetPoleBlock(streetMetal()));
     public static final DeferredBlock<com.reiko.cars.road.StopSignBlock> STOP_SIGN = BLOCKS.register("stop_sign",
             () -> new com.reiko.cars.road.StopSignBlock(streetMetal()));
+    /** The light a car's headlights cast in the dark: invisible, moved along by the car, gone when it goes. */
+    public static final DeferredBlock<com.reiko.cars.car.HeadlightGlowBlock> HEADLIGHT_GLOW = BLOCKS.register("headlight_glow",
+            () -> new com.reiko.cars.car.HeadlightGlowBlock(BlockBehaviour.Properties.of()
+                    .replaceable()
+                    .strength(-1.0F, 3600000.8F)
+                    .noLootTable()
+                    .noOcclusion()
+                    .noCollission()
+                    .pushReaction(PushReaction.DESTROY)
+                    .lightLevel(state -> state.getValue(com.reiko.cars.car.HeadlightGlowBlock.LEVEL))));
+
     public static final DeferredBlock<com.reiko.cars.road.StreetLampBlock> STREET_LAMP = BLOCKS.register("street_lamp",
             () -> new com.reiko.cars.road.StreetLampBlock(streetMetal()
                     .lightLevel(state -> state.getValue(com.reiko.cars.road.StreetLampBlock.LIT) ? 15 : 0)));

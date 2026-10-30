@@ -156,6 +156,8 @@ public final class DevShowcase {
             wallScript();
         } else if (MODE.equals("water")) {
             waterScript();
+        } else if (MODE.equals("headlights")) {
+            headlightsScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -2407,5 +2409,80 @@ public final class DevShowcase {
         // (for Fabulous! graphics, run it with graphicsMode:2 in run/options.txt)
         at(195, mc -> ReikoCars.LOGGER.info("Showcase graphics: {}", mc.options.graphicsMode().get()));
         at(200, mc -> mc.stop());
+    }
+
+    private static long glowCount(ServerLevel level) {
+        long count = 0;
+        for (BlockPos pos : BlockPos.betweenClosed(-12, -62, -14, 12, -55, 90)) {
+            if (level.getBlockState(pos).getBlock() instanceof com.reiko.cars.car.HeadlightGlowBlock) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /** A night drive down a road between walls, a police car's beacons by the roadside, then the same by day. */
+    private static void headlightsScript() {
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(18000);
+                tile(level, -12, -14, 12, 90);
+                for (int z = 4; z <= 80; z += 5) {
+                    for (int y = -60; y <= -58; y++) {
+                        level.setBlockAndUpdate(new BlockPos(-6, y, z), Blocks.STONE_BRICKS.defaultBlockState());
+                        level.setBlockAndUpdate(new BlockPos(6, y, z), Blocks.STONE_BRICKS.defaultBlockState());
+                    }
+                }
+                for (int x = -5; x <= 5; x++) {
+                    for (int y = -60; y <= -57; y++) {
+                        level.setBlockAndUpdate(new BlockPos(x, y, 88), Blocks.BRICKS.defaultBlockState());
+                    }
+                }
+                spawn(level, CarType.SEDAN, 0.5, 0.5, 0.0F, 0.6);
+                spawn(level, CarType.POLICE_CAR, -3.5, 40.5, 0.0F, 0.6);
+                car(level, CarType.POLICE_CAR).setSiren(true);
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                player.startRiding(car(level, CarType.SEDAN), true);
+            });
+        });
+        // first with real headlights off in the settings, to compare
+        at(21, mc -> com.reiko.cars.config.CarsConfig.REAL_HEADLIGHTS.set(false));
+        at(40, mc -> {
+            mc.player.setYRot(0.0F);
+            mc.player.setXRot(10.0F);
+        });
+        at(60, mc -> shot(mc, "169_off_driver"));
+        at(62, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        at(76, mc -> shot(mc, "169_off_behind"));
+        at(78, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            com.reiko.cars.config.CarsConfig.REAL_HEADLIGHTS.set(true);
+        });
+        at(100, mc -> server(mc, player -> ReikoCars.LOGGER.info("Showcase headlights: {} lights at night", glowCount(player.serverLevel()))));
+        at(102, mc -> shot(mc, "170_headlights_driver"));
+        at(104, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        at(118, mc -> shot(mc, "171_headlights_behind"));
+        at(120, mc -> mc.options.keyUp.setDown(true));
+        at(170, mc -> shot(mc, "172_headlights_driving"));
+        at(172, mc -> {
+            mc.options.keyUp.setDown(false);
+            mc.options.keyJump.setDown(true);
+        });
+        at(210, mc -> {
+            mc.options.keyJump.setDown(false);
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+        });
+        at(220, mc -> shot(mc, "173_headlights_driver_later"));
+        // the police car's beacons, from the roadside
+        at(222, mc -> server(mc, player -> player.stopRiding()));
+        at(226, mc -> look(mc, 3.5, -59.0, 33.0, 40.0F, 18.0F));
+        at(245, mc -> shot(mc, "174_beacons"));
+        at(247, mc -> server(mc, player -> player.serverLevel().setDayTime(6000)));
+        at(275, mc -> server(mc, player -> ReikoCars.LOGGER.info("Showcase headlights: {} lights by day", glowCount(player.serverLevel()))));
+        at(280, mc -> mc.stop());
     }
 }
