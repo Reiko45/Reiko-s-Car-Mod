@@ -156,7 +156,7 @@ public final class Firefighting {
     }
 
     /** The jet as a client sees it, besides the jet itself (drawn with the truck): drops falling from it, and a splash where it lands. */
-    static void drawSpray(Level level, Jet jet, net.minecraft.util.RandomSource random) {
+    public static void drawSpray(Level level, Jet jet, net.minecraft.util.RandomSource random) {
         List<Vec3> points = jet.points();
         for (int i = 3; i < points.size(); i += 2) {
             if (random.nextInt(3) == 0) {

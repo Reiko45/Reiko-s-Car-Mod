@@ -62,7 +62,7 @@ final class FireHoseLines {
     }
 
     /** The jet: crossed see-through ribbons along its arc, from the nozzle in the hand, widening as it goes. */
-    private static void jet(PoseStack poseStack, MultiBufferSource buffers, Vec3 origin, Firefighting.Jet jet, Vec3 hand) {
+    static void jet(PoseStack poseStack, MultiBufferSource buffers, Vec3 origin, Firefighting.Jet jet, Vec3 hand) {
         java.util.List<Vec3> points = new java.util.ArrayList<>(jet.points());
         if (points.size() < 2) {
             return;
@@ -109,9 +109,10 @@ final class FireHoseLines {
         return player.getMainHandItem().getItem() instanceof FireHoseItem || player.getOffhandItem().getItem() instanceof FireHoseItem;
     }
 
-    /** Roughly where the hand holding the hose is. */
-    private static Vec3 hand(Player player, float partialTick) {
-        boolean main = player.getMainHandItem().getItem() instanceof FireHoseItem;
+    /** Roughly where the hand holding the hose (or a Wash Bay's lance) is. */
+    static Vec3 hand(Player player, float partialTick) {
+        net.minecraft.world.item.Item inMain = player.getMainHandItem().getItem();
+        boolean main = inMain instanceof FireHoseItem || inMain instanceof com.reiko.cars.wash.PressureWasherItem;
         InteractionHand held = main ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND;
         HumanoidArm arm = held == InteractionHand.MAIN_HAND ? player.getMainArm() : player.getMainArm().getOpposite();
         float yaw = Mth.lerp(partialTick, player.yBodyRotO, player.yBodyRot) * Mth.DEG_TO_RAD;
@@ -121,11 +122,19 @@ final class FireHoseLines {
         return player.getPosition(partialTick).add(0.0, player.isCrouching() ? 0.75 : 0.95, 0.0).add(right.scale(side)).add(forward.scale(0.3));
     }
 
-    private static int light(Level level, Vec3 at) {
+    static int light(Level level, Vec3 at) {
         return LevelRenderer.getLightColor(level, BlockPos.containing(at));
     }
 
+    /** The fire hoses are red. */
+    private static final float[] RED_HOSE = {0.78F, 0.13F, 0.11F};
+
     private static void hose(PoseStack poseStack, MultiBufferSource buffers, Vec3 origin, Vec3 from, Vec3 to, int lightFrom, int lightTo) {
+        hose(poseStack, buffers, origin, from, to, lightFrom, lightTo, RED_HOSE);
+    }
+
+    /** A hose of colour {@code rgb} sagging from {@code from} to {@code to}, in a pose whose origin is {@code origin}. */
+    static void hose(PoseStack poseStack, MultiBufferSource buffers, Vec3 origin, Vec3 from, Vec3 to, int lightFrom, int lightTo, float[] rgb) {
         VertexConsumer consumer = buffers.getBuffer(RenderType.leash());
         Matrix4f pose = poseStack.last().pose();
         Vec3 start = from.subtract(origin);
@@ -135,15 +144,15 @@ final class FireHoseLines {
         float sideX = flat < 1.0E-4 ? THICKNESS : (float) (-span.z / flat * THICKNESS);
         float sideZ = flat < 1.0E-4 ? 0.0F : (float) (span.x / flat * THICKNESS);
         for (int i = 0; i <= SEGMENTS; i++) {
-            vertexPair(consumer, pose, start, span, sag, i, lightFrom, lightTo, 0.0F, THICKNESS, 0.0F);
+            vertexPair(consumer, pose, start, span, sag, i, lightFrom, lightTo, 0.0F, THICKNESS, 0.0F, rgb);
         }
         for (int i = SEGMENTS; i >= 0; i--) {
-            vertexPair(consumer, pose, start, span, sag, i, lightFrom, lightTo, sideX, 0.0F, sideZ);
+            vertexPair(consumer, pose, start, span, sag, i, lightFrom, lightTo, sideX, 0.0F, sideZ, rgb);
         }
     }
 
     private static void vertexPair(VertexConsumer consumer, Matrix4f pose, Vec3 start, Vec3 span, float sag, int i, int lightFrom, int lightTo,
-                                   float dx, float dy, float dz) {
+                                   float dx, float dy, float dz, float[] rgb) {
         float t = i / (float) SEGMENTS;
         float x = (float) (start.x + span.x * t);
         float y = (float) (start.y + span.y * t) - sag * 4.0F * t * (1.0F - t);
@@ -152,9 +161,9 @@ final class FireHoseLines {
         int sky = (int) Mth.lerp(t, LightTexture.sky(lightFrom), LightTexture.sky(lightTo));
         int light = LightTexture.pack(block, sky);
         float shade = i % 2 == 0 ? 1.0F : 0.82F;
-        float r = 0.78F * shade;
-        float g = 0.13F * shade;
-        float b = 0.11F * shade;
+        float r = rgb[0] * shade;
+        float g = rgb[1] * shade;
+        float b = rgb[2] * shade;
         consumer.addVertex(pose, x - dx, y - dy, z - dz).setColor(r, g, b, 1.0F).setLight(light);
         consumer.addVertex(pose, x + dx, y + dy, z + dz).setColor(r, g, b, 1.0F).setLight(light);
     }

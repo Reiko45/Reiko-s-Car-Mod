@@ -142,6 +142,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     /** The entity event that flashes the lights, when it's locked or unlocked with a key. */
     private static final byte FLASH_EVENT = 101;
     private static final EntityDataAccessor<CarCondition> DATA_CONDITION = SynchedEntityData.defineId(CarEntity.class, ModDataSerializers.CONDITION);
+    /** How dirty it is, 0 to 1 (see {@link com.reiko.cars.wash.Dirt}). */
+    private static final EntityDataAccessor<Float> DATA_DIRT = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.FLOAT);
     /** Wear smaller than this isn't sent to clients straight away (warning levels always are). */
     private static final float CONDITION_SYNC_STEP = 0.005F;
     /** The fewest ticks between a driver's wear reports, so a client can't flood the server. */
@@ -278,6 +280,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_RADIO_DISC, ItemStack.EMPTY);
         builder.define(DATA_RADIO_START, 0L);
         builder.define(DATA_CONDITION, CarCondition.NEW);
+        builder.define(DATA_DIRT, 0.0F);
     }
 
     public CarType carType() {
@@ -764,6 +767,21 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return entityData.get(DATA_TIP_START);
     }
 
+    // ---- dirt (see com.reiko.cars.wash) ----
+
+    /** How dirty it is, from 0 (clean) to 1 (filthy). */
+    public float dirt() {
+        return entityData.get(DATA_DIRT);
+    }
+
+    public void setDirt(float dirt) {
+        float clamped = Mth.clamp(dirt, 0.0F, 1.0F);
+        if (clamped < 0.001F) {
+            clamped = 0.0F;
+        }
+        entityData.set(DATA_DIRT, clamped);
+    }
+
     // ---- the fire truck (see com.reiko.cars.fire) ----
 
     /** Millibuckets of water in its tank: always 0 for anything but a fire truck. */
@@ -1139,6 +1157,14 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             }
             return InteractionResult.sidedSuccess(level().isClientSide);
         }
+        if (com.reiko.cars.wash.HandWash.holdsWater(held) && !isPassenger()
+                && (!type.isFireTruck() || player.isSecondaryUseActive() || water() >= com.reiko.cars.fire.FireTrucks.tankCapacity())) {
+            // A bucket of water thrown over it washes it (a fire truck's tank takes it first, unless they're sneaking).
+            InteractionResult washed = com.reiko.cars.wash.HandWash.wash(this, player, hand);
+            if (washed != InteractionResult.PASS) {
+                return washed;
+            }
+        }
         if (player.isSecondaryUseActive()) {
             if (type.takesFares() && held.isEmpty()) {
                 // The owner sets the fares; anyone else is told them.
@@ -1182,7 +1208,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             }
             return InteractionResult.sidedSuccess(level().isClientSide);
         }
-        if (held.getItem() instanceof com.reiko.cars.fire.FireHoseItem) {
+        if (held.getItem() instanceof com.reiko.cars.fire.FireHoseItem || held.getItem() instanceof com.reiko.cars.wash.PressureWasherItem) {
             return InteractionResult.PASS; // spraying, not getting in
         }
         if (CarsConfig.get(CarsConfig.BUCKET_FUELING) && FluidUtil.getFluidContained(held).filter(CarFuel::isFuel).isPresent()) {
@@ -1786,6 +1812,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             }
             setCondition(type.isElectric() ? worn.with(Part.OIL, 1.0F) : worn); // no oil in an electric motor
         }
+        com.reiko.cars.wash.Dirt.tick(this, moved, driver != null);
         if (moved > 0.3) {
             runOver(driver, moved);
         }
@@ -2108,6 +2135,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (!livery().isPlain()) {
             stack.set(ModDataComponents.LIVERY.get(), livery());
         }
+        if (dirt() > 0.0F) {
+            stack.set(ModDataComponents.DIRT.get(), dirt()); // and its dirt
+        }
         return stack;
     }
 
@@ -2166,6 +2196,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (entityData.get(DATA_LIVERY) != 0) {
             tag.putInt("Livery", entityData.get(DATA_LIVERY));
         }
+        if (dirt() > 0.0F) {
+            tag.putFloat("Dirt", dirt());
+        }
         if (type.isFireTruck()) {
             tag.putInt("Water", water());
             if (ladderUp()) {
@@ -2216,6 +2249,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         setPlate(tag.getString("Plate"));
         entityData.set(DATA_UPGRADES, tag.getInt("Upgrades"));
         entityData.set(DATA_LIVERY, tag.getInt("Livery"));
+        setDirt(tag.getFloat("Dirt"));
         if (type.isFireTruck()) {
             setWater(tag.getInt("Water"));
             if (tag.contains("Ladder", Tag.TAG_INT)) {

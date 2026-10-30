@@ -30,6 +30,10 @@ A **Tuning Bench** fits engine stages, turbos, tires, brakes and suspension kits
 a **Race Control** and numbered **race flags** make a race track, with timed laps, a best-lap board, and races for a
 pot of entry fees.
 
+Cars get **dirty** off-road, in mud and in the rain, and it shows. A drive-through **Car Wash** with spinning
+brushes, a coin-op **Wash Bay** with a pressure washer, or a bucket of water gets them clean again; left filthy, a car
+rusts and dealers pay less for it.
+
 ## Requirements
 
 - Minecraft 1.21.1, NeoForge 21.1.265 or newer (as Reiko's Economy Mod needs)
@@ -595,6 +599,36 @@ to load the bench with parts (hoppers and pipes can fill it too, but nothing com
 the price of each part. The owner repairs from their own stock for free, so a bench works as a garage at home or a
 mechanic's shop for other players.
 
+## Dirt and car washes
+
+Cars get dirty as they're driven: hardly at all on asphalt, more on other ground, much more off-road (grass, dirt,
+sand, gravel, snow) and most in mud (and clay, farmland, podzol, soul sand), and twice as fast in the rain. A thousand
+blocks or so off-road takes a clean car to filthy. The dirt shows: grime builds up from the sills and wheels, and the
+windows get a dusty smear. Standing in the rain rinses a car off, but only so far (to 30%), and so does fording water
+(to 15%).
+
+- **Why wash it:** a dealership pays up to **15% less** for a filthy car, and a filthy car (75% dirty or worse)
+  **rusts**: its body loses about 3% a Minecraft day until it's washed. A car's tooltip, its sale screen and the
+  dealership's Trade in tab say how dirty it is, and a car keeps its dirt when it's picked up.
+- **By hand:** right-click a car with a **bucket of water** (or any container of it) to throw it over the car. Each
+  bucket takes a third of a filthy car's dirt off. A fire truck takes the water into its tank instead, until it's full;
+  sneak to wash it.
+- **The Car Wash** is a drive-through arch over four blocks of road: two blue posts and a CAR WASH beam, with two
+  tall side brushes, one across the top and a spray bar. It's put down from its left-hand post (the one with the pay
+  terminal), facing you, and reaches six blocks to your right and five up. Drive up to it (the dashboard shows
+  **[G] Car wash**) and press **G** (or right-click it from the driver's seat) to pay its price by **Card** or
+  **Cash**, plus sales tax, then **drive through slowly**: the brushes close in on the car's sides and come down on
+  its roof, water rains from the spray bar, and a filthy car comes out clean after about a second under the arch.
+  The wash is used up once the car's through. The owner's own cars wash free.
+- **The Wash Bay** is a coin-op pressure washer. Right-click it and pay for a minute on it, and it hands you its
+  lance (the **Pressure Washer**). Within **8 blocks** of the bay, hold right-click to spray: the jet washes whatever
+  car it hits, a filthy one in about four seconds. The lance goes back on its holster once you leave. The bay's owner
+  sprays free (sneak and right-click it for a lance).
+- **Owners:** whoever puts a Car Wash or Wash Bay down owns it, and only they (or an admin) can break it; breaking
+  any block of the arch takes it all down and gives it back. Right-click it on foot to set its price (0 is free) and
+  see how many washes it's sold and what they've taken. New car washes charge $15.00 a wash, and wash bays $5.00 a
+  minute (see [Settings](#settings)).
+
 ## Tow trucks
 
 Two diesel tow trucks fetch cars that have broken down (or anything else that needs moving):
@@ -795,6 +829,8 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | Lift Kit | three iron ingots, blue dye and a piston (shapeless) |
 | Extended Fuel Tank | iron ingots in the top corners, iron ingots either side of a BuildCraft **Tank**, three iron ingots below |
 | Extra Battery Module | a Battery Pack, two copper ingots, redstone and an iron ingot (shapeless) |
+| Car Wash | blue dye, any sign, blue dye on top, white wool, iron gear, white wool across the middle, iron ingot, water bucket, iron ingot below |
+| Wash Bay | yellow dye, any sign, yellow dye on top, iron ingot, a BuildCraft **iron fluid pipe**, iron ingot across the middle, iron ingot, water bucket, iron ingot below |
 | Parking Meter | iron ingot, glass pane, iron ingot on top, gold nugget, redstone, gold nugget across the middle, an iron ingot below |
 | Toll Booth | yellow dye, glass pane, yellow dye on top, iron ingot, redstone, iron ingot across the middle, three smooth stone below |
 | Toll Gate | stick, red dye, stick on top, yellow dye, piston, yellow dye across the middle, iron ingots in the bottom corners |
@@ -973,6 +1009,13 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `parking.fine` | `10.0` | A new meter's fine for overstaying, from the car owner's bank account (its owner can change it) |
 | `parking.graceSeconds` | `60` | How long a car can stand at a meter unpaid, or after its time runs out, before it's ticketed |
 | `parking.fineEverySeconds` | `900` | How often a car that stays is ticketed again |
+| `carWash.dirtRate` | `1.0` | How fast cars get dirty (0 keeps them clean) |
+| `carWash.filthyBodyWearPerDay` | `0.03` | Body condition a filthy car loses a Minecraft day to rust (0 turns it off) |
+| `carWash.dirtyTradeInCut` | `0.15` | How much less dealerships pay for a filthy car than a clean one |
+| `carWash.defaultWashPrice` | `15.0` | What a new Car Wash charges a wash (its owner can change it) |
+| `carWash.defaultBayPrice` | `5.0` | What a new Wash Bay charges for its time (its owner can change it) |
+| `carWash.baySeconds` | `60` | How many seconds of spraying a Wash Bay's price buys |
+| `carWash.lanceReach` | `8.0` | How far from its Wash Bay a pressure washer reaches |
 | `tolls.toll` | `2.0` | The toll a new toll booth charges (its owner can change it) |
 | `insurance.premium` | `10.0` | What a new insurance office charges for a term of cover (its owner can change it) |
 | `insurance.deductible` | `10.0` | A new office's deductible: the part of each claim the car's owner pays |
@@ -1065,6 +1108,12 @@ pump's model is two blocks tall and faces north. Its screen's face must stay at 
 sign's face at z = 3, 28 to 32 up, because that's where the lit price and the fuel's name are drawn. The screen and
 sign glow (`neoforge_data` light on those elements).
 
+The Car Wash is a block model per part of its arch, all sharing `textures/block/car_wash.png`: `car_wash_base` (the
+left post's foot, with the pay terminal), `car_wash_base_far`, `car_wash_post`, `car_wash_beam_end` and
+`car_wash_beam_1` to `car_wash_beam_4`, which spell CAR WASH two letters a block (backwards from behind, so it reads
+from both sides). Its brushes are drawn in code (`client/CarWashRenderer.java`), and the dirt on cars is made from
+each car's own texture (`client/CarGrime.java`).
+
 ## Project layout
 
 ```text
@@ -1086,6 +1135,7 @@ src/main/java/com/reiko/cars/
 ├── sale/                 the For Sale Sign, a car's sale screen, the Car Dealership block, its lot and tabs, and SaleService (buying, selling, trade-ins)
 ├── finance/              car loans: the Loan, where they're kept (LoanData), and LoanService (terms, daily payments, repossession, paying off)
 ├── impound/              the Impound Office block, block entity, menu and protection, the lots (ImpoundRegistry), and ImpoundService (towing in, fees, releasing)
+├── wash/                 dirt (Dirt), washing by hand (HandWash), the Car Wash arch and the Wash Bay with their block entities and menus, CarWashService and WashBayService (paying, washing, spraying), and the Pressure Washer
 ├── tuning/               upgrades (Upgrades) and the tuning kits, the Tuning Bench block, block entity and menu, TuningService, and liveries (Livery)
 ├── racing/               race flags and their registry, the Race Control block, block entity and menu, and RaceService (time trials, races, the board)
 ├── plate/                license plate numbers (Plates) and every plate given out (PlateRegistry)
@@ -1100,10 +1150,10 @@ src/main/java/com/reiko/cars/
 ├── toll/                 the toll booth and toll gate blocks, their block entities and menus, protection, and TollService (paying and the gate)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
-├── network/              packets: pump, repair bench, mailbox, parking meter, toll, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
+├── network/              packets: pump, repair bench, mailbox, parking meter, toll, car wash, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, and liveries, LiveryMounts), traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
+├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, and dirt, CarGrime), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)

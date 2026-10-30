@@ -40,6 +40,7 @@ public final class Hitching {
         DROP,
         MAIL,
         TOLL,
+        WASH,
         TRASH,
         DUMP,
         POUR,
@@ -55,6 +56,9 @@ public final class Hitching {
     public static Action available(CarEntity car, Player driver) {
         if (TollService.gateAhead(car) != null) {
             return Action.TOLL;
+        }
+        if (car.dirt() > 0.0F && com.reiko.cars.wash.CarWashService.washFor(car) != null) {
+            return Action.WASH;
         }
         if (car.carType().isTowTruck()) {
             return car.towed() != null ? Action.DROP : Towing.towable(car, driver) != null ? Action.TOW : null;
@@ -123,6 +127,9 @@ public final class Hitching {
             return;
         }
         if (TollService.use(player, car)) {
+            return;
+        }
+        if (com.reiko.cars.wash.CarWashService.use(player, car)) {
             return;
         }
         if (car.carType().isTowTruck()) {

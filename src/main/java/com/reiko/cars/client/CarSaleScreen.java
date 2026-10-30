@@ -157,7 +157,17 @@ public final class CarSaleScreen extends ShopScreenBase<CarSaleMenu> {
     }
 
     static Component conditionLine(int condition, int fuel) {
-        return Component.translatable("gui.reikocars.sale_condition", Math.round(condition / 10.0F), Math.round(fuel / 10.0F));
+        return conditionLine(condition, fuel, 0);
+    }
+
+    /** Its condition and fuel, and how dirty it is unless it's clean. */
+    static Component conditionLine(int condition, int fuel, int dirt) {
+        com.reiko.cars.wash.Dirt.Grade grade = com.reiko.cars.wash.Dirt.Grade.of(dirt / 100.0F);
+        if (grade == com.reiko.cars.wash.Dirt.Grade.CLEAN) {
+            return Component.translatable("gui.reikocars.sale_condition", Math.round(condition / 10.0F), Math.round(fuel / 10.0F));
+        }
+        return Component.translatable("gui.reikocars.sale_condition_dirt", Math.round(condition / 10.0F), Math.round(fuel / 10.0F),
+                Component.translatable("dirt.reikocars.adjective." + grade.name().toLowerCase(java.util.Locale.ROOT)));
     }
 
     @Override
@@ -165,7 +175,7 @@ public final class CarSaleScreen extends ShopScreenBase<CarSaleMenu> {
         graphics.drawString(font, fit(title, imageWidth - 16), titleLabelX, titleLabelY, LABEL_COLOR, false);
         if (menu.isSelling()) {
             swatch(graphics, 8, 19, menu.color());
-            graphics.drawString(font, conditionLine(menu.condition(), menu.fuel()), 20, 20, MUTED_COLOR, false);
+            graphics.drawString(font, conditionLine(menu.condition(), menu.fuel(), menu.dirt()), 20, 20, MUTED_COLOR, false);
             Component status = menu.price() >= 0
                     ? Component.translatable("gui.reikocars.on_sale_at", format(menu.price()))
                     : Component.translatable("gui.reikocars.not_on_sale");
@@ -180,7 +190,7 @@ public final class CarSaleScreen extends ShopScreenBase<CarSaleMenu> {
         }
         swatch(graphics, 8, 19, menu.color());
         graphics.drawString(font, fit(Component.translatable("gui.reikocars.seller", menu.ownerName()), imageWidth - 30), 20, 20, MUTED_COLOR, false);
-        graphics.drawString(font, conditionLine(menu.condition(), menu.fuel()), 8, 32, MUTED_COLOR, false);
+        graphics.drawString(font, conditionLine(menu.condition(), menu.fuel(), menu.dirt()), 8, 32, MUTED_COLOR, false);
         long price = menu.price();
         long tax = salesTax(Math.max(0, price));
         Component line = price < 0 ? Component.translatable("gui.reikocars.no_longer_for_sale")

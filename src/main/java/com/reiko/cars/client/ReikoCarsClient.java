@@ -194,6 +194,8 @@ public final class ReikoCarsClient {
         BlockEntityRenderers.register(ModBlockEntities.SPEED_SIGN.get(), SpeedSignRenderer::new);
         BlockEntityRenderers.register(ModBlockEntities.TRAFFIC_CONE.get(), TrafficConeRenderer::new);
         BlockEntityRenderers.register(ModBlockEntities.RACE_FLAG.get(), RaceFlagRenderer::new);
+        BlockEntityRenderers.register(ModBlockEntities.CAR_WASH.get(), CarWashRenderer::new);
+        BlockEntityRenderers.register(ModBlockEntities.WASH_BAY.get(), WashBayRenderer::new);
     }
 
     private static void registerScreens(RegisterMenuScreensEvent event) {
@@ -214,6 +216,8 @@ public final class ReikoCarsClient {
         event.register(ModMenus.PARKING_METER.get(), ParkingMeterScreen::new);
         event.register(ModMenus.TOLL.get(), TollScreen::new);
         event.register(ModMenus.TOLL_BOOTH.get(), TollBoothScreen::new);
+        event.register(ModMenus.WASH_PAY.get(), WashPayScreen::new);
+        event.register(ModMenus.WASH_OWNER.get(), WashOwnerScreen::new);
         event.register(ModMenus.ROAD_SIGN.get(), RoadSignScreen::new);
         event.register(ModMenus.RADIO.get(), RadioScreen::new);
         event.register(ModMenus.INSURANCE.get(), InsuranceScreen::new);

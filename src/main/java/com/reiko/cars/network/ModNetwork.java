@@ -62,6 +62,7 @@ public final class ModNetwork {
         registrar.playToServer(TuningActionPayload.TYPE, TuningActionPayload.STREAM_CODEC, ModNetwork::handleTuning);
         registrar.playToServer(MeterActionPayload.TYPE, MeterActionPayload.STREAM_CODEC, ModNetwork::handleMeter);
         registrar.playToServer(TollActionPayload.TYPE, TollActionPayload.STREAM_CODEC, ModNetwork::handleToll);
+        registrar.playToServer(WashActionPayload.TYPE, WashActionPayload.STREAM_CODEC, ModNetwork::handleWash);
         registrar.playToServer(InsuranceActionPayload.TYPE, InsuranceActionPayload.STREAM_CODEC, ModNetwork::handleInsurance);
         registrar.playToServer(IceCreamActionPayload.TYPE, IceCreamActionPayload.STREAM_CODEC, ModNetwork::handleIceCream);
         registrar.playToServer(RoadSignActionPayload.TYPE, RoadSignActionPayload.STREAM_CODEC, ModNetwork::handleRoadSign);
@@ -110,6 +111,30 @@ public final class ModNetwork {
             ShopActionResult result = TollService.setToll(player, menu.booth(), payload.text());
             if (result.success()) {
                 TollBoothMenu.open(player, menu.booth());
+            }
+            ShopFeedback.send(player, result);
+        }
+    }
+
+    private static void handleWash(WashActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || player.containerMenu.containerId != payload.containerId()
+                || !player.containerMenu.stillValid(player)) {
+            return;
+        }
+        if (payload.action() == WashActionPayload.PAY && player.containerMenu instanceof com.reiko.cars.wash.WashPayMenu menu) {
+            ShopActionResult result = menu.kind() == com.reiko.cars.wash.WashOwnerMenu.BAY
+                    ? com.reiko.cars.wash.WashBayService.pay(player, menu.pos(), payload.expected(), payload.payment())
+                    : com.reiko.cars.wash.CarWashService.pay(player, menu.pos(), payload.expected(), payload.payment());
+            if (result.success()) {
+                player.closeContainer();
+                player.displayClientMessage(result.message(), true);
+            } else {
+                ShopFeedback.send(player, result);
+            }
+        } else if (payload.action() == WashActionPayload.SET && player.containerMenu instanceof com.reiko.cars.wash.WashOwnerMenu menu && menu.wash() != null) {
+            ShopActionResult result = com.reiko.cars.wash.CarWashService.setPrice(player, menu.wash(), payload.text());
+            if (result.success()) {
+                com.reiko.cars.wash.WashOwnerMenu.open(player, menu.wash(), menu.kind());
             }
             ShopFeedback.send(player, result);
         }

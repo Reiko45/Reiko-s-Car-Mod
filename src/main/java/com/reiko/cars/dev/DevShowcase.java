@@ -168,6 +168,8 @@ public final class DevShowcase {
             dmvScript();
         } else if (MODE.equals("tune")) {
             tuneScript();
+        } else if (MODE.equals("wash")) {
+            washScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -3314,5 +3316,167 @@ public final class DevShowcase {
         at(515, mc -> hoverOn(mc, 124, 150));
         at(521, mc -> shot(mc, "267_lift_kit"));
         at(530, mc -> mc.stop());
+    }
+
+    // ---- dirt and the car wash: ./gradlew runClient -Pshowcase=wash ----
+
+    private static final BlockPos WASH = new BlockPos(2, -60, -24);
+    private static final BlockPos BAY = new BlockPos(12, -60, -24);
+
+    private static com.reiko.cars.wash.CarWashBlockEntity wash(ServerPlayer player) {
+        return (com.reiko.cars.wash.CarWashBlockEntity) player.serverLevel().getBlockEntity(WASH);
+    }
+
+    private static com.reiko.cars.wash.WashBayBlockEntity bay(ServerPlayer player) {
+        return (com.reiko.cars.wash.WashBayBlockEntity) player.serverLevel().getBlockEntity(BAY);
+    }
+
+    private static void washScript() {
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                MinecraftServer server = level.getServer();
+                level.setDayTime(6000);
+                tile(level, -8, -40, 34, 14);
+                float[] dirt = {0.0F, 0.2F, 0.45F, 0.75F, 1.0F};
+                for (int i = 0; i < dirt.length; i++) {
+                    CarEntity sedan = spawned(level, CarType.SEDAN, i * 4.0, 0.0, 0.0F, 0.8);
+                    sedan.setDirt(dirt[i]);
+                }
+                spawned(level, CarType.OFF_ROADER, 21.0, 0.0, 0.0F, 0.8).setDirt(1.0F);
+                spawned(level, CarType.CITY_EV, 25.0, 0.0, 0.0F, 0.8).setDirt(0.6F);
+                CarEntity pickup = spawned(level, CarType.PICKUP_TRUCK, 29.0, 0.0, 0.0F, 0.8);
+                pickup.setDirt(0.85F);
+                pickup.setColor(0xEDEEF0);
+                // Mo's car wash, facing south, and the player's wash bay beside it
+                ServerPlayer mo = extraPlayer(server, "Mo");
+                BlockState arch = ModBlocks.CAR_WASH.get().defaultBlockState().setValue(com.reiko.cars.wash.CarWashBlock.FACING, Direction.SOUTH);
+                level.setBlockAndUpdate(WASH, arch);
+                arch.getBlock().setPlacedBy(level, WASH, arch, mo, ItemStack.EMPTY);
+                BlockState stand = ModBlocks.WASH_BAY.get().defaultBlockState().setValue(com.reiko.cars.wash.WashBayBlock.FACING, Direction.SOUTH);
+                level.setBlockAndUpdate(BAY, stand);
+                stand.getBlock().setPlacedBy(level, BAY, stand, player, ItemStack.EMPTY);
+                CarEntity muddy = spawned(level, CarType.SEDAN, 5.0, -17.0, 180.0F, 0.8);
+                muddy.setDirt(0.95F);
+                muddy.setColor(0xC62828);
+                muddy.setOwner(player);
+                CarEntity truck = spawned(level, CarType.PICKUP_TRUCK, 15.0, -18.5, 90.0F, 0.8);
+                truck.setDirt(0.9F);
+                truck.setColor(0xEDEEF0);
+                Purse.give(player, 50_000);
+            });
+        });
+        at(50, mc -> look(mc, 8.0, -57.5, 9.5, 160.0F, 18.0F));
+        at(70, mc -> shot(mc, "270_dirt_row"));
+        at(72, mc -> look(mc, 23.0, -57.5, 8.5, 165.0F, 16.0F));
+        at(90, mc -> shot(mc, "271_dirt_row_2"));
+        at(92, mc -> look(mc, 19.5, -58.6, 4.0, 130.0F, 14.0F));
+        at(110, mc -> shot(mc, "272_filthy_close"));
+        at(112, mc -> look(mc, 12.5, -56.0, -5.5, 30.0F, 30.0F));
+        at(130, mc -> shot(mc, "273_dirt_rear"));
+        // the car wash
+        at(132, mc -> look(mc, 12.0, -57.0, -11.0, 152.0F, 10.0F));
+        at(150, mc -> shot(mc, "274_car_wash"));
+        at(152, mc -> look(mc, 4.0, -58.4, -31.5, -20.0F, 6.0F));
+        at(168, mc -> shot(mc, "275_car_wash_back"));
+        // paying from the driver's seat
+        at(170, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                player.setGameMode(GameType.SURVIVAL);
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                CarEntity muddy = car(player.serverLevel(), CarType.SEDAN, false);
+                for (CarEntity c : player.serverLevel().getEntitiesOfClass(CarEntity.class, new net.minecraft.world.phys.AABB(-40, -70, -40, 40, -40, -10))) {
+                    if (c.carType() == CarType.SEDAN) {
+                        muddy = c;
+                    }
+                }
+                player.startRiding(muddy, true);
+                com.reiko.cars.wash.CarWashService.offer(player, muddy, wash(player));
+            });
+        });
+        at(186, mc -> shot(mc, "276_wash_pay"));
+        at(188, mc -> clickAt(mc, 99 + 40, 76 + 10)); // cash
+        at(196, mc -> shot(mc, "277_wash_paid"));
+        // driving through, slowly (the camera beside the arch)
+        at(198, mc -> {
+            mc.options.hideGui = true;
+            if (mc.screen != null) {
+                mc.player.closeContainer();
+            }
+            server(mc, player -> {
+                player.stopRiding();
+                player.setGameMode(GameType.CREATIVE);
+            });
+        });
+        at(200, mc -> look(mc, 8.5, -58.0, -31.5, 28.0F, 10.0F));
+        for (int t = 0; t < 70; t++) {
+            int step = t;
+            at(205 + t, mc -> server(mc, player -> {
+                for (CarEntity c : player.serverLevel().getEntitiesOfClass(CarEntity.class, new net.minecraft.world.phys.AABB(0, -70, -40, 10, -40, -10),
+                        c -> c.carType() == CarType.SEDAN)) {
+                    c.setPos(5.0, -60.0, -18.0 - 0.13 * step);
+                }
+            }));
+        }
+        at(232, mc -> shot(mc, "278_washing"));
+        at(250, mc -> shot(mc, "279_washing_2"));
+        at(276, mc -> shot(mc, "280_washed"));
+        // the wash bay: its owner screen, then spraying the pickup
+        at(280, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                player.teleportTo(player.serverLevel(), 12.5, -60.0, -21.0, 0.0F, 0.0F);
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                com.reiko.cars.wash.WashOwnerMenu.open(player, bay(player), com.reiko.cars.wash.WashOwnerMenu.BAY);
+            });
+        });
+        at(296, mc -> shot(mc, "281_bay_owner"));
+        at(298, mc -> {
+            mc.player.closeContainer();
+            server(mc, player -> {
+                player.getInventory().clearContent();
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ModItems.PRESSURE_WASHER.get()));
+                player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, new net.minecraft.world.phys.Vec3(15.0, -59.0, -18.5));
+            });
+        });
+        at(302, mc -> mc.options.keyUse.setDown(true));
+        at(314, mc -> shot(mc, "282_bay_spraying"));
+        at(316, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        at(324, mc -> shot(mc, "283_bay_third_person"));
+        at(326, mc -> {
+            mc.options.keyUse.setDown(false);
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            mc.options.hideGui = true;
+        });
+        at(328, mc -> look(mc, 11.6, -60.0, -21.4, 200.0F, 24.0F));
+        at(344, mc -> shot(mc, "284_wash_bay"));
+        // the items
+        at(346, mc -> server(mc, player -> {
+            player.setGameMode(GameType.SURVIVAL);
+            player.getInventory().clearContent();
+            give(player, ModItems.CAR_WASH.get(), 1);
+            give(player, ModItems.WASH_BAY.get(), 1);
+            give(player, ModItems.PRESSURE_WASHER.get(), 1);
+            CarEntity dirty = spawned(player.serverLevel(), CarType.HATCHBACK, 30.0, -30.0, 0.0F, 0.6);
+            dirty.setDirt(0.8F);
+            player.getInventory().add(dirty.toItem());
+            dirty.discard();
+        }));
+        at(350, mc -> {
+            mc.options.hideGui = false;
+            mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player));
+        });
+        at(353, mc -> hoverOn(mc, 2, 2));
+        at(358, mc -> shot(mc, "285_wash_items"));
+        at(360, mc -> hoverOn(mc, 8 + 3 * 18 + 8, 142 + 8));
+        at(366, mc -> shot(mc, "286_dirty_car_tooltip"));
+        at(368, mc -> hoverOn(mc, 8 + 2 * 18 + 8, 142 + 8));
+        at(374, mc -> shot(mc, "287_lance_tooltip"));
+        at(380, mc -> mc.stop());
     }
 }

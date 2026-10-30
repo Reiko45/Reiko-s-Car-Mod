@@ -1,0 +1,454 @@
+{
+  "variants": {
+    "facing=north,level=0,span=0": {
+      "model": "reikocars:block/car_wash_base"
+    },
+    "facing=north,level=1,span=0": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=2,span=0": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=3,span=0": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=4,span=0": {
+      "model": "reikocars:block/car_wash_beam_end"
+    },
+    "facing=north,level=0,span=1": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=1,span=1": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=2,span=1": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=3,span=1": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=4,span=1": {
+      "model": "reikocars:block/car_wash_beam_1"
+    },
+    "facing=north,level=0,span=2": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=1,span=2": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=2,span=2": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=3,span=2": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=4,span=2": {
+      "model": "reikocars:block/car_wash_beam_2"
+    },
+    "facing=north,level=0,span=3": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=1,span=3": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=2,span=3": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=3,span=3": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=4,span=3": {
+      "model": "reikocars:block/car_wash_beam_3"
+    },
+    "facing=north,level=0,span=4": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=1,span=4": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=2,span=4": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=3,span=4": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=north,level=4,span=4": {
+      "model": "reikocars:block/car_wash_beam_4"
+    },
+    "facing=north,level=0,span=5": {
+      "model": "reikocars:block/car_wash_base_far",
+      "y": 180
+    },
+    "facing=north,level=1,span=5": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=north,level=2,span=5": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=north,level=3,span=5": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=north,level=4,span=5": {
+      "model": "reikocars:block/car_wash_beam_end",
+      "y": 180
+    },
+    "facing=east,level=0,span=0": {
+      "model": "reikocars:block/car_wash_base",
+      "y": 90
+    },
+    "facing=east,level=1,span=0": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=2,span=0": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=3,span=0": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=4,span=0": {
+      "model": "reikocars:block/car_wash_beam_end",
+      "y": 90
+    },
+    "facing=east,level=0,span=1": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=1,span=1": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=2,span=1": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=3,span=1": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=4,span=1": {
+      "model": "reikocars:block/car_wash_beam_1",
+      "y": 90
+    },
+    "facing=east,level=0,span=2": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=1,span=2": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=2,span=2": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=3,span=2": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=4,span=2": {
+      "model": "reikocars:block/car_wash_beam_2",
+      "y": 90
+    },
+    "facing=east,level=0,span=3": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=1,span=3": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=2,span=3": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=3,span=3": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=4,span=3": {
+      "model": "reikocars:block/car_wash_beam_3",
+      "y": 90
+    },
+    "facing=east,level=0,span=4": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=1,span=4": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=2,span=4": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=3,span=4": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=east,level=4,span=4": {
+      "model": "reikocars:block/car_wash_beam_4",
+      "y": 90
+    },
+    "facing=east,level=0,span=5": {
+      "model": "reikocars:block/car_wash_base_far",
+      "y": 270
+    },
+    "facing=east,level=1,span=5": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=east,level=2,span=5": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=east,level=3,span=5": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=east,level=4,span=5": {
+      "model": "reikocars:block/car_wash_beam_end",
+      "y": 270
+    },
+    "facing=south,level=0,span=0": {
+      "model": "reikocars:block/car_wash_base",
+      "y": 180
+    },
+    "facing=south,level=1,span=0": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=2,span=0": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=3,span=0": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=4,span=0": {
+      "model": "reikocars:block/car_wash_beam_end",
+      "y": 180
+    },
+    "facing=south,level=0,span=1": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=1,span=1": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=2,span=1": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=3,span=1": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=4,span=1": {
+      "model": "reikocars:block/car_wash_beam_1",
+      "y": 180
+    },
+    "facing=south,level=0,span=2": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=1,span=2": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=2,span=2": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=3,span=2": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=4,span=2": {
+      "model": "reikocars:block/car_wash_beam_2",
+      "y": 180
+    },
+    "facing=south,level=0,span=3": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=1,span=3": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=2,span=3": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=3,span=3": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=4,span=3": {
+      "model": "reikocars:block/car_wash_beam_3",
+      "y": 180
+    },
+    "facing=south,level=0,span=4": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=1,span=4": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=2,span=4": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=3,span=4": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 180
+    },
+    "facing=south,level=4,span=4": {
+      "model": "reikocars:block/car_wash_beam_4",
+      "y": 180
+    },
+    "facing=south,level=0,span=5": {
+      "model": "reikocars:block/car_wash_base_far"
+    },
+    "facing=south,level=1,span=5": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=south,level=2,span=5": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=south,level=3,span=5": {
+      "model": "reikocars:block/car_wash_post"
+    },
+    "facing=south,level=4,span=5": {
+      "model": "reikocars:block/car_wash_beam_end"
+    },
+    "facing=west,level=0,span=0": {
+      "model": "reikocars:block/car_wash_base",
+      "y": 270
+    },
+    "facing=west,level=1,span=0": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=2,span=0": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=3,span=0": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=4,span=0": {
+      "model": "reikocars:block/car_wash_beam_end",
+      "y": 270
+    },
+    "facing=west,level=0,span=1": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=1,span=1": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=2,span=1": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=3,span=1": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=4,span=1": {
+      "model": "reikocars:block/car_wash_beam_1",
+      "y": 270
+    },
+    "facing=west,level=0,span=2": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=1,span=2": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=2,span=2": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=3,span=2": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=4,span=2": {
+      "model": "reikocars:block/car_wash_beam_2",
+      "y": 270
+    },
+    "facing=west,level=0,span=3": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=1,span=3": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=2,span=3": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=3,span=3": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=4,span=3": {
+      "model": "reikocars:block/car_wash_beam_3",
+      "y": 270
+    },
+    "facing=west,level=0,span=4": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=1,span=4": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=2,span=4": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=3,span=4": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 270
+    },
+    "facing=west,level=4,span=4": {
+      "model": "reikocars:block/car_wash_beam_4",
+      "y": 270
+    },
+    "facing=west,level=0,span=5": {
+      "model": "reikocars:block/car_wash_base_far",
+      "y": 90
+    },
+    "facing=west,level=1,span=5": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=west,level=2,span=5": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=west,level=3,span=5": {
+      "model": "reikocars:block/car_wash_post",
+      "y": 90
+    },
+    "facing=west,level=4,span=5": {
+      "model": "reikocars:block/car_wash_beam_end",
+      "y": 90
+    }
+  }
+}

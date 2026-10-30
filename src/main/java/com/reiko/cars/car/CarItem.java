@@ -152,6 +152,7 @@ public final class CarItem extends Item {
             car.setLocked(CarsConfig.get(CarsConfig.LOCK_NEW_CARS));
             car.setUpgrades(stack.getOrDefault(ModDataComponents.UPGRADES.get(), com.reiko.cars.tuning.Upgrades.STOCK));
             car.setLivery(stack.getOrDefault(ModDataComponents.LIVERY.get(), com.reiko.cars.tuning.Livery.PLAIN));
+            car.setDirt(stack.getOrDefault(ModDataComponents.DIRT.get(), 0.0F));
             String plate = stack.get(ModDataComponents.PLATE.get());
             if (plate != null && !plate.isEmpty() && level.getServer() != null) {
                 car.setPlate(plate); // the plate it had when it was picked up
@@ -179,6 +180,13 @@ public final class CarItem extends Item {
                     com.reiko.cars.fire.FireTrucks.tankCapacity() / 1000).withStyle(ChatFormatting.GRAY));
         }
         addConditionLines(tooltip, conditionOf(stack), part -> part != CarCondition.Part.OIL || !type.isElectric());
+        float dirt = stack.getOrDefault(ModDataComponents.DIRT.get(), 0.0F);
+        if (dirt >= 0.1F) {
+            tooltip.add(com.reiko.cars.wash.Dirt.describe(dirt));
+            if (dirt >= com.reiko.cars.wash.Dirt.FILTHY) {
+                tooltip.add(Component.translatable("dirt.reikocars.rusting").withStyle(ChatFormatting.DARK_GRAY));
+            }
+        }
         CarsClientConfig.SpeedUnit unit = CarsClientConfig.speedUnit();
         long speed = Math.round(type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * unit.perBlockPerTick);
         tooltip.add((type.isElectric()

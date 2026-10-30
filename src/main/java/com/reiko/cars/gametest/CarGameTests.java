@@ -40,7 +40,15 @@ import com.reiko.cars.pump.GasPumpBlockEntity;
 import com.reiko.cars.pump.PumpService;
 import com.reiko.cars.registry.ModBlocks;
 import com.reiko.cars.registry.ModEntities;
+import com.reiko.cars.registry.ModDataComponents;
 import com.reiko.cars.registry.ModItems;
+import com.reiko.cars.wash.CarWashBlock;
+import com.reiko.cars.wash.CarWashBlockEntity;
+import com.reiko.cars.wash.CarWashService;
+import com.reiko.cars.wash.Dirt;
+import com.reiko.cars.wash.WashBayBlock;
+import com.reiko.cars.wash.WashBayBlockEntity;
+import com.reiko.cars.wash.WashBayService;
 import com.reiko.cars.repair.RepairBenchBlock;
 import com.reiko.cars.repair.RepairBenchBlockEntity;
 import com.reiko.cars.repair.RepairBenchMenu;
@@ -85,6 +93,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidUtil;
@@ -1809,6 +1818,11 @@ public final class CarGameTests {
             check(helper, SaleService.setOffer(dealer, lot, CarType.SEDAN, "80.00").success(), "the dealer will pay $80 for a sedan");
             long offer = SaleService.offerFor(lot, sedan);
             check(helper, offer < 8000 && offer > 8000 * SaleService.WORN_OUT_SHARE, "less for wear: " + offer);
+            sedan.setDirt(1.0F);
+            long dirtyOffer = SaleService.offerFor(lot, sedan);
+            check(helper, Math.abs(dirtyOffer - offer * (1.0 - com.reiko.cars.config.CarsConfig.get(com.reiko.cars.config.CarsConfig.DIRTY_TRADE_IN_CUT))) <= 1.0,
+                    "less again for a filthy car: " + dirtyOffer + " against " + offer);
+            sedan.setDirt(0.0F);
 
             DealershipMenu trading = DealershipMenu.create(0, customer, lot);
             trading.clickMenuButton(customer, DealershipMenu.TAB_TRADE);
@@ -4052,5 +4066,227 @@ public final class CarGameTests {
                     }
                 })
                 .thenSucceed();
+    }
+
+    // ---- dirt and car washes ----
+
+    @GameTest(template = YARD, timeoutTicks = 100)
+    public static void carsGetDirtyAndWashByHand(GameTestHelper helper) {
+        ServerPlayer player = join(helper);
+        player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL); // so the bucket empties
+        try {
+            BlockState road = ModBlocks.ASPHALT.get().defaultBlockState();
+            check(helper, Dirt.perBlock(Blocks.MUD.defaultBlockState(), false) > Dirt.perBlock(Blocks.GRASS_BLOCK.defaultBlockState(), false)
+                    && Dirt.perBlock(Blocks.GRASS_BLOCK.defaultBlockState(), false) > Dirt.perBlock(Blocks.SNOW_BLOCK.defaultBlockState(), false)
+                    && Dirt.perBlock(Blocks.SNOW_BLOCK.defaultBlockState(), false) > Dirt.perBlock(Blocks.STONE.defaultBlockState(), false)
+                    && Dirt.perBlock(Blocks.STONE.defaultBlockState(), false) > Dirt.perBlock(road, true), "mud, then off-road, snow, ground, road");
+
+            // Driving a hundred blocks through mud.
+            helper.setBlock(new BlockPos(5, 0, 5), Blocks.MUD);
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.5, 5.5);
+            car.setOwner(player);
+            car.setOnGround(true);
+            car.tickCount = 1; // not a rain or rust tick
+            Dirt.tick(car, 100.0, true);
+            double rain = helper.getLevel().isRainingAt(car.blockPosition().above()) ? 2.0 : 1.0;
+            near(helper, car.dirt(), 100.0 * Dirt.perBlock(Blocks.MUD.defaultBlockState(), false) * rain, "a hundred blocks of mud");
+            Dirt.tick(car, 100.0, false);
+            near(helper, car.dirt(), 100.0 * Dirt.perBlock(Blocks.MUD.defaultBlockState(), false) * rain, "but only when it's driven");
+            check(helper, Dirt.Grade.of(car.dirt()) == Dirt.Grade.DIRTY, "it's dirty");
+
+            // It keeps its dirt when it's picked up and put down.
+            ItemStack item = car.toItem();
+            near(helper, item.getOrDefault(ModDataComponents.DIRT.get(), 0.0F), car.dirt(), "the item keeps the dirt");
+
+            // A bucket of water washes a third of a filthy car off; three get it clean.
+            car.setDirt(1.0F);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WATER_BUCKET));
+            check(helper, car.interact(player, InteractionHand.MAIN_HAND).consumesAction(), "throwing a bucket over it");
+            near(helper, car.dirt(), 1.0F - Dirt.BUCKET_WASH, "a bucket's worth off");
+            check(helper, player.getMainHandItem().is(Items.BUCKET) && !car.hasPassenger(player), "the bucket's empty, and they didn't get in");
+            for (int i = 0; i < 2; i++) {
+                player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WATER_BUCKET));
+                car.interact(player, InteractionHand.MAIN_HAND);
+            }
+            check(helper, car.dirt() == 0.0F, "three buckets: clean");
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WATER_BUCKET));
+            car.interact(player, InteractionHand.MAIN_HAND);
+            check(helper, player.getMainHandItem().is(Items.WATER_BUCKET), "no water wasted on a clean car");
+
+            // A fire truck's tank takes the water first.
+            CarEntity truck = vehicle(helper, CarType.FIRE_TRUCK, 5.0, 20.0);
+            truck.setDirt(0.5F);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WATER_BUCKET));
+            truck.interact(player, InteractionHand.MAIN_HAND);
+            check(helper, truck.water() == 1000 && truck.dirt() == 0.5F, "into the fire truck's tank, not over it");
+            truck.discard();
+
+            // Filthy, its body rusts; dealers pay less for it.
+            car.setDirt(0.9F);
+            car.tickCount = 200;
+            float body = car.condition().body();
+            Dirt.tick(car, 0.0, false);
+            check(helper, car.condition().body() < body, "a filthy car rusts");
+            car.setDirt(0.5F);
+            float rusted = car.condition().body();
+            Dirt.tick(car, 0.0, false);
+            check(helper, car.condition().body() == rusted, "a dirty one doesn't");
+            near(helper, Dirt.tradeInShare(0.0F), 1.0, "a clean car's worth all of it");
+            near(helper, Dirt.tradeInShare(1.0F), 1.0 - com.reiko.cars.config.CarsConfig.get(com.reiko.cars.config.CarsConfig.DIRTY_TRADE_IN_CUT),
+                    "a filthy one the most off");
+        } finally {
+            leave(helper, player);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 200)
+    public static void carWashWashesCarsDrivenThrough(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer owner = join(helper);
+        ServerPlayer driver = join(helper);
+        try {
+            // An arch facing south: its left post at x = 2, the lane over x = 3 to 6, the beam five blocks up.
+            BlockPos mainRel = new BlockPos(2, 1, 10);
+            BlockState state = ModBlocks.CAR_WASH.get().defaultBlockState().setValue(CarWashBlock.FACING, Direction.SOUTH);
+            helper.setBlock(mainRel, state);
+            BlockPos main = helper.absolutePos(mainRel);
+            state.getBlock().setPlacedBy(helper.getLevel(), main, state, owner, ItemStack.EMPTY);
+            int parts = 0;
+            for (int span = 0; span < CarWashBlock.SPANS; span++) {
+                for (int up = 0; up <= CarWashBlock.POSTS; up++) {
+                    BlockState at = helper.getBlockState(mainRel.east(span).above(up));
+                    if (CarWashBlock.isPart(span, up)) {
+                        check(helper, at.is(ModBlocks.CAR_WASH.get()) && at.getValue(CarWashBlock.SPAN) == span && at.getValue(CarWashBlock.LEVEL) == up,
+                                "part " + span + "," + up);
+                        check(helper, CarWashBlock.mainPos(at, helper.absolutePos(mainRel.east(span).above(up))).equals(main), "it knows its post");
+                        parts++;
+                    } else {
+                        check(helper, at.isAir(), "the lane's clear at " + span + "," + up);
+                    }
+                }
+            }
+            helper.assertValueEqual(parts, 14, "two posts and a beam");
+            CarWashBlockEntity wash = (CarWashBlockEntity) helper.getBlockEntity(mainRel);
+            check(helper, wash.isOwner(owner), "the owner's car wash");
+            check(helper, !CarWashService.setPrice(driver, wash, "1.00").success(), "only the owner sets the price");
+            check(helper, CarWashService.setPrice(owner, wash, "12.00").success() && wash.price() == 1200, "a wash is $12");
+
+            // A dirty car pulls up from the south.
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.0, 14.5);
+            car.setOwner(driver);
+            car.setDirt(0.8F);
+            check(helper, CarWashService.washFor(car) == wash, "it's at the car wash");
+            check(helper, !CarWashService.pay(driver, main, 1200, Payment.cash()).success(), "pay from the driver's seat");
+            driver.startRiding(car, true);
+            Purse.give(driver, 5_000);
+            long ownerBefore = ECO.getBalance(server, owner.getUUID());
+            check(helper, !CarWashService.pay(driver, main, 1000, Payment.cash()).success(), "an out-of-date price is caught");
+            ShopActionResult paid = CarWashService.pay(driver, main, 1200, Payment.cash());
+            check(helper, paid.success(), "paying: " + paid.message().getString());
+            helper.assertValueEqual(Purse.value(driver), 5_000L - 1200, "$12 in cash");
+            helper.assertValueEqual(ECO.getBalance(server, owner.getUUID()), ownerBefore + 1200, "to the owner");
+            check(helper, wash.washes() == 1 && wash.earned() == 1200, "it counts the wash");
+            check(helper, !CarWashService.pay(driver, main, 1200, Payment.cash()).success(), "no paying twice");
+
+            // Short of the arch, nothing happens; under it, the dirt comes off and the brushes run.
+            CarWashService.tick(wash);
+            check(helper, car.dirt() == 0.8F && !wash.running(), "not in the lane yet");
+            car.setPos(car.getX(), car.getY(), main.getZ() + 0.5);
+            CarWashService.tick(wash);
+            near(helper, car.dirt(), 0.8F - CarWashService.RATE, "washing");
+            check(helper, wash.running(), "the brushes turn");
+            for (int i = 0; i < 25; i++) {
+                CarWashService.tick(wash);
+            }
+            check(helper, car.dirt() == 0.0F, "clean after a slow drive through");
+            car.setPos(car.getX(), car.getY(), main.getZ() - 6.0);
+            CarWashService.tick(wash);
+            check(helper, !wash.running() && !wash.hasPass(car, helper.getLevel().getGameTime()), "through and out: the wash is used up");
+
+            // Back in, dirty again, without paying: nothing.
+            car.setDirt(0.5F);
+            car.setPos(car.getX(), car.getY(), main.getZ() + 0.5);
+            CarWashService.tick(wash);
+            check(helper, car.dirt() == 0.5F && !wash.running(), "no pass, no wash");
+
+            // The owner's own cars wash free.
+            driver.stopRiding();
+            CarEntity ownCar = vehicle(helper, CarType.HATCHBACK, 5.0, 16.0);
+            ownCar.setOwner(owner);
+            ownCar.setDirt(0.6F);
+            car.discard();
+            long ownerCash = Purse.value(owner);
+            owner.startRiding(ownCar, true);
+            CarWashService.offer(owner, ownCar, wash);
+            check(helper, wash.hasPass(ownCar, helper.getLevel().getGameTime()) && Purse.value(owner) == ownerCash, "free for the owner's car");
+            owner.stopRiding();
+            ownCar.discard();
+
+            // Breaking any block of it takes the whole arch down.
+            helper.getLevel().destroyBlock(helper.absolutePos(mainRel.east(3).above(CarWashBlock.POSTS)), true);
+            for (int span = 0; span < CarWashBlock.SPANS; span++) {
+                for (int up = 0; up <= CarWashBlock.POSTS; up++) {
+                    check(helper, helper.getBlockState(mainRel.east(span).above(up)).isAir(), "gone: " + span + "," + up);
+                }
+            }
+        } finally {
+            leave(helper, owner, driver);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 100)
+    public static void washBaySpraysCarsClean(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer owner = join(helper);
+        ServerPlayer customer = join(helper);
+        try {
+            BlockPos bayRel = new BlockPos(2, 1, 20);
+            BlockState state = ModBlocks.WASH_BAY.get().defaultBlockState().setValue(WashBayBlock.FACING, Direction.SOUTH);
+            helper.setBlock(bayRel, state);
+            BlockPos bayPos = helper.absolutePos(bayRel);
+            state.getBlock().setPlacedBy(helper.getLevel(), bayPos, state, owner, ItemStack.EMPTY);
+            WashBayBlockEntity bay = (WashBayBlockEntity) helper.getBlockEntity(bayRel);
+            check(helper, bay.isOwner(owner), "the owner's bay");
+            check(helper, CarWashService.setPrice(owner, bay, "3.00").success() && bay.price() == 300, "a go is $3");
+
+            // The customer stands by the bay, looking south at a dirty car.
+            Vec3 stand = helper.absoluteVec(new Vec3(5.5, 1.0, 22.5));
+            customer.moveTo(stand.x, stand.y, stand.z, 0.0F, 0.0F);
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.5, 26.0);
+            car.setDirt(1.0F);
+            check(helper, WashBayService.bayFor(customer) == null && !WashBayService.spray(customer), "no time, no spraying");
+            check(helper, WashBayService.bayFor(owner) == null, "the owner's too far away");
+
+            Purse.give(customer, 1_000);
+            long ownerBefore = ECO.getBalance(server, owner.getUUID());
+            check(helper, !WashBayService.pay(customer, bayPos, 200, Payment.cash()).success(), "an out-of-date price is caught");
+            ShopActionResult paid = WashBayService.pay(customer, bayPos, 300, Payment.cash());
+            check(helper, paid.success(), "paying: " + paid.message().getString());
+            helper.assertValueEqual(Purse.value(customer), 700L, "$3 in cash");
+            helper.assertValueEqual(ECO.getBalance(server, owner.getUUID()), ownerBefore + 300, "to the owner");
+            long now = helper.getLevel().getGameTime();
+            helper.assertValueEqual(bay.ticksLeft(customer, now), com.reiko.cars.config.CarsConfig.get(com.reiko.cars.config.CarsConfig.BAY_SECONDS) * 20L,
+                    "a go's worth of time");
+            check(helper, customer.getInventory().contains(new ItemStack(ModItems.PRESSURE_WASHER.get())), "and the lance");
+            check(helper, WashBayService.bayFor(customer) == bay, "the lance draws from the bay");
+
+            // Spraying the car washes it, a little a tick.
+            check(helper, WashBayService.spray(customer), "spraying");
+            near(helper, car.dirt(), 1.0F - WashBayService.RATE, "the jet hits the car");
+            for (int i = 0; i < 80; i++) {
+                WashBayService.spray(customer);
+            }
+            check(helper, car.dirt() == 0.0F, "sprayed clean");
+            check(helper, bay.ticksLeft(customer, now + 100_000) == 0, "the time runs out");
+
+            // The owner sprays free.
+            owner.moveTo(stand.x, stand.y, stand.z, 0.0F, 0.0F);
+            check(helper, WashBayService.bayFor(owner) == bay, "free for the owner");
+        } finally {
+            leave(helper, owner, customer);
+        }
+        helper.succeed();
     }
 }

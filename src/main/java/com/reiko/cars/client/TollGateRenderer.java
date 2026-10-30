@@ -63,7 +63,7 @@ public final class TollGateRenderer implements BlockEntityRenderer<TollGateBlock
     }
 
     /** A solid-coloured box from (x0, y0, z0) to (x1, y1, z1), in blocks. */
-    private static void box(VertexConsumer buffer, PoseStack.Pose pose, float x0, float y0, float z0, float x1, float y1, float z1, int rgb, int light) {
+    static void box(VertexConsumer buffer, PoseStack.Pose pose, float x0, float y0, float z0, float x1, float y1, float z1, int rgb, int light) {
         int r = (rgb >> 16) & 255;
         int g = (rgb >> 8) & 255;
         int b = rgb & 255;

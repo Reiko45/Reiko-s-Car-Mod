@@ -84,6 +84,11 @@ public final class ModDataComponents {
     public static final Supplier<DataComponentType<com.reiko.cars.tuning.Livery>> LIVERY = COMPONENTS.registerComponentType("livery",
             builder -> builder.persistent(com.reiko.cars.tuning.Livery.CODEC).networkSynchronized(com.reiko.cars.tuning.Livery.STREAM_CODEC));
 
+    /** A picked-up car's dirt, 0 (clean) to 1 (filthy). */
+    public static final Supplier<DataComponentType<Float>> DIRT = COMPONENTS.registerComponentType("dirt",
+            builder -> builder.persistent(com.mojang.serialization.Codec.floatRange(0.0F, 1.0F))
+                    .networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.FLOAT));
+
     private ModDataComponents() {
     }
 }

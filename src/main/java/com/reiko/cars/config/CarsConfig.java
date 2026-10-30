@@ -97,6 +97,14 @@ public final class CarsConfig {
     public static final ModConfigSpec.DoubleValue RED_LIGHT_FINE;
     public static final ModConfigSpec.DoubleValue SPEEDING_FINE;
 
+    public static final ModConfigSpec.DoubleValue DIRT_RATE;
+    public static final ModConfigSpec.DoubleValue FILTHY_BODY_WEAR;
+    public static final ModConfigSpec.DoubleValue DIRTY_TRADE_IN_CUT;
+    public static final ModConfigSpec.DoubleValue WASH_PRICE;
+    public static final ModConfigSpec.DoubleValue BAY_PRICE;
+    public static final ModConfigSpec.IntValue BAY_SECONDS;
+    public static final ModConfigSpec.DoubleValue LANCE_REACH;
+
     public static final ModConfigSpec.DoubleValue POSTAGE;
     public static final ModConfigSpec.DoubleValue MAIL_REACH;
 
@@ -427,6 +435,32 @@ public final class CarsConfig {
         MAIL_REACH = builder
                 .comment("How close, in blocks, the mail van must be to a mailbox to collect and deliver its mail.")
                 .defineInRange("mailVanReach", 3.0, 1.0, 16.0);
+        builder.pop();
+
+        builder.push("carWash");
+        DIRT_RATE = builder
+                .comment("How fast cars get dirty: 1 is normal (a thousand blocks off-road takes a clean car to filthy, mud four times",
+                        "as fast, roads hardly at all, rain doubles it), 0 keeps them clean.")
+                .defineInRange("dirtRate", 1.0, 0.0, 100.0);
+        FILTHY_BODY_WEAR = builder
+                .comment("How much of its body's condition a filthy car (three-quarters dirty or worse) loses a Minecraft day, as rust",
+                        "sets in (0.03 is 3%). 0 turns it off.")
+                .defineInRange("filthyBodyWearPerDay", 0.03, 0.0, 1.0);
+        DIRTY_TRADE_IN_CUT = builder
+                .comment("How much less a dealership pays for a filthy car than a clean one (0.15 is 15% less), less for one less dirty.")
+                .defineInRange("dirtyTradeInCut", 0.15, 0.0, 1.0);
+        WASH_PRICE = builder
+                .comment("What a newly placed drive-through Car Wash charges a wash. Its owner can change it.")
+                .defineInRange("defaultWashPrice", 15.0, 0.0, 1_000_000.0);
+        BAY_PRICE = builder
+                .comment("What a newly placed Wash Bay charges for its time (see bayTime). Its owner can change it.")
+                .defineInRange("defaultBayPrice", 5.0, 0.0, 1_000_000.0);
+        BAY_SECONDS = builder
+                .comment("How many seconds of spraying a Wash Bay's price buys.")
+                .defineInRange("baySeconds", 60, 10, 3600);
+        LANCE_REACH = builder
+                .comment("How far from its Wash Bay a pressure washer's hose reaches, in blocks.")
+                .defineInRange("lanceReach", 8.0, 2.0, 32.0);
         builder.pop();
 
         SPEC = builder.build();

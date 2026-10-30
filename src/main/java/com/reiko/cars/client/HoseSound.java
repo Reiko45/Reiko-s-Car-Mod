@@ -22,9 +22,10 @@ public final class HoseSound extends AbstractTickableSoundInstance {
         this.z = player.getZ();
     }
 
-    /** Whether {@code player} is spraying a fire hose. */
+    /** Whether {@code player} is spraying a fire hose or a Wash Bay's lance. */
     public static boolean spraying(Player player) {
-        return player.isAlive() && player.isUsingItem() && player.getUseItem().getItem() instanceof FireHoseItem;
+        return player.isAlive() && player.isUsingItem()
+                && (player.getUseItem().getItem() instanceof FireHoseItem || player.getUseItem().getItem() instanceof com.reiko.cars.wash.PressureWasherItem);
     }
 
     @Override

@@ -23,12 +23,14 @@ import org.joml.Quaternionf;
 
 /**
  * Draws a car in three passes: the paint tinted with the car's colour, then the trim and wheels (whose glass can
- * be see-through: see {@link CarGlass}), then the lights, which glow while the engine runs.
+ * be see-through: see {@link CarGlass}), with its dirt over them (see {@link CarGrime}), then the lights, which glow
+ * while the engine runs.
  */
 public final class CarRenderer extends EntityRenderer<CarEntity> {
     private final CarModel model;
     private final ResourceLocation texture;
     private final CarGlass glass;
+    private final CarGrime grime;
     private final Font font;
     @org.jetbrains.annotations.Nullable
     private final PlateMounts.Mount[] plates;
@@ -41,6 +43,7 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         this.model = new CarModel(context.bakeLayer(layer));
         this.texture = ReikoCars.id("textures/entity/car/" + type.id() + ".png");
         this.glass = new CarGlass(texture);
+        this.grime = new CarGrime(texture, glass);
         this.font = context.getFont();
         this.plates = PlateMounts.of(type.id());
         this.livery = LiveryMounts.of(type.id());
@@ -76,6 +79,14 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         RenderType solid = RenderType.entityCutoutNoCull(texture);
         model.renderBody(poseStack, buffers.getBuffer(solid), light, overlay, 0xFF000000 | car.color());
         glass.draw(buffers, solid, consumer -> model.renderTrim(poseStack, consumer, light, overlay));
+        float dirt = car.dirt();
+        if (dirt > 0.0F) {
+            // Its dirt, over the paint and trim.
+            grime.draw(dirt, car.carType().height, new org.joml.Matrix4f(poseStack.last().pose()), buffers, consumer -> {
+                model.renderBody(poseStack, consumer, light, overlay, 0xFFFFFFFF);
+                model.renderTrim(poseStack, consumer, light, overlay);
+            });
+        }
         boolean lit = car.isEngineRunning() || car.lightsFlashing() || (car.alarmOn() && CarSignals.blinkOn(car));
         if (lit) {
             model.renderLights(poseStack, buffers.getBuffer(RenderType.entityTranslucentEmissive(texture)), LightTexture.FULL_BRIGHT, overlay);

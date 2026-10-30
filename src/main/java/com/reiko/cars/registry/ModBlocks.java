@@ -173,6 +173,23 @@ public final class ModBlocks {
                     .dynamicShape()
                     .pushReaction(PushReaction.BLOCK)));
 
+    /** The drive-through Car Wash: an arch of posts and a beam over four blocks of road. */
+    public static final DeferredBlock<com.reiko.cars.wash.CarWashBlock> CAR_WASH = BLOCKS.register("car_wash", () -> new com.reiko.cars.wash.CarWashBlock(
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLUE)
+                    .strength(3.0F, 1200.0F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .pushReaction(PushReaction.BLOCK)));
+    /** A self-service Wash Bay: a coin-op pressure washer. */
+    public static final DeferredBlock<com.reiko.cars.wash.WashBayBlock> WASH_BAY = BLOCKS.register("wash_bay", () -> new com.reiko.cars.wash.WashBayBlock(
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_YELLOW)
+                    .strength(3.0F, 1200.0F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .pushReaction(PushReaction.BLOCK)));
+
     // ---- roads ----
 
     private static BlockBehaviour.Properties asphalt() {

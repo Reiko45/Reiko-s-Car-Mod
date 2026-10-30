@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "Y": {
+      "tag": "c:dyes/yellow"
+    },
+    "S": {
+      "tag": "minecraft:signs"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "H": {
+      "item": "buildcraftreborn:pipe_iron_fluid"
+    },
+    "P": {
+      "item": "minecraft:water_bucket"
+    }
+  },
+  "pattern": [
+    "YSY",
+    "IHI",
+    "IPI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:wash_bay"
+  }
+}

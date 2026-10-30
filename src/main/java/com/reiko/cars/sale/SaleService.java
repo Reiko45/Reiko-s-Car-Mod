@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>A dealership also buys cars: its owner sets what it pays for each kind of car, and a player who parks theirs on
  * the lot can trade it in, paid from the dealer's bank account, less for wear (down to {@link #WORN_OUT_SHARE} for a
- * worn-out car).
+ * worn-out car) and for dirt (see {@link com.reiko.cars.wash.Dirt#tradeInShare}).
  */
 public final class SaleService {
     /** What a trade-in in the worst condition fetches, as a share of the dealer's offer for one in perfect condition. */
@@ -91,7 +91,7 @@ public final class SaleService {
             return 0;
         }
         double condition = car.condition().overall(car::hasPart);
-        return Math.round(base * (WORN_OUT_SHARE + (1.0 - WORN_OUT_SHARE) * condition));
+        return Math.round(base * (WORN_OUT_SHARE + (1.0 - WORN_OUT_SHARE) * condition) * com.reiko.cars.wash.Dirt.tradeInShare(car.dirt()));
     }
 
     /** The dealership whose lot {@code car} is on, owned by {@code owner}, if any. */

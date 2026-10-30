@@ -27,17 +27,19 @@ public final class CarSaleMenu extends AbstractContainerMenu {
     private final int condition;
     private final int fuel;
     private final int color;
+    /** How dirty it is, in percent. */
+    private final int dirt;
     /** The car-loan terms on offer (at a dealership), or null if it can only be bought outright. */
     @Nullable
     private final LoanService.Terms terms;
 
     public CarSaleMenu(int containerId, Inventory inventory, RegistryFriendlyByteBuf buf) {
         this(containerId, null, buf.readBoolean(), buf.readUtf(128), buf.readUtf(64), buf.readLong(), buf.readVarInt(), buf.readVarInt(), buf.readInt(),
-                readTerms(buf));
+                buf.readVarInt(), readTerms(buf));
     }
 
     private CarSaleMenu(int containerId, @Nullable CarEntity car, boolean selling, String nameKey, String ownerName, long price,
-                        int condition, int fuel, int color, @Nullable LoanService.Terms terms) {
+                        int condition, int fuel, int color, int dirt, @Nullable LoanService.Terms terms) {
         super(ModMenus.CAR_SALE.get(), containerId);
         this.car = car;
         this.selling = selling;
@@ -47,6 +49,7 @@ public final class CarSaleMenu extends AbstractContainerMenu {
         this.condition = condition;
         this.fuel = fuel;
         this.color = color;
+        this.dirt = dirt;
         this.terms = terms;
     }
 
@@ -73,6 +76,7 @@ public final class CarSaleMenu extends AbstractContainerMenu {
             buf.writeVarInt(Math.round(car.condition().overall(car::hasPart) * 1000));
             buf.writeVarInt(Math.round(car.fuelFraction() * 1000));
             buf.writeInt(car.color());
+            buf.writeVarInt(Math.round(car.dirt() * 100));
             LoanService.Terms terms = termsFor(car, selling);
             buf.writeBoolean(terms != null);
             if (terms != null) {
@@ -88,7 +92,7 @@ public final class CarSaleMenu extends AbstractContainerMenu {
     public static CarSaleMenu create(int containerId, ServerPlayer player, CarEntity car) {
         return new CarSaleMenu(containerId, car, car.isOwner(player), car.nameKey(), car.ownerName(), car.salePrice(),
                 Math.round(car.condition().overall(car::hasPart) * 1000), Math.round(car.fuelFraction() * 1000), car.color(),
-                termsFor(car, car.isOwner(player)));
+                Math.round(car.dirt() * 100), termsFor(car, car.isOwner(player)));
     }
 
     /** The car-loan terms on offer, or null if it can only be bought outright. */
@@ -132,6 +136,11 @@ public final class CarSaleMenu extends AbstractContainerMenu {
 
     public int color() {
         return color;
+    }
+
+    /** How dirty it is, in percent. */
+    public int dirt() {
+        return dirt;
     }
 
     @Override

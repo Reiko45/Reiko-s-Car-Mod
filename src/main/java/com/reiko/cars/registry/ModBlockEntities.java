@@ -54,6 +54,10 @@ public final class ModBlockEntities {
                     ModBlocks.INSURANCE_OFFICE.get()).build(null));
     public static final Supplier<BlockEntityType<com.reiko.cars.garbage.TrashCanBlockEntity>> TRASH_CAN = BLOCK_ENTITIES.register(
             "trash_can", () -> BlockEntityType.Builder.of(com.reiko.cars.garbage.TrashCanBlockEntity::new, ModBlocks.TRASH_CAN.get()).build(null));
+    public static final Supplier<BlockEntityType<com.reiko.cars.wash.CarWashBlockEntity>> CAR_WASH = BLOCK_ENTITIES.register(
+            "car_wash", () -> BlockEntityType.Builder.of(com.reiko.cars.wash.CarWashBlockEntity::new, ModBlocks.CAR_WASH.get()).build(null));
+    public static final Supplier<BlockEntityType<com.reiko.cars.wash.WashBayBlockEntity>> WASH_BAY = BLOCK_ENTITIES.register(
+            "wash_bay", () -> BlockEntityType.Builder.of(com.reiko.cars.wash.WashBayBlockEntity::new, ModBlocks.WASH_BAY.get()).build(null));
     public static final Supplier<BlockEntityType<com.reiko.cars.fire.FireHydrantBlockEntity>> FIRE_HYDRANT = BLOCK_ENTITIES.register(
             "fire_hydrant", () -> BlockEntityType.Builder.of(com.reiko.cars.fire.FireHydrantBlockEntity::new, ModBlocks.FIRE_HYDRANT.get()).build(null));
     public static final Supplier<BlockEntityType<com.reiko.cars.traffic.TrafficLightBlockEntity>> TRAFFIC_LIGHT = BLOCK_ENTITIES.register("traffic_light",

@@ -114,6 +114,11 @@ public final class ModItems {
     public static final DeferredItem<com.reiko.cars.fire.FireHoseItem> FIRE_HOSE = ITEMS.register("fire_hose",
             () -> new com.reiko.cars.fire.FireHoseItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<BlockItem> TOLL_GATE = ITEMS.registerSimpleBlockItem(ModBlocks.TOLL_GATE);
+    public static final DeferredItem<BlockItem> CAR_WASH = ITEMS.registerSimpleBlockItem(ModBlocks.CAR_WASH);
+    public static final DeferredItem<BlockItem> WASH_BAY = ITEMS.registerSimpleBlockItem(ModBlocks.WASH_BAY);
+    /** A Wash Bay's lance: the bay hands it out. */
+    public static final DeferredItem<com.reiko.cars.wash.PressureWasherItem> PRESSURE_WASHER = ITEMS.register("pressure_washer",
+            () -> new com.reiko.cars.wash.PressureWasherItem(new Item.Properties().stacksTo(1)));
 
     // Repair parts, fitted at a repair bench (see RepairJobs). Tires are the same ones cars are built with.
     /** An oil change. */

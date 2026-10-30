@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "tag": "c:dyes/blue"
+    },
+    "S": {
+      "tag": "minecraft:signs"
+    },
+    "W": {
+      "item": "minecraft:white_wool"
+    },
+    "G": {
+      "tag": "c:gears/iron"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "P": {
+      "item": "minecraft:water_bucket"
+    }
+  },
+  "pattern": [
+    "BSB",
+    "WGW",
+    "IPI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:car_wash"
+  }
+}

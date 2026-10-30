@@ -60,6 +60,10 @@ public final class ModMenus {
     public static final Supplier<MenuType<com.reiko.cars.traffic.RoadSignMenu>> ROAD_SIGN = MENUS.register("road_sign",
             () -> IMenuTypeExtension.create(com.reiko.cars.traffic.RoadSignMenu::new));
     public static final Supplier<MenuType<TollBoothMenu>> TOLL_BOOTH = MENUS.register("toll_booth", () -> IMenuTypeExtension.create(TollBoothMenu::new));
+    public static final Supplier<MenuType<com.reiko.cars.wash.WashPayMenu>> WASH_PAY = MENUS.register("wash_pay",
+            () -> IMenuTypeExtension.create(com.reiko.cars.wash.WashPayMenu::new));
+    public static final Supplier<MenuType<com.reiko.cars.wash.WashOwnerMenu>> WASH_OWNER = MENUS.register("wash_owner",
+            () -> IMenuTypeExtension.create(com.reiko.cars.wash.WashOwnerMenu::new));
     public static final Supplier<MenuType<com.reiko.cars.icecream.IceCreamMenu>> ICE_CREAM = MENUS.register("ice_cream",
             () -> IMenuTypeExtension.create(com.reiko.cars.icecream.IceCreamMenu::new));
     public static final Supplier<MenuType<com.reiko.cars.insurance.InsuranceMenu>> INSURANCE = MENUS.register("insurance",

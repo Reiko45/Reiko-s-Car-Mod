@@ -32,6 +32,8 @@ public final class CarGlass {
     private static boolean deferring;
 
     private final ResourceLocation texture;
+    /** The texture the held-back faces are drawn with: the car's own, or (for grime on the windows) another. */
+    private final ResourceLocation drawTexture;
     private final Filter filter = new Filter();
     private int width;
     private int height;
@@ -43,7 +45,35 @@ public final class CarGlass {
     private int heldVertices;
 
     public CarGlass(ResourceLocation texture) {
+        this(texture, texture);
+    }
+
+    /**
+     * Glass faces of {@code texture}'s model drawn with {@code drawTexture} instead, after the glass itself: a layer over
+     * the windows (see {@link CarGrime}). Its faces come from {@link #drawGlassQuad}.
+     */
+    public CarGlass(ResourceLocation texture, ResourceLocation drawTexture) {
         this.texture = texture;
+        this.drawTexture = drawTexture;
+    }
+
+    /**
+     * One glass face (four vertices: x, y, z, u, v and the normal for each, eight floats apiece, and their colour, overlay
+     * and light, three ints apiece) drawn with {@link #drawTexture}: held back with the glass, or now when it isn't.
+     */
+    void drawGlassQuad(MultiBufferSource buffers, float[] floats, int floatOffset, int[] ints, int intOffset) {
+        VertexConsumer target = deferring ? null : buffers.getBuffer(RenderType.entityTranslucent(drawTexture));
+        for (int i = 0; i < 4; i++) {
+            int f = floatOffset + i * 8;
+            int n = intOffset + i * 3;
+            if (target == null) {
+                hold(floats[f], floats[f + 1], floats[f + 2], ints[n], floats[f + 3], floats[f + 4], ints[n + 1], ints[n + 2], floats[f + 5],
+                        floats[f + 6], floats[f + 7]);
+            } else {
+                target.addVertex(floats[f], floats[f + 1], floats[f + 2], ints[n], floats[f + 3], floats[f + 4], ints[n + 1], ints[n + 2],
+                        floats[f + 5], floats[f + 6], floats[f + 7]);
+            }
+        }
     }
 
     /**
@@ -54,7 +84,7 @@ public final class CarGlass {
         load();
         draw.accept(filter.to(buffers.getBuffer(solid), false));
         if (glassBefore != null) {
-            draw.accept(filter.to(deferring ? null : buffers.getBuffer(RenderType.entityTranslucent(texture)), true));
+            draw.accept(filter.to(deferring ? null : buffers.getBuffer(RenderType.entityTranslucent(drawTexture)), true));
         }
     }
 
@@ -74,7 +104,7 @@ public final class CarGlass {
             // it finds it, and draws to whichever target is bound.
             MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
             for (CarGlass glass : PENDING) {
-                glass.replay(buffers.getBuffer(RenderType.entityTranslucent(glass.texture)));
+                glass.replay(buffers.getBuffer(RenderType.entityTranslucent(glass.drawTexture)));
             }
             buffers.endBatch();
             dropPending();

@@ -229,7 +229,7 @@ public final class DealershipScreen extends ShopScreenBase<DealershipMenu> {
         graphics.renderFakeItem(carStack(type, menu.carColor()), 8, TOP - 4);
         int right = imageWidth - 8 - (previous.visible ? 30 : 0);
         graphics.drawString(font, fit(name, right - 28), 28, TOP, LABEL_COLOR, false);
-        graphics.drawString(font, CarSaleScreen.conditionLine(menu.carCondition(), menu.carFuel()), 28, TOP + 12, MUTED_COLOR, false);
+        graphics.drawString(font, CarSaleScreen.conditionLine(menu.carCondition(), menu.carFuel(), menu.carDirt()), 28, TOP + 12, MUTED_COLOR, false);
         long price = menu.carPrice();
         MutableComponent line = switch (tab) {
             case DealershipMenu.TAB_TRADE -> menu.carOwed() >= 0

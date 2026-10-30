@@ -47,7 +47,9 @@ public final class DealershipMenu extends AbstractContainerMenu {
     private static final int OFFER = 13;
     /** What's owed on the picked car's loan (Trade in tab), or -1 if it has none. */
     private static final int OWED = 17;
-    private static final int SLOTS = 21;
+    /** How dirty the picked car is, in percent. */
+    private static final int DIRT = 21;
+    private static final int SLOTS = 22;
 
     @Nullable
     private final DealershipBlockEntity lot; // null on the client
@@ -145,6 +147,7 @@ public final class DealershipMenu extends AbstractContainerMenu {
         data.set(COLOR + 1, color & 0xFFFF);
         data.set(CONDITION, selected == null ? 0 : Math.round(selected.condition().overall(selected::hasPart) * 1000));
         data.set(FUEL, selected == null ? 0 : Math.round(selected.fuelFraction() * 1000));
+        data.set(DIRT, selected == null ? 0 : Math.round(selected.dirt() * 100));
         putLong(PRICE, selected == null ? -1 : selected.salePrice());
         putLong(OFFER, selected == null || tab != TAB_TRADE ? 0 : SaleService.offerFor(lot, selected));
         putLong(OWED, selected == null || tab != TAB_TRADE ? -1 : com.reiko.cars.finance.LoanService.owed(selected));
@@ -279,6 +282,11 @@ public final class DealershipMenu extends AbstractContainerMenu {
 
     public int carFuel() {
         return data.get(FUEL);
+    }
+
+    /** How dirty it is, in percent. */
+    public int carDirt() {
+        return data.get(DIRT);
     }
 
     /** Its price, in cents, or -1 if it isn't for sale. */

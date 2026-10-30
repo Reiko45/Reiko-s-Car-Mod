@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "reikocars:block/wash_bay"
+    },
+    "facing=east": {
+      "model": "reikocars:block/wash_bay",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "reikocars:block/wash_bay",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "reikocars:block/wash_bay",
+      "y": 270
+    }
+  }
+}

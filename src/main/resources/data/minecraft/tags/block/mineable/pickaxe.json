@@ -24,6 +24,8 @@
     "reikocars:impound_office",
     "reikocars:dmv_office",
     "reikocars:tuning_bench",
-    "reikocars:race_control"
+    "reikocars:race_control",
+    "reikocars:car_wash",
+    "reikocars:wash_bay"
   ]
 }
