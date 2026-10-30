@@ -118,6 +118,14 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private static final EntityDataAccessor<Long> DATA_ALARM_UNTIL = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** When a dump truck started tipping its bed, in game time: -1 when it isn't. */
     private static final EntityDataAccessor<Long> DATA_TIP_START = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
+    /** Millibuckets of water in a fire truck's tank. */
+    private static final EntityDataAccessor<Integer> DATA_WATER = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
+    /** When a fire truck's ladder last started going up or down, in game time: -1 while it's stowed. */
+    private static final EntityDataAccessor<Long> DATA_LADDER_START = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
+    /** Whether the ladder is going (or gone) up, rather than coming (or come) down. */
+    private static final EntityDataAccessor<Boolean> DATA_LADDER_UP = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
+    /** How many blocks up from the ground the raised ladder reaches. */
+    private static final EntityDataAccessor<Integer> DATA_LADDER_HEIGHT = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
     /** The entity event that flashes the lights, when it's locked or unlocked with a key. */
     private static final byte FLASH_EVENT = 101;
     private static final EntityDataAccessor<CarCondition> DATA_CONDITION = SynchedEntityData.defineId(CarEntity.class, ModDataSerializers.CONDITION);
@@ -238,6 +246,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_SALE_PRICE, -1L);
         builder.define(DATA_SIREN, false);
         builder.define(DATA_TIP_START, -1L);
+        builder.define(DATA_WATER, 0);
+        builder.define(DATA_LADDER_START, -1L);
+        builder.define(DATA_LADDER_UP, false);
+        builder.define(DATA_LADDER_HEIGHT, 0);
         builder.define(DATA_SIGNAL, CarSignals.OFF);
         builder.define(DATA_ALARM_UNTIL, 0L);
         builder.define(DATA_RADIO, com.reiko.cars.radio.CarRadio.DEFAULT);
@@ -582,6 +594,79 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return entityData.get(DATA_TIP_START);
     }
 
+    // ---- the fire truck (see com.reiko.cars.fire) ----
+
+    /** Millibuckets of water in its tank: always 0 for anything but a fire truck. */
+    public int water() {
+        return entityData.get(DATA_WATER);
+    }
+
+    public void setWater(int millibuckets) {
+        entityData.set(DATA_WATER, type.isFireTruck() ? Mth.clamp(millibuckets, 0, com.reiko.cars.fire.FireTrucks.tankCapacity()) : 0);
+    }
+
+    /** How full its water tank is, 0 to 1. */
+    public float waterFraction() {
+        int capacity = com.reiko.cars.fire.FireTrucks.tankCapacity();
+        return capacity <= 0 ? 0.0F : Math.min(1.0F, water() / (float) capacity);
+    }
+
+    public long ladderStart() {
+        return entityData.get(DATA_LADDER_START);
+    }
+
+    /** Whether the ladder is going up or is up. */
+    public boolean ladderUp() {
+        return entityData.get(DATA_LADDER_UP);
+    }
+
+    public int ladderHeight() {
+        return entityData.get(DATA_LADDER_HEIGHT);
+    }
+
+    /** Starts the ladder going up (to {@code height} blocks) or down, now. */
+    public void moveLadder(boolean up, int height) {
+        entityData.set(DATA_LADDER_UP, up);
+        if (up) {
+            entityData.set(DATA_LADDER_HEIGHT, height);
+        }
+        entityData.set(DATA_LADDER_START, level().getGameTime());
+    }
+
+    /** The ladder's come all the way down. */
+    public void stowLadder() {
+        entityData.set(DATA_LADDER_UP, false);
+        entityData.set(DATA_LADDER_START, -1L);
+    }
+
+    /** How far up the ladder is, 0 (stowed on the roof) to 1 (raised and fully out). */
+    public float ladderOut(float partialTick) {
+        long start = ladderStart();
+        if (start < 0) {
+            return 0.0F;
+        }
+        float ticks = level().getGameTime() - start + partialTick;
+        return ladderUp() ? Math.min(1.0F, ticks / com.reiko.cars.fire.FireLadder.RAISE_TICKS)
+                : Math.max(0.0F, 1.0F - ticks / com.reiko.cars.fire.FireLadder.LOWER_TICKS);
+    }
+
+    /** Whether its ladder is anything but stowed: then it can't be driven. */
+    public boolean ladderDeployed() {
+        return ladderStart() >= 0;
+    }
+
+    /** Ticks it's stood still for, on the server. */
+    private int stillTicks;
+
+    /** Whether it's been standing still for half a second or more, on the server. */
+    public boolean standingStill() {
+        return stillTicks >= 10 && !isPassenger();
+    }
+
+    /** Where the raised ladder's climbable column starts, on the server: kept while it's up, so it comes down where it went up. */
+    @Nullable
+    public BlockPos ladderBase;
+
     // ---- the radio (see CarRadio) ----
 
     public int radioState() {
@@ -889,6 +974,16 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
                 }
                 return InteractionResult.sidedSuccess(level().isClientSide);
             }
+        }
+        if (type.isFireTruck() && FluidUtil.getFluidContained(held).filter(fluid -> fluid.is(net.minecraft.tags.FluidTags.WATER)).isPresent()) {
+            // A bucket (or any container) of water goes in the water tank.
+            if (!level().isClientSide) {
+                com.reiko.cars.fire.FireTrucks.pourWater(this, player, hand);
+            }
+            return InteractionResult.sidedSuccess(level().isClientSide);
+        }
+        if (held.getItem() instanceof com.reiko.cars.fire.FireHoseItem) {
+            return InteractionResult.PASS; // spraying, not getting in
         }
         if (CarsConfig.get(CarsConfig.BUCKET_FUELING) && FluidUtil.getFluidContained(held).filter(CarFuel::isFuel).isPresent()) {
             FuelType poured = FuelType.of(FluidUtil.getFluidContained(held).get());
@@ -1257,7 +1352,14 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             brakes *= 0.4 + 0.6 * trailerWear.braking() * trailerWear.grip();
             top *= 0.5 + 0.5 * trailerWear.drag();
         }
-        boolean engine = getControllingPassenger() != null && hasFuel() && !isBrokenDown() && keyedIn();
+        boolean engine = getControllingPassenger() != null && hasFuel() && !isBrokenDown() && keyedIn() && !ladderDeployed();
+        if (ladderDeployed()) {
+            // The ladder's out and the truck's on its jacks: it doesn't go anywhere until the ladder's down.
+            speed = approach(speed, 0, 0.05);
+            if ((inputForward || inputBack) && level().isClientSide && tickCount % 40 == 0 && getControllingPassenger() instanceof Player driver) {
+                driver.displayClientMessage(Component.translatable("fire.reikocars.ladder_blocks_driving"), true);
+            }
+        }
         double before = speed;
         boolean braking = onGround() && ((inputForward && speed < 0) || (inputBack && speed > 0.001) || inputBrake);
 
@@ -1428,6 +1530,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             moved = 0.0; // teleported, not driven
             previous = null;
         }
+        stillTicks = moved < 0.005 ? stillTicks + 1 : 0;
         lastFuelPos = pos;
         Vec3 halfSecondAgo = trail[trailAt];
         trail[trailAt] = pos;
@@ -1664,7 +1767,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     /** The semi is longer than its hitbox: keep drawing it while its ends could be on screen. */
     @Override
     public AABB getBoundingBoxForCulling() {
-        return getBoundingBox().inflate(type.length / 2.0, 0.5, type.length / 2.0);
+        AABB box = getBoundingBox().inflate(type.length / 2.0, 0.5, type.length / 2.0);
+        return ladderDeployed() ? box.expandTowards(0.0, ladderHeight(), 0.0) : box; // a fire truck's raised ladder
     }
 
     /** Solid to other vehicles; drives through mobs (and hurts them) instead of stopping at them. */
@@ -1736,6 +1840,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
         if (!level().isClientSide && reason != RemovalReason.UNLOADED_TO_CHUNK && reason != RemovalReason.UNLOADED_WITH_PLAYER) {
             headlights.clear(); // (an unloading car's lights see to themselves: no car, no light)
+            com.reiko.cars.fire.FireLadder.clear(this);
         }
         super.remove(reason);
     }
@@ -1745,6 +1850,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         ItemStack stack = new ItemStack(getDropItem());
         CarItem.withFuel(stack, fuel());
         CarItem.withCondition(stack, condition());
+        CarItem.withWater(stack, water());
         if (lockCode() != 0L) {
             stack.set(ModDataComponents.LOCK.get(), lockCode()); // so the keys still fit when it's put down again
         }
@@ -1794,6 +1900,12 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (sirenOn()) {
             tag.putBoolean("Siren", true);
         }
+        if (type.isFireTruck()) {
+            tag.putInt("Water", water());
+            if (ladderUp()) {
+                tag.putInt("Ladder", ladderHeight());
+            }
+        }
         if (signal() != CarSignals.OFF) {
             tag.putByte("Signal", signal());
         }
@@ -1830,6 +1942,15 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         setSalePrice(tag.contains("SalePrice") ? tag.getLong("SalePrice") : -1L);
         policy = tag.contains("Insurance") ? com.reiko.cars.insurance.Policy.CODEC.parse(NbtOps.INSTANCE, tag.get("Insurance")).result().orElse(null) : null;
         setSiren(tag.getBoolean("Siren"));
+        if (type.isFireTruck()) {
+            setWater(tag.getInt("Water"));
+            if (tag.contains("Ladder", Tag.TAG_INT)) {
+                // Saved with its ladder up: it's still up, all the way.
+                entityData.set(DATA_LADDER_UP, true);
+                entityData.set(DATA_LADDER_HEIGHT, tag.getInt("Ladder"));
+                entityData.set(DATA_LADDER_START, level().getGameTime() - com.reiko.cars.fire.FireLadder.RAISE_TICKS);
+            }
+        }
         entityData.set(DATA_SIGNAL, (byte) Math.floorMod(tag.getByte("Signal"), 4));
         shopPrices.clear();
         CompoundTag prices = tag.getCompound("ShopPrices");

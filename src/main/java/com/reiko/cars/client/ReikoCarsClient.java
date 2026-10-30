@@ -159,6 +159,7 @@ public final class ReikoCarsClient {
             case ICE_CREAM_TRUCK -> com.reiko.cars.client.model.IceCreamTruckModel::createBodyLayer;
             case DUMP_TRUCK -> com.reiko.cars.client.model.DumpTruckModel::createBodyLayer;
             case CEMENT_MIXER -> com.reiko.cars.client.model.CementMixerModel::createBodyLayer;
+            case FIRE_TRUCK -> com.reiko.cars.client.model.FireTruckModel::createBodyLayer;
             case SPORT_BIKE -> SportBikeModel::createBodyLayer;
             case CRUISER -> CruiserModel::createBodyLayer;
             case DIRT_BIKE -> DirtBikeModel::createBodyLayer;
@@ -313,6 +314,26 @@ public final class ReikoCarsClient {
     /** The engine sound playing for each nearby car. Weak keys, so cars that unload are forgotten. */
     private static final Map<CarEntity, EngineSound> ENGINES = new WeakHashMap<>();
     private static final Map<CarEntity, SirenSound> SIRENS = new WeakHashMap<>();
+    private static final Map<net.minecraft.world.entity.player.Player, HoseSound> HOSES = new WeakHashMap<>();
+
+    /** Starts the rush of water for everyone nearby spraying a fire hose. */
+    private static void keepHosesGoing(Minecraft minecraft) {
+        SoundManager sounds = minecraft.getSoundManager();
+        HOSES.values().removeIf(sound -> sound.isStopped());
+        for (net.minecraft.world.entity.player.Player player : minecraft.level.players()) {
+            if (HoseSound.spraying(player) && player.distanceToSqr(minecraft.player) < 48.0 * 48.0) {
+                HoseSound sound = HOSES.get(player);
+                if (sound == null || !sounds.isActive(sound)) {
+                    if (sound != null) {
+                        sounds.stop(sound);
+                    }
+                    HoseSound fresh = new HoseSound(player);
+                    HOSES.put(player, fresh);
+                    sounds.play(fresh);
+                }
+            }
+        }
+    }
 
     /**
      * Once a second, gives every nearby car with its engine running an engine sound, and restarts any that the
@@ -380,6 +401,7 @@ public final class ReikoCarsClient {
             keepSirensGoing(minecraft);
             RadioPlayer.tick(minecraft);
         }
+        keepHosesGoing(minecraft);
         if (minecraft.level.getGameTime() % 20 != 0) {
             return;
         }

@@ -26,7 +26,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>The work vehicles have more, each optional: {@code beacon_a} and {@code beacon_b}, emergency lights that flash
  * in turn while the siren's on; {@code bed}, the dump truck's bed, pivoting at its hinge to tip; and
- * {@code drum_mount}, holding the mixer's {@code drum}, which turns about its own z axis.
+ * {@code drum_mount}, holding the mixer's {@code drum}, which turns about its own z axis; and {@code ladder}, the fire
+ * truck's aerial ladder, pivoting at its foot to swing up, with {@code ladder_fly1} to {@code ladder_fly4} nested in it,
+ * each sliding out of the one before (toward -z, its tip).
  *
  * <p>A motorcycle has no right-hand wheels: {@code wheel_fl} is its front wheel and {@code wheel_rl} its back one.
  * Its front wheel sits inside a {@code fork} bone, with the forks and handlebars, and the whole fork steers.
@@ -59,6 +61,10 @@ public final class CarModel {
     private final ModelPart drumMount;
     @Nullable
     private final ModelPart drum;
+    @Nullable
+    private final ModelPart ladder;
+    /** The ladder's fly sections, the base section's first. */
+    private final List<ModelPart> flies = new ArrayList<>();
 
     public CarModel(ModelPart root) {
         this.body = root.getChild("body");
@@ -77,6 +83,11 @@ public final class CarModel {
         this.bed = child(root, "bed");
         this.drumMount = child(root, "drum_mount");
         this.drum = drumMount != null && drumMount.hasChild("drum") ? drumMount.getChild("drum") : null;
+        this.ladder = child(root, "ladder");
+        for (ModelPart part = ladder; part != null && part.hasChild("ladder_fly" + (flies.size() + 1)); ) {
+            part = part.getChild("ladder_fly" + (flies.size() + 1));
+            flies.add(part);
+        }
         if (fork != null) {
             steered.add(fork);
         } else {
@@ -118,6 +129,19 @@ public final class CarModel {
         }
         if (drum != null) {
             drum.zRot = drumSpin;
+        }
+    }
+
+    /**
+     * @param swing how far the fire truck's ladder has swung up from the roof, in radians
+     * @param extension how far each of its fly sections has slid out of the one before, in pixels
+     */
+    public void poseLadder(float swing, float extension) {
+        if (ladder != null) {
+            ladder.xRot = -swing; // lifts its tip, about its foot at the back
+            for (ModelPart fly : flies) {
+                fly.z = fly.getInitialPose().z - extension;
+            }
         }
     }
 
@@ -179,6 +203,9 @@ public final class CarModel {
         }
         if (drumMount != null) {
             drumMount.render(poseStack, consumer, light, overlay, color);
+        }
+        if (ladder != null) {
+            ladder.render(poseStack, consumer, light, overlay, color);
         }
     }
 

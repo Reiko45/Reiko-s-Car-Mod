@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "D": {
+      "tag": "c:dyes/red"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "P": {
+      "item": "buildcraftreborn:pipe_iron_fluid"
+    }
+  },
+  "pattern": [
+    " D ",
+    "IPI",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:fire_hydrant"
+  }
+}

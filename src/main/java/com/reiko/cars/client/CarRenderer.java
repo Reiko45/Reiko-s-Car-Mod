@@ -56,6 +56,10 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
 
         model.pose(car.wheelAngle(partialTick), car.steerAngle(partialTick));
         model.poseWork(car.bedTilt(partialTick) * WorkVehicles.TIP_DEGREES * Mth.DEG_TO_RAD, car.drumSpin(partialTick));
+        if (car.carType().isFireTruck()) {
+            float out = car.ladderOut(partialTick);
+            model.poseLadder(com.reiko.cars.fire.FireLadder.swing(out), com.reiko.cars.fire.FireLadder.extension(out, car.ladderHeight()));
+        }
         int overlay = OverlayTexture.NO_OVERLAY;
         RenderType solid = RenderType.entityCutoutNoCull(texture);
         model.renderBody(poseStack, buffers.getBuffer(solid), light, overlay, 0xFF000000 | car.color());
@@ -84,6 +88,9 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
             }
         }
         poseStack.popPose();
+        if (car.carType().isFireTruck()) {
+            FireHoseLines.draw(car, partialTick, poseStack, buffers);
+        }
         if (car.isForSale()) {
             // A FOR SALE sign with the price floats over it, above its name if it has one.
             poseStack.pushPose();
@@ -109,6 +116,12 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
             float radians = yaw * Mth.DEG_TO_RAD;
             poseStack.mulPose(new Quaternionf().rotationAxis(lean * Mth.DEG_TO_RAD, -Mth.sin(radians), 0.0F, Mth.cos(radians)));
         }
+    }
+
+    /** A fire truck stays drawn while someone near it has a hose out, for their hose and its jet. */
+    @Override
+    public boolean shouldRender(CarEntity car, net.minecraft.client.renderer.culling.Frustum frustum, double camX, double camY, double camZ) {
+        return super.shouldRender(car, frustum, camX, camY, camZ) || car.carType().isFireTruck() && FireHoseLines.anyHoseNear(car);
     }
 
     @Override

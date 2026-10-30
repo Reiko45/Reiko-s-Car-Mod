@@ -160,6 +160,8 @@ public final class DevShowcase {
             headlightsScript();
         } else if (MODE.equals("ev")) {
             evScript();
+        } else if (MODE.equals("fire")) {
+            fireScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -2548,5 +2550,203 @@ public final class DevShowcase {
         });
         at(135, mc -> shot(mc, "179_ev_dashboard"));
         at(140, mc -> mc.stop());
+    }
+
+    // ---- the fire truck: ./gradlew runClient -Pshowcase=fire ----
+
+    private static final BlockPos FIRE_PILE = new BlockPos(9, -60, 0);
+    private static final BlockPos HYDRANT = new BlockPos(-4, -60, 4);
+
+    private static void fireScript() {
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                level.getGameRules().getRule(GameRules.RULE_DOFIRETICK).set(false, level.getServer());
+                tile(level, -16, -16, 16, 22);
+                // a brick building behind where the truck parks, fires on its roof
+                for (int x = -4; x <= 4; x++) {
+                    for (int z = 12; z <= 18; z++) {
+                        for (int y = -60; y <= -52; y++) {
+                            boolean wall = x == -4 || x == 4 || z == 12 || z == 18;
+                            if (wall) {
+                                level.setBlockAndUpdate(new BlockPos(x, y, z), Blocks.BRICKS.defaultBlockState());
+                            }
+                        }
+                        level.setBlockAndUpdate(new BlockPos(x, -51, z), Blocks.OAK_PLANKS.defaultBlockState());
+                    }
+                }
+                for (int y = -59; y <= -57; y += 2) {
+                    for (int x = -2; x <= 2; x += 2) {
+                        level.setBlockAndUpdate(new BlockPos(x, y, 12), Blocks.GLASS.defaultBlockState());
+                    }
+                }
+                for (BlockPos fire : List.of(new BlockPos(-2, -50, 14), new BlockPos(1, -50, 15), new BlockPos(2, -50, 13), new BlockPos(-1, -50, 16))) {
+                    level.setBlockAndUpdate(fire, Blocks.FIRE.defaultBlockState());
+                }
+                // a burning woodpile out front, for the hose
+                for (int x = 0; x <= 1; x++) {
+                    for (int z = 0; z <= 1; z++) {
+                        level.setBlockAndUpdate(FIRE_PILE.offset(x, 0, z), Blocks.OAK_LOG.defaultBlockState());
+                        level.setBlockAndUpdate(FIRE_PILE.offset(x, 1, z), Blocks.FIRE.defaultBlockState());
+                    }
+                }
+                level.setBlockAndUpdate(HYDRANT, ModBlocks.FIRE_HYDRANT.get().defaultBlockState()
+                        .setValue(com.reiko.cars.fire.FireHydrantBlock.FACING, Direction.EAST));
+                CarEntity truck = spawned(level, CarType.FIRE_TRUCK, 0.5, 12.0 - 0.7 - CarType.FIRE_TRUCK.length / 2.0, 180.0F, 0.8);
+                truck.setWater(com.reiko.cars.fire.FireTrucks.tankCapacity());
+                truck.setSiren(true);
+                player.getInventory().clearContent();
+            });
+        });
+        at(40, mc -> look(mc, -9.0, -57.0, -3.5, -40.0F, 12.0F));
+        at(55, mc -> shot(mc, "180_fire_truck"));
+        at(57, mc -> shot(mc, "181_fire_truck_flash"));
+        at(60, mc -> look(mc, 9.5, -57.5, -1.0, 35.0F, 10.0F));
+        at(75, mc -> shot(mc, "182_fire_truck_back"));
+        // the ladder: up, from the side
+        at(78, mc -> {
+            look(mc, -21.0, -53.0, 6.0, -90.0F, -12.0F);
+            server(mc, player -> {
+                CarEntity truck = car(player.serverLevel(), CarType.FIRE_TRUCK);
+                BlockPos base = com.reiko.cars.fire.FireLadder.base(truck);
+                int room = com.reiko.cars.fire.FireLadder.room(player.serverLevel(), base);
+                ReikoCars.LOGGER.info("Showcase ladder: base {} room {}", base, room);
+                com.reiko.cars.fire.FireLadder.raise(truck, base, room);
+            });
+        });
+        at(98, mc -> shot(mc, "183_ladder_swinging"));
+        at(118, mc -> shot(mc, "184_ladder_extending"));
+        at(150, mc -> shot(mc, "185_ladder_up"));
+        at(132, mc -> look(mc, -9.0, -57.0, 4.0, -60.0F, -30.0F));
+        at(140, mc -> shot(mc, "185b_ladder_close"));
+        at(152, mc -> look(mc, -14.0, -56.0, -6.0, -42.0F, -14.0F));
+        at(165, mc -> shot(mc, "186_ladder_hero"));
+        // climbing it: stand at its foot, facing the wall, and hold jump
+        at(168, mc -> server(mc, player -> {
+            CarEntity truck = car(player.serverLevel(), CarType.FIRE_TRUCK);
+            BlockPos base = com.reiko.cars.fire.FireLadder.base(truck);
+            player.getAbilities().flying = false;
+            player.onUpdateAbilities();
+            player.teleportTo(player.serverLevel(), base.getX() + 0.5, base.getY(), base.getZ() + 0.3, 0.0F, -10.0F);
+        }));
+        at(178, mc -> {
+            ReikoCars.LOGGER.info("Showcase climb: start y {} climbable {}", mc.player.getY(), mc.player.onClimbable());
+            mc.options.keyJump.setDown(true);
+        });
+        at(198, mc -> {
+            ReikoCars.LOGGER.info("Showcase climb: after 1s y {}", mc.player.getY());
+            mc.options.keyJump.setDown(false);
+            mc.options.keyShift.setDown(true); // hold on
+            mc.player.setXRot(35.0F);
+        });
+        at(206, mc -> shot(mc, "187_climbing"));
+        at(208, mc -> {
+            mc.options.keyShift.setDown(false);
+            mc.options.keyJump.setDown(true);
+        });
+        at(272, mc -> {
+            ReikoCars.LOGGER.info("Showcase climb: after 4s y {}", mc.player.getY());
+            mc.options.keyJump.setDown(false);
+            mc.player.setYRot(0.0F);
+            mc.player.setXRot(10.0F);
+            mc.options.keyUp.setDown(true); // step off onto the roof
+        });
+        for (int t = 274; t < 290; t += 2) {
+            at(t, mc -> ReikoCars.LOGGER.info("Showcase step-off: {} up {} forward {} climbable {} hcoll {}", mc.player.position(),
+                    mc.options.keyUp.isDown(), mc.player.input.forwardImpulse, mc.player.onClimbable(), mc.player.horizontalCollision));
+        }
+        at(282, mc -> {
+            mc.options.keyUp.setDown(false);
+            ReikoCars.LOGGER.info("Showcase climb: on the roof at {} on ground {}", mc.player.position(), mc.player.onGround());
+            mc.player.setYRot(180.0F);
+            mc.player.setXRot(40.0F);
+        });
+        at(290, mc -> shot(mc, "188_on_the_roof"));
+        // the hose, on the woodpile
+        at(293, mc -> server(mc, player -> {
+            player.teleportTo(player.serverLevel(), 5.5, -60.0, -5.0, 0.0F, 0.0F);
+            player.getInventory().clearContent();
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ModItems.FIRE_HOSE.get()));
+            player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES,
+                    new net.minecraft.world.phys.Vec3(FIRE_PILE.getX() + 1.0, -58.2, FIRE_PILE.getZ() + 1.0));
+        }));
+        at(296, mc -> {
+            mc.options.hideGui = false;
+            mc.options.keyUse.setDown(true);
+        });
+        at(306, mc -> shot(mc, "189_hose_spray"));
+        at(308, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        at(314, mc -> shot(mc, "190_hose_third_person"));
+        at(316, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+        at(322, mc -> shot(mc, "191_hose_front"));
+        at(324, mc -> {
+            mc.options.keyUse.setDown(false);
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                ReikoCars.LOGGER.info("Showcase hose: pile fires left {}, truck water {}",
+                        java.util.stream.Stream.of(FIRE_PILE.above(), FIRE_PILE.offset(1, 1, 0), FIRE_PILE.offset(0, 1, 1), FIRE_PILE.offset(1, 1, 1))
+                                .filter(p -> level.getBlockState(p).is(Blocks.FIRE)).count(),
+                        car(level, CarType.FIRE_TRUCK).water());
+            });
+        });
+        // the hydrant filling the truck back up
+        at(326, mc -> server(mc, player -> {
+            ServerLevel level = player.serverLevel();
+            CarEntity truck = car(level, CarType.FIRE_TRUCK);
+            truck.setWater(2000);
+            var hydrant = (com.reiko.cars.fire.FireHydrantBlockEntity) level.getBlockEntity(HYDRANT);
+            hydrant.tank().fill(new FluidStack(net.minecraft.world.level.material.Fluids.WATER, 6000), IFluidHandler.FluidAction.EXECUTE);
+            player.getInventory().clearContent();
+        }));
+        at(328, mc -> {
+            mc.options.hideGui = true;
+            look(mc, -9.5, -58.0, 1.0, -120.0F, 25.0F);
+        });
+        at(344, mc -> shot(mc, "192_hydrant"));
+        at(360, mc -> server(mc, player -> {
+            ServerLevel level = player.serverLevel();
+            var hydrant = (com.reiko.cars.fire.FireHydrantBlockEntity) level.getBlockEntity(HYDRANT);
+            ReikoCars.LOGGER.info("Showcase hydrant: truck water {}, hydrant {}", car(level, CarType.FIRE_TRUCK).water(),
+                    hydrant.tank().getFluidAmount());
+            com.reiko.cars.fire.FireLadder.lower(car(level, CarType.FIRE_TRUCK));
+        }));
+        // the dashboard
+        at(420, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                player.startRiding(car(player.serverLevel(), CarType.FIRE_TRUCK), true);
+            });
+        });
+        at(440, mc -> {
+            mc.player.setYRot(180.0F);
+            mc.player.setXRot(10.0F);
+        });
+        at(450, mc -> shot(mc, "193_fire_dashboard"));
+        // the items
+        at(452, mc -> server(mc, player -> {
+            player.stopRiding();
+            player.setGameMode(GameType.SURVIVAL);
+            player.getInventory().clearContent();
+            give(player, ModItems.car(CarType.FIRE_TRUCK), 1);
+            give(player, ModItems.FIRE_HOSE.get(), 1);
+            give(player, ModItems.FIRE_HYDRANT.get(), 1);
+            for (com.reiko.cars.workbench.CarPart part : com.reiko.cars.workbench.CarPart.values()) {
+                give(player, ModItems.part(CarType.FIRE_TRUCK, part), 1);
+            }
+        }));
+        at(462, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
+        at(465, mc -> hoverOn(mc, 2, 2));
+        at(470, mc -> shot(mc, "194_fire_items"));
+        at(472, mc -> hoverOn(mc, 16, 150));
+        at(478, mc -> shot(mc, "195_fire_truck_tooltip"));
+        at(480, mc -> hoverOn(mc, 34, 150));
+        at(486, mc -> shot(mc, "196_hose_tooltip"));
+        at(490, mc -> mc.stop());
     }
 }

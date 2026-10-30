@@ -22,9 +22,13 @@ public final class ModCreativeTabs {
                 for (CarType type : CarType.values()) {
                     output.accept(ModItems.car(type));
                 }
-                // Full-tank cars, handy for testing in creative.
+                // Full-tank cars, handy for testing in creative (the fire truck with a full water tank too).
                 for (CarType type : CarType.values()) {
-                    output.accept(CarItem.withFuel(new ItemStack(ModItems.car(type)), type.tankCapacity()));
+                    ItemStack full = CarItem.withFuel(new ItemStack(ModItems.car(type)), type.tankCapacity());
+                    if (type.isFireTruck()) {
+                        CarItem.withWater(full, com.reiko.cars.fire.FireTrucks.tankCapacity());
+                    }
+                    output.accept(full);
                 }
                 output.accept(ModItems.CAR_WORKBENCH.get());
                 output.accept(ModItems.GAS_PUMP.get());
@@ -40,6 +44,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.TOLL_GATE.get());
                 output.accept(ModItems.INSURANCE_OFFICE.get());
                 output.accept(ModItems.TRASH_CAN.get());
+                output.accept(ModItems.FIRE_HYDRANT.get());
+                output.accept(ModItems.FIRE_HOSE.get());
                 output.accept(ModItems.ASPHALT.get());
                 output.accept(ModItems.ASPHALT_SLAB.get());
                 output.accept(ModItems.ASPHALT_STAIRS.get());

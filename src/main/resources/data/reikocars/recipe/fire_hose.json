@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "L": {
+      "tag": "c:leathers"
+    },
+    "S": {
+      "item": "buildcraftreborn:waterproof"
+    },
+    "P": {
+      "item": "buildcraftreborn:pipe_wood_fluid"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "pattern": [
+    "LSL",
+    "L L",
+    "LPI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:fire_hose"
+  }
+}

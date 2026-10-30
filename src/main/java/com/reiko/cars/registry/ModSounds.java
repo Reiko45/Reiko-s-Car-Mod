@@ -23,6 +23,10 @@ public final class ModSounds {
     public static final Supplier<SoundEvent> REPAIR = register("repair_bench.repair");
     /** A police car's or ambulance's siren: a wail, looped. */
     public static final Supplier<SoundEvent> SIREN = register("car.siren");
+    /** A fire truck's siren: a mechanical wail rising and falling, looped. */
+    public static final Supplier<SoundEvent> FIRE_SIREN = register("car.fire_siren");
+    /** The fire hose spraying: rushing water, looped. */
+    public static final Supplier<SoundEvent> HOSE_SPRAY = register("fire_hose.spray");
     /** The ice cream truck's jingle (Greensleeves). */
     public static final Supplier<SoundEvent> ICE_CREAM_JINGLE = register("car.ice_cream_jingle");
     /** The dump truck's bed going up or down. */

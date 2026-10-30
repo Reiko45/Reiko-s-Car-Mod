@@ -1,0 +1,22 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:fire_truck_chassis"
+  },
+  "body": {
+    "item": "reikocars:fire_truck_body"
+  },
+  "interior": {
+    "item": "reikocars:fire_truck_interior"
+  },
+  "engine": {
+    "item": "reikocars:diesel_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:fire_truck"
+  }
+}

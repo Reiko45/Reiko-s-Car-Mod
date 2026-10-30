@@ -160,6 +160,23 @@ public final class ModBlocks {
                     .pushReaction(PushReaction.DESTROY)
                     .lightLevel(state -> state.getValue(com.reiko.cars.car.HeadlightGlowBlock.LEVEL))));
 
+    /** Where a fire truck's raised ladder stands: invisible and climbable, put there and taken away by the truck. */
+    public static final DeferredBlock<com.reiko.cars.fire.FireLadderBlock> FIRE_LADDER = BLOCKS.register("fire_ladder",
+            () -> new com.reiko.cars.fire.FireLadderBlock(BlockBehaviour.Properties.of()
+                    .replaceable()
+                    .strength(-1.0F, 3600000.8F)
+                    .noLootTable()
+                    .noOcclusion()
+                    .noCollission()
+                    .pushReaction(PushReaction.DESTROY)));
+    public static final DeferredBlock<com.reiko.cars.fire.FireHydrantBlock> FIRE_HYDRANT = BLOCKS.register("fire_hydrant",
+            () -> new com.reiko.cars.fire.FireHydrantBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_RED)
+                    .strength(2.5F, 6.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .noOcclusion()));
+
     public static final DeferredBlock<com.reiko.cars.road.StreetLampBlock> STREET_LAMP = BLOCKS.register("street_lamp",
             () -> new com.reiko.cars.road.StreetLampBlock(streetMetal()
                     .lightLevel(state -> state.getValue(com.reiko.cars.road.StreetLampBlock.LIT) ? 15 : 0)));

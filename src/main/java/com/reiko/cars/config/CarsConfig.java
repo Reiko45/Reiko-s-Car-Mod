@@ -29,6 +29,13 @@ public final class CarsConfig {
 
     public static final ModConfigSpec.DoubleValue DEFAULT_CHARGE_PRICE;
     public static final ModConfigSpec.IntValue CHARGER_CAPACITY;
+    public static final ModConfigSpec.IntValue WATER_TANK;
+    public static final ModConfigSpec.DoubleValue HOSE_REACH;
+    public static final ModConfigSpec.IntValue HOSE_FLOW;
+    public static final ModConfigSpec.IntValue LADDER_HEIGHT;
+    public static final ModConfigSpec.IntValue HYDRANT_CAPACITY;
+    public static final ModConfigSpec.BooleanValue ENDLESS_HYDRANTS;
+    public static final ModConfigSpec.IntValue PAID_FIRES_PER_DAY;
 
     public static final ModConfigSpec.DoubleValue WEAR;
     public static final ModConfigSpec.DoubleValue CRASH_DAMAGE;
@@ -136,6 +143,34 @@ public final class CarsConfig {
                         "charges cars from that store, so a few engines can keep it topped up between customers. Cars must be",
                         "within pumps.hoseLength blocks of it to charge.")
                 .defineInRange("capacityMJ", 500_000, 1_000, 100_000_000);
+        builder.pop();
+
+        builder.push("fireTruck");
+        WATER_TANK = builder
+                .comment("Buckets of water a fire truck's tank holds.")
+                .defineInRange("waterTankBuckets", 10, 1, 100);
+        HOSE_REACH = builder
+                .comment("How far, in blocks, someone with a fire hose can be from their fire truck and still spray.")
+                .defineInRange("hoseLength", 16.0, 2.0, 64.0);
+        HOSE_FLOW = builder
+                .comment("Millibuckets of water the fire hose sprays a tick (20 ticks a second). At 10, a full tank of 10 buckets",
+                        "lasts 50 seconds.")
+                .defineInRange("hoseFlow", 10, 1, 1000);
+        LADDER_HEIGHT = builder
+                .comment("How many blocks up from the ground the fire truck's ladder reaches, fully out. It stops short of anything",
+                        "above it.")
+                .defineInRange("ladderHeight", 16, 7, 17);
+        HYDRANT_CAPACITY = builder
+                .comment("Buckets of water a fire hydrant holds, piped in by BuildCraft (or any mod's) pipes from a pump.")
+                .defineInRange("hydrantCapacityBuckets", 8, 1, 1000);
+        ENDLESS_HYDRANTS = builder
+                .comment("Whether fire hydrants never run dry, as if on the water mains, with no pipes needed.")
+                .define("endlessHydrants", false);
+        PAID_FIRES_PER_DAY = builder
+                .comment("How many fires a day (a Minecraft day) the Firefighter job pays each player for putting out. Fires near",
+                        "where they lit one themselves in the last ten minutes, and fires that never go out (on netherrack and",
+                        "the like), never pay.")
+                .defineInRange("paidFiresPerDay", 64, 0, 100_000);
         builder.pop();
 
         builder.push("wear");

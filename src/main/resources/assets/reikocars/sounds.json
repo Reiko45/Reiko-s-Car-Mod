@@ -210,5 +210,24 @@
       }
     ],
     "subtitle": "subtitles.reikocars.charging_station.charge"
+  },
+  "car.fire_siren": {
+    "sounds": [
+      {
+        "name": "reikocars:fire_siren",
+        "attenuation_distance": 64,
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.reikocars.car.fire_siren"
+  },
+  "fire_hose.spray": {
+    "sounds": [
+      {
+        "name": "reikocars:hose_spray",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.reikocars.fire_hose.spray"
   }
 }

@@ -7,12 +7,13 @@ import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.sounds.SoundSource;
 
-/** A police car's or ambulance's siren, looping and following it while its lights and siren are on. */
+/** A police car's, ambulance's or fire truck's siren, looping and following it while its lights and siren are on. */
 public final class SirenSound extends AbstractTickableSoundInstance {
     private final CarEntity car;
 
     public SirenSound(CarEntity car) {
-        super(ModSounds.SIREN.get(), SoundSource.NEUTRAL, SoundInstance.createUnseededRandom());
+        super(car.carType() == CarType.FIRE_TRUCK ? ModSounds.FIRE_SIREN.get() : ModSounds.SIREN.get(), SoundSource.NEUTRAL,
+                SoundInstance.createUnseededRandom());
         this.car = car;
         this.looping = true;
         this.delay = 0;

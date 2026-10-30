@@ -89,6 +89,9 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> TOLL_BOOTH = ITEMS.registerSimpleBlockItem(ModBlocks.TOLL_BOOTH);
     public static final DeferredItem<BlockItem> INSURANCE_OFFICE = ITEMS.registerSimpleBlockItem(ModBlocks.INSURANCE_OFFICE);
     public static final DeferredItem<BlockItem> TRASH_CAN = ITEMS.registerSimpleBlockItem(ModBlocks.TRASH_CAN);
+    public static final DeferredItem<BlockItem> FIRE_HYDRANT = ITEMS.registerSimpleBlockItem(ModBlocks.FIRE_HYDRANT);
+    public static final DeferredItem<com.reiko.cars.fire.FireHoseItem> FIRE_HOSE = ITEMS.register("fire_hose",
+            () -> new com.reiko.cars.fire.FireHoseItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<BlockItem> TOLL_GATE = ITEMS.registerSimpleBlockItem(ModBlocks.TOLL_GATE);
 
     // Repair parts, fitted at a repair bench (see RepairJobs). Tires are the same ones cars are built with.

@@ -33,6 +33,8 @@ public final class ModCapabilities {
                 Capabilities.EnergyStorage.BLOCK)) {
             registerStation(event, capability);
         }
+        // Pipes can fill a fire hydrant with water.
+        event.registerBlockEntity(Capabilities.FluidHandler.BLOCK, ModBlockEntities.FIRE_HYDRANT.get(), (hydrant, side) -> hydrant.pipeInput());
         // Hoppers and pipes can fill a trash can.
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.TRASH_CAN.get(),
                 (can, side) -> new net.neoforged.neoforge.items.wrapper.InvWrapper(can));

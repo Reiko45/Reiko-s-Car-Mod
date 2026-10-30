@@ -18,6 +18,7 @@
     "reikocars:stop_sign",
     "reikocars:speed_sign",
     "reikocars:street_lamp",
-    "reikocars:charging_station"
+    "reikocars:charging_station",
+    "reikocars:fire_hydrant"
   ]
 }

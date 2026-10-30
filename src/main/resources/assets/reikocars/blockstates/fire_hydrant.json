@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "reikocars:block/fire_hydrant"
+    },
+    "facing=east": {
+      "model": "reikocars:block/fire_hydrant",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "reikocars:block/fire_hydrant",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "reikocars:block/fire_hydrant",
+      "y": 270
+    }
+  }
+}

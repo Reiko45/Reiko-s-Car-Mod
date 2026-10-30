@@ -54,6 +54,16 @@ public final class CarItem extends Item {
         return stack;
     }
 
+    /** Sets the millibuckets of water in a fire truck item's tank and returns the stack. */
+    public static ItemStack withWater(ItemStack stack, int millibuckets) {
+        if (millibuckets > 0) {
+            stack.set(ModDataComponents.WATER.get(), millibuckets);
+        } else {
+            stack.remove(ModDataComponents.WATER.get());
+        }
+        return stack;
+    }
+
     /** Sets a car item's wear and tear (a new car's is left off) and returns the stack. */
     public static ItemStack withCondition(ItemStack stack, CarCondition condition) {
         if (condition.isNew()) {
@@ -132,6 +142,7 @@ public final class CarItem extends Item {
         }
         if (!level.isClientSide) {
             car.setFuel(fuelOf(stack));
+            car.setWater(stack.getOrDefault(ModDataComponents.WATER.get(), 0));
             car.setCondition(conditionOf(stack));
             car.setColor(colorOf(stack, type));
             car.setLockCode(stack.getOrDefault(ModDataComponents.LOCK.get(), 0L)); // the keys cut for it still fit
@@ -154,6 +165,10 @@ public final class CarItem extends Item {
         int percent = (int) Math.round(fuelOf(stack) / type.tankCapacity() * 100.0);
         tooltip.add((type.isElectric() ? Component.translatable("item.reikocars.car.battery", percent)
                 : Component.translatable("item.reikocars.car.fuel", type.fuel().displayName(), percent)).withStyle(ChatFormatting.GRAY));
+        if (type.isFireTruck()) {
+            tooltip.add(Component.translatable("item.reikocars.car.water", stack.getOrDefault(ModDataComponents.WATER.get(), 0) / 1000,
+                    com.reiko.cars.fire.FireTrucks.tankCapacity() / 1000).withStyle(ChatFormatting.GRAY));
+        }
         addConditionLines(tooltip, conditionOf(stack), part -> part != CarCondition.Part.OIL || !type.isElectric());
         CarsClientConfig.SpeedUnit unit = CarsClientConfig.speedUnit();
         long speed = Math.round(type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * unit.perBlockPerTick);
@@ -164,6 +179,9 @@ public final class CarItem extends Item {
                         type.tankBuckets)).withStyle(ChatFormatting.DARK_GRAY));
         if (type.isElectric()) {
             tooltip.add(Component.translatable("item.reikocars.car.electric").withStyle(ChatFormatting.DARK_GRAY));
+        }
+        if (type.isFireTruck()) {
+            tooltip.add(Component.translatable("item.reikocars.car.fire_truck").withStyle(ChatFormatting.DARK_GRAY));
         }
         if (type.storageRows > 0) {
             tooltip.add(Component.translatable("item.reikocars.car.storage", Component.translatable(type.storageKey()), type.storageRows * 9)

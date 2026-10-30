@@ -38,6 +38,10 @@ public final class CarHud implements LayeredDraw.Layer {
     private static final String[] TRAILER = {".........", "#######..", "#######..", "#########", "#######..", ".##.##...", "........."};
     /** The trailer's row of lights adds this much to the dashboard. */
     private static final int TRAILER_ROW = 10;
+    /** A fire truck's water gauge, under the fuel gauge, adds this much. */
+    private static final int WATER_ROW = 8;
+    /** A drop of water, for the start of the water gauge. */
+    private static final String[] DROP = {"..#..", ".###.", "#####", "#####", ".###."};
     private static final int MARGIN = 6;
 
     /** Off (dim) while good, amber when worn, orange when badly worn, flashing red when gone. */
@@ -70,7 +74,8 @@ public final class CarHud implements LayeredDraw.Layer {
         }
         Font font = minecraft.font;
         TrailerEntity towed = car.trailer();
-        int height = HEIGHT + (towed != null ? TRAILER_ROW : 0);
+        boolean fireTruck = car.carType().isFireTruck();
+        int height = HEIGHT + (towed != null ? TRAILER_ROW : 0) + (fireTruck ? WATER_ROW : 0);
         int x = graphics.guiWidth() - WIDTH - MARGIN;
         int y;
         boolean atBottom = fitsBesideHotbar(minecraft, graphics.guiWidth());
@@ -151,10 +156,25 @@ public final class CarHud implements LayeredDraw.Layer {
             graphics.fill(tick, barY, tick + 1, barY + 6, 0x80000000);
         }
         CarCondition condition = car.condition();
+        if (fireTruck) {
+            // The water tank, under the fuel: a drop, then a blue bar.
+            int waterY = barY + 9;
+            float water = car.waterFraction();
+            int waterWidth = WIDTH - 28;
+            drawLight(graphics, DROP, x + 5, waterY - 1, 0xFF64B5F6);
+            graphics.fill(barX, waterY, barX + waterWidth, waterY + 4, 0xFF2A2A2A);
+            if (water > 0) {
+                graphics.fill(barX, waterY, barX + Math.max(1, Mth.floor(waterWidth * water)), waterY + 4, 0xFF1E88E5);
+            }
+            for (int quarter = 1; quarter < 4; quarter++) {
+                int tick = barX + waterWidth * quarter / 4;
+                graphics.fill(tick, waterY, tick + 1, waterY + 4, 0x80000000);
+            }
+        }
 
         // Warning lights
         int lightsX = x + (WIDTH - (LIGHT_SPACING * (LIGHTS.length - 1) + 9)) / 2;
-        int lightsY = y + 38;
+        int lightsY = y + 38 + (fireTruck ? WATER_ROW : 0);
         boolean flash = (minecraft.player.tickCount / 5) % 2 == 0;
         for (Part part : Part.values()) {
             if (car.hasPart(part)) { // (an electric car has no oil light)

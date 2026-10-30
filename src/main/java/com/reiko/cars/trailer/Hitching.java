@@ -42,7 +42,9 @@ public final class Hitching {
         TOLL,
         TRASH,
         DUMP,
-        POUR
+        POUR,
+        LADDER_UP,
+        LADDER_DOWN
     }
 
     private Hitching() {
@@ -69,6 +71,9 @@ public final class Hitching {
             }
             case CEMENT_MIXER -> {
                 return Action.POUR;
+            }
+            case FIRE_TRUCK -> {
+                return car.ladderUp() ? Action.LADDER_DOWN : Action.LADDER_UP;
             }
             default -> {
             }
@@ -139,6 +144,10 @@ public final class Hitching {
             }
             case CEMENT_MIXER -> {
                 com.reiko.cars.car.WorkVehicles.pour(player, car);
+                return;
+            }
+            case FIRE_TRUCK -> {
+                com.reiko.cars.fire.FireLadder.toggle(player, car);
                 return;
             }
             default -> {

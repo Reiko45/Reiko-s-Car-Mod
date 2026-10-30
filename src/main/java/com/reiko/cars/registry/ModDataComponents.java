@@ -24,6 +24,10 @@ public final class ModDataComponents {
     public static final Supplier<DataComponentType<Double>> FUEL = COMPONENTS.registerComponentType("fuel",
             builder -> builder.persistent(Codec.DOUBLE).networkSynchronized(ByteBufCodecs.DOUBLE));
 
+    /** Millibuckets of water in a fire truck's tank. */
+    public static final Supplier<DataComponentType<Integer>> WATER = COMPONENTS.registerComponentType("water",
+            builder -> builder.persistent(Codec.INT).networkSynchronized(ByteBufCodecs.VAR_INT));
+
     /** The fuel left in a gas pump when it was broken. */
     public static final Supplier<DataComponentType<SimpleFluidContent>> PUMP_FUEL = COMPONENTS.registerComponentType("pump_fuel",
             builder -> builder.persistent(SimpleFluidContent.CODEC).networkSynchronized(SimpleFluidContent.STREAM_CODEC));

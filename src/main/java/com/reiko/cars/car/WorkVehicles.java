@@ -66,6 +66,7 @@ public final class WorkVehicles {
                 }
             }
             case DUMP_TRUCK -> tipTick(car, now);
+            case FIRE_TRUCK -> com.reiko.cars.fire.FireTrucks.serverTick(car, now);
             default -> {
             }
         }

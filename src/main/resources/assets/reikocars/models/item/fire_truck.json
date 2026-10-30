@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "reikocars:item/fire_truck_paint",
+    "layer1": "reikocars:item/fire_truck_trim"
+  }
+}

@@ -87,6 +87,12 @@ public enum CarType {
     /** A cement mixer: its drum turns concrete powder into concrete while the engine runs; G pours it out. */
     CEMENT_MIXER(2.5f,  3.4f,  7.9f,  7,    0.68f, 0.009f, 0.033f, 0.18f, 2.9f, 16, 1150, 0xF4F5F7, 26, false, 2, 4, DIESEL, noFifthWheel(),
             seat(8, -17), seat(-8, -17)),
+    /**
+     * A fire engine: lights and siren (K), a water tank for the fire hose, filled at a hydrant, from a lake or by the
+     * bucket, and an aerial ladder that raises up the back (G). A crew cab: two up front, a bench of two behind.
+     */
+    FIRE_TRUCK(  2.5f,  3.4f,  7.6f,  7,    0.85f, 0.011f, 0.036f, 0.20f, 3.0f, 14, 1000, 0xC62828, 26, false, 2, 4, DIESEL, noFifthWheel(),
+            seat(8, -40), seat(-8, -40), seat(7, -24), seat(-7, -24)),
 
     // Electric: charged at a charging station. Quick off the line, quiet, and they get a little back when braking.
     /** A tall little two-seater for town: nippy, turns on a coin, and sips its battery. */
@@ -252,6 +258,7 @@ public enum CarType {
             case ICE_CREAM_TRUCK -> "container.reikocars.freezer";
             case DUMP_TRUCK -> "container.reikocars.dump_bed";
             case CEMENT_MIXER -> "container.reikocars.drum";
+            case FIRE_TRUCK -> "container.reikocars.compartments";
             case CITY_EV -> "container.reikocars.trunk";
             case ELECTRIC_SEDAN -> "container.reikocars.frunk";
             case ELECTRIC_VAN -> "container.reikocars.cargo_area";
@@ -286,9 +293,14 @@ public enum CarType {
         return this == TAXI;
     }
 
-    /** The police car and the ambulance: a light bar and siren, switched with K. */
+    /** The police car, the ambulance and the fire truck: a light bar and siren, switched with K. */
     public boolean hasSiren() {
-        return this == POLICE_CAR || this == AMBULANCE;
+        return this == POLICE_CAR || this == AMBULANCE || this == FIRE_TRUCK;
+    }
+
+    /** The fire truck: a water tank, the fire hose and the ladder (see {@code com.reiko.cars.fire}). */
+    public boolean isFireTruck() {
+        return this == FIRE_TRUCK;
     }
 
     /** The mail van: collects and delivers parcels at mailboxes with G. */
@@ -332,6 +344,7 @@ public enum CarType {
             case POLICE_CAR -> 1.05F;
             case AMBULANCE -> 0.95F;
             case GARBAGE_TRUCK, DUMP_TRUCK, CEMENT_MIXER -> 0.68F;
+            case FIRE_TRUCK -> 0.55F; // an air horn
             case CITY_EV -> 1.3F;
             case ELECTRIC_SEDAN -> 1.1F;
             case ELECTRIC_PICKUP -> 0.85F;
@@ -358,7 +371,7 @@ public enum CarType {
             case MAIL_VAN, ICE_CREAM_TRUCK -> 1.05F;
             case POLICE_CAR -> 0.92F;
             case AMBULANCE -> 0.85F;
-            case GARBAGE_TRUCK, DUMP_TRUCK, CEMENT_MIXER -> 0.72F;
+            case GARBAGE_TRUCK, DUMP_TRUCK, CEMENT_MIXER, FIRE_TRUCK -> 0.72F;
             case CITY_EV -> 1.15F;
             case ELECTRIC_PICKUP -> 0.85F;
             case ELECTRIC_VAN -> 0.9F;
@@ -400,6 +413,9 @@ public enum CarType {
         }
         if (this == CEMENT_MIXER) {
             return 34 / 16.0;
+        }
+        if (this == FIRE_TRUCK) {
+            return 33 / 16.0; // between its two back axles
         }
         return fifthWheel == null ? 0.0 : fifthWheel[0] / 16.0;
     }

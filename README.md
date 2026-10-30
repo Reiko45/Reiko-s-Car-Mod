@@ -15,7 +15,8 @@ Every vehicle has turn signals and hazard lights, and a locked car's alarm catch
 fine drivers for their owners. And every car has a **radio**: three stations of original music, or your own discs.
 
 There are **electric cars** too, charged at **charging stations** that BuildCraft engines and kinesis pipes power, and
-that sell the charge for cash or card the same way.
+that sell the charge for cash or card the same way. And a **fire truck**: a fire hose that sprays from its water
+tank, a ladder that raises up the back, and **fire hydrants** to fill it from BuildCraft pumps.
 
 ## Requirements
 
@@ -51,6 +52,7 @@ that sell the charge for cash or card the same way.
 | Ice Cream Truck | 2 | 32 mph | 9 buckets | A shop on wheels: sells from its 27-slot freezer; its horn plays a jingle |
 | Dump Truck | 2 | 32 mph | 16 buckets of diesel | 54-slot bed that tips to dump its load |
 | Cement Mixer | 2 | 30 mph | 16 buckets of diesel | 18-slot drum that sets concrete powder into concrete, and pours it |
+| Fire Truck | 4 | 38 mph | 14 buckets of diesel | Lights and siren, a 10-bucket water tank for the fire hose, a ladder up the back, 18 slots of compartments (see [Fire trucks](#fire-trucks)) |
 | Sport Bike | 2 | 65 mph | 4 buckets | The fastest thing on the road (see [Motorcycles](#motorcycles)) |
 | Cruiser | 2 | 45 mph | 5 buckets | 9-slot saddlebags (sneak + use) |
 | Dirt Bike | 1 | 42 mph | 3 buckets | Keeps full speed on grass, sand and snow |
@@ -71,7 +73,7 @@ BuildCraft MJ: a full charge takes the City EV about 2,500 blocks, the Electric 
 (see [Car keys](#car-keys)). The movement keys drive and steer, **jump**
 is the handbrake and **sneak** gets out. **H** sounds the horn, **L** locks or unlocks the car and **G** hitches a
 trailer, loads a car onto a car hauler, picks up or drops a car in a tow truck, stops the mail van for the mail, or
-does a work vehicle's job. **K** works a police car's or ambulance's lights and siren. The **left and right arrow
+does a work vehicle's job. **K** works a police car's, ambulance's or fire truck's lights and siren. The **left and right arrow
 keys** work the turn signals and the **down arrow** the hazards (see [Turn signals, hazards and alarms](#turn-signals-hazards-and-alarms)).
 **R** opens the [radio](#car-radio). While you're
 in a car, a dashboard in the bottom right shows your speed and a fuel gauge. (If the screen's too narrow for it to
@@ -80,7 +82,7 @@ fit beside the hotbar, at a big GUI scale, it moves to the top right, under your
 - **Fuel:** cars burn fuel for every block they cover, and a little while idling with someone at the wheel. The cars
   run on **gasoline**: BuildCraft's Light Fuel (and the Mixed Light and Gaseous Fuels), or other mods' gasoline,
   ethanol, kerosene and LPG. The semi, delivery van, city bus, heavy-duty pickup, farm tractor, tow trucks, ambulance,
-  garbage truck, dump truck and cement mixer run on **diesel**:
+  garbage truck, dump truck, cement mixer and fire truck run on **diesel**:
   BuildCraft's Dense Fuel and Mixed Heavy Fuels, or other mods' diesel and biodiesel. Neither takes the other's fuel, and nothing runs on crude oil. How far a bucket goes
   comes from BuildCraft's own fuel values. The `reikocars:gasoline` and `reikocars:diesel` fluid tags decide which
   fuel is which, so a data pack can move fluids between them. A car's tooltip says what it runs on.
@@ -488,6 +490,40 @@ driver's side.
 - **Cement mixer:** fill the **drum** (sneak + right-click) with concrete powder. While the engine runs (someone at
   the wheel, with fuel), the drum turns and sets a block of powder into concrete every half second. **G** pours
   everything in the drum out of the chute at the back.
+- **Fire truck:** see below.
+
+## Fire trucks
+
+The **Fire Truck** has a crew cab (two up front, two behind), red and white beacons and its own wailing siren
+(**K**), equipment compartments (sneak + right-click, 18 slots), a **water tank** and an **aerial ladder**.
+
+**The fire hose.** Hold a **Fire Hose** and keep right-click held within 16 blocks of a fire truck you may use (its
+owner's, unlocked, or one you have the key to) that has water: a jet of water arcs out where you look, up to about
+twenty blocks. You'll see the hose run from the truck's pump panel to your hand. The jet puts out fire, lit campfires
+and candles where it lands and along the way, puts out burning mobs and players and shoves them back a little, and
+stings water-shy mobs (endermen, blazes, striders, snow golems). It uses a fifth of a bucket a second, so a full tank
+lasts about fifty seconds of spraying. The dashboard shows the water under the fuel gauge.
+
+**Filling the tank**, three ways:
+
+- **A fire hydrant:** park within 6 blocks of one (the pumps' hose length) and stop: it fills the truck at two
+  buckets a second. A **Fire Hydrant** holds 8 buckets, piped in by BuildCraft's pipes (from a BuildCraft **pump**
+  on a lake, say) or any mod's, or poured in by the bucket; pipes can't take it back out. Right-click it to see how
+  much it has. A server can set `fireTruck.endlessHydrants` so hydrants never run dry, as if on the water mains.
+- **Open water:** park beside (or over) a lake, river or pool, with still water within about four blocks of the middle
+  of the truck, and its pump draws from it, a bucket a second. It doesn't use the water up.
+- **By the bucket:** right-click the truck with a water bucket (or any container of water).
+
+**The ladder.** Park and press **G**: the ladder swings up from the roof until it stands straight up behind the truck,
+then slides out, up to 16 blocks from the ground or short of anything above. Back the truck up to a building and it
+runs up the wall to the roof. Climb it like scaffolding: walk into it and hold **jump** to go up, **sneak** to hold
+on, and step off at the top. **G** again brings it down. It needs 7 blocks of clear air behind the truck to go up,
+the truck won't drive while it's up, and if the truck's moved anyway (pushed, towed) the ladder comes down. (The
+climbable part is a column of invisible blocks behind the truck that tidy themselves away.)
+
+**Firefighter** is a car job (see [Car jobs](#car-jobs)): every fire put out with the hose pays, except fires that
+never go out (on netherrack, soul sand and the like), fires within 24 blocks of where the same player lit one with
+flint and steel, a fire charge or lava in the last ten minutes, and more than 64 a day (`fireTruck.paidFiresPerDay`).
 
 ## Parking meters and tolls
 
@@ -542,7 +578,7 @@ the insurer, and they pay the claims from their bank account.
 
 ## Car jobs
 
-With Reiko's Economy Mod 1.1.0 or newer, the **job board** has five car jobs. Join them like any other job: they pay
+With Reiko's Economy Mod 1.1.0 or newer, the **job board** has six car jobs. Join them like any other job: they pay
 as you work, level up, and hand out daily contracts.
 
 | Job | Gets paid for |
@@ -552,11 +588,12 @@ as you work, level up, and hand out daily contracts.
 | Mechanic | Each part fitted to someone else's vehicle at a Repair Bench ($0.60), whether from the bench's stock (paid to the bench's owner) or from your own pocket, and each of someone else's broken-down cars towed in to a Repair Bench from at least 24 blocks away ($4.00, once per breakdown) |
 | Trucker | Each bucket of fuel unloaded from a tanker into a pump ($0.40), and every 100 blocks driven towing a trailer at least a quarter full ($0.50) |
 | Garbage Collector | Each trash can with something in it emptied by garbage truck ($1.50, once a day per can) |
+| Firefighter | Each fire put out with a fire hose ($0.50; not fires you lit, nor endless ones, and up to 64 a day: see [Fire trucks](#fire-trucks)) |
 
 Their contracts ask for taxi rides, bus passengers, parcels, parts fitted, tow-ins, fuel delivered, loaded hauls,
-trash cans emptied, or deliveries of tires, brake pads, motor oil, paper and rotten flesh. The job files are in `data/reikocars/jobs`, so a datapack can
+trash cans emptied, fires put out, or deliveries of tires, brake pads, motor oil, paper, rotten flesh and water buckets. The job files are in `data/reikocars/jobs`, so a datapack can
 change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`, `parcel_delivered`, `repair_part`,
-`tow`, `fuel_delivered`, `haul_distance` and `trash_collected`.
+`tow`, `fuel_delivered`, `haul_distance`, `trash_collected` and `fire_put_out`.
 
 ## Recipes
 
@@ -591,6 +628,8 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | Speed Limit Sign | iron ingot, white dye, iron ingot over iron ingot, black dye, iron ingot, a street pole below |
 | Street Lamp | three iron ingots over a street pole and glowstone |
 | Trash Can | iron ingot, iron trapdoor, iron ingot on top, iron ingot, green dye, iron ingot across the middle, three iron ingots below |
+| Fire Hydrant | red dye on top, a BuildCraft **iron fluid pipe** between iron ingots, three iron ingots below |
+| Fire Hose | leather, BuildCraft **Pipe Sealant**, leather on top, leather either side of the middle, leather, a BuildCraft **wooden fluid pipe** and an iron ingot (the nozzle) below |
 | Vanilla Ice Cream ×3 | a milk bucket, sugar, a snowball and wheat (shapeless; the bucket comes back) |
 | Chocolate Ice Cream ×3 | as Vanilla, with cocoa beans |
 | Strawberry Ice Cream ×3 | as Vanilla, with sweet berries |
@@ -644,11 +683,11 @@ The tow trucks take a Diesel Engine, the mail van a Car Engine.
 The work vehicles' parts. Every chassis is iron rails (`I I`) around a middle row; every body is glass panes on top;
 every interior is a clock on top over leather, redstone, leather, with iron ingots either side of something below:
 
-| Part | Police Car | Ambulance | Garbage Truck | Ice Cream Truck | Dump Truck | Cement Mixer |
-| --- | --- | --- | --- | --- | --- | --- |
-| **Chassis** middle | iron, redstone torch, iron | iron block, glistering melon slice, iron block | iron block, hopper, iron block | iron, snow block, iron | iron block, sticky piston, iron block | iron block, cauldron, iron block |
-| **Body** below the glass | red, black and blue dye over iron | red dye between white dye over iron | green dye between iron over iron, a composter, iron | pink dye between white dye over iron | orange dye between iron over three iron trapdoors | light grey dye between iron over iron, a cauldron, iron |
-| **Interior** bottom middle | iron bars | white bed | hopper | packed ice | gravel | water bucket |
+| Part | Police Car | Ambulance | Garbage Truck | Ice Cream Truck | Dump Truck | Cement Mixer | Fire Truck |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **Chassis** middle | iron, redstone torch, iron | iron block, glistering melon slice, iron block | iron block, hopper, iron block | iron, snow block, iron | iron block, sticky piston, iron block | iron block, cauldron, iron block | iron block, BuildCraft **Tank**, iron block |
+| **Body** below the glass | red, black and blue dye over iron | red dye between white dye over iron | green dye between iron over iron, a composter, iron | pink dye between white dye over iron | orange dye between iron over three iron trapdoors | light grey dye between iron over iron, a cauldron, iron | red dye between ladders over iron, a BuildCraft **Pump**, iron |
+| **Interior** bottom middle | iron bars | white bed | hopper | packed ice | gravel | water bucket | bell |
 
 The police car and ice cream truck take a Car Engine; the rest take a Diesel Engine.
 
@@ -701,6 +740,13 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `pumps.hoseLength` | `6.0` | How close a car must be to a pump (or a charging station) |
 | `charging.defaultPricePer1000MJ` | `0.05` | Starting price of a new charging station, per 1,000 MJ |
 | `charging.capacityMJ` | `500000` | MJ a charging station stores |
+| `fireTruck.waterTankBuckets` | `10` | Buckets of water a fire truck holds |
+| `fireTruck.hoseLength` | `16.0` | How far from its fire truck a fire hose sprays |
+| `fireTruck.hoseFlow` | `10` | Millibuckets the hose sprays a tick |
+| `fireTruck.ladderHeight` | `16` | Blocks up from the ground the ladder reaches (7 to 17) |
+| `fireTruck.hydrantCapacityBuckets` | `8` | Buckets of water a fire hydrant holds |
+| `fireTruck.endlessHydrants` | `false` | Whether hydrants never run dry, with no pipes needed |
+| `fireTruck.paidFiresPerDay` | `64` | Fires a day the Firefighter job pays each player for |
 | `wear.wearMultiplier` | `1.0` | How fast oil, engines, tires and brakes wear (0 turns wear off) |
 | `wear.crashDamageMultiplier` | `1.0` | Body damage from crashes (0 turns it off) |
 | `wear.breakdowns` | `true` | A part at 0% breaks the car down. If false, worn parts only make it drive worse |
@@ -812,11 +858,13 @@ src/main/java/com/reiko/cars/
 ├── ReikoCars.java        mod entry point
 ├── car/                  the car entity and its types, fuel (CarFuel, CarTank), wear and tear (CarCondition), the car item, WorkVehicles (sirens, healing, tipping, mixing) and CarSignals (turn signals, hazards, the alarm)
 ├── garbage/              the Trash Can block and block entity, and GarbageService (the garbage truck's round)
+├── fire/                 the fire truck's water (FireTrucks), the fire hose and spraying (Firefighting), the ladder and its climbable blocks (FireLadder), the Fire Hydrant, and who lit what (FireEvents)
 ├── radio/                the car radio: its settings (CarRadio), the stations, and its menu
 ├── road/                 asphalt and its markings, Road Paint, Street Poles, Stop Signs and Street Lamps
 ├── traffic/              traffic lights, speed limit signs, their owner screen's menu, and TrafficCameras (the fines)
 ├── icecream/             the ice cream truck's shop: its menu and IceCreamService (pricing and selling)
 ├── pump/                 the gas and diesel pump block, its block entity, menu, protection, and PumpService (selling fuel)
+├── charge/               the Charging Station block, block entity, menu and protection, and ChargerService (selling charge)
 ├── trailer/              the trailers, their item, hitching and car hauling (Hitching), and the tanker (TankerService)
 ├── workbench/            the Car Workbench block and menu, the car parts, and the car_assembly recipe type
 ├── repair/               the Repair Bench block, block entity, menu and protection, the jobs (RepairJobs), and RepairService (repairs and paying)

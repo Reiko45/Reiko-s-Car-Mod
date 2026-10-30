@@ -1,0 +1,35 @@
+{
+  "name": "Firefighter",
+  "icon": "reikocars:fire_hose",
+  "order": 25,
+  "work": [
+    {
+      "action": "reikocars:fire_put_out",
+      "label": "Fire put out",
+      "pay": 0.5,
+      "xp": 4
+    }
+  ],
+  "contracts": [
+    {
+      "work": "reikocars:fire_put_out",
+      "label": "Fires Put Out",
+      "icon": "reikocars:fire_truck",
+      "count": [
+        8,
+        24
+      ],
+      "pay": 0.75,
+      "xp": 3
+    },
+    {
+      "deliver": "minecraft:water_bucket",
+      "count": [
+        4,
+        12
+      ],
+      "pay": 0.25,
+      "xp": 1
+    }
+  ]
+}

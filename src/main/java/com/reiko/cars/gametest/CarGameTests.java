@@ -3111,4 +3111,250 @@ public final class CarGameTests {
             });
         });
     }
+
+    // ---- the fire truck ----
+
+    private static net.minecraft.world.level.block.state.BlockState stoneBlock() {
+        return net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 200)
+    public static void fireTrucksTakeWater(GameTestHelper helper) {
+        ServerPlayer player = join(helper);
+        player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+        CarEntity truck = vehicle(helper, CarType.FIRE_TRUCK, 5.0, 12.0);
+        int capacity = com.reiko.cars.fire.FireTrucks.tankCapacity();
+        check(helper, truck.carType().isFireTruck() && truck.carType().hasSiren() && truck.water() == 0, "a fire truck, with a siren, empty");
+        check(helper, CarType.FIRE_TRUCK.seatCount() == 4 && CarType.FIRE_TRUCK.storageRows == 2, "a crew cab and its compartments");
+        check(helper, !CarType.FIRE_TRUCK.fitsOnHauler() && !CarType.FIRE_TRUCK.towableBy(CarType.FLATBED), "too big to haul or tow");
+        CarEntity sedan = vehicle(helper, CarType.SEDAN, 5.0, 28.0);
+        sedan.setWater(5000);
+        check(helper, sedan.water() == 0, "only a fire truck takes water");
+
+        // By the bucket.
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(net.minecraft.world.item.Items.WATER_BUCKET));
+        com.reiko.cars.fire.FireTrucks.pourWater(truck, player, net.minecraft.world.InteractionHand.MAIN_HAND);
+        check(helper, truck.water() == 1000, "a bucket in: " + truck.water());
+        check(helper, player.getMainHandItem().is(net.minecraft.world.item.Items.BUCKET), "the empty bucket back");
+        check(helper, new com.reiko.cars.fire.FireTrucks.WaterTank(truck).drain(1000, IFluidHandler.FluidAction.EXECUTE).isEmpty()
+                && truck.water() == 1000, "nothing comes back out");
+        check(helper, new com.reiko.cars.fire.FireTrucks.WaterTank(truck).fill(new FluidStack(bc("fuel_light"), 1000),
+                IFluidHandler.FluidAction.EXECUTE) == 0, "no fuel in the water tank");
+
+        // A hydrant: piped water in, none out, none of anything else.
+        BlockPos hydrantAt = new BlockPos(1, 0, 12);
+        helper.setBlock(hydrantAt, ModBlocks.FIRE_HYDRANT.get().defaultBlockState());
+        com.reiko.cars.fire.FireHydrantBlockEntity hydrant = (com.reiko.cars.fire.FireHydrantBlockEntity) helper.getBlockEntity(hydrantAt);
+        IFluidHandler pipe = helper.getLevel().getCapability(net.neoforged.neoforge.capabilities.Capabilities.FluidHandler.BLOCK,
+                helper.absolutePos(hydrantAt), Direction.UP);
+        check(helper, pipe != null, "pipes can reach it");
+        helper.assertValueEqual(pipe.fill(new FluidStack(net.minecraft.world.level.material.Fluids.WATER, 3000), IFluidHandler.FluidAction.EXECUTE),
+                3000, "3 buckets piped in");
+        helper.assertValueEqual(pipe.fill(new FluidStack(net.minecraft.world.level.material.Fluids.LAVA, 1000), IFluidHandler.FluidAction.EXECUTE),
+                0, "no lava");
+        check(helper, pipe.drain(1000, IFluidHandler.FluidAction.EXECUTE).isEmpty(), "pipes can't take it back out");
+        // A pond to draw from, walled in so it stays put, beyond the hydrant's reach of the second truck.
+        CarEntity drafter = vehicle(helper, CarType.FIRE_TRUCK, 5.0, 27.0);
+        BlockPos pond = new BlockPos(9, 0, 27);
+        for (BlockPos wall : List.of(pond.north(), pond.south(), pond.west())) {
+            helper.setBlock(wall, stoneBlock());
+        }
+        helper.setBlock(pond, net.minecraft.world.level.block.Blocks.WATER.defaultBlockState());
+        helper.runAfterDelay(60, () -> {
+            try {
+                helper.assertValueEqual(truck.water(), 4000, "the hydrant's three buckets went into the parked truck");
+                check(helper, hydrant.tank().isEmpty(), "leaving it dry");
+                check(helper, drafter.water() > 0 && drafter.water() < capacity, "the other draws from the pond: " + drafter.water());
+                check(helper, helper.getBlockState(pond).getFluidState().isSource(), "which is still there");
+                com.reiko.cars.config.CarsConfig.ENDLESS_HYDRANTS.set(true);
+            } catch (RuntimeException e) {
+                leave(helper, player);
+                throw e;
+            }
+            helper.runAfterDelay(80, () -> {
+                try {
+                    helper.assertValueEqual(truck.water(), capacity, "an endless hydrant fills it right up");
+                    helper.assertValueEqual(truck.toItem().get(com.reiko.cars.registry.ModDataComponents.WATER.get()), capacity,
+                            "picked up, it keeps its water");
+                    CompoundTag saved = new CompoundTag();
+                    truck.saveWithoutId(saved);
+                    CarEntity loaded = ModEntities.car(CarType.FIRE_TRUCK).create(helper.getLevel());
+                    loaded.load(saved);
+                    helper.assertValueEqual(loaded.water(), capacity, "and saved");
+                } finally {
+                    com.reiko.cars.config.CarsConfig.ENDLESS_HYDRANTS.set(false);
+                    helper.setBlock(pond, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+                    leave(helper, player);
+                }
+                helper.succeed();
+            });
+        });
+    }
+
+    @GameTest(template = YARD)
+    public static void fireHosesPutOutFires(GameTestHelper helper) {
+        ServerPlayer firefighter = worker(helper, "firefighter");
+        ServerPlayer stranger = join(helper);
+        net.minecraft.world.level.GameRules.BooleanValue fireTick = helper.getLevel().getGameRules().getRule(net.minecraft.world.level.GameRules.RULE_DOFIRETICK);
+        boolean ticked = fireTick.get();
+        fireTick.set(false, helper.getLevel().getServer());
+        try {
+            CarEntity truck = vehicle(helper, CarType.FIRE_TRUCK, 2.0, 8.0);
+            truck.setWater(5000);
+            firefighter.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ModItems.FIRE_HOSE.get()));
+            Vec3 stand = helper.absoluteVec(new Vec3(7.5, 0.0, 6.5));
+            firefighter.teleportTo(helper.getLevel(), stand.x, stand.y, stand.z, 0.0F, 0.0F);
+            check(helper, com.reiko.cars.fire.Firefighting.truckFor(firefighter) == truck, "the hose reaches the truck");
+
+            // A fire on the ground ahead: aimed at, it goes out, and pays.
+            BlockPos fire = new BlockPos(7, 0, 14);
+            helper.setBlock(fire, net.minecraft.world.level.block.Blocks.FIRE.defaultBlockState());
+            check(helper, helper.getBlockState(fire).is(net.minecraft.world.level.block.Blocks.FIRE), "it's burning");
+            firefighter.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, helper.absoluteVec(new Vec3(7.5, 1.6, 14.5)));
+            com.reiko.cars.fire.Firefighting.Jet jet = com.reiko.cars.fire.Firefighting.trace(helper.getLevel(), firefighter, 1.0F);
+            check(helper, jet.impact() != null && jet.impact().distanceTo(helper.absoluteVec(new Vec3(7.5, 0.0, 14.5))) < 3.0,
+                    "the jet lands by it: " + jet.impact());
+            long xp = jobXp(firefighter, carJob("firefighter"));
+            check(helper, com.reiko.cars.fire.Firefighting.spray(firefighter), "it sprays");
+            check(helper, helper.getBlockState(fire).isAir(), "the fire's out");
+            helper.assertValueEqual(truck.water(), 5000 - com.reiko.cars.config.CarsConfig.get(com.reiko.cars.config.CarsConfig.HOSE_FLOW),
+                    "a tick's water used");
+            check(helper, jobXp(firefighter, carJob("firefighter")) > xp, "the Firefighter job pays for it");
+
+            // One they lit themselves doesn't pay; nor does one that never goes out.
+            xp = jobXp(firefighter, carJob("firefighter"));
+            com.reiko.cars.fire.Firefighting.lit(firefighter, helper.absolutePos(fire));
+            helper.setBlock(fire, net.minecraft.world.level.block.Blocks.FIRE.defaultBlockState());
+            com.reiko.cars.fire.Firefighting.spray(firefighter);
+            check(helper, helper.getBlockState(fire).isAir(), "their own fire's out too");
+            helper.assertValueEqual(jobXp(firefighter, carJob("firefighter")), xp, "but doesn't pay");
+            com.reiko.cars.fire.Firefighting.forget(firefighter.getUUID());
+            helper.setBlock(fire.below(), net.minecraft.world.level.block.Blocks.NETHERRACK.defaultBlockState());
+            helper.setBlock(fire, net.minecraft.world.level.block.Blocks.FIRE.defaultBlockState());
+            com.reiko.cars.fire.Firefighting.spray(firefighter);
+            check(helper, helper.getBlockState(fire).isAir(), "a netherrack fire goes out");
+            helper.assertValueEqual(jobXp(firefighter, carJob("firefighter")), xp, "and doesn't pay either");
+            helper.setBlock(fire.below(), net.minecraft.world.level.block.Blocks.GRASS_BLOCK.defaultBlockState());
+
+            // A lit campfire is dowsed, a burning pig put out.
+            helper.setBlock(fire, net.minecraft.world.level.block.Blocks.CAMPFIRE.defaultBlockState());
+            net.minecraft.world.entity.animal.Pig pig = helper.spawn(net.minecraft.world.entity.EntityType.PIG, new BlockPos(7, 0, 13));
+            pig.setRemainingFireTicks(200);
+            com.reiko.cars.fire.Firefighting.spray(firefighter);
+            check(helper, !helper.getBlockState(fire).getValue(net.minecraft.world.level.block.CampfireBlock.LIT), "the campfire's out");
+            check(helper, !pig.isOnFire(), "the pig's out");
+
+            // Nothing without water, or with someone else's locked truck, or too far off.
+            truck.setWater(0);
+            check(helper, !com.reiko.cars.fire.Firefighting.spray(firefighter), "no water, no spray");
+            check(helper, com.reiko.cars.fire.Firefighting.whyNot(firefighter).getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents empty
+                    && empty.getKey().equals("fire.reikocars.tank_empty"), "the tank's empty");
+            truck.setWater(5000);
+            truck.setOwner(stranger);
+            truck.setLocked(true);
+            check(helper, com.reiko.cars.fire.Firefighting.truckFor(firefighter) == null, "a locked truck isn't theirs to use");
+            check(helper, ((net.minecraft.network.chat.contents.TranslatableContents) com.reiko.cars.fire.Firefighting.whyNot(firefighter).getContents())
+                    .getKey().equals("fire.reikocars.truck_locked"), "it says so");
+            truck.setLocked(false);
+            Vec3 far = helper.absoluteVec(new Vec3(7.5, 0.0, 33.5));
+            firefighter.teleportTo(helper.getLevel(), far.x, far.y, far.z, 0.0F, 0.0F);
+            check(helper, com.reiko.cars.fire.Firefighting.truckFor(firefighter) == null, "the hose doesn't reach 25 blocks");
+            truck.discard();
+            pig.discard();
+        } finally {
+            fireTick.set(ticked, helper.getLevel().getServer());
+            com.reiko.cars.fire.Firefighting.forget(firefighter.getUUID());
+            leave(helper, firefighter, stranger);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 400, skyAccess = true) // (the ladder reaches up out of the yard)
+    public static void fireTruckLaddersGoUpAndDown(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        ServerPlayer climber = join(helper);
+        CarEntity truck = vehicle(helper, CarType.FIRE_TRUCK, 5.0, 14.0);
+        driver.startRiding(truck, true);
+        net.minecraft.server.level.ServerLevel level = helper.getLevel();
+        BlockPos[] at = new BlockPos[1];
+        int height = com.reiko.cars.config.CarsConfig.get(com.reiko.cars.config.CarsConfig.LADDER_HEIGHT);
+        java.util.function.IntPredicate ladderAt = i -> level.getBlockState(at[0].above(i)).getBlock() instanceof com.reiko.cars.fire.FireLadderBlock;
+        java.util.function.Function<Runnable, Runnable> step = body -> () -> {
+            try {
+                body.run();
+            } catch (RuntimeException e) {
+                if (at[0] != null) {
+                    level.setBlockAndUpdate(at[0].above(3), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+                    level.setBlockAndUpdate(at[0].above(9), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+                }
+                leave(helper, driver, climber);
+                throw e;
+            }
+        };
+        helper.startSequence()
+                .thenIdle(15)
+                .thenExecute(step.apply(() -> {
+                    BlockPos base = com.reiko.cars.fire.FireLadder.base(truck);
+                    at[0] = base;
+                    check(helper, base.getX() == net.minecraft.util.Mth.floor(truck.getX()) && base.getY() == net.minecraft.util.Mth.floor(truck.getY() + 0.01)
+                            && Math.abs(base.getZ() + 0.5 - (truck.getZ() - CarType.FIRE_TRUCK.length / 2.0 - 0.45)) <= 0.5,
+                            "the ladder stands just behind the truck: " + base + ", truck at " + truck.position());
+                    check(helper, Hitching.available(truck, driver) == Hitching.Action.LADDER_UP, "G would raise the ladder");
+                    Hitching.use(driver);
+                    check(helper, truck.ladderUp() && truck.ladderDeployed() && truck.ladderHeight() == height, "it's going up, " + truck.ladderHeight());
+                    check(helper, !ladderAt.test(1), "not climbable till it's up");
+                }))
+                .thenIdle(com.reiko.cars.fire.FireLadder.RAISE_TICKS + 2)
+                .thenExecute(step.apply(() -> {
+                    for (int i = 0; i < height; i++) {
+                        check(helper, ladderAt.test(i), "climbable " + i + " up");
+                    }
+                    check(helper, !ladderAt.test(height), "and no higher");
+                    climber.teleportTo(level, at[0].getX() + 0.5, at[0].getY() + 2.0, at[0].getZ() + 0.5, 0.0F, 0.0F);
+                    check(helper, climber.onClimbable(), "someone on it is climbing");
+                    check(helper, Hitching.available(truck, driver) == Hitching.Action.LADDER_DOWN, "G would lower it");
+                    CompoundTag saved = new CompoundTag();
+                    truck.saveWithoutId(saved);
+                    CarEntity loaded = ModEntities.car(CarType.FIRE_TRUCK).create(level);
+                    loaded.load(saved);
+                    check(helper, loaded.ladderUp() && loaded.ladderOut(0.0F) >= 1.0F && loaded.ladderHeight() == height, "saved with it up");
+                    Hitching.use(driver);
+                    check(helper, !truck.ladderUp() && truck.ladderDeployed(), "coming down");
+                    check(helper, !ladderAt.test(0) && !ladderAt.test(5), "not climbable once it starts down");
+                }))
+                .thenIdle(com.reiko.cars.fire.FireLadder.LOWER_TICKS + 2)
+                .thenExecute(step.apply(() -> {
+                    check(helper, !truck.ladderDeployed(), "stowed");
+                    // Something low behind: no room. Something higher: it stops short.
+                    level.setBlockAndUpdate(at[0].above(3), stoneBlock());
+                    Hitching.use(driver);
+                    check(helper, !truck.ladderDeployed(), "no room under a low roof");
+                    level.setBlockAndUpdate(at[0].above(3), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+                    level.setBlockAndUpdate(at[0].above(9), stoneBlock());
+                    Hitching.use(driver);
+                    check(helper, truck.ladderUp() && truck.ladderHeight() == 9, "it stops below the overhang: " + truck.ladderHeight());
+                }))
+                .thenIdle(com.reiko.cars.fire.FireLadder.RAISE_TICKS + 2)
+                .thenExecute(step.apply(() -> {
+                    check(helper, ladderAt.test(8) && !ladderAt.test(9), "up to the overhang");
+                    // Moved with the ladder up (pushed, towed): it comes down, and nothing's left behind.
+                    truck.setPos(truck.getX() + 2.0, truck.getY(), truck.getZ());
+                }))
+                .thenIdle(3)
+                .thenExecute(step.apply(() -> {
+                    check(helper, !truck.ladderUp(), "moved: it comes down");
+                    for (int i = 0; i < 17; i++) {
+                        check(helper, !ladderAt.test(i), "the old column's gone " + i);
+                    }
+                    level.setBlockAndUpdate(at[0].above(9), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+                    // A stray rung nobody owns takes itself away.
+                    level.setBlockAndUpdate(at[0].above(4), ModBlocks.FIRE_LADDER.get().defaultBlockState());
+                }))
+                .thenIdle(45)
+                .thenExecute(step.apply(() -> {
+                    check(helper, level.getBlockState(at[0].above(4)).isAir(), "a stray rung goes by itself");
+                    leave(helper, driver, climber);
+                }))
+                .thenSucceed();
+    }
 }
