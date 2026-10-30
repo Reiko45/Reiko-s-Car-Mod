@@ -3208,10 +3208,10 @@ public final class DevShowcase {
                 com.reiko.cars.tuning.TuningBenchMenu.open(player, tuner(player));
             });
         });
-        at(90, mc -> clickAt(mc, 160, 44 + 1 * 16 + 7));
-        at(92, mc -> clickAt(mc, 160, 44 + 4 * 16 + 7));
+        at(90, mc -> clickAt(mc, 160, 44 + 1 * 15 + 7));
+        at(92, mc -> clickAt(mc, 160, 44 + 7 * 15 + 7));
         at(100, mc -> shot(mc, "251_tune_tab"));
-        at(102, mc -> clickAt(mc, 142, 44 + 7 * 16 + 3 + 12 + 12 + 20 + 5));
+        at(102, mc -> clickAt(mc, 142, 44 + 8 * 15 + 3 + 12 + 12 + 20 + 5));
         at(118, mc -> shot(mc, "252_tuned"));
         at(120, mc -> clickAt(mc, 74, 22));
         at(124, mc -> {

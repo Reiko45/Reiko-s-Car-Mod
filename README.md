@@ -358,6 +358,7 @@ car's owner can have it tuned.
 | Performance Brakes | One stage (up to 2): stops 20% harder a stage | Nothing |
 | Lowering Springs | Turns 10% sharper | Slower off-road |
 | Lift Kit | Less slowed off-road | Turns 5% wider |
+| Extended Fuel Tank | One tank stage (up to 2): the tank holds 25% more a stage, so a sedan's 8 buckets become 10, then 12 | The weight takes 3% off acceleration a stage; gasoline and diesel cars only |
 
 - **Tune tab:** each kit, how far the car has it, a **Fit** button that fits one of your own kits for nothing, and a
   button with the bench's price for one from its stock. Pick several and pay the bill by card or cash (plus sales
@@ -368,7 +369,7 @@ car's owner can have it tuned.
 - **The owner's Stock and Prices tabs:** load the bench with kits (hoppers and pipes can fill it too) and set what
   fitting each costs ($40.00 to start). Fitting kits to someone else's car pays the Mechanic job.
 
-A car keeps its tuning and livery when it's picked up; its tooltip lists them.
+A car keeps its tuning and livery when it's picked up (and the fuel in a bigger tank); its tooltip lists them.
 
 ## Racing
 
@@ -789,6 +790,7 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | Performance Brakes | two Brake Pads, red dye and a gold ingot (shapeless) |
 | Lowering Springs | three iron ingots and red dye (shapeless) |
 | Lift Kit | three iron ingots, blue dye and a piston (shapeless) |
+| Extended Fuel Tank | iron ingots in the top corners, iron ingots either side of a BuildCraft **Tank**, three iron ingots below |
 | Parking Meter | iron ingot, glass pane, iron ingot on top, gold nugget, redstone, gold nugget across the middle, an iron ingot below |
 | Toll Booth | yellow dye, glass pane, yellow dye on top, iron ingot, redstone, iron ingot across the middle, three smooth stone below |
 | Toll Gate | stick, red dye, stick on top, yellow dye, piston, yellow dye across the middle, iron ingots in the bottom corners |

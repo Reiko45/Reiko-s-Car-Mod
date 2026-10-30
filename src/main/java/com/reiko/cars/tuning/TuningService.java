@@ -122,6 +122,9 @@ public final class TuningService {
         if (refused != null) {
             return refused;
         }
+        if (!kit.suits(car.carType())) {
+            return ShopActionResult.fail("tuning.reikocars.unsuited", kit.displayName(), car.kindName());
+        }
         Upgrades now = car.upgrades();
         Upgrades next = kit.fit(now);
         if (next == null) {
@@ -161,6 +164,9 @@ public final class TuningService {
         long total = 0;
         List<TuningKit> off = new ArrayList<>();
         for (TuningKit kit : kits) {
+            if (!kit.suits(car.carType())) {
+                return ShopActionResult.fail("tuning.reikocars.unsuited", kit.displayName(), car.kindName());
+            }
             Upgrades fitted = kit.fit(next);
             if (fitted == null) {
                 return ShopActionResult.fail("tuning.reikocars.maxed", kit.displayName());

@@ -296,14 +296,19 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return level().isClientSide ? entityData.get(DATA_FUEL) : fuel;
     }
 
+    /** What its tank (or battery) holds, in MJ: as it came, or bigger with a fuel tank upgrade. */
+    public double tankCapacity() {
+        return type.tankCapacity() * upgrades().tankSize();
+    }
+
     /** 0 to 1. */
     public float fuelFraction() {
-        return (float) Mth.clamp(fuel() / type.tankCapacity(), 0.0, 1.0);
+        return (float) Mth.clamp(fuel() / tankCapacity(), 0.0, 1.0);
     }
 
     /** MJ of free space in the tank. */
     public double fuelRoom() {
-        return Math.max(0.0, type.tankCapacity() - fuel());
+        return Math.max(0.0, tankCapacity() - fuel());
     }
 
     public boolean hasFuel() {
@@ -311,10 +316,11 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     }
 
     public void setFuel(double mj) {
-        double clamped = Mth.clamp(mj, 0.0, type.tankCapacity());
+        double capacity = tankCapacity();
+        double clamped = Mth.clamp(mj, 0.0, capacity);
         fuel = clamped;
         float synced = entityData.get(DATA_FUEL);
-        if (Math.abs(synced - clamped) >= FUEL_SYNC_STEP || clamped == 0.0 || clamped >= type.tankCapacity()
+        if (Math.abs(synced - clamped) >= FUEL_SYNC_STEP || clamped == 0.0 || clamped >= capacity
                 || (synced == 0.0F) != (clamped == 0.0)) {
             entityData.set(DATA_FUEL, (float) clamped);
         }
@@ -2189,6 +2195,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
+        entityData.set(DATA_UPGRADES, tag.getInt("Upgrades")); // first: a bigger tank holds more
         setFuel(tag.getDouble("Fuel"));
         entityData.set(DATA_FUEL, (float) fuel);
         if (tag.contains("Color", Tag.TAG_INT)) {

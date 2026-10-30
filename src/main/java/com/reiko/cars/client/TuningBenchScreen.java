@@ -30,7 +30,7 @@ public final class TuningBenchScreen extends ShopScreenBase<TuningBenchMenu> {
     private static final int WIDTH = 194;
     private static final int TABS_ROW = 16;
     private static final int TOP = 32;
-    private static final int ROW_HEIGHT = 16;
+    private static final int ROW_HEIGHT = 15;
     private static final int FIT_X = 96;
     private static final int SHOP_X = 130;
     private static final int SHOP_WIDTH = 56;
@@ -64,7 +64,7 @@ public final class TuningBenchScreen extends ShopScreenBase<TuningBenchMenu> {
     private int stripes;
 
     public TuningBenchScreen(TuningBenchMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title, WIDTH, 250);
+        super(menu, inventory, title, WIDTH, 258);
     }
 
     private int kitsRow() {
@@ -198,7 +198,7 @@ public final class TuningBenchScreen extends ShopScreenBase<TuningBenchMenu> {
 
     /** Whether the bench could fit {@code kit} from its stock now. */
     private boolean benchCan(TuningKit kit) {
-        return menu.hasTarget() && menu.mayTune() && kit.fit(menu.upgrades()) != null && menu.stock(kit) > 0;
+        return menu.hasTarget() && menu.mayTune() && kit.suits(menu.carType()) && kit.fit(menu.upgrades()) != null && menu.stock(kit) > 0;
     }
 
     private int chosenMask() {
@@ -263,10 +263,11 @@ public final class TuningBenchScreen extends ShopScreenBase<TuningBenchMenu> {
             int i = kit.ordinal();
             fitButtons[i].visible = shopButtons[i].visible = tune;
             priceBoxes[i].visible = setButtons[i].visible = prices;
-            boolean fits = hasCar && menu.mayTune() && kit.fit(upgrades) != null;
+            boolean fits = hasCar && menu.mayTune() && kit.suits(menu.carType()) && kit.fit(upgrades) != null;
             int carried = TuningService.carried(minecraft.player, kit);
             fitButtons[i].active = fits && carried > 0;
-            fitButtons[i].setTooltip(Tooltip.create(!fits ? Component.translatable(hasCar && kit.fit(upgrades) == null ? "gui.reikocars.kit_maxed"
+            fitButtons[i].setTooltip(Tooltip.create(!fits ? Component.translatable(hasCar && !kit.suits(menu.carType()) ? "gui.reikocars.kit_unsuited"
+                    : hasCar && kit.fit(upgrades) == null ? "gui.reikocars.kit_maxed"
                     : "gui.reikocars.fit_nothing") : Component.translatable("gui.reikocars.kit_fit_tooltip", kit.displayName(), carried)));
             boolean can = benchCan(kit);
             if (!can) {
@@ -363,7 +364,9 @@ public final class TuningBenchScreen extends ShopScreenBase<TuningBenchMenu> {
             int y = kitsRow() + kit.ordinal() * ROW_HEIGHT;
             graphics.renderFakeItem(TuningService.stackOf(kit), 8, y);
             Component name = Component.translatable("tuning.reikocars.kit_short." + kit.key());
-            if (menu.hasTarget()) {
+            if (menu.hasTarget() && !kit.suits(menu.carType())) {
+                name = Component.translatable("tuning.reikocars.kit_row", name, Component.translatable("tuning.reikocars.state.unsuited"));
+            } else if (menu.hasTarget()) {
                 // "Engine: stage 1 of 3", "Turbo: fitted"
                 name = Component.translatable("tuning.reikocars.kit_row", name, kit.state(upgrades));
             }
@@ -425,7 +428,7 @@ public final class TuningBenchScreen extends ShopScreenBase<TuningBenchMenu> {
             graphics.renderFakeItem(TuningService.stackOf(kit), 0, 0);
             pose.popPose();
             graphics.drawString(font, "×" + menu.stock(kit), x + 13, y + 3, LABEL_COLOR, false);
-            x += 24;
+            x += 21;
         }
         graphics.drawString(font, playerInventoryTitle, TuningBenchMenu.STOCK_X, TuningBenchMenu.INVENTORY_Y - 10, LABEL_COLOR, false);
     }

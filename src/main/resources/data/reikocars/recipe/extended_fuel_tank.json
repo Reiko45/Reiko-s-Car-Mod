@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "T": {
+      "item": "buildcraftreborn:tank"
+    }
+  },
+  "pattern": [
+    "I I",
+    "ITI",
+    "III"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:extended_fuel_tank"
+  }
+}

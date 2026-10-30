@@ -3913,6 +3913,27 @@ public final class CarGameTests {
             helper.assertValueEqual(item.get(com.reiko.cars.registry.ModDataComponents.UPGRADES.get()), car.upgrades(), "the item keeps the tuning");
             helper.assertValueEqual(item.get(com.reiko.cars.registry.ModDataComponents.LIVERY.get()), car.livery(), "and the livery");
 
+            // A bigger fuel tank: it holds more, and keeps it through a save.
+            giveKit(driver, com.reiko.cars.tuning.TuningKit.FUEL_TANK, 3);
+            check(helper, com.reiko.cars.tuning.TuningService.fitOwn(driver, bench, car, com.reiko.cars.tuning.TuningKit.FUEL_TANK).success()
+                    && com.reiko.cars.tuning.TuningService.fitOwn(driver, bench, car, com.reiko.cars.tuning.TuningKit.FUEL_TANK).success(), "two tank stages");
+            check(helper, !com.reiko.cars.tuning.TuningService.fitOwn(driver, bench, car, com.reiko.cars.tuning.TuningKit.FUEL_TANK).success(), "and no more");
+            near(helper, car.tankCapacity(), CarType.SEDAN.tankCapacity() * 1.5, "half as much again");
+            car.setFuel(car.tankCapacity());
+            near(helper, car.fuel(), CarType.SEDAN.tankCapacity() * 1.5, "filled to the brim");
+            check(helper, car.fuelRoom() == 0.0 && car.fuelFraction() == 1.0F, "a full gauge");
+            net.minecraft.nbt.CompoundTag saved = new net.minecraft.nbt.CompoundTag();
+            car.saveWithoutId(saved);
+            CarEntity reloaded = ModEntities.car(CarType.SEDAN).create(helper.getLevel());
+            reloaded.load(saved);
+            near(helper, reloaded.fuel(), CarType.SEDAN.tankCapacity() * 1.5, "still full after a save");
+            near(helper, car.upgrades().acceleration(), 1.04 * 1.25 * 0.94, "the extra weight takes a little pull");
+            CarEntity ev = vehicle(helper, CarType.CITY_EV, 0.5, 6.0);
+            ev.setOwner(driver);
+            ShopActionResult refused = com.reiko.cars.tuning.TuningService.fitOwn(driver, bench, ev, com.reiko.cars.tuning.TuningKit.FUEL_TANK);
+            check(helper, !refused.success() && refused.message().getString().contains("no fuel tank"),
+                    "no fuel tank in an electric car: " + refused.message().getString());
+
             // A tuned engine wears faster and drinks more.
             CarEntity plain = vehicle(helper, CarType.SEDAN, 8.0, 12.0);
             check(helper, car.upgrades().engineWear() > 1.0 && car.upgrades().fuelUse() > plain.upgrades().fuelUse(), "the price of speed");

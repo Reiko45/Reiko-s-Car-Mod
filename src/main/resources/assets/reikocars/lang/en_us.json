@@ -1272,5 +1272,13 @@
   "tuning.reikocars.kit_short.brakes": "Brakes",
   "tuning.reikocars.kit_short.lowering": "Lowered",
   "tuning.reikocars.kit_short.lift": "Lifted",
-  "tuning.reikocars.state.none": "no"
+  "tuning.reikocars.state.none": "no",
+  "item.reikocars.extended_fuel_tank": "Extended Fuel Tank",
+  "item.reikocars.extended_fuel_tank.effect": "One stage: the fuel tank holds 25% more (up to stage 2, +50%)",
+  "item.reikocars.extended_fuel_tank.cost": "The weight takes 3% off acceleration a stage. Gasoline and diesel cars only",
+  "tuning.reikocars.kit_short.fuel_tank": "Fuel tank",
+  "tuning.reikocars.tank_stage": "Stage %s fuel tank (+%s%%)",
+  "tuning.reikocars.state.unsuited": "n/a",
+  "tuning.reikocars.unsuited": "A %s won't go on a %s: it has no fuel tank.",
+  "gui.reikocars.kit_unsuited": "An electric car has no fuel tank"
 }

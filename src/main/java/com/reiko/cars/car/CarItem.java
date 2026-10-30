@@ -141,6 +141,7 @@ public final class CarItem extends Item {
             return InteractionResultHolder.fail(stack);
         }
         if (!level.isClientSide) {
+            car.setUpgrades(stack.getOrDefault(ModDataComponents.UPGRADES.get(), com.reiko.cars.tuning.Upgrades.STOCK)); // before the fuel: the tank's size
             car.setFuel(fuelOf(stack));
             car.setWater(stack.getOrDefault(ModDataComponents.WATER.get(), 0));
             car.setCondition(conditionOf(stack));
@@ -169,7 +170,8 @@ public final class CarItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        int percent = (int) Math.round(fuelOf(stack) / type.tankCapacity() * 100.0);
+        double tankSize = stack.getOrDefault(ModDataComponents.UPGRADES.get(), com.reiko.cars.tuning.Upgrades.STOCK).tankSize();
+        int percent = (int) Math.round(fuelOf(stack) / (type.tankCapacity() * tankSize) * 100.0);
         tooltip.add((type.isElectric() ? Component.translatable("item.reikocars.car.battery", percent)
                 : Component.translatable("item.reikocars.car.fuel", type.fuel().displayName(), percent)).withStyle(ChatFormatting.GRAY));
         if (type.isFireTruck()) {
@@ -183,7 +185,7 @@ public final class CarItem extends Item {
                 ? Component.translatable("item.reikocars.car.stats_ev", type.seatsText(), speed, Component.translatable(unit.translationKey),
                         Math.round(type.tankCapacity() / 1000.0))
                 : Component.translatable("item.reikocars.car.stats", type.seatsText(), speed, Component.translatable(unit.translationKey),
-                        type.tankBuckets)).withStyle(ChatFormatting.DARK_GRAY));
+                        Math.round(type.tankBuckets * tankSize))).withStyle(ChatFormatting.DARK_GRAY));
         if (type.isElectric()) {
             tooltip.add(Component.translatable("item.reikocars.car.electric").withStyle(ChatFormatting.DARK_GRAY));
         }

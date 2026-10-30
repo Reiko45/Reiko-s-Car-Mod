@@ -12,7 +12,8 @@ public enum TuningKit {
     OFF_ROAD_TIRES,
     BRAKES,
     LOWERING,
-    LIFT;
+    LIFT,
+    FUEL_TANK;
 
     public String id() {
         return switch (this) {
@@ -23,6 +24,7 @@ public enum TuningKit {
             case BRAKES -> "performance_brakes";
             case LOWERING -> "lowering_springs";
             case LIFT -> "lift_kit";
+            case FUEL_TANK -> "extended_fuel_tank";
         };
     }
 
@@ -41,6 +43,7 @@ public enum TuningKit {
             case BRAKES -> current.brakes() >= Upgrades.MAX_BRAKES ? null : current.withBrakes(current.brakes() + 1);
             case LOWERING -> current.suspension() == Upgrades.Suspension.LOWERED ? null : current.withSuspension(Upgrades.Suspension.LOWERED);
             case LIFT -> current.suspension() == Upgrades.Suspension.LIFTED ? null : current.withSuspension(Upgrades.Suspension.LIFTED);
+            case FUEL_TANK -> current.tank() >= Upgrades.MAX_TANK ? null : current.withTank(current.tank() + 1);
         };
     }
 
@@ -63,9 +66,16 @@ public enum TuningKit {
                     : Component.translatable("tuning.reikocars.state.stage", current.engine(), Upgrades.MAX_ENGINE);
             case BRAKES -> current.brakes() == 0 ? Component.translatable("tuning.reikocars.state.stock")
                     : Component.translatable("tuning.reikocars.state.stage", current.brakes(), Upgrades.MAX_BRAKES);
+            case FUEL_TANK -> current.tank() == 0 ? Component.translatable("tuning.reikocars.state.stock")
+                    : Component.translatable("tuning.reikocars.state.stage", current.tank(), Upgrades.MAX_TANK);
             default -> fit(current) == null ? Component.translatable("tuning.reikocars.state.fitted")
                     : Component.translatable("tuning.reikocars.state.none");
         };
+    }
+
+    /** Whether a {@code type} can take this kit at all: no fuel tank in an electric car. */
+    public boolean suits(com.reiko.cars.car.CarType type) {
+        return this != FUEL_TANK || !type.isElectric();
     }
 
     public String key() {
