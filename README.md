@@ -137,8 +137,9 @@ Every car, truck and bike has a radio. Anyone riding presses **R** to open it:
   The music was composed and synthesised for this mod. The stations are on the air whether anyone's listening or
   not, so tuning in drops you into the middle of whatever's on, and every car on the same station plays the same
   moment of the same song.
-- **DISC** plays whatever's in the radio's **disc slot**, from the top when it goes in, then again after a
-  three-second pause, like a jukebox: any music disc, vanilla or another mod's. Shift-click a disc in from your
+- **DISC** plays whatever's in the radio's **disc slot**, from the top when it goes in (or the radio's switched to
+  it, or someone gets into the empty car), then again after a three-second pause, like a jukebox: any music disc,
+  vanilla or another mod's. Shift-click a disc in from your
   inventory.
 - **Volume** from 0 to 10, shown on the display along with what's playing. A new track shows **Now Playing** over
   the hotbar.
@@ -146,7 +147,7 @@ Every car, truck and bike has a radio. Anyone riding presses **R** to open it:
 The radio plays while someone's in the car, and keeps its station, volume and disc when everyone gets out. Picking
 the car up (or breaking it) drops the disc, and the radio starts off again when it's put back down. Riders hear it at
 its volume; people nearby hear a quarter of that, or half from a convertible, tractor or bike. Someone who comes
-into earshot, or gets in, hears the song from wherever it's got to, not from the start. It plays on the
+into earshot, or joins a car that's already playing, hears the song from wherever it's got to, not from the start. It plays on the
 **Jukebox/Note Blocks** volume slider.
 
 ## Roads

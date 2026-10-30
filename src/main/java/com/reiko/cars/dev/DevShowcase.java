@@ -152,6 +152,8 @@ public final class DevShowcase {
             radioScript();
         } else if (MODE.equals("hud")) {
             hudScript();
+        } else if (MODE.equals("wall")) {
+            wallScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -2306,5 +2308,49 @@ public final class DevShowcase {
         at(115, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
         at(125, mc -> shot(mc, "160_icons"));
         at(130, mc -> mc.stop());
+    }
+
+    /** A rig backing up towards a wall: it should stop when the trailer's back reaches it. */
+    private static void wallScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                tile(level, -12, -24, 12, 20);
+                spawn(level, CarType.SEMI_TRUCK, 0.5, 0.5, 0.0F, 0.6);
+                CarEntity semi = car(level, CarType.SEMI_TRUCK);
+                TrailerEntity trailer = behind(level, TrailerType.BOX_TRAILER, semi, 0.0F);
+                trailer.startRiding(semi, true);
+                // a wall three blocks high, two and a half blocks behind the trailer
+                net.minecraft.world.phys.Vec3 wall = trailer.rear().add(trailer.forward().scale(-2.5));
+                BlockPos base = BlockPos.containing(wall.x, trailer.getY(), wall.z);
+                for (int dx = -3; dx <= 3; dx++) {
+                    for (int dy = 0; dy < 3; dy++) {
+                        level.setBlockAndUpdate(base.offset(dx, dy, 0), net.minecraft.world.level.block.Blocks.STONE_BRICKS.defaultBlockState());
+                    }
+                }
+                ReikoCars.LOGGER.info("Showcase wall at z {}; trailer rear at z {}", base.getZ(), trailer.rear().z);
+                player.getInventory().clearContent();
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                player.startRiding(semi, true);
+            });
+        });
+        at(50, mc -> mc.options.keyDown.setDown(true));
+        for (int t = 70; t <= 250; t += 30) {
+            at(t, mc -> server(mc, player -> {
+                CarEntity semi = car(player.serverLevel(), CarType.SEMI_TRUCK);
+                TrailerEntity trailer = semi.trailer();
+                ReikoCars.LOGGER.info("Showcase wall: semi z {}, trailer rear z {}, speed {}, trailer blocked {}", semi.getZ(),
+                        trailer == null ? Double.NaN : trailer.rear().z, semi.getDeltaMovement().length(),
+                        trailer != null && trailer.blockedAt(new TrailerEntity.Pose(trailer.position(), trailer.getYRot())));
+            }));
+        }
+        at(252, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+        at(262, mc -> shot(mc, "161_trailer_wall"));
+        at(264, mc -> mc.options.keyDown.setDown(false));
+        at(270, mc -> mc.stop());
     }
 }
