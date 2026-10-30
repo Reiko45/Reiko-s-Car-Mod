@@ -36,6 +36,17 @@ public final class CarsConfig {
     public static final ModConfigSpec.IntValue HYDRANT_CAPACITY;
     public static final ModConfigSpec.BooleanValue ENDLESS_HYDRANTS;
     public static final ModConfigSpec.IntValue PAID_FIRES_PER_DAY;
+    public static final ModConfigSpec.BooleanValue LOANS_ENABLED;
+    public static final ModConfigSpec.DoubleValue LOAN_DOWN_PAYMENT;
+    public static final ModConfigSpec.DoubleValue LOAN_INTEREST;
+    public static final ModConfigSpec.IntValue LOAN_DAYS;
+    public static final ModConfigSpec.IntValue LOAN_MISSES;
+    public static final ModConfigSpec.IntValue LOAN_RECLAIM_DAYS;
+    public static final ModConfigSpec.DoubleValue IMPOUND_LOT_RADIUS;
+    public static final ModConfigSpec.DoubleValue IMPOUND_FEE;
+    public static final ModConfigSpec.DoubleValue RENTAL_LOT_RADIUS;
+    public static final ModConfigSpec.DoubleValue RENTAL_PRICE;
+    public static final ModConfigSpec.IntValue RENTAL_MAX_DAYS;
 
     public static final ModConfigSpec.DoubleValue WEAR;
     public static final ModConfigSpec.DoubleValue CRASH_DAMAGE;
@@ -171,6 +182,49 @@ public final class CarsConfig {
                         "where they lit one themselves in the last ten minutes, and fires that never go out (on netherrack and",
                         "the like), never pay.")
                 .defineInRange("paidFiresPerDay", 64, 0, 100_000);
+        builder.pop();
+
+        builder.push("loans");
+        LOANS_ENABLED = builder
+                .comment("Whether cars for sale on a dealership's lot can be bought on finance: a down payment now, the rest a day at a time.")
+                .define("enabled", true);
+        LOAN_DOWN_PAYMENT = builder
+                .comment("The share of the price paid down (0.2 is 20%). Sales tax on the whole price is paid with it.")
+                .defineInRange("downPayment", 0.2, 0.0, 1.0);
+        LOAN_INTEREST = builder
+                .comment("Interest on the rest, all told (0.1 is 10% on top).")
+                .defineInRange("interestRate", 0.1, 0.0, 10.0);
+        LOAN_DAYS = builder
+                .comment("How many daily payments (one a Minecraft day, from the bank account to the dealer) it's paid off in.")
+                .defineInRange("days", 10, 1, 1000);
+        LOAN_MISSES = builder
+                .comment("Missed payments in a row before the car is repossessed: taken to the impound lot nearest the dealership.")
+                .defineInRange("missedPaymentsToRepossess", 3, 1, 100);
+        LOAN_RECLAIM_DAYS = builder
+                .comment("Days a repossessed car's owner has to get it back (paying the missed payments and the lot's fee) before",
+                        "it's the dealer's.")
+                .defineInRange("reclaimDays", 5, 1, 1000);
+        builder.pop();
+
+        builder.push("impound");
+        IMPOUND_LOT_RADIUS = builder
+                .comment("How far from an impound office its lot reaches, in blocks: a towed car put down within it is impounded.")
+                .defineInRange("lotRadius", 10.0, 2.0, 64.0);
+        IMPOUND_FEE = builder
+                .comment("The release fee a newly placed impound office starts at. Its owner can change it.")
+                .defineInRange("defaultReleaseFee", 50.0, 0.0, 1_000_000.0);
+        builder.pop();
+
+        builder.push("rentals");
+        RENTAL_LOT_RADIUS = builder
+                .comment("How far from a rental desk its lot reaches, in blocks: the owner's cars parked within it are its fleet.")
+                .defineInRange("lotRadius", 10.0, 2.0, 64.0);
+        RENTAL_PRICE = builder
+                .comment("A day's rent for every kind of car at a newly placed rental desk. Its owner can change each.")
+                .defineInRange("defaultPricePerDay", 15.0, 0.0, 1_000_000.0);
+        RENTAL_MAX_DAYS = builder
+                .comment("The most Minecraft days (20 minutes each) a car can be rented for at once.")
+                .defineInRange("maxDays", 7, 1, 100);
         builder.pop();
 
         builder.push("wear");

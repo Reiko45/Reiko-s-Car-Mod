@@ -42,6 +42,7 @@ public final class DealershipScreen extends ShopScreenBase<DealershipMenu> {
     private Button next;
     private Button buyButton;
     private Button sellButton;
+    private Button payOffButton;
     private EditBox priceBox;
     private Button setPrice;
     private Button offSale;
@@ -76,6 +77,8 @@ public final class DealershipScreen extends ShopScreenBase<DealershipMenu> {
                 button -> send(SaleActionPayload.of(menu.containerId, SaleActionPayload.OPEN_BUY))).bounds(leftPos + 8, topPos + TOP + 40, WIDTH - 16, 20).build());
         sellButton = addRenderableWidget(Button.builder(Component.empty(),
                 button -> send(SaleActionPayload.tradeIn(menu.containerId, menu.carOffer()))).bounds(leftPos + 8, topPos + TOP + 40, WIDTH - 16, 20).build());
+        payOffButton = addRenderableWidget(Button.builder(Component.empty(),
+                button -> send(SaleActionPayload.of(menu.containerId, SaleActionPayload.PAY_OFF))).bounds(leftPos + 8, topPos + TOP + 40, WIDTH - 16, 20).build());
         priceBox = addRenderableWidget(new EditBox(font, leftPos + 50, topPos + TOP + 40, 90, 16, Component.translatable("gui.reikocars.price")));
         priceBox.setFilter(MONEY_FILTER);
         priceBox.setMaxLength(16);
@@ -147,7 +150,10 @@ public final class DealershipScreen extends ShopScreenBase<DealershipMenu> {
         boolean offers = tab == DealershipMenu.TAB_OFFERS;
         previous.visible = next.visible = !offers && menu.carCount() > 1;
         buyButton.visible = tab == DealershipMenu.TAB_BUY && car;
-        sellButton.visible = tab == DealershipMenu.TAB_TRADE && car;
+        long owed = menu.carOwed();
+        sellButton.visible = tab == DealershipMenu.TAB_TRADE && car && owed < 0;
+        payOffButton.visible = tab == DealershipMenu.TAB_TRADE && car && owed >= 0;
+        payOffButton.setMessage(Component.translatable("gui.reikocars.pay_off_loan", format(Math.max(0, owed))));
         long offer = menu.carOffer();
         sellButton.active = offer > 0;
         sellButton.setMessage(offer > 0 ? Component.translatable("gui.reikocars.sell_for", format(offer)) : Component.translatable("gui.reikocars.not_buying_short"));
@@ -226,7 +232,9 @@ public final class DealershipScreen extends ShopScreenBase<DealershipMenu> {
         graphics.drawString(font, CarSaleScreen.conditionLine(menu.carCondition(), menu.carFuel()), 28, TOP + 12, MUTED_COLOR, false);
         long price = menu.carPrice();
         MutableComponent line = switch (tab) {
-            case DealershipMenu.TAB_TRADE -> menu.carOffer() > 0
+            case DealershipMenu.TAB_TRADE -> menu.carOwed() >= 0
+                    ? Component.translatable("gui.reikocars.loan_owed", format(menu.carOwed()))
+                    : menu.carOffer() > 0
                     ? Component.translatable("gui.reikocars.dealer_pays", menu.ownerName(), format(menu.carOffer()))
                     : Component.translatable("gui.reikocars.not_buying", menu.ownerName(), Component.translatable("entity.reikocars." + type.id()));
             default -> price >= 0
@@ -239,7 +247,7 @@ public final class DealershipScreen extends ShopScreenBase<DealershipMenu> {
         }
         Component hint = Component.translatable(switch (tab) {
             case DealershipMenu.TAB_BUY -> "gui.reikocars.buy_hint";
-            case DealershipMenu.TAB_TRADE -> "gui.reikocars.trade_hint";
+            case DealershipMenu.TAB_TRADE -> menu.carOwed() >= 0 ? "gui.reikocars.loan_hint" : "gui.reikocars.trade_hint";
             default -> "gui.reikocars.lot_hint";
         }, menu.ownerName(), (int) SaleService.reach());
         int y = tab == DealershipMenu.TAB_LOT ? TOP + 88 : TOP + 66;

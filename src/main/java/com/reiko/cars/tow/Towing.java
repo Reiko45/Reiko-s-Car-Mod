@@ -23,7 +23,8 @@ import org.jetbrains.annotations.Nullable;
  * so it goes wherever the truck goes, and is saved with it. It doesn't drive, burn fuel or wear while it's towed.
  *
  * <p>Any car the driver may use can be towed (their own, or an unlocked one), broken down or not, as long as nobody is
- * in it and it isn't too big (see {@link CarType#towableBy}).
+ * in it and it isn't too big (see {@link CarType#towableBy}); so can a car parked at an expired parking meter, locked or
+ * not, to be taken to an impound lot (see {@code ImpoundService}).
  */
 public final class Towing {
     /** How close, in blocks, the car must be to the deck's tail or the wheel-lift to be picked up. */
@@ -81,7 +82,8 @@ public final class Towing {
         Vec3 point = pickupPoint(truck);
         return truck.level().getEntitiesOfClass(CarEntity.class, new AABB(point, point).inflate(8.0),
                         car -> car != truck && car.isAlive() && !car.isPassenger() && car.getPassengers().isEmpty()
-                                && car.carType().towableBy(type) && car.canBeUsedBy(driver)
+                                && car.carType().towableBy(type)
+                                && (car.canBeUsedBy(driver) || com.reiko.cars.impound.ImpoundService.badlyParked(car))
                                 && Math.abs(car.getY() - truck.getY()) <= 1.5
                                 && reach(truck, car, point) <= REACH)
                 .stream().min(Comparator.comparingDouble(car -> reach(truck, car, point))).orElse(null);
@@ -109,6 +111,7 @@ public final class Towing {
         if (carried != null) {
             if (drop(driver, truck, carried)) {
                 towedIn(driver, carried);
+                com.reiko.cars.impound.ImpoundService.towedIn(driver, carried);
             }
             return;
         }
@@ -118,12 +121,14 @@ public final class Towing {
                     ? "tow.reikocars.nothing_flatbed" : "tow.reikocars.nothing_wrecker"), true);
             return;
         }
+        boolean badlyParked = com.reiko.cars.impound.ImpoundService.badlyParked(car);
         car.stopDead();
         if (!car.startRiding(truck, true)) {
             driver.displayClientMessage(Component.translatable("tow.reikocars.cant_tow", car.getDisplayName()), true);
             return;
         }
         car.setTowedFrom(car.position());
+        car.setTowedBadlyParked(badlyParked);
         sound(truck, true);
         driver.displayClientMessage(Component.translatable("tow.reikocars.towing", car.getDisplayName()), true);
     }

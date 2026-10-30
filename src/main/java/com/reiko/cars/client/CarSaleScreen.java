@@ -13,15 +13,17 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * One car's sale screen. Buying: what it is, its condition and fuel, the seller and the price, paid by card (with
- * PIN) or cash. Selling (its owner): the asking price, and putting it up for sale or taking it off.
+ * PIN) or cash; at a dealership, outright or on finance (a down payment now, the rest a day at a time). Selling (its
+ * owner): the asking price, and putting it up for sale or taking it off.
  */
 public final class CarSaleScreen extends ShopScreenBase<CarSaleMenu> {
     private static final int WIDTH = 194;
     private static final int PIN_X = WIDTH - 8 - 34;
-    // buying
+    // buying (a line lower with finance on offer, for the loan's terms)
     private static final int CARD_ROW = 58;
     private static final int PIN_ROW = 72;
     private static final int PAY_ROW = 90;
+    private static final int FINANCE_SHIFT = 22;
     // selling
     private static final int PRICE_ROW = 46;
     private static final int SELL_ROW = 68;
@@ -31,9 +33,17 @@ public final class CarSaleScreen extends ShopScreenBase<CarSaleMenu> {
     private Button cashButton;
     private Button freeButton;
     private EditBox priceBox;
+    private Button outrightButton;
+    private Button financeButton;
+    /** Buying on finance rather than outright. */
+    private boolean finance;
 
     public CarSaleScreen(CarSaleMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title, WIDTH, menu.isSelling() ? 162 : 142);
+        super(menu, inventory, title, WIDTH, menu.isSelling() ? 162 : menu.terms() != null ? 188 : 142);
+    }
+
+    private int shift() {
+        return menu.terms() != null ? FINANCE_SHIFT : 0;
     }
 
     @Override
@@ -53,18 +63,44 @@ public final class CarSaleScreen extends ShopScreenBase<CarSaleMenu> {
             setInitialFocus(priceBox);
             return;
         }
-        pinBox = addRenderableWidget(createPinBox(leftPos + PIN_X, topPos + PIN_ROW - 4));
+        pinBox = addRenderableWidget(createPinBox(leftPos + PIN_X, topPos + PIN_ROW + shift() - 4));
         cardButton = addRenderableWidget(Button.builder(Component.empty(), button -> buy(cardPayment(pinBox.getValue())))
-                .bounds(leftPos + 8, topPos + PAY_ROW, 87, 20).build());
+                .bounds(leftPos + 8, topPos + PAY_ROW + shift(), 87, 20).build());
         cashButton = addRenderableWidget(Button.builder(Component.empty(), button -> buy(Payment.cash()))
-                .bounds(leftPos + 99, topPos + PAY_ROW, 87, 20).build());
+                .bounds(leftPos + 99, topPos + PAY_ROW + shift(), 87, 20).build());
         freeButton = addRenderableWidget(Button.builder(Component.translatable("gui.reikocars.take_it_free"), button -> buy(Payment.cash()))
-                .bounds(leftPos + 8, topPos + PAY_ROW, WIDTH - 16, 20).build());
+                .bounds(leftPos + 8, topPos + PAY_ROW + shift(), WIDTH - 16, 20).build());
+        outrightButton = addRenderableWidget(Button.builder(Component.translatable("gui.reikocars.pay_outright"), button -> setFinance(false))
+                .bounds(leftPos + 8, topPos + PAY_ROW + shift() + 24, 87, 16).build());
+        financeButton = addRenderableWidget(Button.builder(Component.translatable("gui.reikocars.pay_finance"), button -> setFinance(true))
+                .bounds(leftPos + 99, topPos + PAY_ROW + shift() + 24, 87, 16).build());
+        outrightButton.visible = financeButton.visible = menu.terms() != null;
+        addCardSwitch(leftPos + imageWidth - 22, topPos + CARD_ROW + shift() - 2);
+        setFinance(false);
+    }
+
+    private void setFinance(boolean on) {
+        finance = on && menu.terms() != null;
         if (menu.price() > 0) {
-            setPayButtons(cardButton, cashButton, menu.price());
+            if (finance) {
+                long total = dueNow();
+                cardButton.setMessage(Component.translatable("gui.reikoeconomy.pay_card", format(total)));
+                cashButton.setMessage(Component.translatable("gui.reikoeconomy.pay_cash", format(total)));
+            } else {
+                setPayButtons(cardButton, cashButton, menu.price());
+            }
         }
-        addCardSwitch(leftPos + imageWidth - 22, topPos + CARD_ROW - 2);
+        if (outrightButton != null) {
+            outrightButton.active = finance;
+            financeButton.active = !finance;
+        }
         updateButtons();
+    }
+
+    /** What's paid now: the price and tax, or on finance the down payment and the tax on the whole price. */
+    private long dueNow() {
+        long tax = salesTax(Math.max(0, menu.price()));
+        return finance && menu.terms() != null ? menu.terms().down() + tax : menu.price() + tax;
     }
 
     /** 1250000 cents as "12500.00", for the price box. */
@@ -77,7 +113,8 @@ public final class CarSaleScreen extends ShopScreenBase<CarSaleMenu> {
     }
 
     private void buy(Payment payment) {
-        PacketDistributor.sendToServer(SaleActionPayload.buy(menu.containerId, menu.price(), payment));
+        PacketDistributor.sendToServer(finance ? SaleActionPayload.finance(menu.containerId, menu.price(), payment)
+                : SaleActionPayload.buy(menu.containerId, menu.price(), payment));
     }
 
     @Override
@@ -95,7 +132,7 @@ public final class CarSaleScreen extends ShopScreenBase<CarSaleMenu> {
         }
         boolean forSale = menu.price() >= 0;
         boolean free = menu.price() == 0;
-        long total = menu.price() + salesTax(Math.max(0, menu.price()));
+        long total = dueNow();
         pinBox.visible = cardButton.visible = cashButton.visible = forSale && !free;
         freeButton.visible = forSale && free;
         cardButton.active = !chosenCard().isEmpty() && pinBox.getValue().length() == 4;
@@ -151,13 +188,23 @@ public final class CarSaleScreen extends ShopScreenBase<CarSaleMenu> {
                 : tax > 0 ? Component.translatable("gui.reikocars.price_tax", format(price + tax), format(tax))
                 : Component.translatable("gui.reikocars.price_is", format(price));
         graphics.drawString(font, fit(line, imageWidth - 16), 8, 44, LABEL_COLOR, false);
+        if (menu.terms() != null && price > 0) {
+            var terms = menu.terms();
+            Component loan = finance
+                    ? Component.translatable("gui.reikocars.finance_terms", format(terms.down()), format(terms.installment()), terms.days())
+                    : Component.translatable("gui.reikocars.finance_offer", format(terms.down()), format(terms.installment()), terms.days());
+            var lines = font.split(loan, imageWidth - 16);
+            for (int i = 0; i < Math.min(2, lines.size()); i++) {
+                graphics.drawString(font, lines.get(i), 8, 56 + i * 10, finance ? 0xFF2E7D32 : MUTED_COLOR, false);
+            }
+        }
         if (price > 0) {
-            drawCardLine(graphics, 8, CARD_ROW, imageWidth - 16);
+            drawCardLine(graphics, 8, CARD_ROW + shift(), imageWidth - 16);
             Component pin = Component.translatable("gui.reikoeconomy.pin");
             int pinLabelX = PIN_X - 4 - font.width(pin);
             graphics.drawString(font, fit(Component.translatable("gui.reikoeconomy.cash_on_hand", format(cashOnHand())), pinLabelX - 12),
-                    8, PIN_ROW, LABEL_COLOR, false);
-            graphics.drawString(font, pin, pinLabelX, PIN_ROW, LABEL_COLOR, false);
+                    8, PIN_ROW + shift(), LABEL_COLOR, false);
+            graphics.drawString(font, pin, pinLabelX, PIN_ROW + shift(), LABEL_COLOR, false);
         }
         drawFeedback(graphics, 8, imageHeight - 22, imageWidth - 16, 2);
     }

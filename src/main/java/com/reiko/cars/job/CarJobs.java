@@ -26,6 +26,8 @@ public final class CarJobs {
     public static final ResourceLocation FUEL_DELIVERED = ReikoCars.id("fuel_delivered");
     /** A trash can emptied by the garbage truck (each can pays once a Minecraft day). */
     public static final ResourceLocation TRASH_COLLECTED = ReikoCars.id("trash_collected");
+    /** A badly parked car towed to an impound lot. */
+    public static final ResourceLocation IMPOUND_TOW = ReikoCars.id("impound_tow");
     /** A fire put out with the fire hose. */
     public static final ResourceLocation FIRE_PUT_OUT = ReikoCars.id("fire_put_out");
     /** 100 blocks driven towing a loaded trailer. */

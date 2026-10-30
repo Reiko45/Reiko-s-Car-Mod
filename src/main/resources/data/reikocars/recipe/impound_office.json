@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "Y": {
+      "tag": "c:dyes/yellow"
+    },
+    "S": {
+      "tag": "minecraft:signs"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "item": "minecraft:iron_bars"
+    },
+    "C": {
+      "item": "minecraft:chain"
+    }
+  },
+  "pattern": [
+    "YSY",
+    "IBI",
+    "ICI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:impound_office"
+  }
+}

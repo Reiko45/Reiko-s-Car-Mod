@@ -3357,4 +3357,283 @@ public final class CarGameTests {
                 }))
                 .thenSucceed();
     }
+
+    // ---- car loans, impound lots and rentals ----
+
+    private static com.reiko.cars.impound.ImpoundOfficeBlockEntity impoundOffice(GameTestHelper helper, BlockPos pos, ServerPlayer owner, long fee) {
+        helper.setBlock(pos, ModBlocks.IMPOUND_OFFICE.get().defaultBlockState());
+        com.reiko.cars.impound.ImpoundOfficeBlockEntity office = (com.reiko.cars.impound.ImpoundOfficeBlockEntity) helper.getBlockEntity(pos);
+        office.setOwner(owner);
+        office.setFee(fee);
+        return office;
+    }
+
+    @org.jetbrains.annotations.Nullable
+    private static CarEntity carById(GameTestHelper helper, UUID id) {
+        return helper.getLevel().getEntity(id) instanceof CarEntity car && car.isAlive() ? car : null;
+    }
+
+    @GameTest(template = YARD)
+    public static void carLoansPayAndRepossess(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer dealer = join(helper);
+        ServerPlayer buyer = join(helper);
+        ServerPlayer city = join(helper);
+        try {
+            helper.setBlock(new BlockPos(5, 1, 2), ModBlocks.DEALERSHIP.get().defaultBlockState());
+            DealershipBlockEntity lot = (DealershipBlockEntity) helper.getBlockEntity(new BlockPos(5, 1, 2));
+            lot.setOwner(dealer);
+            com.reiko.cars.impound.ImpoundOfficeBlockEntity office = impoundOffice(helper, new BlockPos(5, 1, 28), city, 5_000);
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.0, 8.0);
+            car.setOwner(dealer);
+            check(helper, SaleService.setPrice(dealer, car, "1000.00").success(), "on sale for $1,000");
+            CarEntity elsewhere = vehicle(helper, CarType.SEDAN, 5.0, 20.0);
+            elsewhere.setOwner(dealer);
+            SaleService.setPrice(dealer, elsewhere, "500.00");
+
+            var menu = com.reiko.cars.sale.CarSaleMenu.create(0, buyer, car);
+            var terms = menu.terms();
+            check(helper, terms != null && terms.down() == 20_000 && terms.total() == 88_000 && terms.installment() == 8_800 && terms.days() == 10,
+                    "20% down, the rest plus 10% over 10 days: " + terms);
+            check(helper, com.reiko.cars.sale.CarSaleMenu.create(0, buyer, elsewhere).terms() == null, "only on a dealership's lot");
+
+            buyer.moveTo(car.getX() + 2, car.getY(), car.getZ());
+            Purse.give(buyer, 30_000);
+            long dealerBefore = ECO.getBalance(server, dealer.getUUID());
+            ShopActionResult bought = SaleService.buy(buyer, car, 100_000, Payment.cash(), true);
+            check(helper, bought.success(), "bought on finance: " + bought.message().getString());
+            helper.assertValueEqual(Purse.value(buyer), 10_000L, "the $200 down payment in cash");
+            helper.assertValueEqual(ECO.getBalance(server, dealer.getUUID()), dealerBefore + 20_000, "to the dealer");
+            check(helper, car.isOwner(buyer) && car.loanId() != null, "the car's theirs, on a loan");
+            helper.assertValueEqual(com.reiko.cars.finance.LoanService.owed(car), 88_000L, "$880 owed");
+            check(helper, !SaleService.setPrice(buyer, car, "2000.00").success(), "it can't be sold till it's paid off");
+            car.hurt(buyer.damageSources().playerAttack(buyer), 50.0F);
+            check(helper, car.isAlive(), "nor picked up");
+            UUID loanId = car.loanId();
+
+            // A day's payment, from the bank to the dealer.
+            ECO.setBalance(server, buyer.getUUID(), 50_000, "test");
+            dealerBefore = ECO.getBalance(server, dealer.getUUID());
+            com.reiko.cars.finance.LoanService.dueNow(server, loanId);
+            com.reiko.cars.finance.LoanService.tick(server);
+            helper.assertValueEqual(ECO.getBalance(server, buyer.getUUID()), 41_200L, "$88 from the bank");
+            helper.assertValueEqual(ECO.getBalance(server, dealer.getUUID()), dealerBefore + 8_800, "to the dealer");
+            helper.assertValueEqual(com.reiko.cars.finance.LoanService.owed(car), 79_200L, "$792 left");
+
+            // Three missed in a row: repossessed, to the impound lot.
+            ECO.setBalance(server, buyer.getUUID(), 0, "test");
+            for (int i = 1; i <= 3; i++) {
+                com.reiko.cars.finance.LoanService.dueNow(server, loanId);
+                com.reiko.cars.finance.LoanService.tick(server);
+                if (i < 3) {
+                    check(helper, car.isAlive() && com.reiko.cars.finance.LoanData.get(server).get(loanId).missed() == i, "missed " + i);
+                }
+            }
+            check(helper, car.isRemoved(), "repossessed: taken away");
+            CarEntity held = carById(helper, car.getUUID());
+            check(helper, held != null && held.isImpounded() && held.impound().repossessed(), "it's at the impound lot");
+            check(helper, Math.abs(held.getZ() - helper.absoluteVec(new Vec3(5.5, 1, 28.5)).z) <= 10, "by the office: " + held.position());
+            helper.assertValueEqual(held.impound().arrears(), 26_400L, "three missed payments owed");
+            check(helper, !held.canBeUsedBy(buyer) && held.canBeUsedBy(city), "only the lot's owner gets in");
+            check(helper, !com.reiko.cars.impound.ImpoundService.releaseFree(city, office, held).success(), "not let go free: the dealer's owed");
+
+            // Paying up gets it back, and the loan's back on track.
+            var screen = com.reiko.cars.impound.ImpoundMenu.create(0, buyer, office);
+            helper.assertValueEqual(screen.cost(), 31_400L, "the fee and the missed payments");
+            Purse.give(buyer, 31_400);
+            long cityBefore = ECO.getBalance(server, city.getUUID());
+            dealerBefore = ECO.getBalance(server, dealer.getUUID());
+            ShopActionResult released = com.reiko.cars.impound.ImpoundService.release(buyer, office, held, 31_400, Payment.cash());
+            check(helper, released.success(), "paying: " + released.message().getString());
+            helper.assertValueEqual(ECO.getBalance(server, city.getUUID()), cityBefore + 5_000, "the fee to the lot");
+            helper.assertValueEqual(ECO.getBalance(server, dealer.getUUID()), dealerBefore + 26_400, "the missed payments to the dealer");
+            check(helper, !held.isImpounded() && held.canBeUsedBy(buyer), "the car's theirs again");
+            helper.assertValueEqual(com.reiko.cars.finance.LoanService.owed(held), 52_800L, "less what was caught up");
+            check(helper, com.reiko.cars.finance.LoanData.get(server).get(loanId).state() == com.reiko.cars.finance.Loan.State.ACTIVE, "active again");
+
+            // Not got back in time: the dealer's.
+            for (int i = 1; i <= 3; i++) {
+                com.reiko.cars.finance.LoanService.dueNow(server, loanId);
+                com.reiko.cars.finance.LoanService.tick(server);
+            }
+            CarEntity again = carById(helper, held.getUUID());
+            check(helper, again != null && again.isImpounded(), "repossessed again");
+            com.reiko.cars.finance.LoanService.dueNow(server, loanId);
+            com.reiko.cars.finance.LoanService.tick(server);
+            check(helper, again.isOwner(dealer) && !again.isImpounded() && again.loanId() == null, "foreclosed: the dealer's, free of the lot");
+            check(helper, com.reiko.cars.finance.LoanData.get(server).get(loanId) == null, "and the loan's done");
+            check(helper, !CarKeys.holds(buyer, again.lockCode()), "on new locks");
+
+            // Paying one off early.
+            CarEntity second = vehicle(helper, CarType.HATCHBACK, 7.0, 6.0);
+            second.setOwner(dealer);
+            SaleService.setPrice(dealer, second, "100.00");
+            Purse.give(buyer, 2_000);
+            buyer.moveTo(second.getX() + 2, second.getY(), second.getZ());
+            check(helper, SaleService.buy(buyer, second, 10_000, Payment.cash(), true).success(), "a second car on finance");
+            ECO.setBalance(server, buyer.getUUID(), 100_000, "test");
+            ShopActionResult paidOff = com.reiko.cars.finance.LoanService.payOff(buyer, second);
+            check(helper, paidOff.success() && second.loanId() == null, "paid off early: " + paidOff.message().getString());
+            helper.assertValueEqual(ECO.getBalance(server, buyer.getUUID()), 100_000L - 8_800, "the $88 owed, from the bank");
+        } finally {
+            leave(helper, dealer, buyer, city);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 200)
+    public static void impoundLotsHoldBadlyParkedCars(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer council = join(helper);
+        ServerPlayer driver = join(helper);
+        ServerPlayer towie = worker(helper, "mechanic");
+        com.reiko.cars.impound.ImpoundOfficeBlockEntity office = impoundOffice(helper, new BlockPos(2, 1, 24), council, 5_000);
+        CarEntity truck = vehicle(helper, CarType.FLATBED, 5.0, 16.0);
+        CarEntity car = behind(helper, truck, CarType.SEDAN, 0.3);
+        car.setOwner(driver);
+        car.setLocked(true);
+        Vec3 carAt = helper.relativeVec(car.position());
+        ParkingMeterBlockEntity meter = meter(helper, new BlockPos((int) Math.floor(carAt.x), 1, (int) Math.floor(carAt.z) - 4), council);
+        towie.startRiding(truck, true);
+        helper.runAfterDelay(2, () -> {
+            try {
+                check(helper, Towing.towable(truck, towie) == null, "a stranger's locked car can't be towed");
+                long now = helper.getLevel().getGameTime();
+                meter.update(now);
+                meter.update(now + 1_300);
+                check(helper, meter.isExpired() && com.reiko.cars.impound.ImpoundService.badlyParked(car),
+                        "left at an expired meter: " + MeterService.parkedAt(meter) + " / " + car + " / " + MeterService.nearestMeter(car) + " at " + meter.getBlockPos()
+                                + " exp " + meter.isExpired());
+                check(helper, Towing.towable(truck, towie) == car, "so a tow truck can take it, locked or not");
+                Hitching.use(towie);
+                check(helper, car.getVehicle() == truck, "on the flatbed");
+                // Off to the impound lot, and down.
+                Vec3 lotSpot = helper.absoluteVec(new Vec3(6.0, 1.0, 27.0));
+                truck.setPos(lotSpot.x, truck.getY(), lotSpot.z);
+                truck.positionRider(car);
+                long xp = jobXp(towie, carJob("mechanic"));
+                Hitching.use(towie);
+                check(helper, !car.isPassenger() && car.isImpounded(), "dropped on the lot: impounded, at " + helper.relativeVec(car.position()));
+                check(helper, jobXp(towie, carJob("mechanic")) > xp, "and the tow pays the Mechanic job");
+                check(helper, !car.canBeUsedBy(driver) && !car.canManage(driver), "its owner can't get in or pick it up");
+                car.hurt(driver.damageSources().playerAttack(driver), 50.0F);
+                check(helper, car.isAlive(), "it can't be broken");
+                check(helper, car.canBeUsedBy(council), "the lot's owner can move it");
+
+                var screen = com.reiko.cars.impound.ImpoundMenu.create(0, driver, office);
+                check(helper, screen.carCount() == 1 && screen.cost() == 5_000 && !screen.repossessed(), "the owner sees it and the $50 fee");
+                check(helper, com.reiko.cars.impound.ImpoundMenu.create(0, towie, office).carCount() == 0, "nobody else sees it");
+                check(helper, !com.reiko.cars.impound.ImpoundService.release(driver, office, car, 4_000, Payment.cash()).success(),
+                        "an out-of-date cost is caught");
+                Purse.give(driver, 5_000);
+                long councilBefore = ECO.getBalance(server, council.getUUID());
+                ShopActionResult paid = com.reiko.cars.impound.ImpoundService.release(driver, office, car, 5_000, Payment.cash());
+                check(helper, paid.success(), "paying: " + paid.message().getString());
+                helper.assertValueEqual(ECO.getBalance(server, council.getUUID()), councilBefore + 5_000, "the fee to the lot's owner");
+                check(helper, !car.isImpounded() && car.canBeUsedBy(driver), "released");
+                check(helper, office.impounded() == 1 && office.released() == 1 && office.earned() == 5_000, "on the office's books");
+
+                // The lot's owner can let one go; a broken office lets them all go.
+                com.reiko.cars.impound.ImpoundService.impound(car, office, com.reiko.cars.impound.Impound.PARKING, 0, null);
+                check(helper, !com.reiko.cars.impound.ImpoundService.releaseFree(driver, office, car).success(), "not the car's owner");
+                check(helper, com.reiko.cars.impound.ImpoundService.releaseFree(council, office, car).success() && !car.isImpounded(), "the lot's owner");
+                com.reiko.cars.impound.ImpoundService.impound(car, office, com.reiko.cars.impound.Impound.PARKING, 0, null);
+                helper.setBlock(new BlockPos(2, 1, 24), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+                check(helper, !car.isImpounded(), "the office broken, the car's free");
+            } finally {
+                leave(helper, council, driver, towie);
+            }
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = YARD, timeoutTicks = 200)
+    public static void carRentalsGoOutAndComeBack(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer agency = join(helper);
+        ServerPlayer customer = join(helper);
+        ServerPlayer stranger = join(helper);
+        helper.setBlock(new BlockPos(5, 1, 2), ModBlocks.RENTAL_DESK.get().defaultBlockState());
+        com.reiko.cars.rental.RentalDeskBlockEntity desk = (com.reiko.cars.rental.RentalDeskBlockEntity) helper.getBlockEntity(new BlockPos(5, 1, 2));
+        desk.setOwner(agency);
+        CarEntity sedan = vehicle(helper, CarType.SEDAN, 3.0, 7.0);
+        sedan.setOwner(agency);
+        sedan.setLocked(true);
+        CarEntity hatch = vehicle(helper, CarType.HATCHBACK, 7.5, 8.0);
+        hatch.setOwner(agency);
+        hatch.setLocked(true);
+        CarEntity notTheirs = vehicle(helper, CarType.SEDAN, 5.0, 11.0);
+        notTheirs.setOwner(stranger);
+        CarEntity far = vehicle(helper, CarType.SEDAN, 5.0, 30.0);
+        far.setOwner(agency);
+        java.util.function.Function<Runnable, Runnable> step = body -> () -> {
+            try {
+                body.run();
+            } catch (RuntimeException e) {
+                leave(helper, agency, customer, stranger);
+                throw e;
+            }
+        };
+        helper.startSequence()
+                .thenIdle(2)
+                .thenExecute(step.apply(() -> {
+                    check(helper, com.reiko.cars.rental.RentalService.fleet(desk).size() == 2, "the agency's two cars on the lot are the fleet");
+                    check(helper, !com.reiko.cars.rental.RentalService.setPrice(customer, desk, CarType.SEDAN, "1.00").success(), "only the owner prices");
+                    check(helper, com.reiko.cars.rental.RentalService.setPrice(agency, desk, CarType.SEDAN, "20.00").success(), "$20 a day for a sedan");
+                    var screen = com.reiko.cars.rental.RentalMenu.create(0, customer, desk);
+                    helper.assertValueEqual(screen.carCount(), 2, "the customer sees both");
+                    Purse.give(customer, 10_000);
+                    long agencyBefore = ECO.getBalance(server, agency.getUUID());
+                    check(helper, !com.reiko.cars.rental.RentalService.rent(customer, desk, sedan, 2, 3_000, Payment.cash()).success(), "a stale price is caught");
+                    ShopActionResult rented = com.reiko.cars.rental.RentalService.rent(customer, desk, sedan, 2, 4_000, Payment.cash());
+                    check(helper, rented.success(), "renting for two days: " + rented.message().getString());
+                    helper.assertValueEqual(Purse.value(customer), 6_000L, "$40 in cash");
+                    helper.assertValueEqual(ECO.getBalance(server, agency.getUUID()), agencyBefore + 4_000, "to the agency");
+                    check(helper, sedan.rentedBy(customer) && sedan.canBeUsedBy(customer) && !sedan.canBeUsedBy(stranger), "theirs to open, nobody else's");
+                    customer.startRiding(sedan, true);
+                    check(helper, sedan.checkKey(), "and to start, without a key");
+                    check(helper, com.reiko.cars.rental.RentalService.fleet(desk).equals(List.of(hatch)), "out of the fleet while it's rented");
+                    check(helper, !SaleService.setPrice(agency, sedan, "10.00").success(), "not for sale while it's out");
+                    customer.stopRiding();
+                    // Driven off the lot...
+                    Vec3 away = helper.absoluteVec(new Vec3(5.0, 1.0, 26.0));
+                    sedan.setPos(away.x, sedan.getY(), away.z);
+                    com.reiko.cars.rental.RentalService.carTick(sedan);
+                    check(helper, sedan.rental() != null && sedan.rental().leftLot(), "it's left the lot");
+                    // ...and back again, parked and empty: done early.
+                    Vec3 back = helper.absoluteVec(new Vec3(3.0, 1.0, 7.0));
+                    sedan.setPos(back.x, sedan.getY(), back.z);
+                }))
+                .thenIdle(14)
+                .thenExecute(step.apply(() -> {
+                    com.reiko.cars.rental.RentalService.carTick(sedan);
+                    check(helper, sedan.rental() == null && !sedan.rentedBy(customer), "brought back early, the rental's over");
+
+                    // Out of time, left far off: it goes back to its spot by itself.
+                    com.reiko.cars.rental.RentalService.rent(customer, desk, hatch, 1, 1_500, Payment.cash());
+                    check(helper, hatch.rentedBy(customer), "the hatchback's rented");
+                    Vec3 home = hatch.position();
+                    Vec3 away = helper.absoluteVec(new Vec3(6.0, 1.0, 28.0));
+                    hatch.setPos(away.x, hatch.getY(), away.z);
+                    var rental = hatch.rental();
+                    long now = helper.getLevel().getGameTime();
+                    hatch.setRental(new com.reiko.cars.rental.Rental(rental.renter(), rental.renterName(), rental.desk(), rental.home(),
+                            rental.homeYaw(), now - 1, true));
+                    customer.startRiding(hatch, true);
+                    com.reiko.cars.rental.RentalService.carTick(hatch);
+                    check(helper, !hatch.checkKey(), "time's up: it won't start for them");
+                    check(helper, hatch.isAlive(), "and it waits while they're in it");
+                    customer.stopRiding();
+                    UUID id = hatch.getUUID();
+                    com.reiko.cars.rental.RentalService.carTick(hatch);
+                    check(helper, hatch.isRemoved(), "left alone, it's gone");
+                    CarEntity returned = carById(helper, id);
+                    check(helper, returned != null && returned.position().distanceTo(home) < 2.0 && returned.rental() == null,
+                            "back in its spot on the lot: " + (returned == null ? null : returned.position()) + " vs " + home);
+                    check(helper, returned.isOwner(agency) && com.reiko.cars.rental.RentalService.fleet(desk).contains(returned), "back in the fleet");
+                    helper.assertValueEqual(com.reiko.cars.car.CarDeliveries.get(server).pending(), 0, "nothing left on its way");
+                    leave(helper, agency, customer, stranger);
+                }))
+                .thenSucceed();
+    }
 }

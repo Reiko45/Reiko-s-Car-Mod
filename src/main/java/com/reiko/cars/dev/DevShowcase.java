@@ -113,7 +113,7 @@ public final class DevShowcase {
             rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false, null);
             rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, null);
             LevelSettings settings = new LevelSettings("showcase-" + System.currentTimeMillis(), GameType.CREATIVE, false,
-                    Difficulty.PEACEFUL, !MODE.equals("repair") && !MODE.equals("sales") && !MODE.equals("tolls") && !MODE.equals("insurance") && !MODE.equals("work"), rules, WorldDataConfiguration.DEFAULT); // no cheats: a customer, not an admin
+                    Difficulty.PEACEFUL, !MODE.equals("repair") && !MODE.equals("lots") && !MODE.equals("sales") && !MODE.equals("tolls") && !MODE.equals("insurance") && !MODE.equals("work"), rules, WorldDataConfiguration.DEFAULT); // no cheats: a customer, not an admin
             minecraft.createWorldOpenFlows().createFreshLevel(settings.levelName(), settings, new WorldOptions(1L, false, false),
                     registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT)
                             .value().createWorldDimensions(), new TitleScreen());
@@ -162,6 +162,8 @@ public final class DevShowcase {
             evScript();
         } else if (MODE.equals("fire")) {
             fireScript();
+        } else if (MODE.equals("lots")) {
+            lotsScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -2748,5 +2750,215 @@ public final class DevShowcase {
         at(480, mc -> hoverOn(mc, 34, 150));
         at(486, mc -> shot(mc, "196_hose_tooltip"));
         at(490, mc -> mc.stop());
+    }
+
+    // ---- car loans, rentals and the impound lot ----
+
+    private static final BlockPos RENT_DESK = new BlockPos(-12, -60, 2);
+    private static final BlockPos LOAN_DESK = new BlockPos(6, -60, 2);
+    private static final BlockPos POUND = new BlockPos(22, -60, 2);
+
+    private static com.reiko.cars.rental.RentalDeskBlockEntity rentalDesk(ServerPlayer player) {
+        return (com.reiko.cars.rental.RentalDeskBlockEntity) player.serverLevel().getBlockEntity(RENT_DESK);
+    }
+
+    private static com.reiko.cars.impound.ImpoundOfficeBlockEntity pound(ServerPlayer player) {
+        return (com.reiko.cars.impound.ImpoundOfficeBlockEntity) player.serverLevel().getBlockEntity(POUND);
+    }
+
+    private static List<CarEntity> carsOf(ServerLevel level, java.util.function.Predicate<CarEntity> which) {
+        return level.getEntitiesOfClass(CarEntity.class, new net.minecraft.world.phys.AABB(-40, -70, -40, 50, -40, 50), which);
+    }
+
+    private static void standAt(ServerPlayer player, BlockPos desk) {
+        player.getAbilities().flying = false;
+        player.onUpdateAbilities();
+        player.teleportTo(player.serverLevel(), desk.getX() + 0.5, -60.0, desk.getZ() + 2.5, 180.0F, 30.0F);
+    }
+
+    private static void lotsScript() {
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                MinecraftServer server = level.getServer();
+                level.setDayTime(6000);
+                tile(level, -24, -8, 32, 28);
+                // the rental agency: a desk and three cars nosed in
+                level.setBlockAndUpdate(RENT_DESK, ModBlocks.RENTAL_DESK.get().defaultBlockState()
+                        .setValue(com.reiko.cars.rental.RentalDeskBlock.FACING, Direction.SOUTH));
+                ServerPlayer rhea = extraPlayer(server, "Rhea");
+                rentalDesk(player).setOwner(rhea);
+                Object[][] fleet = {{CarType.SEDAN, -16.0, 0x1565C0}, {CarType.HATCHBACK, -12.0, 0xF4F5F7}, {CarType.PICKUP_TRUCK, -7.5, 0x2E7D32}};
+                for (Object[] each : fleet) {
+                    CarEntity car = spawned(level, (CarType) each[0], (Double) each[1], 9.0, 0.0F, 0.8);
+                    car.setOwner(rhea);
+                    car.setColor((Integer) each[2]);
+                    car.setLocked(true);
+                }
+                // the dealership, with a sports car on finance
+                level.setBlockAndUpdate(LOAN_DESK, ModBlocks.DEALERSHIP.get().defaultBlockState()
+                        .setValue(com.reiko.cars.sale.DealershipBlock.FACING, Direction.SOUTH));
+                ServerPlayer dee = extraPlayer(server, "Dee");
+                EconomyService.INSTANCE.deposit(server, dee.getUUID(), 500_000, "showcase");
+                desk2(player).setOwner(dee);
+                CarEntity sports = spawned(level, CarType.SPORTS_CAR, 6.0, 9.0, 180.0F, 0.7);
+                sports.setOwner(dee);
+                sports.setColor(0xC62828);
+                sports.setSalePrice(150_000);
+                sports.setLocked(true);
+                // the impound lot: an office, a fence, and a pickup towed off an expired meter
+                level.setBlockAndUpdate(POUND, ModBlocks.IMPOUND_OFFICE.get().defaultBlockState()
+                        .setValue(com.reiko.cars.impound.ImpoundOfficeBlock.FACING, Direction.SOUTH));
+                ServerPlayer city = extraPlayer(server, "City");
+                pound(player).setOwner(city);
+                for (int x = 15; x <= 30; x++) {
+                    for (int z = 0; z <= 14; z++) {
+                        boolean edge = x == 15 || x == 30 || z == 0 || z == 14;
+                        boolean gate = z == 14 && x >= 20 && x <= 24;
+                        if (edge && !gate) {
+                            level.setBlockAndUpdate(new BlockPos(x, -60, z), Blocks.IRON_BARS.defaultBlockState());
+                        }
+                    }
+                }
+                ServerPlayer bo = extraPlayer(server, "Bo");
+                CarEntity towed = spawned(level, CarType.PICKUP_TRUCK, 26.5, 8.0, 160.0F, 0.4);
+                towed.setOwner(bo);
+                towed.setColor(0xF9A825);
+                com.reiko.cars.impound.ImpoundService.impound(towed, pound(player), com.reiko.cars.impound.Impound.PARKING, 0, null);
+                player.getInventory().clearContent();
+                Purse.give(player, 500_000);
+                EconomyService.INSTANCE.deposit(server, player.getUUID(), 200_000, "showcase");
+            });
+        });
+        // the three lots
+        at(50, mc -> look(mc, -11.5, -53.5, 20.0, 180.0F, 24.0F));
+        at(70, mc -> shot(mc, "200_rental_lot"));
+        at(72, mc -> look(mc, -11.5, -58.4, 5.8, 180.0F, 16.0F));
+        at(90, mc -> shot(mc, "201_rental_desk"));
+        at(92, mc -> look(mc, 22.5, -52.5, 22.0, 180.0F, 26.0F));
+        at(112, mc -> shot(mc, "202_impound_lot"));
+        at(114, mc -> look(mc, 22.5, -58.4, 5.8, 180.0F, 16.0F));
+        at(132, mc -> shot(mc, "203_impound_office"));
+        // buying the sports car on finance
+        at(134, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                player.setGameMode(GameType.SURVIVAL);
+                standAt(player, LOAN_DESK.offset(0, 0, 4));
+                com.reiko.cars.sale.CarSaleMenu.open(player, car(player.serverLevel(), CarType.SPORTS_CAR));
+            });
+        });
+        at(154, mc -> shot(mc, "204_sale_finance_offer"));
+        at(156, mc -> clickAt(mc, 140, 142));
+        at(166, mc -> shot(mc, "205_sale_finance"));
+        at(168, mc -> clickAt(mc, 142, 120));
+        at(186, mc -> shot(mc, "206_financed"));
+        // what's owed, at the dealership's Trade tab
+        at(188, mc -> server(mc, player -> com.reiko.cars.sale.DealershipMenu.open(player, desk2(player))));
+        at(200, mc -> clickAt(mc, 103, 22));
+        at(206, mc -> {
+            for (int i = 0; i < 3; i++) {
+                if (mc.player.containerMenu instanceof com.reiko.cars.sale.DealershipMenu menu && menu.carType() != CarType.SPORTS_CAR) {
+                    clickAt(mc, 180, 33);
+                }
+            }
+        });
+        at(222, mc -> shot(mc, "207_loan_owed"));
+        at(224, mc -> mc.player.closeContainer());
+        // three days with nothing in the bank: repossessed, to the impound lot
+        at(226, mc -> server(mc, player -> {
+            MinecraftServer server = player.server;
+            EconomyService.INSTANCE.withdraw(server, player.getUUID(), EconomyService.INSTANCE.getBalance(server, player.getUUID()), "showcase");
+            CarEntity sports = car(player.serverLevel(), CarType.SPORTS_CAR);
+            java.util.UUID loan = sports.loanId();
+            ReikoCars.LOGGER.info("Showcase loan: {} owed {}", loan, com.reiko.cars.finance.LoanService.owed(sports));
+            for (int i = 0; i < 3 && loan != null; i++) {
+                com.reiko.cars.finance.LoanService.dueNow(server, loan);
+                com.reiko.cars.finance.LoanService.tick(server);
+            }
+        }));
+        at(270, mc -> server(mc, player -> carsOf(player.serverLevel(), c -> c.carType() == CarType.SPORTS_CAR)
+                .forEach(c -> ReikoCars.LOGGER.info("Showcase repossessed: at {} impounded {}", c.position(), c.isImpounded()))));
+        at(272, mc -> {
+            mc.options.hideGui = true;
+            server(mc, player -> player.setGameMode(GameType.CREATIVE));
+            look(mc, 22.5, -52.5, 22.0, 180.0F, 26.0F);
+        });
+        at(292, mc -> shot(mc, "208_repossessed"));
+        at(294, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                player.setGameMode(GameType.SURVIVAL);
+                standAt(player, POUND);
+                com.reiko.cars.impound.ImpoundMenu.open(player, pound(player));
+            });
+        });
+        at(314, mc -> shot(mc, "209_impound_customer"));
+        at(316, mc -> mc.player.closeContainer());
+        // renting a hatchback for two days
+        at(318, mc -> server(mc, player -> {
+            standAt(player, RENT_DESK);
+            com.reiko.cars.rental.RentalMenu.open(player, rentalDesk(player));
+        }));
+        at(336, mc -> clickAt(mc, 87, 68));
+        at(342, mc -> shot(mc, "210_rental_customer"));
+        at(344, mc -> clickAt(mc, 142, 132));
+        at(362, mc -> shot(mc, "211_rented"));
+        at(364, mc -> server(mc, player -> {
+            List<CarEntity> mine = carsOf(player.serverLevel(), c -> c.rentedBy(player));
+            ReikoCars.LOGGER.info("Showcase rented: {}", mine);
+            if (!mine.isEmpty()) {
+                player.startRiding(mine.getFirst(), true);
+            }
+        }));
+        at(380, mc -> {
+            mc.player.setYRot(0.0F);
+            mc.player.setXRot(10.0F);
+        });
+        at(392, mc -> shot(mc, "212_rental_hud"));
+        // the owners' side
+        at(394, mc -> server(mc, player -> {
+            player.stopRiding();
+            ServerLevel level = player.serverLevel();
+            rentalDesk(player).setOwner(player);
+            for (CarEntity car : carsOf(level, c -> "Rhea".equals(c.ownerName()))) {
+                car.setOwner(player);
+            }
+            pound(player).setOwner(player);
+            standAt(player, POUND);
+            com.reiko.cars.impound.ImpoundMenu.open(player, pound(player));
+        }));
+        at(414, mc -> shot(mc, "213_impound_manager"));
+        at(416, mc -> clickAt(mc, 180, 18));
+        at(426, mc -> shot(mc, "214_impound_manager_next"));
+        at(428, mc -> {
+            mc.player.closeContainer();
+            server(mc, player -> {
+                standAt(player, RENT_DESK);
+                com.reiko.cars.rental.RentalMenu.open(player, rentalDesk(player));
+            });
+        });
+        at(448, mc -> shot(mc, "215_rental_manager"));
+        at(450, mc -> clickAt(mc, 97, 22));
+        at(460, mc -> shot(mc, "216_rental_prices"));
+        at(462, mc -> mc.player.closeContainer());
+        // the items
+        at(464, mc -> server(mc, player -> {
+            player.getInventory().clearContent();
+            give(player, ModItems.RENTAL_DESK.get(), 1);
+            give(player, ModItems.IMPOUND_OFFICE.get(), 1);
+        }));
+        at(474, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
+        at(477, mc -> hoverOn(mc, 16, 150));
+        at(484, mc -> shot(mc, "217_rental_desk_item"));
+        at(486, mc -> hoverOn(mc, 34, 150));
+        at(492, mc -> shot(mc, "218_impound_office_item"));
+        at(496, mc -> mc.stop());
+    }
+
+    private static com.reiko.cars.sale.DealershipBlockEntity desk2(ServerPlayer player) {
+        return (com.reiko.cars.sale.DealershipBlockEntity) player.serverLevel().getBlockEntity(LOAN_DESK);
     }
 }

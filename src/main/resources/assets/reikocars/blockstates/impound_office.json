@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "reikocars:block/impound_office"
+    },
+    "facing=east": {
+      "model": "reikocars:block/impound_office",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "reikocars:block/impound_office",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "reikocars:block/impound_office",
+      "y": 270
+    }
+  }
+}

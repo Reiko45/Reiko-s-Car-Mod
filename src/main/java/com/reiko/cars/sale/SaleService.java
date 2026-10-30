@@ -126,12 +126,31 @@ public final class SaleService {
         if (!car.canManage(player) || car.owner() == null) {
             return ShopActionResult.fail("sale.reikocars.not_yours", car.ownerName());
         }
+        ShopActionResult tied = tiedUp(car);
+        if (tied != null) {
+            return tied;
+        }
         OptionalLong price = parse(text);
         if (price.isEmpty()) {
             return ShopActionResult.fail("sale.reikocars.bad_price");
         }
         car.setSalePrice(price.getAsLong());
         return ShopActionResult.ok(Component.translatable("sale.reikocars.for_sale", car.kindName(), EconomyApi.get().format(price.getAsLong())));
+    }
+
+    /** Why {@code car} can't change hands now (a loan on it, out on rent, held at an impound lot), or null if it can. */
+    @Nullable
+    static ShopActionResult tiedUp(CarEntity car) {
+        if (car.loanId() != null) {
+            return ShopActionResult.fail("loan.reikocars.pay_off_first");
+        }
+        if (car.rental() != null) {
+            return ShopActionResult.fail("rental.reikocars.rented_out", car.kindName());
+        }
+        if (car.isImpounded()) {
+            return ShopActionResult.fail("impound.reikocars.held");
+        }
+        return null;
     }
 
     public static ShopActionResult takeOffSale(ServerPlayer player, CarEntity car) {
@@ -150,6 +169,14 @@ public final class SaleService {
      * @param expected the price the screen showed, before tax
      */
     public static ShopActionResult buy(ServerPlayer buyer, CarEntity car, long expected, Payment payment) {
+        return buy(buyer, car, expected, payment, false);
+    }
+
+    /**
+     * {@code buyer} buys {@code car}, outright or (with {@code finance}, at a dealership) on a car loan: the down payment
+     * and the sales tax now, the rest a day at a time (see {@link com.reiko.cars.finance.LoanService}).
+     */
+    public static ShopActionResult buy(ServerPlayer buyer, CarEntity car, long expected, Payment payment, boolean finance) {
         UUID seller = car.owner();
         if (!car.isAlive() || !car.isForSale() || seller == null) {
             return ShopActionResult.fail("sale.reikocars.not_for_sale", car.kindName());
@@ -172,20 +199,31 @@ public final class SaleService {
         if (price + tax > Money.MAX_BALANCE) {
             return ShopActionResult.fail("sale.reikocars.bad_price");
         }
+        DealershipBlockEntity lot = lotOf(car, seller);
+        com.reiko.cars.finance.LoanService.Terms terms = null;
+        if (finance) {
+            if (!com.reiko.cars.finance.LoanService.canFinance(car, lot)) {
+                return ShopActionResult.fail("loan.reikocars.no_finance");
+            }
+            terms = com.reiko.cars.finance.LoanService.terms(price);
+        }
+        long now = terms != null ? terms.down() : price;
         String sellerName = car.ownerName();
         ShopPayments.Charge charge = null;
-        if (price > 0) {
-            Component description = Component.translatable("sale.reikocars.bill_line", car.kindName(), sellerName);
-            charge = ShopPayments.charge(buyer, payment, price, tax, seller, "reikocars.car_sale", description);
+        if (now > 0 || (terms != null && tax > 0)) {
+            Component description = Component.translatable(terms != null ? "loan.reikocars.bill_line" : "sale.reikocars.bill_line", car.kindName(), sellerName);
+            charge = ShopPayments.charge(buyer, payment, now, tax, seller, "reikocars.car_sale", description);
             if (!charge.success()) {
                 return ShopActionResult.fail(charge.message());
             }
         }
-        DealershipBlockEntity lot = lotOf(car, seller);
         if (lot != null) {
             lot.recordSale(price);
         }
         handOver(car, buyer);
+        if (terms != null) {
+            com.reiko.cars.finance.LoanService.start(buyer, car, lot, terms);
+        }
         ItemStack key = CarKeys.keyFor(car);
         if (!buyer.getInventory().add(key)) {
             buyer.drop(key, false);
@@ -197,6 +235,11 @@ public final class SaleService {
         }
         if (price <= 0) {
             return ShopActionResult.ok(Component.translatable("sale.reikocars.bought_free", car.kindName()));
+        }
+        if (terms != null) {
+            Component line = Component.translatable("loan.reikocars.bought", car.kindName(), eco.format(terms.down() + tax), eco.format(terms.installment()),
+                    terms.days(), sellerName);
+            return ShopActionResult.ok(charge == null ? line : ShopPayments.receipt(line, payment, charge));
         }
         Component line = tax > 0
                 ? Component.translatable("sale.reikocars.bought_tax", car.kindName(), eco.format(price + tax), eco.format(tax))
@@ -233,6 +276,10 @@ public final class SaleService {
         }
         if (!car.isAlive() || !car.isOwner(seller) || !carsOnLot(lot).contains(car)) {
             return ShopActionResult.fail("sale.reikocars.not_on_lot", (int) reach());
+        }
+        ShopActionResult tied = tiedUp(car);
+        if (tied != null) {
+            return tied;
         }
         if (!car.getPassengers().isEmpty()) {
             return ShopActionResult.fail("sale.reikocars.occupied", car.kindName());

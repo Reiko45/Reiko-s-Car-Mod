@@ -81,6 +81,8 @@ public final class ModItems {
     public static final DeferredItem<CarKeyItem> CAR_KEY = ITEMS.register("car_key", () -> new CarKeyItem(new Item.Properties().stacksTo(1)));
 
     public static final DeferredItem<BlockItem> DEALERSHIP = ITEMS.registerSimpleBlockItem(ModBlocks.DEALERSHIP);
+    public static final DeferredItem<BlockItem> IMPOUND_OFFICE = ITEMS.registerSimpleBlockItem(ModBlocks.IMPOUND_OFFICE);
+    public static final DeferredItem<BlockItem> RENTAL_DESK = ITEMS.registerSimpleBlockItem(ModBlocks.RENTAL_DESK);
     /** Puts a car up for sale anywhere. A tool: it isn't used up. */
     public static final DeferredItem<ForSaleSignItem> FOR_SALE_SIGN = ITEMS.register("for_sale_sign",
             () -> new ForSaleSignItem(new Item.Properties().stacksTo(16)));

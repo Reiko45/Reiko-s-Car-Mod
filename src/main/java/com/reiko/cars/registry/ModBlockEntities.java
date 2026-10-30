@@ -30,6 +30,10 @@ public final class ModBlockEntities {
     public static final Supplier<BlockEntityType<MailboxBlockEntity>> MAILBOX = BLOCK_ENTITIES.register("mailbox",
             () -> BlockEntityType.Builder.of(MailboxBlockEntity::new, ModBlocks.MAILBOX.get()).build(null));
 
+    public static final Supplier<BlockEntityType<com.reiko.cars.impound.ImpoundOfficeBlockEntity>> IMPOUND_OFFICE = BLOCK_ENTITIES.register(
+            "impound_office", () -> BlockEntityType.Builder.of(com.reiko.cars.impound.ImpoundOfficeBlockEntity::new, ModBlocks.IMPOUND_OFFICE.get()).build(null));
+    public static final Supplier<BlockEntityType<com.reiko.cars.rental.RentalDeskBlockEntity>> RENTAL_DESK = BLOCK_ENTITIES.register(
+            "rental_desk", () -> BlockEntityType.Builder.of(com.reiko.cars.rental.RentalDeskBlockEntity::new, ModBlocks.RENTAL_DESK.get()).build(null));
     public static final Supplier<BlockEntityType<DealershipBlockEntity>> DEALERSHIP = BLOCK_ENTITIES.register("dealership",
             () -> BlockEntityType.Builder.of(DealershipBlockEntity::new, ModBlocks.DEALERSHIP.get()).build(null));
 

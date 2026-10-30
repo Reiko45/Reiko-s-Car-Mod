@@ -102,7 +102,11 @@ public final class CarHud implements LayeredDraw.Layer {
         graphics.pose().popPose();
         Component unitLabel = Component.translatable(unit.translationKey);
         // Broken down or out of fuel: in red, at the top right, where the unit gives way to it if need be.
-        Component warning = car.isBrokenDown() ? Component.translatable("hud.reikocars.broken_down")
+        boolean renting = minecraft.player.getUUID().equals(car.renter());
+        long rentalLeft = car.rentalUntil() - minecraft.level.getGameTime();
+        Component warning = car.isImpounded() ? Component.translatable("hud.reikocars.impounded")
+                : car.isBrokenDown() ? Component.translatable("hud.reikocars.broken_down")
+                : renting && rentalLeft <= 0 ? Component.translatable("hud.reikocars.rental_over")
                 : car.getControllingPassenger() != null && !car.keyedIn() ? Component.translatable("hud.reikocars.no_key")
                 : car.fuelFraction() <= 0 ? Component.translatable(car.carType().isElectric() ? "hud.reikocars.battery_flat" : "hud.reikocars.out_of_fuel")
                 : null;
@@ -118,7 +122,11 @@ public final class CarHud implements LayeredDraw.Layer {
             graphics.drawString(font, "R", x + WIDTH - 12, y + 6, 0xFFD54F, false);
         }
         long meter = car.meterCents();
-        if (meter >= 0) {
+        if (renting && rentalLeft > 0) {
+            // A rental's time left, where the lock shows otherwise.
+            Component left = Component.translatable("hud.reikocars.rental", com.reiko.cars.rental.RentalService.timeLeft(rentalLeft));
+            graphics.drawString(font, left, x + WIDTH - 6 - font.width(left), y + 16, rentalLeft < 2_400 ? 0xFFFF8A65 : 0xFF81D4FA, false);
+        } else if (meter >= 0) {
             // A taxi's meter, where the lock shows otherwise.
             Component fare = Component.translatable("hud.reikocars.fare", com.reiko.economy.api.EconomyApi.get().format(meter));
             graphics.drawString(font, fare, x + WIDTH - 6 - font.width(fare), y + 16, 0xFFD54F, false);

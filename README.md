@@ -18,6 +18,10 @@ There are **electric cars** too, charged at **charging stations** that BuildCraf
 that sell the charge for cash or card the same way. And a **fire truck**: a fire hose that sprays from its water
 tank, a ladder that raises up the back, and **fire hydrants** to fill it from BuildCraft pumps.
 
+Dealerships sell cars **on finance**, paid off a day at a time from the bank, and a car whose payments stop is
+**repossessed** to an **impound lot**, where tow trucks also bring cars left at expired parking meters. **Rental
+desks** hire out cars by the day; a rented car goes back to its lot by itself when the time's up.
+
 ## Requirements
 
 - Minecraft 1.21.1, NeoForge 21.1.265 or newer (as Reiko's Economy Mod needs)
@@ -237,6 +241,57 @@ admin) can break it. The cars its owner parks within **10 blocks** make up the l
 - **Customers' Trade in tab:** park your own car on the lot and sell it to the dealership for its offer, paid from the
   dealer's bank account. The car becomes the dealer's, ready for them to price.
 
+### Car loans
+
+A car for sale on a dealership's lot can be bought **on finance**. Its buy screen has **Pay in full** and
+**Finance** buttons; on finance you pay **20% down** now (plus the sales tax on the whole price, by card or cash),
+and the rest, with **10% interest** on top, comes out of your bank account in **10 daily payments** (one every
+Minecraft day, 20 minutes) to the dealer. A $1,500 car is $300 down, then $132 a day. The car is yours from the start,
+with a key for new locks.
+
+- **Until it's paid off** it can't be put up for sale, traded in or picked up. The dealership's **Trade in** tab
+  shows what's still owed on it, and **Pay off the loan** pays the rest from your bank account at once.
+- **Missed payments:** a payment your bank account can't cover is missed (you get a message each time). After
+  **3 missed in a row**, the car is **repossessed**: it's taken away, wherever it is, to the impound lot nearest the
+  dealership (see [Impound lots](#impound-lots)). Pay the missed payments and the lot's fee there within **5 days**
+  and it's yours again, with the loan back on track; the missed payments go to the dealer. If you don't, the car
+  is the dealer's, on new locks, and the loan's done. With no impound lot anywhere, the dealer takes it straight back.
+
+## Impound lots
+
+Put down an **Impound Office** (a booth under a yellow IMPOUND sign). Whoever places it owns it, and only they (or an
+admin) can break it. Its lot is everything within **10 blocks**. Fence it in if you like.
+
+- **Towing in:** a car left at an **expired parking meter** (its time run out, or never paid, past the grace minute,
+  at a meter that isn't its owner's) can be picked up by either tow truck even though it's locked and not yours.
+  Put it down on an impound lot and it's **impounded**. The tow pays the Mechanic job (unless it's your own car or
+  your own lot), and the car's owner gets a message saying where it is and what the fee is.
+- **Repossessed cars** from missed loan payments are brought there too.
+- **While it's held** an **IMPOUNDED** sign floats over it, and its owner can't get in, drive it, open it or pick it
+  up. The lot's owner can move it about.
+- **Getting it back:** right-click the office. It shows your cars held there, why, for how long and what it costs:
+  the **release fee** (plus sales tax), and for a repossessed car the missed loan payments as well. Pay by card or
+  cash and it's yours again where it stands. The fee goes to the lot's owner.
+- **The owner's side:** the owner's screen shows every car held there. They can **let a towed car go** for free
+  (not a repossessed one: the dealer's owed), set the release fee, and see the books: cars towed in, released and
+  fees taken. Breaking the office lets every car held there go.
+
+## Car rentals
+
+Put down a **Car Rental Desk** (a counter under a RENTALS sign) and park your cars within **10 blocks** of it: they
+make up its fleet, unless they're up for sale or someone's in them.
+
+- **Renting:** right-click the desk. Pick a car with the arrows, choose **1 to 7 days** (a day is 20 minutes), and
+  pay the day rate times the days, plus sales tax, by card or cash. The money goes to the desk's owner.
+- **While it's rented** the renter can open and drive it without a key; nobody else can. The dashboard shows the
+  time left where it would say LOCKED, and you get a warning two minutes and thirty seconds before it's up.
+- **Bringing it back early:** park it back on the lot and get out, and the rental ends.
+- **When the time's up** it won't start for the renter any more. As soon as nobody's in it, it goes back to its spot
+  on the lot by itself, wherever it was left (even far away, in chunks nobody's in).
+- **The owner's side:** the **Fleet** tab shows the cars on the lot and the ones out on rent, with the time each has
+  left. The **Prices** tab sets a day's rent for each kind of car (0 stops renting that kind out), and both show the
+  books: rentals and takings. A rented car can't be put up for sale until it's back.
+
 ## Motorcycles
 
 Four motorcycles ride like the cars (same keys, fuel, locks, paint and pumps), on gasoline:
@@ -446,7 +501,8 @@ Two diesel tow trucks fetch cars that have broken down (or anything else that ne
 
 Either truck takes any car, van or pickup up to about 4.8 blocks long, broken down or not, as long as nobody is in
 it and it's yours or unlocked. The flatbed carries motorcycles too; neither takes semis, buses, tractors or another
-tow truck. The dashboard shows **[G] Tow car** when there's one to pick up. A towed car doesn't run, burn fuel or
+tow truck. (Cars left at an expired parking meter are the exception: a tow truck may take those, locked or not, to an
+[impound lot](#impound-lots).) The dashboard shows **[G] Tow car** when there's one to pick up. A towed car doesn't run, burn fuel or
 wear, and goes wherever the truck goes, saved with it. A loaded tow truck is a little slower and its tires and
 brakes wear faster.
 
@@ -585,7 +641,7 @@ as you work, level up, and hand out daily contracts.
 | --- | --- |
 | Driver | Each taxi ride a rider pays for ($1.50), and each bus passenger who pays the fare ($0.50) |
 | Mail Carrier | Each parcel delivered by mail van ($0.75) |
-| Mechanic | Each part fitted to someone else's vehicle at a Repair Bench ($0.60), whether from the bench's stock (paid to the bench's owner) or from your own pocket, and each of someone else's broken-down cars towed in to a Repair Bench from at least 24 blocks away ($4.00, once per breakdown) |
+| Mechanic | Each part fitted to someone else's vehicle at a Repair Bench ($0.60), whether from the bench's stock (paid to the bench's owner) or from your own pocket, each of someone else's broken-down cars towed in to a Repair Bench from at least 24 blocks away ($4.00, once per breakdown), and each badly parked car towed to an impound lot ($2.00) |
 | Trucker | Each bucket of fuel unloaded from a tanker into a pump ($0.40), and every 100 blocks driven towing a trailer at least a quarter full ($0.50) |
 | Garbage Collector | Each trash can with something in it emptied by garbage truck ($1.50, once a day per can) |
 | Firefighter | Each fire put out with a fire hose ($0.50; not fires you lit, nor endless ones, and up to 64 a day: see [Fire trucks](#fire-trucks)) |
@@ -593,7 +649,7 @@ as you work, level up, and hand out daily contracts.
 Their contracts ask for taxi rides, bus passengers, parcels, parts fitted, tow-ins, fuel delivered, loaded hauls,
 trash cans emptied, fires put out, or deliveries of tires, brake pads, motor oil, paper, rotten flesh and water buckets. The job files are in `data/reikocars/jobs`, so a datapack can
 change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`, `parcel_delivered`, `repair_part`,
-`tow`, `fuel_delivered`, `haul_distance`, `trash_collected` and `fire_put_out`.
+`tow`, `impound_tow`, `fuel_delivered`, `haul_distance`, `trash_collected` and `fire_put_out`.
 
 ## Recipes
 
@@ -615,6 +671,8 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | Blank Key ×2 | an iron ingot and a gold nugget (shapeless) |
 | Car Dealership | paper, any sign, paper on top, iron ingot, gold ingot, iron ingot across the middle, iron ingot, chest, iron ingot below |
 | For Sale Sign | any sign, red dye and paper (shapeless) |
+| Car Rental Desk | paper, any sign, paper on top, blank key, blue dye, blank key across the middle, iron ingot, chest, iron ingot below |
+| Impound Office | yellow dye, any sign, yellow dye on top, iron ingot, iron bars, iron ingot across the middle, iron ingot, chain, iron ingot below |
 | Parking Meter | iron ingot, glass pane, iron ingot on top, gold nugget, redstone, gold nugget across the middle, an iron ingot below |
 | Toll Booth | yellow dye, glass pane, yellow dye on top, iron ingot, redstone, iron ingot across the middle, three smooth stone below |
 | Toll Gate | stick, red dye, stick on top, yellow dye, piston, yellow dye across the middle, iron ingots in the bottom corners |
@@ -758,6 +816,17 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `fares.taxiStartingFare` | `3.0` | What a new taxi's meter starts at |
 | `fares.taxiFarePer100Blocks` | `1.0` | What a new taxi's meter adds per 100 blocks |
 | `sales.dealershipReach` | `10.0` | How close a car must be to a dealership to be on its lot |
+| `loans.enabled` | `true` | Whether dealerships sell cars on finance |
+| `loans.downPayment` | `0.2` | The share of the price paid down (sales tax on the whole price is paid with it) |
+| `loans.interestRate` | `0.1` | Interest on the rest, all told |
+| `loans.days` | `10` | How many daily payments the rest is paid in |
+| `loans.missedPaymentsToRepossess` | `3` | Missed payments in a row before the car is repossessed |
+| `loans.reclaimDays` | `5` | Days a repossessed car's owner has to get it back before it's the dealer's |
+| `impound.lotRadius` | `10.0` | How far from an impound office its lot reaches |
+| `impound.defaultReleaseFee` | `50.0` | A new impound office's release fee (its owner can change it) |
+| `rentals.lotRadius` | `10.0` | How far from a rental desk its lot reaches |
+| `rentals.defaultPricePerDay` | `15.0` | A new rental desk's day rate for every kind of car (its owner can change each) |
+| `rentals.maxDays` | `7` | The most days a car can be rented for at once |
 | `parking.ratePer10Minutes` | `0.5` | What a new parking meter charges per 10 minutes (its owner can change it) |
 | `parking.fine` | `10.0` | A new meter's fine for overstaying, from the car owner's bank account (its owner can change it) |
 | `parking.graceSeconds` | `60` | How long a car can stand at a meter unpaid, or after its time runs out, before it's ticketed |
@@ -798,6 +867,7 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 ./gradlew runClient -Pshowcase=keys       # no key, cutting one, its tooltip, driving with it, locking it from a distance
 ./gradlew runClient -Pshowcase=fares      # paying a bus fare, a taxi's meter running and paid, the owner's fare screen
 ./gradlew runClient -Pshowcase=sales      # a dealership's lot, buying a car, trading one in, the dealer's tabs, a For Sale Sign
+./gradlew runClient -Pshowcase=lots       # buying on finance, repossession to the impound lot, renting a car, the owners' screens
 ./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
 
@@ -856,7 +926,7 @@ sign glow (`neoforge_data` light on those elements).
 ```text
 src/main/java/com/reiko/cars/
 ├── ReikoCars.java        mod entry point
-├── car/                  the car entity and its types, fuel (CarFuel, CarTank), wear and tear (CarCondition), the car item, WorkVehicles (sirens, healing, tipping, mixing) and CarSignals (turn signals, hazards, the alarm)
+├── car/                  the car entity and its types, CarDeliveries (moving a car anywhere, loaded or not), fuel (CarFuel, CarTank), wear and tear (CarCondition), the car item, WorkVehicles (sirens, healing, tipping, mixing) and CarSignals (turn signals, hazards, the alarm)
 ├── garbage/              the Trash Can block and block entity, and GarbageService (the garbage truck's round)
 ├── fire/                 the fire truck's water (FireTrucks), the fire hose and spraying (Firefighting), the ladder and its climbable blocks (FireLadder), the Fire Hydrant, and who lit what (FireEvents)
 ├── radio/                the car radio: its settings (CarRadio), the stations, and its menu
@@ -870,6 +940,9 @@ src/main/java/com/reiko/cars/
 ├── repair/               the Repair Bench block, block entity, menu and protection, the jobs (RepairJobs), and RepairService (repairs and paying)
 ├── tow/                  the tow trucks' picking up, carrying and dropping off (Towing)
 ├── sale/                 the For Sale Sign, a car's sale screen, the Car Dealership block, its lot and tabs, and SaleService (buying, selling, trade-ins)
+├── finance/              car loans: the Loan, where they're kept (LoanData), and LoanService (terms, daily payments, repossession, paying off)
+├── impound/              the Impound Office block, block entity, menu and protection, the lots (ImpoundRegistry), and ImpoundService (towing in, fees, releasing)
+├── rental/               the Car Rental Desk block, block entity, menu and protection, and RentalService (the fleet, renting, returning)
 ├── fare/                 bus fares and the taxi meter (CarFares), the pay and fare screens' menus, and FareService
 ├── key/                  car keys: the key items, what a key fits (CarKey), and cutting, changing the locks and the key fob (CarKeys)
 ├── insurance/            the Insurance Office block, block entity, menu and protection, policies (kept on cars and their items), and InsuranceService (cover and claims)
@@ -878,10 +951,10 @@ src/main/java/com/reiko/cars/
 ├── toll/                 the toll booth and toll gate blocks, their block entities and menus, protection, and TollService (paying and the gate)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
-├── network/              packets: pump, repair bench, mailbox, parking meter, toll, insurance, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
+├── network/              packets: pump, repair bench, mailbox, parking meter, toll, insurance, impound, rental, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
+├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)

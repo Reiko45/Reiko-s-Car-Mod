@@ -14,6 +14,12 @@
       "label": "Breakdown towed in",
       "pay": 4.0,
       "xp": 20
+    },
+    {
+      "action": "reikocars:impound_tow",
+      "label": "Car towed to the impound lot",
+      "pay": 2.0,
+      "xp": 10
     }
   ],
   "contracts": [

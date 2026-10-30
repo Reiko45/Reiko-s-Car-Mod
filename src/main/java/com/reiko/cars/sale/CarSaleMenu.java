@@ -1,6 +1,7 @@
 package com.reiko.cars.sale;
 
 import com.reiko.cars.car.CarEntity;
+import com.reiko.cars.finance.LoanService;
 import com.reiko.cars.registry.ModMenus;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -26,13 +27,17 @@ public final class CarSaleMenu extends AbstractContainerMenu {
     private final int condition;
     private final int fuel;
     private final int color;
+    /** The car-loan terms on offer (at a dealership), or null if it can only be bought outright. */
+    @Nullable
+    private final LoanService.Terms terms;
 
     public CarSaleMenu(int containerId, Inventory inventory, RegistryFriendlyByteBuf buf) {
-        this(containerId, null, buf.readBoolean(), buf.readUtf(128), buf.readUtf(64), buf.readLong(), buf.readVarInt(), buf.readVarInt(), buf.readInt());
+        this(containerId, null, buf.readBoolean(), buf.readUtf(128), buf.readUtf(64), buf.readLong(), buf.readVarInt(), buf.readVarInt(), buf.readInt(),
+                readTerms(buf));
     }
 
     private CarSaleMenu(int containerId, @Nullable CarEntity car, boolean selling, String nameKey, String ownerName, long price,
-                        int condition, int fuel, int color) {
+                        int condition, int fuel, int color, @Nullable LoanService.Terms terms) {
         super(ModMenus.CAR_SALE.get(), containerId);
         this.car = car;
         this.selling = selling;
@@ -42,6 +47,18 @@ public final class CarSaleMenu extends AbstractContainerMenu {
         this.condition = condition;
         this.fuel = fuel;
         this.color = color;
+        this.terms = terms;
+    }
+
+    @Nullable
+    private static LoanService.Terms termsFor(CarEntity car, boolean selling) {
+        return !selling && LoanService.canFinance(car, SaleService.lotOf(car, car.owner())) ? LoanService.terms(car.salePrice()) : null;
+    }
+
+    @Nullable
+    private static LoanService.Terms readTerms(RegistryFriendlyByteBuf buf) {
+        return buf.readBoolean() ? new LoanService.Terms(buf.readVarLong(), buf.readVarLong(), buf.readVarLong(), buf.readVarLong(), buf.readVarInt())
+                : null;
     }
 
     /** Opens the screen: the selling side for the car's owner, the buying side for anyone else (admins included). */
@@ -56,12 +73,28 @@ public final class CarSaleMenu extends AbstractContainerMenu {
             buf.writeVarInt(Math.round(car.condition().overall(car::hasPart) * 1000));
             buf.writeVarInt(Math.round(car.fuelFraction() * 1000));
             buf.writeInt(car.color());
+            LoanService.Terms terms = termsFor(car, selling);
+            buf.writeBoolean(terms != null);
+            if (terms != null) {
+                buf.writeVarLong(terms.price());
+                buf.writeVarLong(terms.down());
+                buf.writeVarLong(terms.total());
+                buf.writeVarLong(terms.installment());
+                buf.writeVarInt(terms.days());
+            }
         });
     }
 
     public static CarSaleMenu create(int containerId, ServerPlayer player, CarEntity car) {
         return new CarSaleMenu(containerId, car, car.isOwner(player), car.nameKey(), car.ownerName(), car.salePrice(),
-                Math.round(car.condition().overall(car::hasPart) * 1000), Math.round(car.fuelFraction() * 1000), car.color());
+                Math.round(car.condition().overall(car::hasPart) * 1000), Math.round(car.fuelFraction() * 1000), car.color(),
+                termsFor(car, car.isOwner(player)));
+    }
+
+    /** The car-loan terms on offer, or null if it can only be bought outright. */
+    @Nullable
+    public LoanService.Terms terms() {
+        return terms;
     }
 
     @Nullable

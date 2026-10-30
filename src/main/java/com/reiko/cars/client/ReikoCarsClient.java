@@ -204,6 +204,8 @@ public final class ReikoCarsClient {
         event.register(ModMenus.FARE_SETTINGS.get(), FareSettingsScreen::new);
         event.register(ModMenus.CAR_SALE.get(), CarSaleScreen::new);
         event.register(ModMenus.DEALERSHIP.get(), DealershipScreen::new);
+        event.register(ModMenus.IMPOUND.get(), ImpoundScreen::new);
+        event.register(ModMenus.RENTAL.get(), RentalScreen::new);
         event.register(ModMenus.PARKING_METER.get(), ParkingMeterScreen::new);
         event.register(ModMenus.TOLL.get(), TollScreen::new);
         event.register(ModMenus.TOLL_BOOTH.get(), TollBoothScreen::new);

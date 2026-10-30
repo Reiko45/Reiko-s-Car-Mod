@@ -19,6 +19,8 @@
     "reikocars:speed_sign",
     "reikocars:street_lamp",
     "reikocars:charging_station",
-    "reikocars:fire_hydrant"
+    "reikocars:fire_hydrant",
+    "reikocars:rental_desk",
+    "reikocars:impound_office"
   ]
 }

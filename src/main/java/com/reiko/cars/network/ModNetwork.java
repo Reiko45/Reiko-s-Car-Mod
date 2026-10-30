@@ -58,6 +58,7 @@ public final class ModNetwork {
         registrar.playToServer(MailActionPayload.TYPE, MailActionPayload.STREAM_CODEC, ModNetwork::handleMail);
         registrar.playToServer(FareActionPayload.TYPE, FareActionPayload.STREAM_CODEC, ModNetwork::handleFare);
         registrar.playToServer(SaleActionPayload.TYPE, SaleActionPayload.STREAM_CODEC, ModNetwork::handleSale);
+        registrar.playToServer(LotActionPayload.TYPE, LotActionPayload.STREAM_CODEC, ModNetwork::handleLot);
         registrar.playToServer(MeterActionPayload.TYPE, MeterActionPayload.STREAM_CODEC, ModNetwork::handleMeter);
         registrar.playToServer(TollActionPayload.TYPE, TollActionPayload.STREAM_CODEC, ModNetwork::handleToll);
         registrar.playToServer(InsuranceActionPayload.TYPE, InsuranceActionPayload.STREAM_CODEC, ModNetwork::handleInsurance);
@@ -155,6 +156,68 @@ public final class ModNetwork {
         ShopFeedback.send(player, result);
     }
 
+    private static void handleLot(LotActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || player.containerMenu.containerId != payload.containerId()
+                || !player.containerMenu.stillValid(player)) {
+            return;
+        }
+        Component nothing = Component.translatable("sale.reikocars.nothing_picked");
+        if (player.containerMenu instanceof com.reiko.cars.impound.ImpoundMenu menu && menu.office() != null) {
+            CarEntity car = menu.selected();
+            ShopActionResult result = switch (payload.action()) {
+                case LotActionPayload.RELEASE -> car == null ? ShopActionResult.fail(nothing)
+                        : com.reiko.cars.impound.ImpoundService.release(player, menu.office(), car, payload.expected(), payload.payment());
+                case LotActionPayload.RELEASE_FREE -> car == null ? ShopActionResult.fail(nothing)
+                        : com.reiko.cars.impound.ImpoundService.releaseFree(player, menu.office(), car);
+                case LotActionPayload.SET_FEE -> {
+                    ShopActionResult set = com.reiko.cars.impound.ImpoundService.setFee(player, menu.office(), payload.text());
+                    if (set.success()) {
+                        com.reiko.cars.impound.ImpoundMenu.open(player, menu.office()); // reopen to show the new fee
+                    }
+                    yield set;
+                }
+                default -> null;
+            };
+            if (result != null) {
+                if (player.containerMenu instanceof com.reiko.cars.impound.ImpoundMenu open) {
+                    open.refresh();
+                }
+                ShopFeedback.send(player, result);
+            }
+            return;
+        }
+        if (player.containerMenu instanceof com.reiko.cars.rental.RentalMenu menu && menu.desk() != null) {
+            CarEntity car = menu.selected();
+            ShopActionResult result = switch (payload.action()) {
+                case LotActionPayload.RENT -> car == null ? ShopActionResult.fail(nothing)
+                        : com.reiko.cars.rental.RentalService.rent(player, menu.desk(), car, payload.value(), payload.expected(), payload.payment());
+                case LotActionPayload.SET_RENT -> {
+                    if (payload.value() < 0 || payload.value() >= CarType.values().length) {
+                        yield ShopActionResult.fail(Component.literal("?"));
+                    }
+                    ShopActionResult set = com.reiko.cars.rental.RentalService.setPrice(player, menu.desk(), CarType.values()[payload.value()],
+                            payload.text());
+                    if (set.success()) {
+                        com.reiko.cars.rental.RentalMenu.open(player, menu.desk()); // reopen so the screen shows the new prices
+                    }
+                    yield set;
+                }
+                default -> null;
+            };
+            if (result != null) {
+                if (result.success() && payload.action() == LotActionPayload.RENT) {
+                    player.closeContainer();
+                    player.sendSystemMessage(result.message());
+                    return;
+                }
+                if (player.containerMenu instanceof com.reiko.cars.rental.RentalMenu open) {
+                    open.refresh();
+                }
+                ShopFeedback.send(player, result);
+            }
+        }
+    }
+
     private static void handleSale(SaleActionPayload payload, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player) || player.containerMenu.containerId != payload.containerId()
                 || !player.containerMenu.stillValid(player)) {
@@ -163,8 +226,9 @@ public final class ModNetwork {
         if (player.containerMenu instanceof CarSaleMenu menu && menu.car() != null) {
             CarEntity car = menu.car();
             switch (payload.action()) {
-                case SaleActionPayload.BUY -> {
-                    ShopActionResult result = SaleService.buy(player, car, payload.expected(), payload.payment());
+                case SaleActionPayload.BUY, SaleActionPayload.FINANCE -> {
+                    ShopActionResult result = SaleService.buy(player, car, payload.expected(), payload.payment(),
+                            payload.action() == SaleActionPayload.FINANCE);
                     if (result.success()) {
                         player.closeContainer();
                         player.sendSystemMessage(result.message());
@@ -199,6 +263,8 @@ public final class ModNetwork {
             }
             case SaleActionPayload.TRADE_IN -> car == null ? ShopActionResult.fail(Component.translatable("sale.reikocars.nothing_picked"))
                     : SaleService.tradeIn(player, menu.lot(), car, payload.expected());
+            case SaleActionPayload.PAY_OFF -> car == null ? ShopActionResult.fail(Component.translatable("sale.reikocars.nothing_picked"))
+                    : com.reiko.cars.finance.LoanService.payOff(player, car);
             case SaleActionPayload.SET_PRICE -> car == null ? ShopActionResult.fail(Component.translatable("sale.reikocars.nothing_picked"))
                     : SaleService.setPrice(player, car, payload.text());
             case SaleActionPayload.OFF_SALE -> car == null ? ShopActionResult.fail(Component.translatable("sale.reikocars.nothing_picked"))

@@ -118,6 +118,11 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private static final EntityDataAccessor<Long> DATA_ALARM_UNTIL = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** When a dump truck started tipping its bed, in game time: -1 when it isn't. */
     private static final EntityDataAccessor<Long> DATA_TIP_START = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
+    /** Whether it's held at an impound lot. */
+    private static final EntityDataAccessor<Boolean> DATA_IMPOUNDED = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
+    /** Who it's rented to, if anyone, and until when (game time). */
+    private static final EntityDataAccessor<Optional<UUID>> DATA_RENTER = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Long> DATA_RENTAL_UNTIL = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** Millibuckets of water in a fire truck's tank. */
     private static final EntityDataAccessor<Integer> DATA_WATER = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
     /** When a fire truck's ladder last started going up or down, in game time: -1 while it's stowed. */
@@ -247,6 +252,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_SIREN, false);
         builder.define(DATA_TIP_START, -1L);
         builder.define(DATA_WATER, 0);
+        builder.define(DATA_IMPOUNDED, false);
+        builder.define(DATA_RENTER, Optional.empty());
+        builder.define(DATA_RENTAL_UNTIL, 0L);
         builder.define(DATA_LADDER_START, -1L);
         builder.define(DATA_LADDER_UP, false);
         builder.define(DATA_LADDER_HEIGHT, 0);
@@ -574,6 +582,89 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return player.getUUID().equals(owner());
     }
 
+    // ---- impound lots, rentals and car loans (see com.reiko.cars.impound, .rental and .finance) ----
+
+    /** Why and where it's held, if it's at an impound lot. Server side; clients see {@link #isImpounded()}. */
+    @Nullable
+    private com.reiko.cars.impound.Impound impound;
+    /** Who it's rented to and until when, if it's out on rent. Server side; clients see {@link #renter()}. */
+    @Nullable
+    private com.reiko.cars.rental.Rental rental;
+    /** The car loan it was bought on, until it's paid off. Server side. */
+    @Nullable
+    private UUID loanId;
+    /** Whether it was picked up by a tow truck from an expired parking meter: dropped at an impound lot, it's impounded. */
+    private boolean towedBadlyParked;
+
+    @Nullable
+    public com.reiko.cars.impound.Impound impound() {
+        return impound;
+    }
+
+    public void setImpound(@Nullable com.reiko.cars.impound.Impound impound) {
+        this.impound = impound;
+        entityData.set(DATA_IMPOUNDED, impound != null);
+        if (impound != null) {
+            setLocked(true);
+            setSalePrice(-1);
+            setSiren(false);
+        }
+    }
+
+    /** Whether it's held at an impound lot: its owner can't get in, drive it or pick it up until it's released. */
+    public boolean isImpounded() {
+        return entityData.get(DATA_IMPOUNDED);
+    }
+
+    /** Whether {@code player} runs the impound lot that holds it (or is an admin): they may move it about the lot. */
+    public boolean holdsImpounded(Player player) {
+        return impound != null && (player.getUUID().equals(impound.lotOwner()) || player.hasPermissions(2));
+    }
+
+    @Nullable
+    public com.reiko.cars.rental.Rental rental() {
+        return rental;
+    }
+
+    public void setRental(@Nullable com.reiko.cars.rental.Rental rental) {
+        this.rental = rental;
+        entityData.set(DATA_RENTER, rental == null ? Optional.empty() : Optional.of(rental.renter()));
+        entityData.set(DATA_RENTAL_UNTIL, rental == null ? 0L : rental.until());
+    }
+
+    /** Who it's rented to, on either side, or null. */
+    @Nullable
+    public UUID renter() {
+        return entityData.get(DATA_RENTER).orElse(null);
+    }
+
+    /** When its rental runs out, in game time (0 if it isn't rented). */
+    public long rentalUntil() {
+        return entityData.get(DATA_RENTAL_UNTIL);
+    }
+
+    /** Whether {@code player} has it on rent right now: then they may open and drive it as if they had its key. */
+    public boolean rentedBy(Player player) {
+        return player.getUUID().equals(renter()) && level().getGameTime() < rentalUntil();
+    }
+
+    @Nullable
+    public UUID loanId() {
+        return loanId;
+    }
+
+    public void setLoanId(@Nullable UUID loanId) {
+        this.loanId = loanId;
+    }
+
+    public boolean towedBadlyParked() {
+        return towedBadlyParked;
+    }
+
+    public void setTowedBadlyParked(boolean towedBadlyParked) {
+        this.towedBadlyParked = towedBadlyParked;
+    }
+
     // ---- the work vehicles (see WorkVehicles) ----
 
     /** What an ice cream truck sells each item in its freezer for, in cents: unpriced items aren't for sale. */
@@ -791,6 +882,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
      * or join someone inside who could open it.
      */
     public boolean canBeUsedBy(Player player) {
+        if (isImpounded()) {
+            // Held at an impound lot: only whoever runs the lot (or an admin) gets in, to move it about.
+            return impound == null ? player.hasPermissions(2) : holdsImpounded(player);
+        }
         if (!isLocked() || owner() == null || opens(player) || hasPassenger(player)) {
             return true;
         }
@@ -799,7 +894,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
 
     /** Whether {@code player} can open it when it's locked: its owner, an admin, or someone with its key. */
     private boolean opens(Player player) {
-        return isOwner(player) || player.hasPermissions(2) || CarKeys.holds(player, lockCode());
+        return isOwner(player) || player.hasPermissions(2) || CarKeys.holds(player, lockCode()) || rentedBy(player);
     }
 
     // ---- keys ----
@@ -826,7 +921,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
 
     /** Works out whether the driver has the key, on the server; with {@code announce}, starts the engine when they get it. */
     private boolean updateKey(boolean announce) {
-        boolean keyed = getControllingPassenger() instanceof Player driver && (!CarKeys.required(this) || CarKeys.holds(driver, lockCode()));
+        boolean keyed = getControllingPassenger() instanceof Player driver
+                && (isImpounded() ? holdsImpounded(driver)
+                        : rental != null && driver.getUUID().equals(rental.renter()) ? rentedBy(driver) // out of time, out of luck
+                        : !CarKeys.required(this) || CarKeys.holds(driver, lockCode()) || rentedBy(driver));
         boolean was = entityData.get(DATA_KEYED);
         if (keyed != was) {
             entityData.set(DATA_KEYED, keyed);
@@ -895,6 +993,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
 
     /** Who may break the car to pick it up or repaint it: its owner, an admin, or anyone if nobody owns it. */
     public boolean canManage(Player player) {
+        if (isImpounded()) {
+            return player.hasPermissions(2); // not its owner's to pick up or repaint while it's held
+        }
         return owner() == null || isOwner(player) || player.hasPermissions(2);
     }
 
@@ -997,6 +1098,11 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
         if (!canAddPassenger(player)) {
             return InteractionResult.PASS;
+        }
+        if (isImpounded() && !canBeUsedBy(player)) {
+            return refuse(player, impound == null ? Component.translatable("impound.reikocars.held")
+                    : Component.translatable("impound.reikocars.held_at", impound.lotOwnerName(), impound.lot().getX(), impound.lot().getY(),
+                            impound.lot().getZ()));
         }
         if (!canBeUsedBy(player)) {
             return refuseLocked(player);
@@ -1512,6 +1618,22 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         updateKey(true);
         headlights.tick();
         WorkVehicles.serverTick(this);
+        if (tickCount % 20 == 0) {
+            if (rental != null) {
+                com.reiko.cars.rental.RentalService.carTick(this);
+            }
+            if (tickCount % 100 == 0) {
+                if (impound != null) {
+                    com.reiko.cars.impound.ImpoundService.carTick(this);
+                }
+                if (loanId != null) {
+                    com.reiko.cars.finance.LoanService.carTick(this);
+                }
+            }
+            if (isRemoved()) {
+                return; // sent off to a lot
+            }
+        }
         CarSignals.serverTick(this);
         boolean listener = getPassengers().stream().anyMatch(passenger -> passenger instanceof Player);
         if (listener && !radioHadListener) {
@@ -1812,11 +1934,19 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (!(source.getEntity() instanceof Player player)) {
             return false; // only players can break cars: no losing one to a creeper or lava
         }
+        if (isImpounded() && !player.hasPermissions(2)) {
+            player.displayClientMessage(Component.translatable("impound.reikocars.cant_pick_up"), true);
+            return false;
+        }
         if (!canManage(player)) {
             if (!canBeUsedBy(player)) {
                 CarSignals.triggerAlarm(this, player); // a stranger hitting a locked car
             }
             player.displayClientMessage(Component.translatable("car.reikocars.not_yours", ownerName), true);
+            return false;
+        }
+        if (loanId != null && !player.hasPermissions(2)) {
+            player.displayClientMessage(Component.translatable("loan.reikocars.cant_pick_up"), true);
             return false;
         }
         return super.hurt(source, amount);
@@ -1900,6 +2030,18 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (sirenOn()) {
             tag.putBoolean("Siren", true);
         }
+        if (impound != null) {
+            com.reiko.cars.impound.Impound.CODEC.encodeStart(NbtOps.INSTANCE, impound).result().ifPresent(saved -> tag.put("Impound", saved));
+        }
+        if (rental != null) {
+            com.reiko.cars.rental.Rental.CODEC.encodeStart(NbtOps.INSTANCE, rental).result().ifPresent(saved -> tag.put("Rental", saved));
+        }
+        if (loanId != null) {
+            tag.putUUID("Loan", loanId);
+        }
+        if (towedBadlyParked) {
+            tag.putBoolean("TowedBadlyParked", true);
+        }
         if (type.isFireTruck()) {
             tag.putInt("Water", water());
             if (ladderUp()) {
@@ -1942,6 +2084,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         setSalePrice(tag.contains("SalePrice") ? tag.getLong("SalePrice") : -1L);
         policy = tag.contains("Insurance") ? com.reiko.cars.insurance.Policy.CODEC.parse(NbtOps.INSTANCE, tag.get("Insurance")).result().orElse(null) : null;
         setSiren(tag.getBoolean("Siren"));
+        setImpound(tag.contains("Impound") ? com.reiko.cars.impound.Impound.CODEC.parse(NbtOps.INSTANCE, tag.get("Impound")).result().orElse(null) : null);
+        setRental(tag.contains("Rental") ? com.reiko.cars.rental.Rental.CODEC.parse(NbtOps.INSTANCE, tag.get("Rental")).result().orElse(null) : null);
+        loanId = tag.hasUUID("Loan") ? tag.getUUID("Loan") : null;
+        towedBadlyParked = tag.getBoolean("TowedBadlyParked");
         if (type.isFireTruck()) {
             setWater(tag.getInt("Water"));
             if (tag.contains("Ladder", Tag.TAG_INT)) {

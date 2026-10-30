@@ -21,6 +21,10 @@ public record SaleActionPayload(int containerId, int action, long expected, Paym
     public static final int OPEN_BUY = 3;
     public static final int TRADE_IN = 4;
     public static final int SET_OFFER = 5;
+    /** Buy the car on finance: the down payment now, by card or cash, the rest a day at a time. */
+    public static final int FINANCE = 6;
+    /** At a dealership: pay off the picked car's loan, from the bank. */
+    public static final int PAY_OFF = 7;
 
     public static final Type<SaleActionPayload> TYPE = new Type<>(ReikoCars.id("sale_action"));
     public static final StreamCodec<RegistryFriendlyByteBuf, SaleActionPayload> STREAM_CODEC = StreamCodec.composite(
@@ -38,6 +42,10 @@ public record SaleActionPayload(int containerId, int action, long expected, Paym
 
     public static SaleActionPayload buy(int containerId, long expected, Payment payment) {
         return new SaleActionPayload(containerId, BUY, expected, payment, "", 0);
+    }
+
+    public static SaleActionPayload finance(int containerId, long expected, Payment payment) {
+        return new SaleActionPayload(containerId, FINANCE, expected, payment, "", 0);
     }
 
     public static SaleActionPayload text(int containerId, int action, String text, int carType) {

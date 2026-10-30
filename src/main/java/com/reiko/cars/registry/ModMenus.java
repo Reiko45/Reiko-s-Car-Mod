@@ -39,6 +39,10 @@ public final class ModMenus {
             () -> IMenuTypeExtension.create(FareSettingsMenu::new));
 
     public static final Supplier<MenuType<CarSaleMenu>> CAR_SALE = MENUS.register("car_sale", () -> IMenuTypeExtension.create(CarSaleMenu::new));
+    public static final Supplier<MenuType<com.reiko.cars.impound.ImpoundMenu>> IMPOUND = MENUS.register("impound",
+            () -> IMenuTypeExtension.create(com.reiko.cars.impound.ImpoundMenu::new));
+    public static final Supplier<MenuType<com.reiko.cars.rental.RentalMenu>> RENTAL = MENUS.register("rental",
+            () -> IMenuTypeExtension.create(com.reiko.cars.rental.RentalMenu::new));
     public static final Supplier<MenuType<DealershipMenu>> DEALERSHIP = MENUS.register("dealership",
             () -> IMenuTypeExtension.create(DealershipMenu::new));
 

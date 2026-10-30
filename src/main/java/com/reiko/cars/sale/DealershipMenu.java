@@ -45,7 +45,9 @@ public final class DealershipMenu extends AbstractContainerMenu {
     private static final int FUEL = 8;
     private static final int PRICE = 9;
     private static final int OFFER = 13;
-    private static final int SLOTS = 17;
+    /** What's owed on the picked car's loan (Trade in tab), or -1 if it has none. */
+    private static final int OWED = 17;
+    private static final int SLOTS = 21;
 
     @Nullable
     private final DealershipBlockEntity lot; // null on the client
@@ -145,6 +147,7 @@ public final class DealershipMenu extends AbstractContainerMenu {
         data.set(FUEL, selected == null ? 0 : Math.round(selected.fuelFraction() * 1000));
         putLong(PRICE, selected == null ? -1 : selected.salePrice());
         putLong(OFFER, selected == null || tab != TAB_TRADE ? 0 : SaleService.offerFor(lot, selected));
+        putLong(OWED, selected == null || tab != TAB_TRADE ? -1 : com.reiko.cars.finance.LoanService.owed(selected));
     }
 
     private void putLong(int slot, long value) {
@@ -286,6 +289,11 @@ public final class DealershipMenu extends AbstractContainerMenu {
     /** What the dealer will pay for it (Trade in tab). */
     public long carOffer() {
         return getLong(OFFER);
+    }
+
+    /** What's owed on its loan (Trade in tab), or -1 if it has none. */
+    public long carOwed() {
+        return getLong(OWED);
     }
 
     @Override

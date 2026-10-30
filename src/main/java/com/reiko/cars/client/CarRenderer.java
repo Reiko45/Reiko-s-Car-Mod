@@ -91,7 +91,16 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         if (car.carType().isFireTruck()) {
             FireHoseLines.draw(car, partialTick, poseStack, buffers);
         }
-        if (car.isForSale()) {
+        if (car.isImpounded()) {
+            // An IMPOUNDED sign over a car held at an impound lot.
+            poseStack.pushPose();
+            if (car.hasCustomName()) {
+                poseStack.translate(0.0F, 0.3F, 0.0F);
+            }
+            renderNameTag(car, Component.translatable("impound.reikocars.sign").withStyle(net.minecraft.ChatFormatting.YELLOW), poseStack, buffers, light,
+                    partialTick);
+            poseStack.popPose();
+        } else if (car.isForSale()) {
             // A FOR SALE sign with the price floats over it, above its name if it has one.
             poseStack.pushPose();
             if (car.hasCustomName()) {

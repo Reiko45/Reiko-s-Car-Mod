@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "P": {
+      "item": "minecraft:paper"
+    },
+    "S": {
+      "tag": "minecraft:signs"
+    },
+    "K": {
+      "item": "reikocars:blank_key"
+    },
+    "D": {
+      "tag": "c:dyes/blue"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "C": {
+      "tag": "c:chests/wooden"
+    }
+  },
+  "pattern": [
+    "PSP",
+    "KDK",
+    "ICI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "reikocars:rental_desk"
+  }
+}

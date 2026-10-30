@@ -70,6 +70,20 @@ public final class ModBlocks {
                     .pushReaction(PushReaction.BLOCK)));
 
     /** A car dealership's sales desk. Blast-proof, like the shops. */
+    public static final DeferredBlock<com.reiko.cars.impound.ImpoundOfficeBlock> IMPOUND_OFFICE = BLOCKS.register("impound_office",
+            () -> new com.reiko.cars.impound.ImpoundOfficeBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_YELLOW)
+                    .strength(3.0F, 1200.0F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .pushReaction(PushReaction.BLOCK)));
+    public static final DeferredBlock<com.reiko.cars.rental.RentalDeskBlock> RENTAL_DESK = BLOCKS.register("rental_desk",
+            () -> new com.reiko.cars.rental.RentalDeskBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLUE)
+                    .strength(3.0F, 1200.0F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .pushReaction(PushReaction.BLOCK)));
     public static final DeferredBlock<DealershipBlock> DEALERSHIP = BLOCKS.register("dealership", () -> new DealershipBlock(
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_RED)
