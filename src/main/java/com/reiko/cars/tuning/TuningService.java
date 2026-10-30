@@ -123,7 +123,8 @@ public final class TuningService {
             return refused;
         }
         if (!kit.suits(car.carType())) {
-            return ShopActionResult.fail("tuning.reikocars.unsuited", kit.displayName(), car.kindName());
+            return ShopActionResult.fail(kit == TuningKit.BATTERY ? "tuning.reikocars.unsuited_battery" : "tuning.reikocars.unsuited",
+                    kit.displayName(), car.kindName());
         }
         Upgrades now = car.upgrades();
         Upgrades next = kit.fit(now);
@@ -165,7 +166,8 @@ public final class TuningService {
         List<TuningKit> off = new ArrayList<>();
         for (TuningKit kit : kits) {
             if (!kit.suits(car.carType())) {
-                return ShopActionResult.fail("tuning.reikocars.unsuited", kit.displayName(), car.kindName());
+                return ShopActionResult.fail(kit == TuningKit.BATTERY ? "tuning.reikocars.unsuited_battery" : "tuning.reikocars.unsuited",
+                        kit.displayName(), car.kindName());
             }
             Upgrades fitted = kit.fit(next);
             if (fitted == null) {

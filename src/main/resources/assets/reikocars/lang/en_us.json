@@ -1280,5 +1280,11 @@
   "tuning.reikocars.tank_stage": "Stage %s fuel tank (+%s%%)",
   "tuning.reikocars.state.unsuited": "n/a",
   "tuning.reikocars.unsuited": "A %s won't go on a %s: it has no fuel tank.",
-  "gui.reikocars.kit_unsuited": "An electric car has no fuel tank"
+  "gui.reikocars.kit_unsuited": "An electric car has no fuel tank",
+  "item.reikocars.battery_module": "Extra Battery Module",
+  "item.reikocars.battery_module.effect": "One stage: the battery holds 25% more (up to stage 2, +50%)",
+  "item.reikocars.battery_module.cost": "The weight takes 3% off acceleration a stage. Electric cars only",
+  "tuning.reikocars.kit_short.battery": "Battery",
+  "tuning.reikocars.battery_stage": "Stage %s battery (+%s%%)",
+  "tuning.reikocars.unsuited_battery": "An %s goes in an electric car: a %s runs on fuel."
 }

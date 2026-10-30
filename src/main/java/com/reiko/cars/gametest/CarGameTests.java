@@ -3933,6 +3933,17 @@ public final class CarGameTests {
             ShopActionResult refused = com.reiko.cars.tuning.TuningService.fitOwn(driver, bench, ev, com.reiko.cars.tuning.TuningKit.FUEL_TANK);
             check(helper, !refused.success() && refused.message().getString().contains("no fuel tank"),
                     "no fuel tank in an electric car: " + refused.message().getString());
+            // ...but an electric car takes bigger batteries, and a fuel car doesn't.
+            giveKit(driver, com.reiko.cars.tuning.TuningKit.BATTERY, 3);
+            check(helper, !com.reiko.cars.tuning.TuningService.fitOwn(driver, bench, car, com.reiko.cars.tuning.TuningKit.BATTERY).success(),
+                    "no battery module in a gasoline car");
+            check(helper, com.reiko.cars.tuning.TuningService.fitOwn(driver, bench, ev, com.reiko.cars.tuning.TuningKit.BATTERY).success()
+                    && com.reiko.cars.tuning.TuningService.fitOwn(driver, bench, ev, com.reiko.cars.tuning.TuningKit.BATTERY).success(), "two battery stages");
+            check(helper, !com.reiko.cars.tuning.TuningService.fitOwn(driver, bench, ev, com.reiko.cars.tuning.TuningKit.BATTERY).success(), "and no more");
+            near(helper, ev.tankCapacity(), CarType.CITY_EV.tankCapacity() * 1.5, "half as much charge again");
+            ev.setFuel(ev.tankCapacity());
+            check(helper, ev.fuelFraction() == 1.0F && ev.fuelRoom() == 0.0, "charged to the full");
+            check(helper, ev.upgrades().describe(true).getLast().getString().contains("battery"), "a battery on its tooltip");
 
             // A tuned engine wears faster and drinks more.
             CarEntity plain = vehicle(helper, CarType.SEDAN, 8.0, 12.0);

@@ -183,7 +183,7 @@ public final class CarItem extends Item {
         long speed = Math.round(type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * unit.perBlockPerTick);
         tooltip.add((type.isElectric()
                 ? Component.translatable("item.reikocars.car.stats_ev", type.seatsText(), speed, Component.translatable(unit.translationKey),
-                        Math.round(type.tankCapacity() / 1000.0))
+                        Math.round(type.tankCapacity() * tankSize / 1000.0))
                 : Component.translatable("item.reikocars.car.stats", type.seatsText(), speed, Component.translatable(unit.translationKey),
                         Math.round(type.tankBuckets * tankSize))).withStyle(ChatFormatting.DARK_GRAY));
         if (type.isElectric()) {
@@ -215,7 +215,7 @@ public final class CarItem extends Item {
         com.reiko.cars.tuning.Upgrades upgrades = stack.get(ModDataComponents.UPGRADES.get());
         if (upgrades != null && !upgrades.isStock()) {
             tooltip.add(Component.translatable("item.reikocars.car.tuned").withStyle(ChatFormatting.AQUA));
-            upgrades.describe().forEach(line -> tooltip.add(Component.literal("  ").append(line).withStyle(ChatFormatting.DARK_AQUA)));
+            upgrades.describe(type.isElectric()).forEach(line -> tooltip.add(Component.literal("  ").append(line).withStyle(ChatFormatting.DARK_AQUA)));
         }
         com.reiko.cars.tuning.Livery livery = stack.get(ModDataComponents.LIVERY.get());
         if (livery != null && livery.number() > 0) {

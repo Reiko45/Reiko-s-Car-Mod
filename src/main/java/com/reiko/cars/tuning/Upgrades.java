@@ -19,8 +19,8 @@ import net.minecraft.network.codec.StreamCodec;
  *       better off-road, 3% off the top speed;</li>
  *   <li><b>Brakes</b> stages 1 and 2: stop 20% harder a stage;</li>
  *   <li><b>Lowered</b>: turn 10% sharper, worse off-road; <b>lifted</b>: better off-road, turns 5% wider;</li>
- *   <li><b>Fuel tank</b> stages 1 and 2: holds 25% more a stage, but the extra weight takes 3% off acceleration a stage
- *       (gasoline and diesel cars only).</li>
+ *   <li><b>Fuel tank</b> (gasoline and diesel) or <b>battery</b> (electric) stages 1 and 2: holds 25% more a stage,
+ *       but the extra weight takes 3% off acceleration a stage.</li>
  * </ul>
  */
 public record Upgrades(int engine, boolean turbo, Tires tires, int brakes, Suspension suspension, int tank) {
@@ -135,6 +135,11 @@ public record Upgrades(int engine, boolean turbo, Tires tires, int brakes, Suspe
 
     /** What's fitted, a line each: "Stage 2 engine", "Turbo", ... (nothing for a stock car). */
     public List<Component> describe() {
+        return describe(false);
+    }
+
+    /** As {@link #describe()}, for an electric car (whose bigger tank is a battery) or not. */
+    public List<Component> describe(boolean electric) {
         List<Component> lines = new ArrayList<>();
         if (engine > 0) {
             lines.add(Component.translatable("tuning.reikocars.engine_stage", engine));
@@ -152,7 +157,7 @@ public record Upgrades(int engine, boolean turbo, Tires tires, int brakes, Suspe
             lines.add(Component.translatable("tuning.reikocars.suspension." + suspension.name().toLowerCase(Locale.ROOT)));
         }
         if (tank > 0) {
-            lines.add(Component.translatable("tuning.reikocars.tank_stage", tank, Math.round(25.0 * tank)));
+            lines.add(Component.translatable(electric ? "tuning.reikocars.battery_stage" : "tuning.reikocars.tank_stage", tank, Math.round(25.0 * tank)));
         }
         return lines;
     }
