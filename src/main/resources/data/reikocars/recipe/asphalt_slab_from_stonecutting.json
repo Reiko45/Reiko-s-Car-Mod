@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "reikocars:asphalt"
+  },
+  "result": {
+    "id": "reikocars:asphalt_slab",
+    "count": 2
+  }
+}

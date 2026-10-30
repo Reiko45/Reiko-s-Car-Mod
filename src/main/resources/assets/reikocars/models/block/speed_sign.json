@@ -1,0 +1,148 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "all": "reikocars:block/speed_sign",
+    "particle": "reikocars:block/speed_sign"
+  },
+  "elements": [
+    {
+      "name": "post",
+      "from": [
+        7,
+        0,
+        7
+      ],
+      "to": [
+        9,
+        16,
+        9
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            6.5,
+            0.0,
+            6.75,
+            2.0
+          ],
+          "texture": "#all"
+        },
+        "south": {
+          "uv": [
+            6.75,
+            0.0,
+            7.0,
+            2.0
+          ],
+          "texture": "#all"
+        },
+        "east": {
+          "uv": [
+            7.0,
+            0.0,
+            7.25,
+            2.0
+          ],
+          "texture": "#all"
+        },
+        "west": {
+          "uv": [
+            7.25,
+            0.0,
+            7.5,
+            2.0
+          ],
+          "texture": "#all"
+        },
+        "up": {
+          "uv": [
+            13.5,
+            0.0,
+            13.75,
+            0.25
+          ],
+          "texture": "#all"
+        },
+        "down": {
+          "uv": [
+            13.75,
+            0.0,
+            14.0,
+            0.25
+          ],
+          "texture": "#all",
+          "cullface": "down"
+        }
+      }
+    },
+    {
+      "name": "plate",
+      "from": [
+        2,
+        3,
+        6
+      ],
+      "to": [
+        14,
+        16,
+        7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0.0,
+            0.0,
+            3.0,
+            3.25
+          ],
+          "texture": "#all"
+        },
+        "south": {
+          "uv": [
+            3.0,
+            0.0,
+            6.0,
+            3.25
+          ],
+          "texture": "#all"
+        },
+        "east": {
+          "uv": [
+            6.0,
+            0.0,
+            6.25,
+            3.25
+          ],
+          "texture": "#all"
+        },
+        "west": {
+          "uv": [
+            6.25,
+            0.0,
+            6.5,
+            3.25
+          ],
+          "texture": "#all"
+        },
+        "up": {
+          "uv": [
+            7.5,
+            0.0,
+            10.5,
+            0.25
+          ],
+          "texture": "#all"
+        },
+        "down": {
+          "uv": [
+            10.5,
+            0.0,
+            13.5,
+            0.25
+          ],
+          "texture": "#all"
+        }
+      }
+    }
+  ]
+}

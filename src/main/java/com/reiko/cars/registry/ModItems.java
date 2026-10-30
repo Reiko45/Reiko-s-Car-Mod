@@ -95,6 +95,18 @@ public final class ModItems {
     /** A fifth of a body repair. */
     public static final DeferredItem<Item> BODY_PANEL = ITEMS.registerSimpleItem("body_panel");
 
+    public static final DeferredItem<BlockItem> ASPHALT = ITEMS.registerSimpleBlockItem(ModBlocks.ASPHALT);
+    public static final DeferredItem<BlockItem> ASPHALT_SLAB = ITEMS.registerSimpleBlockItem(ModBlocks.ASPHALT_SLAB);
+    public static final DeferredItem<BlockItem> ASPHALT_STAIRS = ITEMS.registerSimpleBlockItem(ModBlocks.ASPHALT_STAIRS);
+    public static final DeferredItem<BlockItem> STREET_POLE = ITEMS.registerSimpleBlockItem(ModBlocks.STREET_POLE);
+    public static final DeferredItem<BlockItem> TRAFFIC_LIGHT = ITEMS.registerSimpleBlockItem(ModBlocks.TRAFFIC_LIGHT);
+    public static final DeferredItem<BlockItem> STOP_SIGN = ITEMS.registerSimpleBlockItem(ModBlocks.STOP_SIGN);
+    public static final DeferredItem<BlockItem> SPEED_SIGN = ITEMS.registerSimpleBlockItem(ModBlocks.SPEED_SIGN);
+    public static final DeferredItem<BlockItem> STREET_LAMP = ITEMS.registerSimpleBlockItem(ModBlocks.STREET_LAMP);
+    /** Paints lines, crosswalks and arrows on asphalt. */
+    public static final DeferredItem<com.reiko.cars.road.RoadPaintItem> ROAD_PAINT = ITEMS.register("road_paint",
+            () -> new com.reiko.cars.road.RoadPaintItem(new Item.Properties().durability(256)));
+
     // Ice cream, for the ice cream truck's freezer: a quick snack.
     private static final net.minecraft.world.food.FoodProperties ICE_CREAM_FOOD = new net.minecraft.world.food.FoodProperties.Builder()
             .nutrition(3).saturationModifier(0.3F).fast().alwaysEdible().build();

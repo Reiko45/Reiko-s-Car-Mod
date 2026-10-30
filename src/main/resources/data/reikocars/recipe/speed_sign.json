@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "IWI",
+    "IBI",
+    " P "
+  ],
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "W": {
+      "tag": "c:dyes/white"
+    },
+    "B": {
+      "tag": "c:dyes/black"
+    },
+    "P": {
+      "item": "reikocars:street_pole"
+    }
+  },
+  "result": {
+    "id": "reikocars:speed_sign",
+    "count": 1
+  }
+}

@@ -146,6 +146,8 @@ public final class DevShowcase {
             workScript();
         } else if (MODE.equals("signals")) {
             signalsScript();
+        } else if (MODE.equals("roads")) {
+            roadsScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -2012,5 +2014,186 @@ public final class DevShowcase {
         at(425, mc -> server(mc, player -> car(player.serverLevel(), CarType.SPORTS_CAR).toggleLock(player)));
         at(440, mc -> shot(mc, "141_alarm_off"));
         at(445, mc -> mc.stop());
+    }
+
+    // ---- roads, traffic lights, signs and lamps: ./gradlew runClient -Pshowcase=roads ----
+
+    private static void paint(ServerLevel level, int x, int z, com.reiko.cars.road.RoadMarking marking, Direction facing) {
+        level.setBlockAndUpdate(new BlockPos(x, -61, z), ModBlocks.ASPHALT.get().defaultBlockState()
+                .setValue(com.reiko.cars.road.Asphalt.MARKING, marking).setValue(com.reiko.cars.road.Asphalt.FACING, facing));
+    }
+
+    private static void post(ServerLevel level, int x, int z, int poles, BlockState top) {
+        for (int y = 0; y < poles; y++) {
+            level.setBlockAndUpdate(new BlockPos(x, -60 + y, z), ModBlocks.STREET_POLE.get().defaultBlockState());
+        }
+        level.setBlockAndUpdate(new BlockPos(x, -60 + poles, z), top);
+    }
+
+    /** A crossing of two five-wide roads at the origin, with lights, signs and lamps. */
+    private static void crossing(ServerLevel level, ServerPlayer owner) {
+        for (int x = -30; x <= 30; x++) {
+            for (int z = -30; z <= 30; z++) {
+                level.setBlockAndUpdate(new BlockPos(x, -61, z), Blocks.GRASS_BLOCK.defaultBlockState());
+                for (int y = -60; y <= -50; y++) {
+                    level.setBlockAndUpdate(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState());
+                }
+            }
+        }
+        com.reiko.cars.road.RoadMarking none = com.reiko.cars.road.RoadMarking.NONE;
+        for (int d = -24; d <= 24; d++) {
+            for (int w = -2; w <= 2; w++) {
+                paint(level, w, d, none, Direction.NORTH);
+                paint(level, d, w, none, Direction.NORTH);
+            }
+            if (Math.abs(d) > 4) {
+                // the north-south road: double yellow down the middle, edge lines
+                paint(level, 0, d, com.reiko.cars.road.RoadMarking.CENTER_SOLID, Direction.NORTH);
+                paint(level, -2, d, com.reiko.cars.road.RoadMarking.EDGE, Direction.NORTH);
+                paint(level, 2, d, com.reiko.cars.road.RoadMarking.EDGE, Direction.SOUTH);
+                // the east-west road: a dashed center line
+                paint(level, d, 0, com.reiko.cars.road.RoadMarking.CENTER_DASHED, Direction.EAST);
+                paint(level, d, -2, com.reiko.cars.road.RoadMarking.EDGE, Direction.EAST);
+                paint(level, d, 2, com.reiko.cars.road.RoadMarking.EDGE, Direction.WEST);
+            }
+        }
+        for (int w = -2; w <= 2; w++) {
+            // crosswalks on all four sides
+            paint(level, w, 3, com.reiko.cars.road.RoadMarking.CROSSWALK, Direction.EAST);
+            paint(level, w, -3, com.reiko.cars.road.RoadMarking.CROSSWALK, Direction.EAST);
+            paint(level, 3, w, com.reiko.cars.road.RoadMarking.CROSSWALK, Direction.NORTH);
+            paint(level, -3, w, com.reiko.cars.road.RoadMarking.CROSSWALK, Direction.NORTH);
+        }
+        for (int lane : new int[] {1, 2}) {
+            paint(level, lane, 4, com.reiko.cars.road.RoadMarking.STOP_LINE, Direction.NORTH);
+            paint(level, -lane, -4, com.reiko.cars.road.RoadMarking.STOP_LINE, Direction.SOUTH);
+            paint(level, -4, lane, com.reiko.cars.road.RoadMarking.STOP_LINE, Direction.EAST);
+            paint(level, 4, -lane, com.reiko.cars.road.RoadMarking.STOP_LINE, Direction.WEST);
+        }
+        paint(level, 1, 7, com.reiko.cars.road.RoadMarking.ARROW_LEFT, Direction.NORTH);
+        paint(level, 2, 7, com.reiko.cars.road.RoadMarking.ARROW_STRAIGHT, Direction.NORTH);
+        paint(level, 0, 4, com.reiko.cars.road.RoadMarking.CENTER_SOLID, Direction.NORTH);
+        // lights on the near right corners, facing the traffic coming up to them
+        BlockState light = ModBlocks.TRAFFIC_LIGHT.get().defaultBlockState();
+        post(level, 3, 4, 2, light.setValue(com.reiko.cars.traffic.TrafficLightBlock.FACING, Direction.SOUTH));
+        post(level, -3, -4, 2, light.setValue(com.reiko.cars.traffic.TrafficLightBlock.FACING, Direction.NORTH));
+        post(level, -4, 3, 2, light.setValue(com.reiko.cars.traffic.TrafficLightBlock.FACING, Direction.WEST));
+        post(level, 4, -3, 2, light.setValue(com.reiko.cars.traffic.TrafficLightBlock.FACING, Direction.EAST));
+        for (BlockPos p : new BlockPos[] {new BlockPos(3, -58, 4), new BlockPos(-3, -58, -4), new BlockPos(-4, -58, 3), new BlockPos(4, -58, -3)}) {
+            if (level.getBlockEntity(p) instanceof com.reiko.cars.traffic.TrafficLightBlockEntity be) {
+                be.setOwner(owner);
+            }
+        }
+        // street lamps down the north-south road, their arms over it
+        BlockState lamp = ModBlocks.STREET_LAMP.get().defaultBlockState();
+        for (int z : new int[] {-16, -8, 10, 18}) {
+            post(level, 4, z, 3, lamp.setValue(com.reiko.cars.road.StreetLampBlock.FACING, Direction.WEST));
+            post(level, -4, z + 4, 3, lamp.setValue(com.reiko.cars.road.StreetLampBlock.FACING, Direction.EAST));
+        }
+        // a speed limit sign for northbound traffic, and a stop sign on a side road
+        post(level, 3, 13, 1, ModBlocks.SPEED_SIGN.get().defaultBlockState().setValue(com.reiko.cars.traffic.SpeedSignBlock.FACING, Direction.SOUTH));
+        if (level.getBlockEntity(new BlockPos(3, -59, 13)) instanceof com.reiko.cars.traffic.SpeedSignBlockEntity sign) {
+            sign.setOwner(owner);
+            sign.setLimit(30, false);
+        }
+        for (int x = 2; x <= 16; x++) {
+            for (int w = 9; w <= 11; w++) {
+                paint(level, x, w, none, Direction.NORTH);
+            }
+        }
+        post(level, 5, 12, 1, ModBlocks.STOP_SIGN.get().defaultBlockState().setValue(com.reiko.cars.road.StopSignBlock.FACING, Direction.EAST));
+        paint(level, 5, 10, com.reiko.cars.road.RoadMarking.STOP_LINE, Direction.WEST);
+        paint(level, 5, 11, com.reiko.cars.road.RoadMarking.STOP_LINE, Direction.WEST);
+    }
+
+    private static void roadsScript() {
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                crossing(level, player);
+                spawn(level, CarType.SEDAN, 1.5, 7.0, 180.0F, 0.6); // northbound, waiting at the light
+                spawn(level, CarType.CITY_BUS, -10.0, 1.5, -90.0F, 0.6); // eastbound
+                spawn(level, CarType.TAXI, -1.5, -12.0, 0.0F, 0.6); // southbound
+                player.getInventory().clearContent();
+            });
+        });
+        at(60, mc -> look(mc, 14.0, -46.0, 20.0, 145.0F, 38.0F));
+        at(100, mc -> shot(mc, "142_crossing_a"));
+        // Half a cycle later the other road has the green.
+        at(104, mc -> aim(mc, 3.5, -57.5, 4.5, 2.0, 0.6, 3.5));
+        at(130, mc -> {
+            shot(mc, "143_light_a");
+            ReikoCars.LOGGER.info("Showcase light: {} at {} (clock {})", mc.level.getBlockState(new BlockPos(3, -58, 4)), mc.level.getGameTime(),
+                    com.reiko.cars.traffic.TrafficLightBlock.signal(mc.level, mc.level.getBlockState(new BlockPos(3, -58, 4))));
+        });
+        at(130 + 300, mc -> {
+            shot(mc, "144_light_b");
+            ReikoCars.LOGGER.info("Showcase light: {} at {} (clock {})", mc.level.getBlockState(new BlockPos(3, -58, 4)), mc.level.getGameTime(),
+                    com.reiko.cars.traffic.TrafficLightBlock.signal(mc.level, mc.level.getBlockState(new BlockPos(3, -58, 4))));
+        });
+        at(130 + 304, mc -> look(mc, 14.0, -46.0, 20.0, 145.0F, 38.0F));
+        at(130 + 330, mc -> shot(mc, "145_crossing_b"));
+        // Signs, close up.
+        at(545, mc -> aim(mc, 3.5, -58.6, 13.5, 0.4, 0.3, 3.2));
+        at(570, mc -> shot(mc, "146_speed_sign"));
+        at(572, mc -> aim(mc, 5.5, -58.6, 12.5, 2.8, 0.3, 0.6));
+        at(595, mc -> shot(mc, "147_stop_sign"));
+        at(597, mc -> aim(mc, 2.0, -59.6, 7.0, 0.0, 6.0, 3.0));
+        at(620, mc -> shot(mc, "148_markings"));
+        // Night: the street lamps come on.
+        at(622, mc -> server(mc, player -> player.serverLevel().setDayTime(18000)));
+        at(624, mc -> look(mc, 8.0, -54.0, 26.0, 160.0F, 15.0F));
+        at(675, mc -> shot(mc, "149_night"));
+        at(677, mc -> server(mc, player -> player.serverLevel().setDayTime(6000)));
+        // A red-light camera: Mo drives the player's taxi past a red light owned by Ivy.
+        at(680, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                ServerPlayer ivy = extraPlayer(player.server, "Ivy");
+                ServerPlayer mo = extraPlayer(player.server, "Mo");
+                BlockPos lightPos = new BlockPos(-3, -58, -4);
+                level.setBlockAndUpdate(lightPos.above(), Blocks.REDSTONE_BLOCK.defaultBlockState());
+                if (level.getBlockEntity(lightPos) instanceof com.reiko.cars.traffic.TrafficLightBlockEntity be) {
+                    be.setOwner(ivy);
+                }
+                CarEntity taxi = car(level, CarType.TAXI);
+                taxi.setOwner(player);
+                mo.teleportTo(level, taxi.getX(), taxi.getY(), taxi.getZ(), 0.0F, 0.0F);
+                mo.startRiding(taxi, true);
+                net.minecraft.world.phys.Vec3 from = new net.minecraft.world.phys.Vec3(-1.5, -60.0, -6.0);
+                net.minecraft.world.phys.Vec3 to = new net.minecraft.world.phys.Vec3(-1.5, -60.0, -3.0);
+                taxi.moveTo(to.x, to.y, to.z, 0.0F, 0.0F);
+                com.reiko.cars.traffic.TrafficCameras.check(taxi, from, to, 0.6);
+            });
+            aim(mc, -1.5, -59.0, -5.0, 3.0, 2.0, -5.0);
+        });
+        at(706, mc -> shot(mc, "150_red_light_ticket"));
+        // The owner's screen for the speed sign.
+        at(708, mc -> server(mc, player -> {
+            player.teleportTo(player.serverLevel(), 3.5, -60.0, 16.0, 180.0F, 0.0F);
+            if (player.serverLevel().getBlockEntity(new BlockPos(3, -59, 13)) instanceof com.reiko.cars.traffic.SpeedSignBlockEntity sign) {
+                com.reiko.cars.traffic.RoadSignMenu.open(player, sign);
+            }
+        }));
+        at(730, mc -> shot(mc, "151_speed_sign_screen"));
+        at(732, mc -> mc.player.closeContainer());
+        at(735, mc -> server(mc, player -> {
+            player.getInventory().clearContent();
+            give(player, ModItems.ASPHALT.get(), 64);
+            give(player, ModItems.ASPHALT_SLAB.get(), 64);
+            give(player, ModItems.ASPHALT_STAIRS.get(), 64);
+            give(player, ModItems.ROAD_PAINT.get(), 1);
+            give(player, ModItems.STREET_POLE.get(), 16);
+            give(player, ModItems.TRAFFIC_LIGHT.get(), 4);
+            give(player, ModItems.STOP_SIGN.get(), 4);
+            give(player, ModItems.SPEED_SIGN.get(), 4);
+            give(player, ModItems.STREET_LAMP.get(), 8);
+        }));
+        at(755, mc -> shot(mc, "152_items"));
+        at(760, mc -> mc.stop());
     }
 }

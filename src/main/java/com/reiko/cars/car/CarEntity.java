@@ -530,6 +530,15 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return entityData.get(DATA_TIP_START);
     }
 
+    // ---- traffic cameras (see TrafficCameras) ----
+
+    /** When a red-light or speed camera last fined this car, in game time. Server side, not saved. */
+    public long lastRedLightFine = -1_000_000L;
+    public long lastSpeedingFine = -1_000_000L;
+    /** Where the car was over the last half second, for its speed past a speed camera. */
+    private final Vec3[] trail = new Vec3[10];
+    private int trailAt;
+
     // ---- turn signals and the alarm (see CarSignals) ----
 
     // Server-side: how far it's turned since the signal went on, and for how many ticks it's run straight since.
@@ -1275,10 +1284,19 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     }
 
     private double surfaceFactor() {
+        if (isOnRoad()) {
+            return CarsConfig.get(CarsConfig.ROAD_SPEED);
+        }
         if (type.offRoad) {
             return 1.0;
         }
         return isOffRoad() ? CarsConfig.get(CarsConfig.OFF_ROAD_SPEED) : 1.0;
+    }
+
+    /** On asphalt. */
+    public boolean isOnRoad() {
+        return level().getBlockState(getOnPos()).is(com.reiko.cars.road.Asphalt.ROAD)
+                || level().getBlockState(blockPosition()).is(com.reiko.cars.road.Asphalt.ROAD);
     }
 
     /** On grass, dirt, sand, snow or the like, rather than a road. */
@@ -1310,10 +1328,20 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         fares.tick();
         Vec3 pos = position();
         double moved = lastFuelPos == null ? 0.0 : Math.sqrt(Mth.square(pos.x - lastFuelPos.x) + Mth.square(pos.z - lastFuelPos.z));
+        Vec3 previous = lastFuelPos;
         if (moved > 8.0) {
             moved = 0.0; // teleported, not driven
+            previous = null;
         }
         lastFuelPos = pos;
+        Vec3 halfSecondAgo = trail[trailAt];
+        trail[trailAt] = pos;
+        trailAt = (trailAt + 1) % trail.length;
+        if (previous != null && moved > 0.0) {
+            double speed = halfSecondAgo == null ? moved
+                    : Math.sqrt(Mth.square(pos.x - halfSecondAgo.x) + Mth.square(pos.z - halfSecondAgo.z)) / trail.length;
+            com.reiko.cars.traffic.TrafficCameras.check(this, previous, pos, speed);
+        }
         LivingEntity driver = getControllingPassenger();
         double load = trailer() != null ? 1.4 : towed() != null ? 1.3 : 1.0;
         if (driver != null && fuel > 0 && !isBrokenDown() && keyedIn()) {
@@ -1326,7 +1354,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             }
         }
         if (driver != null && moved > 0.0) {
-            double tires = isOffRoad() ? (type.offRoad ? 1.5 : 2.5) : 1.0;
+            double tires = isOnRoad() ? 0.75 : isOffRoad() ? (type.offRoad ? 1.5 : 2.5) : 1.0;
             setCondition(condition.afterDriving(moved, tires, load, CarsConfig.get(CarsConfig.WEAR)));
         }
         if (moved > 0.3) {

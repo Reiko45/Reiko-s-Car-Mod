@@ -16,6 +16,7 @@ public final class CarsConfig {
 
     public static final ModConfigSpec.DoubleValue SPEED;
     public static final ModConfigSpec.DoubleValue OFF_ROAD_SPEED;
+    public static final ModConfigSpec.DoubleValue ROAD_SPEED;
     public static final ModConfigSpec.DoubleValue RUN_OVER_DAMAGE;
     public static final ModConfigSpec.BooleanValue LOCK_NEW_CARS;
     public static final ModConfigSpec.BooleanValue REQUIRE_KEYS;
@@ -48,6 +49,12 @@ public final class CarsConfig {
     public static final ModConfigSpec.IntValue INSURANCE_TERM_DAYS;
     public static final ModConfigSpec.DoubleValue INSURANCE_REACH;
 
+    public static final ModConfigSpec.DoubleValue GREEN_SECONDS;
+    public static final ModConfigSpec.DoubleValue YELLOW_SECONDS;
+    public static final ModConfigSpec.DoubleValue ALL_RED_SECONDS;
+    public static final ModConfigSpec.DoubleValue RED_LIGHT_FINE;
+    public static final ModConfigSpec.DoubleValue SPEEDING_FINE;
+
     public static final ModConfigSpec.DoubleValue POSTAGE;
     public static final ModConfigSpec.DoubleValue MAIL_REACH;
 
@@ -77,6 +84,10 @@ public final class CarsConfig {
                 .comment("Top speed on grass, dirt, sand, snow and the other blocks in the reikocars:off_road tag, as a fraction",
                         "of full speed. The off-roader ignores this. Set to 1.0 to drive everywhere at full speed.")
                 .defineInRange("offRoadSpeedFactor", 0.6, 0.05, 1.0);
+        ROAD_SPEED = builder
+                .comment("Top speed on asphalt (the reikocars:road block tag), as a multiple of full speed. Tires also wear a quarter",
+                        "slower there. Set to 1.0 for no speed bonus.")
+                .defineInRange("roadSpeedFactor", 1.15, 1.0, 2.0);
         RUN_OVER_DAMAGE = builder
                 .comment("Damage a car does to a mob it hits, per block per tick of speed (a sedan at full speed goes about 0.9).",
                         "Players are only hurt when PvP is on. 0 turns it off.")
@@ -182,6 +193,26 @@ public final class CarsConfig {
         INSURANCE_REACH = builder
                 .comment("How close, in blocks, a car must be parked to an insurance office to be insured there.")
                 .defineInRange("officeReach", 10.0, 2.0, 64.0);
+        builder.pop();
+
+        builder.push("roads");
+        GREEN_SECONDS = builder
+                .comment("How long a traffic light stays green, in seconds. All lights share one clock: those facing north or south",
+                        "are green while those facing east or west are red, and the other way round.")
+                .defineInRange("greenSeconds", 10.0, 1.0, 300.0);
+        YELLOW_SECONDS = builder
+                .comment("How long a traffic light shows yellow before it turns red, in seconds.")
+                .defineInRange("yellowSeconds", 3.0, 0.5, 30.0);
+        ALL_RED_SECONDS = builder
+                .comment("How long every light at a crossing shows red between one way's yellow and the other's green, in seconds.")
+                .defineInRange("allRedSeconds", 1.0, 0.0, 30.0);
+        RED_LIGHT_FINE = builder
+                .comment("A new traffic light's red-light camera fine, paid from the car owner's bank account to the light's owner.",
+                        "Its owner can change it, or set 0 to turn the camera off.")
+                .defineInRange("redLightFine", 15.0, 0.0, 1_000_000.0);
+        SPEEDING_FINE = builder
+                .comment("A new speed limit sign's speed camera fine. Its owner can change it, or set 0 to turn the camera off.")
+                .defineInRange("speedingFine", 20.0, 0.0, 1_000_000.0);
         builder.pop();
 
         builder.push("mail");

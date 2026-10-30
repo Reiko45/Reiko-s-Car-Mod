@@ -39,6 +39,15 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.TOLL_GATE.get());
                 output.accept(ModItems.INSURANCE_OFFICE.get());
                 output.accept(ModItems.TRASH_CAN.get());
+                output.accept(ModItems.ASPHALT.get());
+                output.accept(ModItems.ASPHALT_SLAB.get());
+                output.accept(ModItems.ASPHALT_STAIRS.get());
+                output.accept(ModItems.ROAD_PAINT.get());
+                output.accept(ModItems.STREET_POLE.get());
+                output.accept(ModItems.TRAFFIC_LIGHT.get());
+                output.accept(ModItems.STOP_SIGN.get());
+                output.accept(ModItems.SPEED_SIGN.get());
+                output.accept(ModItems.STREET_LAMP.get());
                 output.accept(ModItems.VANILLA_ICE_CREAM.get());
                 output.accept(ModItems.CHOCOLATE_ICE_CREAM.get());
                 output.accept(ModItems.STRAWBERRY_ICE_CREAM.get());

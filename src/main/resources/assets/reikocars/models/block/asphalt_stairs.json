@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/stairs",
+  "textures": {
+    "top": "reikocars:block/asphalt",
+    "side": "reikocars:block/asphalt",
+    "bottom": "reikocars:block/asphalt"
+  }
+}

@@ -9,6 +9,14 @@
     "reikocars:parking_meter",
     "reikocars:toll_booth",
     "reikocars:toll_gate",
-    "reikocars:trash_can"
+    "reikocars:trash_can",
+    "reikocars:asphalt",
+    "reikocars:asphalt_slab",
+    "reikocars:asphalt_stairs",
+    "reikocars:street_pole",
+    "reikocars:traffic_light",
+    "reikocars:stop_sign",
+    "reikocars:speed_sign",
+    "reikocars:street_lamp"
   ]
 }

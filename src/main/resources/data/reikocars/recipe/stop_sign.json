@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "IRI",
+    "IWI",
+    " P "
+  ],
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "R": {
+      "tag": "c:dyes/red"
+    },
+    "W": {
+      "tag": "c:dyes/white"
+    },
+    "P": {
+      "item": "reikocars:street_pole"
+    }
+  },
+  "result": {
+    "id": "reikocars:stop_sign",
+    "count": 1
+  }
+}

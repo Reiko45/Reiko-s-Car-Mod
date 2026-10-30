@@ -2510,4 +2510,186 @@ public final class CarGameTests {
         }
         helper.succeed();
     }
+    // ---- roads, traffic lights and cameras ----
+
+    /** {@code player} right-clicks the top of the block at {@code pos} (test coordinates) with what's in their main hand. */
+    private static void useOnTop(GameTestHelper helper, ServerPlayer player, BlockPos pos) {
+        BlockPos at = helper.absolutePos(pos);
+        net.minecraft.world.phys.BlockHitResult hit = new net.minecraft.world.phys.BlockHitResult(Vec3.atCenterOf(at).add(0, 0.5, 0), Direction.UP, at, false);
+        player.getMainHandItem().useOn(new net.minecraft.world.item.context.UseOnContext(player, InteractionHand.MAIN_HAND, hit));
+    }
+
+    @GameTest(template = YARD)
+    public static void asphaltAndRoadPaint(GameTestHelper helper) {
+        ServerPlayer painter = join(helper);
+        try {
+            BlockPos road = new BlockPos(5, 0, 6);
+            helper.setBlock(road, ModBlocks.ASPHALT.get().defaultBlockState());
+            BlockPos slab = new BlockPos(5, 0, 8);
+            helper.setBlock(slab, ModBlocks.ASPHALT_SLAB.get().defaultBlockState());
+            ItemStack paint = new ItemStack(ModItems.ROAD_PAINT.get());
+            painter.setItemInHand(InteractionHand.MAIN_HAND, paint);
+            check(helper, com.reiko.cars.road.RoadPaintItem.marking(paint) == com.reiko.cars.road.RoadMarking.CENTER_DASHED, "a new can paints the center line");
+            paint.getItem().use(helper.getLevel(), painter, InteractionHand.MAIN_HAND);
+            check(helper, com.reiko.cars.road.RoadPaintItem.marking(paint) == com.reiko.cars.road.RoadMarking.CENTER_SOLID, "right-clicking the air picks the next marking");
+            painter.setShiftKeyDown(true);
+            paint.getItem().use(helper.getLevel(), painter, InteractionHand.MAIN_HAND);
+            paint.getItem().use(helper.getLevel(), painter, InteractionHand.MAIN_HAND);
+            painter.setShiftKeyDown(false);
+            check(helper, com.reiko.cars.road.RoadPaintItem.marking(paint) == com.reiko.cars.road.RoadMarking.ARROW_RIGHT, "sneaking goes back, round past the first");
+            paint.getItem().use(helper.getLevel(), painter, InteractionHand.MAIN_HAND);
+
+            painter.moveTo(helper.absoluteVec(new Vec3(5.5, 1.0, 9.5)));
+            painter.setYRot(180.0F); // facing north
+            painter.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+            useOnTop(helper, painter, road);
+            net.minecraft.world.level.block.state.BlockState painted = helper.getBlockState(road);
+            check(helper, painted.getValue(com.reiko.cars.road.Asphalt.MARKING) == com.reiko.cars.road.RoadMarking.CENTER_DASHED
+                    && painted.getValue(com.reiko.cars.road.Asphalt.FACING) == Direction.NORTH, "painted a center line, running north");
+            helper.assertValueEqual(paint.getDamageValue(), 1, "a coat of paint used");
+            useOnTop(helper, painter, road);
+            check(helper, helper.getBlockState(road).getValue(com.reiko.cars.road.Asphalt.MARKING) == com.reiko.cars.road.RoadMarking.NONE, "painting it again scrapes it off");
+            helper.assertValueEqual(paint.getDamageValue(), 1, "which uses no paint");
+            painter.setYRot(270.0F); // facing east
+            useOnTop(helper, painter, slab);
+            check(helper, helper.getBlockState(slab).getValue(com.reiko.cars.road.Asphalt.FACING) == Direction.EAST
+                    && helper.getBlockState(slab).getValue(com.reiko.cars.road.Asphalt.MARKING) == com.reiko.cars.road.RoadMarking.CENTER_DASHED, "slabs take paint too");
+
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.5, 6.5);
+            check(helper, car.isOnRoad(), "a car on asphalt is on the road");
+            car.moveTo(helper.absoluteVec(new Vec3(2.5, 1.0, 20.5)));
+            check(helper, !car.isOnRoad(), "and off it elsewhere");
+        } finally {
+            leave(helper, painter);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, timeoutTicks = 700)
+    public static void trafficLightsTakeTurns(GameTestHelper helper) {
+        int cycle = (int) Math.round((com.reiko.cars.config.CarsConfig.get(com.reiko.cars.config.CarsConfig.GREEN_SECONDS)
+                + com.reiko.cars.config.CarsConfig.get(com.reiko.cars.config.CarsConfig.YELLOW_SECONDS)
+                + com.reiko.cars.config.CarsConfig.get(com.reiko.cars.config.CarsConfig.ALL_RED_SECONDS)) * 40);
+        java.util.EnumMap<com.reiko.cars.traffic.Signal, Integer> seen = new java.util.EnumMap<>(com.reiko.cars.traffic.Signal.class);
+        int allRed = 0;
+        for (int t = 0; t < cycle; t++) {
+            com.reiko.cars.traffic.Signal ns = com.reiko.cars.traffic.TrafficLightBlock.signalAt(t, Direction.NORTH, false);
+            com.reiko.cars.traffic.Signal ew = com.reiko.cars.traffic.TrafficLightBlock.signalAt(t, Direction.EAST, false);
+            check(helper, ns == com.reiko.cars.traffic.Signal.RED || ew == com.reiko.cars.traffic.Signal.RED, "a crossing never lets both ways go, at tick " + t);
+            check(helper, com.reiko.cars.traffic.TrafficLightBlock.signalAt(t, Direction.SOUTH, false) == ns, "opposite lights match");
+            seen.merge(ns, 1, Integer::sum);
+            if (ns == com.reiko.cars.traffic.Signal.RED && ew == com.reiko.cars.traffic.Signal.RED) {
+                allRed++;
+            }
+        }
+        helper.assertValueEqual(seen.get(com.reiko.cars.traffic.Signal.GREEN), 200, "10 s of green");
+        helper.assertValueEqual(seen.get(com.reiko.cars.traffic.Signal.YELLOW), 60, "3 s of yellow");
+        helper.assertValueEqual(allRed, 40, "1 s all red, twice a cycle");
+        check(helper, com.reiko.cars.traffic.TrafficLightBlock.signalAt(0, Direction.NORTH, true) == com.reiko.cars.traffic.Signal.RED, "redstone holds it on red");
+
+        BlockPos at = new BlockPos(1, 1, 1);
+        helper.setBlock(at, ModBlocks.TRAFFIC_LIGHT.get().defaultBlockState().setValue(com.reiko.cars.traffic.TrafficLightBlock.FACING, Direction.SOUTH));
+        helper.runAfterDelay(6, () -> {
+            net.minecraft.world.level.block.state.BlockState state = helper.getBlockState(at);
+            check(helper, state.getValue(com.reiko.cars.traffic.TrafficLightBlock.SIGNAL) == com.reiko.cars.traffic.TrafficLightBlock.signal(helper.getLevel(), state),
+                    "the light shows what the clock says");
+            helper.setBlock(at.east(), net.minecraft.world.level.block.Blocks.REDSTONE_BLOCK.defaultBlockState());
+            check(helper, helper.getBlockState(at).getValue(com.reiko.cars.traffic.TrafficLightBlock.POWERED)
+                    && helper.getBlockState(at).getValue(com.reiko.cars.traffic.TrafficLightBlock.SIGNAL) == com.reiko.cars.traffic.Signal.RED, "powered, it goes red");
+            helper.setBlock(at.east(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+            // Unpowered, it runs on the clock again: it turns green within a cycle.
+            helper.succeedWhen(() -> helper.assertTrue(helper.getBlockState(at).getValue(com.reiko.cars.traffic.TrafficLightBlock.SIGNAL)
+                    == com.reiko.cars.traffic.Signal.GREEN, "the light turns green"));
+        });
+    }
+
+    @GameTest(template = YARD)
+    public static void trafficCamerasFine(GameTestHelper helper) {
+        // A traffic light facing south, and a speed limit sign. Cameras join their level's list on the next tick.
+        BlockPos lightAt = new BlockPos(7, 2, 10);
+        helper.setBlock(lightAt, ModBlocks.TRAFFIC_LIGHT.get().defaultBlockState().setValue(com.reiko.cars.traffic.TrafficLightBlock.FACING, Direction.SOUTH));
+        BlockPos signAt = new BlockPos(2, 1, 20);
+        helper.setBlock(signAt, ModBlocks.SPEED_SIGN.get().defaultBlockState());
+        helper.runAfterDelay(2, () -> camerasFine(helper, lightAt, signAt));
+    }
+
+    private static void camerasFine(GameTestHelper helper, BlockPos lightAt, BlockPos signAt) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer city = join(helper);
+        ServerPlayer driver = join(helper);
+        try {
+            var light = (com.reiko.cars.traffic.TrafficLightBlockEntity) helper.getBlockEntity(lightAt);
+            light.setOwner(city);
+            helper.setBlock(lightAt.east(), net.minecraft.world.level.block.Blocks.REDSTONE_BLOCK.defaultBlockState());
+            check(helper, com.reiko.cars.traffic.TrafficLightBlock.signal(helper.getLevel(), helper.getBlockState(lightAt)) == com.reiko.cars.traffic.Signal.RED, "the light is red");
+            helper.assertValueEqual(light.fine(), 1500L, "a $15.00 fine");
+
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.5, 13.0);
+            car.setOwner(driver);
+            driver.startRiding(car, true);
+            ECO.deposit(server, driver.getUUID(), 10_000, "test");
+            long cityBefore = ECO.getBalance(server, city.getUUID());
+            long driverBefore = ECO.getBalance(server, driver.getUUID());
+            Vec3 south = helper.absoluteVec(new Vec3(5.5, 1.0, 12.0));
+            Vec3 past = helper.absoluteVec(new Vec3(5.5, 1.0, 10.0));
+            com.reiko.cars.traffic.TrafficCameras.check(car, past, south, 0.5);
+            helper.assertValueEqual(light.tickets(), 0, "driving away from the light isn't running it");
+            com.reiko.cars.traffic.TrafficCameras.check(car, south, past, 0.5);
+            helper.assertValueEqual(light.tickets(), 1, "crossing its line toward it on red is");
+            helper.assertValueEqual(ECO.getBalance(server, driver.getUUID()), driverBefore - 1500, "the owner pays the fine");
+            helper.assertValueEqual(ECO.getBalance(server, city.getUUID()), cityBefore + 1500, "to the light's owner");
+            com.reiko.cars.traffic.TrafficCameras.check(car, south, past, 0.5);
+            helper.assertValueEqual(light.tickets(), 1, "once a minute at most");
+            car.lastRedLightFine = -1_000_000L;
+            com.reiko.cars.traffic.TrafficCameras.check(car, helper.absoluteVec(new Vec3(20.5, 1.0, 12.0)), helper.absoluteVec(new Vec3(20.5, 1.0, 10.0)), 0.5);
+            helper.assertValueEqual(light.tickets(), 1, "a road 13 blocks over isn't this light's");
+
+            CarEntity police = vehicle(helper, CarType.POLICE_CAR, 3.5, 13.0);
+            police.setOwner(driver);
+            ServerPlayer officer = join(helper);
+            officer.startRiding(police, true);
+            police.setSiren(true);
+            com.reiko.cars.traffic.TrafficCameras.check(police, south, past, 0.5);
+            helper.assertValueEqual(light.tickets(), 1, "a police car with its siren on isn't fined");
+            police.setSiren(false);
+            police.setOwner(city);
+            com.reiko.cars.traffic.TrafficCameras.check(police, south, past, 0.5);
+            helper.assertValueEqual(light.tickets(), 1, "nor are the camera owner's own cars");
+            officer.stopRiding();
+            leave(helper, officer);
+
+            // A speed limit sign: 30 mph, then 50 km/h.
+            var sign = (com.reiko.cars.traffic.SpeedSignBlockEntity) helper.getBlockEntity(signAt);
+            sign.setOwner(city);
+            check(helper, com.reiko.cars.traffic.RoadSignService.set(city, sign, "20.00", "30", false).success() && sign.limit() == 30 && sign.fine() == 2000,
+                    "the owner sets 30 mph and a $20.00 fine");
+            check(helper, !com.reiko.cars.traffic.RoadSignService.set(driver, sign, "0", "100", false).success(), "nobody else can");
+            Vec3 a = helper.absoluteVec(new Vec3(4.5, 1.0, 18.0));
+            Vec3 b = helper.absoluteVec(new Vec3(4.5, 1.0, 18.6));
+            long before = ECO.getBalance(server, driver.getUUID());
+            com.reiko.cars.traffic.TrafficCameras.check(car, a, b, 0.6); // 27 mph
+            helper.assertValueEqual(sign.tickets(), 0, "27 mph in a 30 is fine");
+            com.reiko.cars.traffic.TrafficCameras.check(car, a, b, 0.9); // 40 mph
+            helper.assertValueEqual(sign.tickets(), 1, "40 mph isn't");
+            helper.assertValueEqual(ECO.getBalance(server, driver.getUUID()), before - 2000, "$20.00");
+            car.lastSpeedingFine = -1_000_000L;
+            com.reiko.cars.traffic.TrafficCameras.check(car, helper.absoluteVec(new Vec3(4.5, 1.0, 34.0)), helper.absoluteVec(new Vec3(4.5, 1.0, 34.9)), 0.9);
+            helper.assertValueEqual(sign.tickets(), 1, "out of the camera's sight it isn't seen");
+            com.reiko.cars.traffic.RoadSignService.set(city, sign, "20.00", "50", true);
+            com.reiko.cars.traffic.TrafficCameras.check(car, a, b, 0.72); // 51.8 km/h
+            helper.assertValueEqual(sign.tickets(), 1, "52 km/h in a 50 is within the 3 km/h");
+            com.reiko.cars.traffic.TrafficCameras.check(car, a, b, 0.8); // 57.6 km/h
+            helper.assertValueEqual(sign.tickets(), 2, "58 km/h isn't");
+            ECO.withdraw(server, driver.getUUID(), ECO.getBalance(server, driver.getUUID()) - 500, "test");
+            car.lastSpeedingFine = -1_000_000L;
+            com.reiko.cars.traffic.TrafficCameras.check(car, a, b, 0.8);
+            helper.assertValueEqual(ECO.getBalance(server, driver.getUUID()), 0L, "a driver short of the fine pays what they have");
+            helper.assertValueEqual(sign.collected(), 4500L, "$45.00 collected");
+            CompoundTag saved = sign.saveWithoutMetadata(helper.getLevel().registryAccess());
+            check(helper, saved.getInt("Limit") == 50 && saved.getBoolean("Kmh") && saved.getInt("Tickets") == 3, "the sign keeps its limit and books");
+        } finally {
+            leave(helper, city, driver);
+        }
+        helper.succeed();
+    }
 }

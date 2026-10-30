@@ -10,7 +10,9 @@ Cars wear out as they're driven, and a **Repair Bench** fixes them: fit your own
 charge for repairs. Tow trucks haul broken-down cars to it, and mailboxes and the mail van carry parcels between
 players for postage. Parking meters ticket cars that overstay, toll gates lift for drivers who pay, insurance offices
 cover crash repairs, and the job board pays drivers, mail carriers, mechanics, truckers and garbage collectors.
-Every vehicle has turn signals and hazard lights, and a locked car's alarm catches anyone without a key.
+Every vehicle has turn signals and hazard lights, and a locked car's alarm catches anyone without a key. Lay
+**asphalt** roads and paint them, and put up **traffic lights**, signs and street lamps; red-light and speed cameras
+fine drivers for their owners.
 
 ## Requirements
 
@@ -117,6 +119,37 @@ Cars from before 1.12.0 have no keys yet: cut one before driving.
   A server can change how long alarms sound, or turn them off, with `driving.alarmSeconds`.
 
 All the keys can be changed under Controls, in the Reiko's Car Mod section.
+
+## Roads
+
+- **Asphalt** (block, slab and stairs) makes a road: cars go **15% faster** on it, and their tires wear a quarter
+  slower. Craft it from gravel and coal.
+- **Road Paint** marks it. Right-click the air to pick a marking (sneak to go back): a dashed or double yellow center
+  line, a dashed white lane line, an edge line, a stop line, a crosswalk, or an arrow (straight on, left or right).
+  Then right-click the top of asphalt or an asphalt slab: the marking is drawn the way you're facing (arrows point
+  that way, an edge line runs down your left, a stop line lies across the far side). Paint the same thing again to
+  scrape it off. A can paints 256 blocks.
+- **Street Poles** (stack as many as you like) hold up everything else: traffic lights, signs and street lamps all go
+  on top of one, facing whoever puts them up (a lamp's arm reaches out the way you face).
+- **Street Lamps** come on at dusk and go off at dawn.
+- **Stop Signs** are just signs; paint a stop line by them.
+
+### Traffic lights and cameras
+
+- **Traffic lights** run on one shared clock: 10 seconds of green, 3 of yellow, then red. Lights facing north or
+  south take turns with lights facing east or west, with a second of red all round in between, so put one up facing
+  each road into a crossing and they work together. A **redstone** signal holds a light on red.
+- **Red-light cameras:** a light's owner (whoever put it up) can fine drivers who run its red: a car that crosses the
+  line through the light, heading toward its face, within 8 blocks across the road, while it's red. Right-click your
+  light to set the fine ($15.00 to start; 0 turns the camera off) and see the tickets it's written. Anyone else
+  right-clicking it is told the fine.
+- **Speed limit signs** show their limit. Their owner right-clicks one to set the limit (mph or km/h) and the speed
+  camera's fine ($20.00 to start; 0 for none). A car going more than 2 mph (3 km/h) over the limit within 12 blocks
+  of the sign is fined.
+- **Fines** come out of the car owner's bank account (whatever they have, if it's less than the fine) and go to the
+  camera's owner; both get a chat message, and the camera flashes. A car is fined at most once a minute by each kind
+  of camera. The camera owner's own cars, cars with nobody driving, and police cars and ambulances with their sirens
+  on aren't fined. Only the owner (or an admin) can break a traffic light or speed sign.
 
 ## Fares
 
@@ -469,6 +502,14 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | Toll Booth | yellow dye, glass pane, yellow dye on top, iron ingot, redstone, iron ingot across the middle, three smooth stone below |
 | Toll Gate | stick, red dye, stick on top, yellow dye, piston, yellow dye across the middle, iron ingots in the bottom corners |
 | Insurance Office | paper, book, paper on top, gold ingot, shield, gold ingot across the middle, three iron ingots below |
+| Asphalt ×8 | eight gravel around a coal (or charcoal) |
+| Asphalt Slab ×6 / Stairs ×4 | the usual slab and stairs shapes, from asphalt (or one at a time on a stonecutter) |
+| Road Paint | a bucket, two white dye and a yellow dye (shapeless) |
+| Street Pole ×4 | three iron ingots in a column |
+| Traffic Light | iron ingots down both sides of red, yellow and lime dye |
+| Stop Sign | iron ingot, red dye, iron ingot over iron ingot, white dye, iron ingot, a street pole below |
+| Speed Limit Sign | iron ingot, white dye, iron ingot over iron ingot, black dye, iron ingot, a street pole below |
+| Street Lamp | three iron ingots over a street pole and glowstone |
 | Trash Can | iron ingot, iron trapdoor, iron ingot on top, iron ingot, green dye, iron ingot across the middle, three iron ingots below |
 | Vanilla Ice Cream ×3 | a milk bucket, sugar, a snowball and wheat (shapeless; the bucket comes back) |
 | Chocolate Ice Cream ×3 | as Vanilla, with cocoa beans |
@@ -555,6 +596,7 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `fuel.fallbackEnergyPerBucket` | `90000` | MJ per bucket for a tagged fuel BuildCraft doesn't know |
 | `driving.speedMultiplier` | `1.0` | Top speed and acceleration |
 | `driving.offRoadSpeedFactor` | `0.6` | Top speed off-road (1.0 turns it off) |
+| `driving.roadSpeedFactor` | `1.15` | Top speed on asphalt (1.0 turns the bonus off) |
 | `driving.runOverDamage` | `6.0` | Damage per block-per-tick of speed (0 turns it off) |
 | `driving.lockNewCars` | `true` | New cars start locked |
 | `driving.requireKeys` | `true` | A car needs one of its keys to start, even for its owner. If false, keys only share locked cars |
@@ -583,6 +625,11 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `insurance.claimLimit` | `100.0` | The most a new office pays out on one claim |
 | `insurance.termDays` | `7` | How many Minecraft days a term of cover lasts |
 | `insurance.officeReach` | `10.0` | How close a car must be parked to an insurance office to be insured there |
+| `roads.greenSeconds` | `10.0` | How long traffic lights stay green |
+| `roads.yellowSeconds` | `3.0` | How long they show yellow before red |
+| `roads.allRedSeconds` | `1.0` | How long every light at a crossing is red between one way's turn and the other's |
+| `roads.redLightFine` | `15.0` | A new traffic light's red-light camera fine (its owner can change it) |
+| `roads.speedingFine` | `20.0` | A new speed limit sign's camera fine (its owner can change it) |
 
 Each player can pick **mph** or **km/h**, and turn the dashboard off, in `config/reikocars-client.toml`.
 
@@ -668,6 +715,8 @@ src/main/java/com/reiko/cars/
 ├── ReikoCars.java        mod entry point
 ├── car/                  the car entity and its types, fuel (CarFuel, CarTank), wear and tear (CarCondition), the car item, WorkVehicles (sirens, healing, tipping, mixing) and CarSignals (turn signals, hazards, the alarm)
 ├── garbage/              the Trash Can block and block entity, and GarbageService (the garbage truck's round)
+├── road/                 asphalt and its markings, Road Paint, Street Poles, Stop Signs and Street Lamps
+├── traffic/              traffic lights, speed limit signs, their owner screen's menu, and TrafficCameras (the fines)
 ├── icecream/             the ice cream truck's shop: its menu and IceCreamService (pricing and selling)
 ├── pump/                 the gas and diesel pump block, its block entity, menu, protection, and PumpService (selling fuel)
 ├── trailer/              the trailers, their item, hitching and car hauling (Hitching), and the tanker (TankerService)
@@ -683,10 +732,10 @@ src/main/java/com/reiko/cars/
 ├── toll/                 the toll booth and toll gate blocks, their block entities and menus, protection, and TollService (paying and the gate)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
-├── network/              packets: pump, repair bench, mailbox, parking meter, toll, insurance and ice cream actions, horn, lock, hitch, siren, signals and hazards, the driver's wear reports, tanker load and unload
+├── network/              packets: pump, repair bench, mailbox, parking meter, toll, insurance, ice cream and road sign actions, horn, lock, hitch, siren, signals and hazards, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, ice cream and tanker screens, the toll gate's arm, pump display, engine, siren and alarm sounds, keys
+├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, ice cream, road sign and tanker screens, the speed sign's number, the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)

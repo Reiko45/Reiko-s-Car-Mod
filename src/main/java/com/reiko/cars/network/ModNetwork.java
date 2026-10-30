@@ -61,6 +61,7 @@ public final class ModNetwork {
         registrar.playToServer(TollActionPayload.TYPE, TollActionPayload.STREAM_CODEC, ModNetwork::handleToll);
         registrar.playToServer(InsuranceActionPayload.TYPE, InsuranceActionPayload.STREAM_CODEC, ModNetwork::handleInsurance);
         registrar.playToServer(IceCreamActionPayload.TYPE, IceCreamActionPayload.STREAM_CODEC, ModNetwork::handleIceCream);
+        registrar.playToServer(RoadSignActionPayload.TYPE, RoadSignActionPayload.STREAM_CODEC, ModNetwork::handleRoadSign);
     }
 
     private static void handleWear(CarWearPayload payload, IPayloadContext context) {
@@ -126,6 +127,18 @@ public final class ModNetwork {
             }
         }
         menu.refresh();
+        ShopFeedback.send(player, result);
+    }
+
+    private static void handleRoadSign(RoadSignActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || !(player.containerMenu instanceof com.reiko.cars.traffic.RoadSignMenu menu)
+                || menu.containerId != payload.containerId() || !menu.stillValid(player) || menu.sign() == null) {
+            return;
+        }
+        ShopActionResult result = com.reiko.cars.traffic.RoadSignService.set(player, menu.sign(), payload.fine(), payload.limit(), payload.kmh());
+        if (result.success()) {
+            com.reiko.cars.traffic.RoadSignMenu.open(player, menu.sign()); // reopen with the new settings
+        }
         ShopFeedback.send(player, result);
     }
 

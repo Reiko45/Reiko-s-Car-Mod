@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "AAA"
+  ],
+  "key": {
+    "A": {
+      "item": "reikocars:asphalt"
+    }
+  },
+  "result": {
+    "id": "reikocars:asphalt_slab",
+    "count": 6
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "A  ",
+    "AA ",
+    "AAA"
+  ],
+  "key": {
+    "A": {
+      "item": "reikocars:asphalt"
+    }
+  },
+  "result": {
+    "id": "reikocars:asphalt_stairs",
+    "count": 4
+  }
+}

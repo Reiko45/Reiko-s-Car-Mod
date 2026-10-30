@@ -56,6 +56,10 @@ public final class ModDataComponents {
     public static final Supplier<DataComponentType<com.reiko.cars.insurance.Policy>> INSURANCE = COMPONENTS.registerComponentType("insurance",
             builder -> builder.persistent(com.reiko.cars.insurance.Policy.CODEC).networkSynchronized(com.reiko.cars.insurance.Policy.STREAM_CODEC));
 
+    /** The marking a can of Road Paint is set to paint. */
+    public static final Supplier<DataComponentType<com.reiko.cars.road.RoadMarking>> ROAD_MARKING = COMPONENTS.registerComponentType("road_marking",
+            builder -> builder.persistent(com.reiko.cars.road.RoadMarking.CODEC).networkSynchronized(com.reiko.cars.road.RoadMarking.STREAM_CODEC));
+
     private ModDataComponents() {
     }
 }

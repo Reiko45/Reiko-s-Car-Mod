@@ -1,0 +1,94 @@
+{
+  "variants": {
+    "facing=north,powered=true,signal=red": {
+      "model": "reikocars:block/traffic_light_red"
+    },
+    "facing=north,powered=false,signal=red": {
+      "model": "reikocars:block/traffic_light_red"
+    },
+    "facing=north,powered=true,signal=yellow": {
+      "model": "reikocars:block/traffic_light_yellow"
+    },
+    "facing=north,powered=false,signal=yellow": {
+      "model": "reikocars:block/traffic_light_yellow"
+    },
+    "facing=north,powered=true,signal=green": {
+      "model": "reikocars:block/traffic_light_green"
+    },
+    "facing=north,powered=false,signal=green": {
+      "model": "reikocars:block/traffic_light_green"
+    },
+    "facing=east,powered=true,signal=red": {
+      "model": "reikocars:block/traffic_light_red",
+      "y": 90
+    },
+    "facing=east,powered=false,signal=red": {
+      "model": "reikocars:block/traffic_light_red",
+      "y": 90
+    },
+    "facing=east,powered=true,signal=yellow": {
+      "model": "reikocars:block/traffic_light_yellow",
+      "y": 90
+    },
+    "facing=east,powered=false,signal=yellow": {
+      "model": "reikocars:block/traffic_light_yellow",
+      "y": 90
+    },
+    "facing=east,powered=true,signal=green": {
+      "model": "reikocars:block/traffic_light_green",
+      "y": 90
+    },
+    "facing=east,powered=false,signal=green": {
+      "model": "reikocars:block/traffic_light_green",
+      "y": 90
+    },
+    "facing=south,powered=true,signal=red": {
+      "model": "reikocars:block/traffic_light_red",
+      "y": 180
+    },
+    "facing=south,powered=false,signal=red": {
+      "model": "reikocars:block/traffic_light_red",
+      "y": 180
+    },
+    "facing=south,powered=true,signal=yellow": {
+      "model": "reikocars:block/traffic_light_yellow",
+      "y": 180
+    },
+    "facing=south,powered=false,signal=yellow": {
+      "model": "reikocars:block/traffic_light_yellow",
+      "y": 180
+    },
+    "facing=south,powered=true,signal=green": {
+      "model": "reikocars:block/traffic_light_green",
+      "y": 180
+    },
+    "facing=south,powered=false,signal=green": {
+      "model": "reikocars:block/traffic_light_green",
+      "y": 180
+    },
+    "facing=west,powered=true,signal=red": {
+      "model": "reikocars:block/traffic_light_red",
+      "y": 270
+    },
+    "facing=west,powered=false,signal=red": {
+      "model": "reikocars:block/traffic_light_red",
+      "y": 270
+    },
+    "facing=west,powered=true,signal=yellow": {
+      "model": "reikocars:block/traffic_light_yellow",
+      "y": 270
+    },
+    "facing=west,powered=false,signal=yellow": {
+      "model": "reikocars:block/traffic_light_yellow",
+      "y": 270
+    },
+    "facing=west,powered=true,signal=green": {
+      "model": "reikocars:block/traffic_light_green",
+      "y": 270
+    },
+    "facing=west,powered=false,signal=green": {
+      "model": "reikocars:block/traffic_light_green",
+      "y": 270
+    }
+  }
+}

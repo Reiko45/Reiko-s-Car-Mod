@@ -115,6 +115,45 @@ public final class ModBlocks {
                     .dynamicShape()
                     .pushReaction(PushReaction.BLOCK)));
 
+    // ---- roads ----
+
+    private static BlockBehaviour.Properties asphalt() {
+        return BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_BLACK)
+                .instrument(net.minecraft.world.level.block.state.properties.NoteBlockInstrument.BASEDRUM)
+                .requiresCorrectToolForDrops()
+                .strength(1.5F, 6.0F)
+                .sound(SoundType.STONE);
+    }
+
+    public static final DeferredBlock<com.reiko.cars.road.AsphaltBlock> ASPHALT = BLOCKS.register("asphalt",
+            () -> new com.reiko.cars.road.AsphaltBlock(asphalt()));
+    public static final DeferredBlock<com.reiko.cars.road.AsphaltSlabBlock> ASPHALT_SLAB = BLOCKS.register("asphalt_slab",
+            () -> new com.reiko.cars.road.AsphaltSlabBlock(asphalt()));
+    public static final DeferredBlock<net.minecraft.world.level.block.StairBlock> ASPHALT_STAIRS = BLOCKS.register("asphalt_stairs",
+            () -> new net.minecraft.world.level.block.StairBlock(ASPHALT.get().defaultBlockState(), asphalt()));
+
+    private static BlockBehaviour.Properties streetMetal() {
+        return BlockBehaviour.Properties.of()
+                .mapColor(MapColor.METAL)
+                .strength(2.0F, 6.0F)
+                .sound(SoundType.METAL)
+                .noOcclusion();
+    }
+
+    public static final DeferredBlock<com.reiko.cars.road.StreetPoleBlock> STREET_POLE = BLOCKS.register("street_pole",
+            () -> new com.reiko.cars.road.StreetPoleBlock(streetMetal()));
+    public static final DeferredBlock<com.reiko.cars.road.StopSignBlock> STOP_SIGN = BLOCKS.register("stop_sign",
+            () -> new com.reiko.cars.road.StopSignBlock(streetMetal()));
+    public static final DeferredBlock<com.reiko.cars.road.StreetLampBlock> STREET_LAMP = BLOCKS.register("street_lamp",
+            () -> new com.reiko.cars.road.StreetLampBlock(streetMetal()
+                    .lightLevel(state -> state.getValue(com.reiko.cars.road.StreetLampBlock.LIT) ? 15 : 0)));
+    public static final DeferredBlock<com.reiko.cars.traffic.TrafficLightBlock> TRAFFIC_LIGHT = BLOCKS.register("traffic_light",
+            () -> new com.reiko.cars.traffic.TrafficLightBlock(streetMetal().strength(2.5F, 1200.0F).lightLevel(state -> 6)
+                    .pushReaction(PushReaction.BLOCK)));
+    public static final DeferredBlock<com.reiko.cars.traffic.SpeedSignBlock> SPEED_SIGN = BLOCKS.register("speed_sign",
+            () -> new com.reiko.cars.traffic.SpeedSignBlock(streetMetal().strength(2.5F, 1200.0F).pushReaction(PushReaction.BLOCK)));
+
     private ModBlocks() {
     }
 }

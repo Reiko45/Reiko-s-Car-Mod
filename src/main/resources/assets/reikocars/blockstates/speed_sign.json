@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "reikocars:block/speed_sign"
+    },
+    "facing=east": {
+      "model": "reikocars:block/speed_sign",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "reikocars:block/speed_sign",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "reikocars:block/speed_sign",
+      "y": 270
+    }
+  }
+}
