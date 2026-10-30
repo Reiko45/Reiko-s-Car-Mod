@@ -129,7 +129,7 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
         super(entityType, level);
         this.type = type;
         this.blocksBuilding = true;
-        this.parts = new TrailerPart[] {new TrailerPart(this, 3.2F, type.height), new TrailerPart(this, 3.2F, type.height)};
+        this.parts = new TrailerPart[] {new TrailerPart(this, 3.2F, type.height, true), new TrailerPart(this, 3.2F, type.height, false)};
         // Part ids follow the trailer's, so the client can match them up (as the ender dragon's do).
         setId(ENTITY_COUNTER.getAndAdd(parts.length + 1) + 1);
         this.cargo = new SimpleContainer(Math.max(1, type.cargoRows) * 9) {
@@ -701,9 +701,70 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
         return !isRemoved();
     }
 
-    /** Not solid: players and cars pass through it, so a tractor never snags on its own trailer. */
+    /**
+     * Solid, along its whole length (with its parts): other vehicles, players and mobs bump into it and can stand on it.
+     * Its own tractor and the cars it carries don't (see {@link #collidesWith}).
+     */
     @Override
     public boolean canBeCollidedWith() {
+        return !isRemoved();
+    }
+
+    /**
+     * Whether {@code car} bumps into {@code piece} (a trailer, or one of a trailer's parts). Not its own rig's trailer;
+     * and a semi backs under the front of a trailer standing on its legs, to hitch it, so it only meets the back.
+     */
+    public static boolean collidesWith(CarEntity car, Entity piece) {
+        TrailerEntity trailer = piece instanceof TrailerPart part ? part.getParent() : piece instanceof TrailerEntity t ? t : null;
+        if (trailer == null) {
+            return true;
+        }
+        if (trailer.getRootVehicle() == car.getRootVehicle()) {
+            return false;
+        }
+        if (car.carType().isTractor() && trailer.tractor() == null) {
+            return piece instanceof TrailerPart part && !part.front();
+        }
+        return true;
+    }
+
+    // ---- walls ----
+
+    /** Where it would stand, and which way it'd face, if its tractor's fifth wheel were at {@code hitch}. */
+    public record Pose(Vec3 position, float yaw) {
+    }
+
+    /** {@link #followTractor}'s sums, without moving it: where it'd go behind a fifth wheel at {@code hitch}. */
+    public Pose poseBehind(Vec3 hitch, float tractorYaw) {
+        Vec3 from = axle != null ? axle : position().subtract(forward().scale(TrailerType.AXLE_BACK));
+        double dx = hitch.x - from.x;
+        double dz = hitch.z - from.z;
+        float yaw = dx * dx + dz * dz < 1.0E-6 ? getYRot() : (float) (Mth.atan2(-dx, dz) * Mth.RAD_TO_DEG);
+        float relative = Mth.wrapDegrees(yaw - tractorYaw);
+        if (Math.abs(relative) > TrailerType.MAX_ARTICULATION) {
+            yaw = tractorYaw + Math.copySign(TrailerType.MAX_ARTICULATION, relative);
+        }
+        Vec3 direction = fromYaw(yaw);
+        return new Pose(new Vec3(hitch.x - direction.x * TrailerType.KINGPIN_FORWARD, hitch.y - TrailerType.KINGPIN_HEIGHT,
+                hitch.z - direction.z * TrailerType.KINGPIN_FORWARD), yaw);
+    }
+
+    /**
+     * Whether the trailer's body, standing at {@code pose}, is in a wall: boxes a block apart down its length, from a
+     * block up (so it rides over curbs and steps, as its tractor does) to near its roof.
+     */
+    public boolean blockedAt(Pose pose) {
+        Vec3 forward = fromYaw(pose.yaw());
+        double half = TrailerType.WIDTH * 0.42;
+        double bottom = pose.position().y + 1.01;
+        double top = pose.position().y + Math.min(trailerType().height - 0.1, 3.4);
+        for (double along = -TrailerType.LENGTH / 2.0 + half; along <= TrailerType.LENGTH / 2.0 - half + 1.0E-3; along += 1.0) {
+            double x = pose.position().x + forward.x * along;
+            double z = pose.position().z + forward.z * along;
+            if (!level().noBlockCollision(this, new AABB(x - half, bottom, z - half, x + half, top, z + half))) {
+                return true;
+            }
+        }
         return false;
     }
 

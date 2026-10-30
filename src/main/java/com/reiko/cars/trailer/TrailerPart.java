@@ -14,16 +14,28 @@ import net.neoforged.neoforge.entity.PartEntity;
 
 /**
  * A stretch of a trailer's length. A trailer is far longer than an entity's square hitbox can be, so the front and
- * back are covered by parts like these (as the ender dragon's body is). They only make the trailer clickable along
- * its whole length: clicks and hits go to the trailer.
+ * back are covered by parts like these (as the ender dragon's body is). They make the trailer clickable and solid
+ * along its whole length: clicks and hits go to the trailer, and other vehicles, players and mobs bump into them.
  */
 public final class TrailerPart extends PartEntity<TrailerEntity> {
     private final EntityDimensions size;
+    private final boolean front;
 
-    public TrailerPart(TrailerEntity trailer, float width, float height) {
+    public TrailerPart(TrailerEntity trailer, float width, float height, boolean front) {
         super(trailer);
         this.size = EntityDimensions.scalable(width, height);
+        this.front = front;
         refreshDimensions();
+    }
+
+    /** Whether this is the front part, over the kingpin, which a semi backs under to hitch. */
+    public boolean front() {
+        return front;
+    }
+
+    @Override
+    public boolean canBeCollidedWith() {
+        return getParent().canBeCollidedWith();
     }
 
     @Override

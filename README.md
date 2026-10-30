@@ -65,7 +65,8 @@ trailer, loads a car onto a car hauler, picks up or drops a car in a tow truck, 
 does a work vehicle's job. **K** works a police car's or ambulance's lights and siren. The **left and right arrow
 keys** work the turn signals and the **down arrow** the hazards (see [Turn signals, hazards and alarms](#turn-signals-hazards-and-alarms)).
 **R** opens the [radio](#car-radio). While you're
-in a car, a dashboard in the bottom right shows your speed and a fuel gauge.
+in a car, a dashboard in the bottom right shows your speed and a fuel gauge. (If the screen's too narrow for it to
+fit beside the hotbar, at a big GUI scale, it moves to the top right, under your status effects.)
 
 - **Fuel:** cars burn fuel for every block they cover, and a little while idling with someone at the wheel. The cars
   run on **gasoline**: BuildCraft's Light Fuel (and the Mixed Light and Gaseous Fuels), or other mods' gasoline,
@@ -125,7 +126,7 @@ All the keys can be changed under Controls, in the Reiko's Car Mod section.
 
 Every car, truck and bike has a radio. Anyone riding presses **R** to open it:
 
-- **Power**, and three **station presets**, each playing its own tracks one after another:
+- **Power**, and three **station presets**, each playing its own tracks one after another, round the clock:
 
   | Station | Plays | Tracks |
   | --- | --- | --- |
@@ -133,15 +134,19 @@ Every car, truck and bike has a radio. Anyone riding presses **R** to open it:
   | **94.5 Chill FM** | lo-fi beats | Rainy Window, Late Bus Home |
   | **101.3 Dusty Roads** | country guitar | Gravel Road, Dust on the Dash |
 
-  The music was composed and synthesised for this mod.
-- **DISC** plays whatever's in the radio's **disc slot**, over and over: any music disc, vanilla or another mod's.
-  Shift-click a disc in from your inventory.
+  The music was composed and synthesised for this mod. The stations are on the air whether anyone's listening or
+  not, so tuning in drops you into the middle of whatever's on, and every car on the same station plays the same
+  moment of the same song.
+- **DISC** plays whatever's in the radio's **disc slot**, from the top when it goes in, then again after a
+  three-second pause, like a jukebox: any music disc, vanilla or another mod's. Shift-click a disc in from your
+  inventory.
 - **Volume** from 0 to 10, shown on the display along with what's playing. A new track shows **Now Playing** over
   the hotbar.
 
 The radio plays while someone's in the car, and keeps its station, volume and disc when everyone gets out. Picking
 the car up (or breaking it) drops the disc, and the radio starts off again when it's put back down. Riders hear it at
-its volume; people nearby hear a quarter of that, or half from a convertible, tractor or bike. It plays on the
+its volume; people nearby hear a quarter of that, or half from a convertible, tractor or bike. Someone who comes
+into earshot, or gets in, hears the song from wherever it's got to, not from the start. It plays on the
 **Jukebox/Note Blocks** volume slider.
 
 ## Roads
@@ -254,7 +259,11 @@ the trailer's nose and the two are roughly in line (within 45°), then press **G
 **Driving a rig:** the trailer swings round behind you on bends and cuts the corner, as a real one does, and it can't
 fold back on itself past 100°. The semi turns about its back wheels, so take corners wide. Pulling a trailer, the
 semi is a little slower to get going and burns 40% more fuel. In third person the camera stands far enough back to
-see the whole rig. Trailers aren't solid: you can walk through them and they never snag the semi.
+see the whole rig.
+
+**Trailers are solid:** you can't walk through one, and cars bump into them as they do into each other. The rig
+stops if the trailer would swing into a wall or a building (curbs, a block high, don't stop it). An unhitched
+trailer's front, standing on its legs, is open underneath, so a semi can still back up under its nose to hitch it.
 
 **The tanker:** fill or empty it with a bucket (or any fluid container) by right-clicking it. To move fuel in bulk,
 park it with a tank beside it (within 2 blocks of its sides or ends) and right-click it with an empty hand: **Load**

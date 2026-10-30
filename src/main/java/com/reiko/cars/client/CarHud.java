@@ -72,7 +72,17 @@ public final class CarHud implements LayeredDraw.Layer {
         TrailerEntity towed = car.trailer();
         int height = HEIGHT + (towed != null ? TRAILER_ROW : 0);
         int x = graphics.guiWidth() - WIDTH - MARGIN;
-        int y = graphics.guiHeight() - height - MARGIN;
+        int y;
+        boolean atBottom = fitsBesideHotbar(minecraft, graphics.guiWidth());
+        if (atBottom) {
+            y = graphics.guiHeight() - height - MARGIN;
+        } else {
+            // Too narrow a screen to sit beside the hotbar: up in the top right corner instead, under any effect icons.
+            y = MARGIN + effectRows(minecraft) * 25;
+        }
+        // Key hints go just above the dashboard, or below it at the top of the screen.
+        int hintY = atBottom ? y - 11 : y + height + 3;
+        int hintStep = atBottom ? -11 : 11;
         graphics.fill(x, y, x + WIDTH, y + height, 0xA0101010);
         graphics.renderOutline(x, y, WIDTH, height, 0x60FFFFFF);
 
@@ -157,13 +167,49 @@ public final class CarHud implements LayeredDraw.Layer {
         if (action != null) {
             Component hint = Component.translatable("hud.reikocars.hitch." + action.name().toLowerCase(java.util.Locale.ROOT),
                     ReikoCarsClient.HITCH.getTranslatedKeyMessage());
-            graphics.drawString(font, hint, x + WIDTH - font.width(hint), y - 11, 0xFFFFD54F, true);
+            graphics.drawString(font, hint, x + WIDTH - font.width(hint), hintY, 0xFFFFD54F, true);
         }
         // And the siren key, in a police car or ambulance: lit up while they're on.
         if (car.carType().hasSiren() && car.getControllingPassenger() == minecraft.player) {
             Component hint = Component.translatable("hud.reikocars.siren", ReikoCarsClient.SIREN.getTranslatedKeyMessage());
             int sirenColor = car.sirenOn() ? ((minecraft.level.getGameTime() / 4) % 2 == 0 ? 0xFFFF5252 : 0xFF448AFF) : 0xC0FFFFFF;
-            graphics.drawString(font, hint, x + WIDTH - font.width(hint), y - (action != null ? 22 : 11), sirenColor, true);
+            graphics.drawString(font, hint, x + WIDTH - font.width(hint), hintY + (action != null ? hintStep : 0), sirenColor, true);
         }
+    }
+
+    /** How far up the action bar goes to clear the key hints over the dashboard, when the dashboard sits beside the hotbar. */
+    public static int actionBarRaise(Minecraft minecraft, CarEntity car) {
+        boolean driving = car.getControllingPassenger() == minecraft.player;
+        boolean hitch = driving && Hitching.available(car, minecraft.player) != null;
+        boolean siren = driving && car.carType().hasSiren();
+        return hitch && siren ? 25 : 14;
+    }
+
+    /**
+     * Whether the dashboard clears the hotbar, the health and food bars over it, and the hotbar's attack indicator, beside
+     * them. (Its key hints sit higher up, above all of those.)
+     */
+    public static boolean fitsBesideHotbar(Minecraft minecraft, int guiWidth) {
+        int hotbarRight = guiWidth / 2 + 91;
+        if (minecraft.options.attackIndicator().get() == net.minecraft.client.AttackIndicatorStatus.HOTBAR) {
+            hotbarRight += 24;
+        }
+        return guiWidth - MARGIN - WIDTH > hotbarRight + 2;
+    }
+
+    /** How far down the top right corner the game's status effect icons reach, in rows of 25: 0, 1 or 2. */
+    private static int effectRows(Minecraft minecraft) {
+        boolean good = false;
+        boolean bad = false;
+        for (net.minecraft.world.effect.MobEffectInstance effect : minecraft.player.getActiveEffects()) {
+            if (effect.showIcon()) {
+                if (effect.getEffect().value().isBeneficial()) {
+                    good = true;
+                } else {
+                    bad = true;
+                }
+            }
+        }
+        return bad ? 2 : good ? 1 : 0; // the game draws harmful ones on the second row even with no beneficial ones
     }
 }

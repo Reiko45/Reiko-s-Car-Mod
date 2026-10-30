@@ -2757,4 +2757,119 @@ public final class CarGameTests {
         }
         helper.succeed();
     }
+    @GameTest(template = EMPTY)
+    public static void radioStationsBroadcastInStep(GameTestHelper helper) {
+        com.reiko.cars.radio.RadioStation neon = com.reiko.cars.radio.RadioStation.NEON;
+        // Walk a whole round of the station: each track in turn, each from its start, with a gap between.
+        int ticks = (int) Math.ceil(neon.roundSeconds() * 20) + 1;
+        long base = 1_000_000L;
+        java.util.List<Integer> order = new java.util.ArrayList<>();
+        int gaps = 0;
+        com.reiko.cars.radio.RadioStation.Slot last = null;
+        for (int t = 0; t < ticks; t++) {
+            com.reiko.cars.radio.RadioStation.Slot slot = neon.at(base + t);
+            if (slot == null) {
+                gaps++;
+            } else {
+                check(helper, slot.offsetSeconds() >= 0 && slot.offsetSeconds() < neon.playlist().get(slot.track()).seconds(), "inside its track");
+                if (last == null || last.track() != slot.track() || last.round() != slot.round()) {
+                    order.add(slot.track());
+                }
+                if (last != null && last.track() == slot.track() && last.round() == slot.round()) {
+                    near(helper, slot.offsetSeconds() - last.offsetSeconds(), 0.05, "a tick plays 1/20 s");
+                }
+            }
+            last = slot;
+        }
+        check(helper, order.size() >= 2 && order.contains(0) && order.contains(1), "both tracks play in a round: " + order);
+        check(helper, Math.abs(gaps - 2 * com.reiko.cars.radio.RadioStation.GAP_SECONDS * 20) <= 2, "two gaps of 2 s: " + gaps);
+        // Tuning in later lands mid-song, where everyone else is.
+        com.reiko.cars.radio.RadioStation.Slot a = neon.at(base + 300);
+        com.reiko.cars.radio.RadioStation.Slot b = neon.at(base + 300);
+        check(helper, a != null && a.equals(b), "two radios on one station agree");
+        check(helper, !java.util.Objects.equals(neon.at(base), com.reiko.cars.radio.RadioStation.CHILL.at(base)), "different stations play different things");
+
+        // A disc: plays its length, pauses, plays again.
+        int length = 185 * 20;
+        check(helper, com.reiko.cars.radio.CarRadio.discPosition(500, 500, length) == 0, "starts at the top");
+        helper.assertValueEqual(com.reiko.cars.radio.CarRadio.discPosition(500, 500 + 1200, length), 1200L, "a minute in");
+        helper.assertValueEqual(com.reiko.cars.radio.CarRadio.discPosition(500, 500 + length + 10, length), -1L, "pauses after the song");
+        helper.assertValueEqual(com.reiko.cars.radio.CarRadio.discPosition(500, 500 + length + com.reiko.cars.radio.CarRadio.DISC_PAUSE_TICKS, length), 0L,
+                "then plays again from the top");
+        helper.assertValueEqual(com.reiko.cars.radio.CarRadio.discRound(500, 500 + length + com.reiko.cars.radio.CarRadio.DISC_PAUSE_TICKS, length), 1L, "the second play");
+        helper.succeed();
+    }
+
+    @GameTest(template = YARD)
+    public static void radioDiscsStartWhenPlayed(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        try {
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.0, 8.0);
+            car.radioDisc().setItem(0, new ItemStack(Items.MUSIC_DISC_CAT));
+            car.radioDisc().setChanged();
+            long put = car.radioStart();
+            helper.assertValueEqual(put, helper.getLevel().getGameTime(), "putting a disc in starts it");
+            car.setRadioState(com.reiko.cars.radio.CarRadio.pack(false, com.reiko.cars.radio.CarRadio.DISC, 5));
+            helper.runAfterDelay(5, () -> {
+                driver.startRiding(car, true);
+                helper.runAfterDelay(2, () -> {
+                    check(helper, car.radioStart() > put, "getting in starts it over");
+                    long before = car.radioStart();
+                    helper.runAfterDelay(3, () -> {
+                        com.reiko.cars.radio.CarRadio.press(car, com.reiko.cars.radio.CarRadio.BUTTON_LOUDER);
+                        helper.assertValueEqual(car.radioStart(), before, "turning it up doesn't");
+                        com.reiko.cars.radio.CarRadio.press(car, com.reiko.cars.radio.CarRadio.BUTTON_POWER);
+                        check(helper, car.radioStart() > before, "switching it on does");
+                        leave(helper, driver);
+                        helper.succeed();
+                    });
+                });
+            });
+        } catch (RuntimeException e) {
+            leave(helper, driver);
+            throw e;
+        }
+    }
+    // ---- solid trailers ----
+
+    @GameTest(template = YARD)
+    public static void trailersAreSolid(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        try {
+            CarEntity semi = vehicle(helper, CarType.SEMI_TRUCK, 5.0, 12.0);
+            TrailerEntity trailer = readyToHitch(helper, TrailerType.BOX_TRAILER, semi);
+            CarEntity sedan = vehicle(helper, CarType.SEDAN, 2.0, 30.0);
+            CarEntity otherSemi = vehicle(helper, CarType.SEMI_TRUCK, 8.0, 30.0);
+            net.minecraft.world.entity.Entity[] parts = trailer.getParts();
+            net.minecraft.world.entity.Entity front = java.util.Arrays.stream(parts).filter(p -> ((com.reiko.cars.trailer.TrailerPart) p).front()).findFirst().orElseThrow();
+            net.minecraft.world.entity.Entity back = java.util.Arrays.stream(parts).filter(p -> !((com.reiko.cars.trailer.TrailerPart) p).front()).findFirst().orElseThrow();
+            check(helper, trailer.canBeCollidedWith() && front.canBeCollidedWith() && back.canBeCollidedWith(), "a trailer is solid all along");
+            check(helper, sedan.canCollideWith(trailer) && sedan.canCollideWith(front) && sedan.canCollideWith(back), "cars bump into it");
+            check(helper, !otherSemi.canCollideWith(front) && !otherSemi.canCollideWith(trailer) && otherSemi.canCollideWith(back),
+                    "a semi backs under the front of one on its legs, to hitch it");
+            driver.startRiding(semi, true);
+            Hitching.use(driver);
+            check(helper, semi.trailer() == trailer, "hitched");
+            check(helper, !semi.canCollideWith(front) && !semi.canCollideWith(back) && !semi.canCollideWith(trailer), "a tractor never snags on its own trailer");
+            check(helper, otherSemi.canCollideWith(front), "but another semi meets a hitched one's front");
+
+            // Walls: the trailer's body is checked a block apart down its length, a block up and higher.
+            TrailerEntity.Pose here = new TrailerEntity.Pose(trailer.position(), trailer.getYRot());
+            check(helper, !trailer.blockedAt(here), "clear where it stands");
+            BlockPos beside = BlockPos.containing(trailer.position().add(trailer.forward().scale(-3.0))).offset(2, 0, 0);
+            for (int y = 0; y < 3; y++) {
+                helper.getLevel().setBlockAndUpdate(beside.above(y), net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+            }
+            check(helper, !trailer.blockedAt(here), "a wall alongside doesn't touch it");
+            check(helper, trailer.blockedAt(new TrailerEntity.Pose(trailer.position().add(1.5, 0.0, 0.0), trailer.getYRot())), "swung into it, it's blocked");
+            BlockPos curb = BlockPos.containing(trailer.position()).offset(-1, 0, 0);
+            helper.getLevel().setBlockAndUpdate(curb, net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+            check(helper, !trailer.blockedAt(new TrailerEntity.Pose(trailer.position().add(-0.5, 0.0, 0.0), trailer.getYRot())), "a curb a block high is no wall");
+            TrailerEntity.Pose behind = trailer.poseBehind(semi.fifthWheel(), semi.getYRot());
+            near(helper, behind.position().distanceTo(trailer.position()), 0.0, "standing still, it'd stay where it is");
+        } finally {
+            leave(helper, driver);
+        }
+        helper.succeed();
+    }
 }

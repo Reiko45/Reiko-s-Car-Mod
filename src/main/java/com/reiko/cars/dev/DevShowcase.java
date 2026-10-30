@@ -150,6 +150,8 @@ public final class DevShowcase {
             roadsScript();
         } else if (MODE.equals("radio")) {
             radioScript();
+        } else if (MODE.equals("hud")) {
+            hudScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -2227,13 +2229,17 @@ public final class DevShowcase {
         });
         at(50, mc -> server(mc, player -> com.reiko.cars.radio.RadioMenu.open(player, car(player.serverLevel(), CarType.CONVERTIBLE))));
         at(70, mc -> shot(mc, "153_radio_off"));
-        at(72, mc -> radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE));
+        at(72, mc -> {
+            radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE);
+            ReikoCars.LOGGER.info("Showcase radio tuned to Neon FM at game time {}: {}", mc.level.getGameTime(),
+                    com.reiko.cars.radio.RadioStation.NEON.at(mc.level.getGameTime()));
+        });
         at(76, mc -> { for (int i = 0; i < 3; i++) radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_LOUDER); });
         at(100, mc -> shot(mc, "154_radio_neon"));
-        at(102, mc -> radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE + 1));
-        at(130, mc -> shot(mc, "155_radio_chill"));
+        at(500, mc -> radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE + 1));
+        at(330, mc -> shot(mc, "155_radio_chill"));
         // a disc: shift-click Cat into the slot, then DISC
-        at(132, mc -> {
+        at(332, mc -> {
             if (mc.player.containerMenu instanceof com.reiko.cars.radio.RadioMenu menu) {
                 for (int i = 1; i < menu.slots.size(); i++) {
                     if (menu.getSlot(i).getItem().is(net.minecraft.world.item.Items.MUSIC_DISC_CAT)) {
@@ -2242,13 +2248,63 @@ public final class DevShowcase {
                 }
             }
         });
-        at(136, mc -> radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE + com.reiko.cars.radio.CarRadio.DISC));
-        at(160, mc -> shot(mc, "156_radio_disc"));
-        at(162, mc -> radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE + 2));
-        at(165, mc -> mc.player.closeContainer());
-        at(200, mc -> shot(mc, "157_radio_now_playing"));
+        at(336, mc -> radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE + com.reiko.cars.radio.CarRadio.DISC));
+        at(360, mc -> shot(mc, "156_radio_disc"));
+        at(362, mc -> radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE + 2));
+        at(365, mc -> mc.player.closeContainer());
+        at(400, mc -> shot(mc, "157_radio_now_playing"));
         // Getting out: with nobody aboard, the radio stops.
-        at(400, mc -> server(mc, ServerPlayer::stopRiding));
-        at(460, mc -> mc.stop());
+        at(600, mc -> server(mc, ServerPlayer::stopRiding));
+        at(660, mc -> mc.stop());
+    }
+
+    // ---- the dashboard at different GUI scales: ./gradlew runClient -Pshowcase=hud ----
+
+    private static void guiScale(Minecraft minecraft, int scale) {
+        minecraft.options.guiScale().set(scale);
+        minecraft.resizeDisplay();
+    }
+
+    private static void hudScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                tile(level, -12, -20, 12, 20);
+                spawn(level, CarType.SEMI_TRUCK, 0.5, 0.5, 0.0F, 0.6);
+                CarEntity semi = car(level, CarType.SEMI_TRUCK);
+                behind(level, TrailerType.BOX_TRAILER, semi, 0.0F).startRiding(semi, true);
+                player.getInventory().clearContent();
+                give(player, ModItems.car(CarType.SEDAN), 1);
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                player.startRiding(semi, true);
+                player.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED, 6000));
+            });
+        });
+        at(60, mc -> server(mc, player -> player.displayClientMessage(net.minecraft.network.chat.Component.literal("A long action bar message, as a car sends"), true)));
+        at(80, mc -> shot(mc, "158_hud_wide"));
+        // with the attack indicator beside the hotbar, there's no room: the dashboard goes to the top right
+        at(82, mc -> mc.options.attackIndicator().set(net.minecraft.client.AttackIndicatorStatus.HOTBAR));
+        at(84, mc -> server(mc, player -> player.displayClientMessage(net.minecraft.network.chat.Component.literal("A long action bar message, as a car sends"), true)));
+        at(100, mc -> shot(mc, "159_hud_narrow"));
+        at(102, mc -> mc.options.attackIndicator().set(net.minecraft.client.AttackIndicatorStatus.CROSSHAIR));
+        // every vehicle's icon, in a survival inventory
+        at(104, mc -> server(mc, player -> {
+            player.stopRiding();
+            player.setGameMode(GameType.SURVIVAL);
+            player.getInventory().clearContent();
+            for (CarType type : CarType.values()) {
+                give(player, ModItems.car(type), 1);
+            }
+            for (TrailerType type : TrailerType.values()) {
+                give(player, ModItems.trailer(type), 1);
+            }
+        }));
+        at(115, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
+        at(125, mc -> shot(mc, "160_icons"));
+        at(130, mc -> mc.stop());
     }
 }

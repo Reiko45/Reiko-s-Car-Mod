@@ -24,23 +24,20 @@ import org.jetbrains.annotations.Nullable;
 public final class RadioPlayer {
     /** How close a car must be to be heard. */
     private static final double HEARING = 48.0;
-    /** A sound gets this long to start before it's taken as finished. */
-    private static final int START_GRACE = 40;
 
     private static final class Playing {
         @Nullable
         RadioSound sound;
-        /** What it's playing: a station's index or CarRadio.DISC. */
-        int source = -1;
-        ItemStack disc = ItemStack.EMPTY;
-        int track = -1;
-        long startedAt;
+        /** What's playing: which station or disc, which play of which track. A new key starts a new sound. */
+        String key = "";
         Component title = Component.empty();
         /** Just the track's name, for the radio's display. */
         Component name = Component.empty();
     }
 
     private static final Map<CarEntity, Playing> PLAYING = new WeakHashMap<>();
+    /** The last "Now Playing" shown to this player, so it shows once per track. */
+    private static String shownKey = "";
 
     private RadioPlayer() {
     }
@@ -67,6 +64,45 @@ public final class RadioPlayer {
         return CarRadio.source(state) != CarRadio.DISC || !car.radioDiscPlaying().isEmpty();
     }
 
+    /** What a car's radio should be playing now: a key for it, the sound, its titles and where in it to start. */
+    private record Broadcast(String key, SoundEvent event, Component title, Component name, double offset) {
+    }
+
+    /** What {@code car}'s radio should play at {@code now}, or null between tracks (or with nothing to play). */
+    @Nullable
+    private static Broadcast broadcast(Minecraft minecraft, CarEntity car, long now) {
+        int source = CarRadio.source(car.radioState());
+        if (source == CarRadio.DISC) {
+            ItemStack disc = car.radioDiscPlaying();
+            Optional<Holder<JukeboxSong>> song = JukeboxSong.fromStack(minecraft.level.registryAccess(), disc);
+            if (song.isEmpty()) {
+                return null;
+            }
+            JukeboxSong jukeboxSong = song.get().value();
+            long into = CarRadio.discPosition(car.radioStart(), now, jukeboxSong.lengthInTicks());
+            if (into < 0) {
+                return null; // the pause between plays
+            }
+            long round = CarRadio.discRound(car.radioStart(), now, jukeboxSong.lengthInTicks());
+            Component title = jukeboxSong.description();
+            return new Broadcast("disc:" + BuiltInRegistries.ITEM.getKey(disc.getItem()) + ":" + song.get().getRegisteredName() + ":"
+                    + car.radioStart() + ":" + round, jukeboxSong.soundEvent().value(), title, title, into / 20.0);
+        }
+        RadioStation station = RadioStation.byIndex(source);
+        RadioStation.Slot slot = station.at(now);
+        if (slot == null) {
+            return null;
+        }
+        String track = station.tracks().get(slot.track());
+        SoundEvent event = BuiltInRegistries.SOUND_EVENT.get(RadioStation.sound(track));
+        if (event == null) {
+            return null;
+        }
+        Component name = RadioStation.title(track);
+        return new Broadcast("station:" + source + ":" + slot.round() + ":" + slot.track(), event,
+                Component.translatable("radio.reikocars.track_on", name, station.displayName()), name, slot.offsetSeconds());
+    }
+
     /** Every few ticks: start, change and stop the radios in earshot. */
     static void tick(Minecraft minecraft) {
         SoundManager sounds = minecraft.getSoundManager();
@@ -81,54 +117,37 @@ public final class RadioPlayer {
         });
         for (CarEntity car : minecraft.level.getEntitiesOfClass(CarEntity.class, minecraft.player.getBoundingBox().inflate(HEARING), RadioPlayer::wanted)) {
             Playing p = PLAYING.computeIfAbsent(car, c -> new Playing());
-            int source = CarRadio.source(car.radioState());
-            ItemStack disc = car.radioDiscPlaying();
-            boolean retuned = source != p.source || (source == CarRadio.DISC && !ItemStack.isSameItemSameComponents(disc, p.disc));
-            if (retuned && p.sound != null) {
-                sounds.stop(p.sound);
-                p.sound = null;
-            }
-            boolean finished = p.sound != null && now - p.startedAt > START_GRACE && !sounds.isActive(p.sound);
-            if (p.sound != null && !finished) {
+            Broadcast next = broadcast(minecraft, car, now);
+            if (next == null) {
+                // between tracks: let the last one finish, unless the radio's been retuned since
+                int source = CarRadio.source(car.radioState());
+                String prefix = source == CarRadio.DISC ? "disc:" : "station:" + source + ":";
+                if (p.sound != null && !p.key.startsWith(prefix)) {
+                    sounds.stop(p.sound);
+                    p.sound = null;
+                    p.key = "";
+                }
                 continue;
             }
-            // Start the next track: on a new station, start somewhere in its list, different for each car.
-            SoundEvent event;
-            Component title;
-            Component name;
-            boolean loop;
-            if (source == CarRadio.DISC) {
-                Optional<Holder<JukeboxSong>> song = JukeboxSong.fromStack(minecraft.level.registryAccess(), disc);
-                if (song.isEmpty()) {
-                    continue;
-                }
-                event = song.get().value().soundEvent().value();
-                title = song.get().value().description();
-                name = title;
-                loop = true;
-            } else {
-                RadioStation station = RadioStation.byIndex(source);
-                int count = station.tracks().size();
-                p.track = retuned || p.track < 0 ? Math.floorMod(car.getId(), count) : (p.track + 1) % count;
-                String track = station.tracks().get(p.track);
-                event = BuiltInRegistries.SOUND_EVENT.get(RadioStation.sound(track));
-                if (event == null) {
-                    continue;
-                }
-                name = RadioStation.title(track);
-                title = Component.translatable("radio.reikocars.track_on", name, station.displayName());
-                loop = false;
+            if (next.key().equals(p.key)) {
+                continue; // already playing (or played) this one
             }
-            p.source = source;
-            p.disc = disc.copy();
-            p.title = title;
-            p.name = name;
-            p.startedAt = now;
-            p.sound = new RadioSound(car, event, loop);
+            if (p.sound != null) {
+                sounds.stop(p.sound);
+            }
+            p.key = next.key();
+            p.title = next.title();
+            p.name = next.name();
+            p.sound = new RadioSound(car, next.event(), next.offset());
             sounds.play(p.sound);
-            ReikoCars.LOGGER.debug("Radio in {} now playing {}", car, title.getString());
-            if (minecraft.player.getVehicle() == car) {
-                minecraft.gui.setNowPlaying(title);
+            ReikoCars.LOGGER.debug("Radio at {} now playing {} from {}s", now, next.title().getString(), next.offset());
+        }
+        // "Now Playing" for whatever this player's car is playing, once per track
+        if (minecraft.player.getVehicle() instanceof CarEntity car) {
+            Playing p = PLAYING.get(car);
+            if (p != null && p.sound != null && !p.key.equals(shownKey)) {
+                minecraft.gui.setNowPlaying(p.title);
+                shownKey = p.key;
             }
         }
     }

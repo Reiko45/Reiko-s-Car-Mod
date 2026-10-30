@@ -13,6 +13,8 @@ public final class CarRadio {
     /** What the radio plays when it's set to the disc slot. */
     public static final int DISC = RadioStation.values().length;
     public static final int MAX_VOLUME = 10;
+    /** The pause between one play of a disc and the next, in ticks, as a jukebox leaves before the next record. */
+    public static final int DISC_PAUSE_TICKS = 60;
     /** A new car's radio: off, on the first station, at volume 6. */
     public static final int DEFAULT = pack(false, 0, 6);
 
@@ -62,8 +64,29 @@ public final class CarRadio {
         } else {
             return false;
         }
+        int before = state;
         car.setRadioState(pack(on, source, volume));
+        if (on && (!on(before) || source(before) != source)) {
+            car.restartRadio(); // switched on, or onto the disc: it starts from the top
+        }
         return true;
+    }
+
+    /**
+     * How far into its disc a radio is, in ticks, {@code now} (game time), playing a disc {@code lengthTicks} long over
+     * and over from {@code start} with a pause between plays; -1 during a pause.
+     */
+    public static long discPosition(long start, long now, int lengthTicks) {
+        if (lengthTicks <= 0) {
+            return -1;
+        }
+        long into = Math.floorMod(now - start, (long) lengthTicks + DISC_PAUSE_TICKS);
+        return into < lengthTicks ? into : -1;
+    }
+
+    /** Which play of the disc it's on at {@code now}, counting from 0 at {@code start}. */
+    public static long discRound(long start, long now, int lengthTicks) {
+        return Math.floorDiv(now - start, (long) Math.max(1, lengthTicks) + DISC_PAUSE_TICKS);
     }
 
     /** Whether {@code stack} can go in a car radio's disc slot: a music disc, or anything else a jukebox plays. */

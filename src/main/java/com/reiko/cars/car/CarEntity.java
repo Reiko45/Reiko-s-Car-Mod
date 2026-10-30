@@ -110,6 +110,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private static final EntityDataAccessor<Byte> DATA_SIGNAL = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BYTE);
     /** Its radio's settings: see {@link com.reiko.cars.radio.CarRadio}. */
     private static final EntityDataAccessor<Integer> DATA_RADIO = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
+    /** When the disc in its radio started playing, in game time, so everyone hears the same moment of it. */
+    private static final EntityDataAccessor<Long> DATA_RADIO_START = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** The disc in its radio, for riders' clients to play. */
     private static final EntityDataAccessor<ItemStack> DATA_RADIO_DISC = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.ITEM_STACK);
     /** When its alarm stops, in game time: 0 when it isn't sounding. */
@@ -139,8 +141,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         @Override
         public void setChanged() {
             super.setChanged();
-            if (!level().isClientSide) {
+            if (!level().isClientSide && !ItemStack.isSameItemSameComponents(getItem(0), entityData.get(DATA_RADIO_DISC))) {
                 entityData.set(DATA_RADIO_DISC, getItem(0).copy());
+                restartRadio(); // a new disc starts from the top
             }
         }
 
@@ -237,6 +240,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_ALARM_UNTIL, 0L);
         builder.define(DATA_RADIO, com.reiko.cars.radio.CarRadio.DEFAULT);
         builder.define(DATA_RADIO_DISC, ItemStack.EMPTY);
+        builder.define(DATA_RADIO_START, 0L);
         builder.define(DATA_CONDITION, CarCondition.NEW);
     }
 
@@ -560,6 +564,19 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     public void setRadioState(int state) {
         entityData.set(DATA_RADIO, state);
     }
+
+    /** When the disc in the radio started, in game time. */
+    public long radioStart() {
+        return entityData.get(DATA_RADIO_START);
+    }
+
+    /** The disc starts again from the top, now. Server side. */
+    public void restartRadio() {
+        entityData.set(DATA_RADIO_START, level().getGameTime());
+    }
+
+    /** Whether there was a player aboard last tick, so the disc starts over when someone gets back in. */
+    private boolean radioHadListener;
 
     /** The radio's disc slot. Server side; clients see {@link #radioDiscPlaying()}. */
     public SimpleContainer radioDisc() {
@@ -1148,10 +1165,14 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             drive();
             Vec3 before = position();
             boolean endsWereClear = !endsBlocked();
+            TrailerEntity towing = trailer();
+            boolean trailerWasClear = towing == null || !towing.blockedAt(new TrailerEntity.Pose(towing.position(), towing.getYRot()));
             // The pivot shift moves the car but isn't speed: it mustn't carry over into next tick's velocity.
             move(MoverType.SELF, getDeltaMovement().add(pivotShift));
-            if (endsWereClear && endsBlocked()) {
-                // A long vehicle's nose or tail ran into a wall: stop it there, as its hitbox alone wouldn't.
+            if (endsWereClear && endsBlocked() || trailerWasClear && towing != null
+                    && towing.blockedAt(towing.poseBehind(fifthWheel(), getYRot()))) {
+                // A long vehicle's nose or tail ran into a wall, or its trailer did: stop it there, as its hitbox alone
+                // wouldn't.
                 noteImpact(Math.abs(speed));
                 setPos(before.x, getY(), before.z);
                 setYRot(yawBefore);
@@ -1362,6 +1383,11 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         updateKey(true);
         WorkVehicles.serverTick(this);
         CarSignals.serverTick(this);
+        boolean listener = getPassengers().stream().anyMatch(passenger -> passenger instanceof Player);
+        if (listener && !radioHadListener) {
+            restartRadio();
+        }
+        radioHadListener = listener;
         if (isPassenger()) {
             lastFuelPos = null; // being carried, not driven: no fuel burned, nobody run over
             return;
@@ -1604,7 +1630,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     /** Solid to other vehicles; drives through mobs (and hurts them) instead of stopping at them. */
     @Override
     public boolean canCollideWith(Entity entity) {
-        return entity.canBeCollidedWith() && !isPassengerOfSameVehicle(entity);
+        return entity.canBeCollidedWith() && !isPassengerOfSameVehicle(entity) && TrailerEntity.collidesWith(this, entity);
     }
 
     @Override
@@ -1737,6 +1763,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             tag.put("Bed", bed.createTag(registryAccess()));
         }
         tag.putInt("Radio", radioState());
+        tag.putLong("RadioStart", radioStart());
         if (!radioDisc.isEmpty()) {
             tag.put("RadioDisc", radioDisc.getItem(0).save(registryAccess()));
         }
@@ -1771,6 +1798,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             setRadioState(tag.getInt("Radio"));
         }
         radioDisc.setItem(0, tag.contains("RadioDisc") ? ItemStack.parse(registryAccess(), tag.get("RadioDisc")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY);
+        entityData.set(DATA_RADIO_START, tag.getLong("RadioStart")); // after the disc, which would otherwise restart it
         if (type.storageRows > 0 && tag.contains("Bed", Tag.TAG_LIST)) {
             bed.fromTag(tag.getList("Bed", Tag.TAG_COMPOUND), registryAccess());
         }

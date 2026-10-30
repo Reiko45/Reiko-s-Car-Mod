@@ -432,9 +432,10 @@ public final class ReikoCarsClient {
     private static void raiseActionBar(net.neoforged.neoforge.client.event.RenderGuiLayerEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (event.getName().equals(VanillaGuiLayers.OVERLAY_MESSAGE) && minecraft.player != null
-                && minecraft.player.getVehicle() instanceof CarEntity && CarsClientConfig.showHud()) {
+                && minecraft.player.getVehicle() instanceof CarEntity car && CarsClientConfig.showHud()
+                && CarHud.fitsBesideHotbar(minecraft, event.getGuiGraphics().guiWidth())) {
             event.getGuiGraphics().pose().pushPose();
-            event.getGuiGraphics().pose().translate(0.0F, -14.0F, 0.0F);
+            event.getGuiGraphics().pose().translate(0.0F, -CarHud.actionBarRaise(minecraft, car), 0.0F);
             actionBarRaised = true;
         }
     }
