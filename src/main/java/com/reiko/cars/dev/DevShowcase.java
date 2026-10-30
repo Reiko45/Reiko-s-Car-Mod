@@ -148,6 +148,8 @@ public final class DevShowcase {
             signalsScript();
         } else if (MODE.equals("roads")) {
             roadsScript();
+        } else if (MODE.equals("radio")) {
+            radioScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -2195,5 +2197,58 @@ public final class DevShowcase {
         }));
         at(755, mc -> shot(mc, "152_items"));
         at(760, mc -> mc.stop());
+    }
+
+    // ---- the car radio: ./gradlew runClient -Pshowcase=radio ----
+
+    private static void radioButton(Minecraft minecraft, int button) {
+        if (minecraft.player.containerMenu instanceof com.reiko.cars.radio.RadioMenu menu) {
+            minecraft.gameMode.handleInventoryButtonClick(menu.containerId, button);
+        }
+    }
+
+    private static void radioScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                tile(level, -10, -10, 10, 10);
+                spawn(level, CarType.CONVERTIBLE, 0.5, 0.5, 0.0F, 0.6);
+                spawn(level, CarType.SEDAN, 8.5, 0.5, 0.0F, 0.6);
+                player.getInventory().clearContent();
+                give(player, net.minecraft.world.item.Items.MUSIC_DISC_CAT, 1);
+                give(player, net.minecraft.world.item.Items.MUSIC_DISC_PIGSTEP, 1);
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                player.startRiding(car(level, CarType.CONVERTIBLE), true);
+            });
+        });
+        at(50, mc -> server(mc, player -> com.reiko.cars.radio.RadioMenu.open(player, car(player.serverLevel(), CarType.CONVERTIBLE))));
+        at(70, mc -> shot(mc, "153_radio_off"));
+        at(72, mc -> radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE));
+        at(76, mc -> { for (int i = 0; i < 3; i++) radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_LOUDER); });
+        at(100, mc -> shot(mc, "154_radio_neon"));
+        at(102, mc -> radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE + 1));
+        at(130, mc -> shot(mc, "155_radio_chill"));
+        // a disc: shift-click Cat into the slot, then DISC
+        at(132, mc -> {
+            if (mc.player.containerMenu instanceof com.reiko.cars.radio.RadioMenu menu) {
+                for (int i = 1; i < menu.slots.size(); i++) {
+                    if (menu.getSlot(i).getItem().is(net.minecraft.world.item.Items.MUSIC_DISC_CAT)) {
+                        mc.gameMode.handleInventoryMouseClick(menu.containerId, i, 0, net.minecraft.world.inventory.ClickType.QUICK_MOVE, mc.player);
+                    }
+                }
+            }
+        });
+        at(136, mc -> radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE + com.reiko.cars.radio.CarRadio.DISC));
+        at(160, mc -> shot(mc, "156_radio_disc"));
+        at(162, mc -> radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE + 2));
+        at(165, mc -> mc.player.closeContainer());
+        at(200, mc -> shot(mc, "157_radio_now_playing"));
+        // Getting out: with nobody aboard, the radio stops.
+        at(400, mc -> server(mc, ServerPlayer::stopRiding));
+        at(460, mc -> mc.stop());
     }
 }

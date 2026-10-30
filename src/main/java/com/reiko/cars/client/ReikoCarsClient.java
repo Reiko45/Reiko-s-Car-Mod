@@ -95,6 +95,8 @@ public final class ReikoCarsClient {
             InputConstants.Type.KEYSYM, InputConstants.KEY_RIGHT, "key.categories.reikocars");
     public static final KeyMapping HAZARDS = new KeyMapping("key.reikocars.hazards", KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM, InputConstants.KEY_DOWN, "key.categories.reikocars");
+    public static final KeyMapping RADIO = new KeyMapping("key.reikocars.radio", KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM, InputConstants.KEY_R, "key.categories.reikocars");
 
     public ReikoCarsClient(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.CLIENT, CarsClientConfig.SPEC);
@@ -197,6 +199,7 @@ public final class ReikoCarsClient {
         event.register(ModMenus.TOLL.get(), TollScreen::new);
         event.register(ModMenus.TOLL_BOOTH.get(), TollBoothScreen::new);
         event.register(ModMenus.ROAD_SIGN.get(), RoadSignScreen::new);
+        event.register(ModMenus.RADIO.get(), RadioScreen::new);
         event.register(ModMenus.INSURANCE.get(), InsuranceScreen::new);
         event.register(ModMenus.ICE_CREAM.get(), IceCreamScreen::new);
     }
@@ -209,6 +212,7 @@ public final class ReikoCarsClient {
         event.register(SIGNAL_LEFT);
         event.register(SIGNAL_RIGHT);
         event.register(HAZARDS);
+        event.register(RADIO);
     }
 
     private static void registerHud(RegisterGuiLayersEvent event) {
@@ -244,6 +248,7 @@ public final class ReikoCarsClient {
             SIGNAL_LEFT.consumeClick();
             SIGNAL_RIGHT.consumeClick();
             HAZARDS.consumeClick();
+            RADIO.consumeClick();
             return;
         }
         if (car.getControllingPassenger() == player) {
@@ -276,6 +281,9 @@ public final class ReikoCarsClient {
         }
         while (HAZARDS.consumeClick()) {
             PacketDistributor.sendToServer(new CarActionPayload(CarActionPayload.HAZARDS));
+        }
+        while (RADIO.consumeClick()) {
+            PacketDistributor.sendToServer(new CarActionPayload(CarActionPayload.RADIO));
         }
         tickTock(minecraft, car);
     }
@@ -362,6 +370,7 @@ public final class ReikoCarsClient {
         }
         if (minecraft.level.getGameTime() % 5 == 0) {
             keepSirensGoing(minecraft);
+            RadioPlayer.tick(minecraft);
         }
         if (minecraft.level.getGameTime() % 20 != 0) {
             return;

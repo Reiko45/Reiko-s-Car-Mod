@@ -108,6 +108,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private static final EntityDataAccessor<Boolean> DATA_SIREN = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
     /** The turn signals: {@link CarSignals#OFF}, {@link CarSignals#LEFT}, {@link CarSignals#RIGHT} or {@link CarSignals#HAZARDS}. */
     private static final EntityDataAccessor<Byte> DATA_SIGNAL = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BYTE);
+    /** Its radio's settings: see {@link com.reiko.cars.radio.CarRadio}. */
+    private static final EntityDataAccessor<Integer> DATA_RADIO = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
+    /** The disc in its radio, for riders' clients to play. */
+    private static final EntityDataAccessor<ItemStack> DATA_RADIO_DISC = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.ITEM_STACK);
     /** When its alarm stops, in game time: 0 when it isn't sounding. */
     private static final EntityDataAccessor<Long> DATA_ALARM_UNTIL = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.LONG);
     /** When a dump truck started tipping its bed, in game time: -1 when it isn't. */
@@ -130,6 +134,21 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
 
     private final CarType type;
     private final SimpleContainer bed;
+    /** The radio's disc slot. */
+    private final SimpleContainer radioDisc = new SimpleContainer(1) {
+        @Override
+        public void setChanged() {
+            super.setChanged();
+            if (!level().isClientSide) {
+                entityData.set(DATA_RADIO_DISC, getItem(0).copy());
+            }
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return 1;
+        }
+    };
 
     // Server-side state
     private double fuel;
@@ -216,6 +235,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_TIP_START, -1L);
         builder.define(DATA_SIGNAL, CarSignals.OFF);
         builder.define(DATA_ALARM_UNTIL, 0L);
+        builder.define(DATA_RADIO, com.reiko.cars.radio.CarRadio.DEFAULT);
+        builder.define(DATA_RADIO_DISC, ItemStack.EMPTY);
         builder.define(DATA_CONDITION, CarCondition.NEW);
     }
 
@@ -528,6 +549,26 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
 
     public long tipStart() {
         return entityData.get(DATA_TIP_START);
+    }
+
+    // ---- the radio (see CarRadio) ----
+
+    public int radioState() {
+        return entityData.get(DATA_RADIO);
+    }
+
+    public void setRadioState(int state) {
+        entityData.set(DATA_RADIO, state);
+    }
+
+    /** The radio's disc slot. Server side; clients see {@link #radioDiscPlaying()}. */
+    public SimpleContainer radioDisc() {
+        return radioDisc;
+    }
+
+    /** The disc in the radio, as every client sees it. */
+    public ItemStack radioDiscPlaying() {
+        return entityData.get(DATA_RADIO_DISC);
     }
 
     // ---- traffic cameras (see TrafficCameras) ----
@@ -1624,6 +1665,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (!level().isClientSide && reason.shouldDestroy() && type.storageRows > 0) {
             Containers.dropContents(level(), this, bed);
         }
+        if (!level().isClientSide && reason.shouldDestroy()) {
+            Containers.dropContents(level(), this, radioDisc);
+        }
         super.remove(reason);
     }
 
@@ -1692,6 +1736,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (type.storageRows > 0) {
             tag.put("Bed", bed.createTag(registryAccess()));
         }
+        tag.putInt("Radio", radioState());
+        if (!radioDisc.isEmpty()) {
+            tag.put("RadioDisc", radioDisc.getItem(0).save(registryAccess()));
+        }
         if (!condition.isNew()) {
             CarCondition.CODEC.encodeStart(NbtOps.INSTANCE, condition).result().ifPresent(saved -> tag.put("Condition", saved));
         }
@@ -1719,6 +1767,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(net.minecraft.resources.ResourceLocation.tryParse(id))
                     .ifPresent(item -> shopPrices.put(item, prices.getLong(id)));
         }
+        if (tag.contains("Radio", Tag.TAG_INT)) {
+            setRadioState(tag.getInt("Radio"));
+        }
+        radioDisc.setItem(0, tag.contains("RadioDisc") ? ItemStack.parse(registryAccess(), tag.get("RadioDisc")).orElse(ItemStack.EMPTY) : ItemStack.EMPTY);
         if (type.storageRows > 0 && tag.contains("Bed", Tag.TAG_LIST)) {
             bed.fromTag(tag.getList("Bed", Tag.TAG_COMPOUND), registryAccess());
         }

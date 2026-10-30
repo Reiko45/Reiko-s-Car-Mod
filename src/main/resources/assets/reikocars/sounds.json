@@ -124,5 +124,65 @@
       }
     ],
     "subtitle": "subtitles.reikocars.car.alarm"
+  },
+  "radio.neon_highway": {
+    "sounds": [
+      {
+        "name": "reikocars:radio/neon_highway",
+        "stream": true,
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.reikocars.radio"
+  },
+  "radio.midnight_drive": {
+    "sounds": [
+      {
+        "name": "reikocars:radio/midnight_drive",
+        "stream": true,
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.reikocars.radio"
+  },
+  "radio.rainy_window": {
+    "sounds": [
+      {
+        "name": "reikocars:radio/rainy_window",
+        "stream": true,
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.reikocars.radio"
+  },
+  "radio.late_bus_home": {
+    "sounds": [
+      {
+        "name": "reikocars:radio/late_bus_home",
+        "stream": true,
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.reikocars.radio"
+  },
+  "radio.gravel_road": {
+    "sounds": [
+      {
+        "name": "reikocars:radio/gravel_road",
+        "stream": true,
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.reikocars.radio"
+  },
+  "radio.dust_on_the_dash": {
+    "sounds": [
+      {
+        "name": "reikocars:radio/dust_on_the_dash",
+        "stream": true,
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.reikocars.radio"
   }
 }

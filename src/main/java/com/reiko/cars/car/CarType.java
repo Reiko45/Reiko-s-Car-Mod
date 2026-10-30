@@ -206,6 +206,11 @@ public enum CarType {
     }
 
     /** A motorcycle: two wheels, leans into turns. */
+    /** Whether its riders sit in the open, so people nearby hear its radio better: the convertible, the tractor, the bikes. */
+    public boolean openTop() {
+        return this == CONVERTIBLE || this == FARM_TRACTOR || isBike();
+    }
+
     public boolean isBike() {
         return wheels == 2;
     }

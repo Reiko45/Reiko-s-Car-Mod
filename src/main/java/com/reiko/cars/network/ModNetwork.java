@@ -323,6 +323,7 @@ public final class ModNetwork {
             case CarActionPayload.SIGNAL_LEFT -> com.reiko.cars.car.CarSignals.toggle(player, car, com.reiko.cars.car.CarSignals.LEFT);
             case CarActionPayload.SIGNAL_RIGHT -> com.reiko.cars.car.CarSignals.toggle(player, car, com.reiko.cars.car.CarSignals.RIGHT);
             case CarActionPayload.HAZARDS -> com.reiko.cars.car.CarSignals.toggle(player, car, com.reiko.cars.car.CarSignals.HAZARDS);
+            case CarActionPayload.RADIO -> com.reiko.cars.radio.RadioMenu.open(player, car);
             default -> {
             }
         }

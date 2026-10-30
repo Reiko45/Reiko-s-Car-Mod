@@ -18,6 +18,8 @@ public record CarActionPayload(int action) implements CustomPacketPayload {
     public static final int SIGNAL_LEFT = 4;
     public static final int SIGNAL_RIGHT = 5;
     public static final int HAZARDS = 6;
+    /** Open the radio. */
+    public static final int RADIO = 7;
 
     public static final Type<CarActionPayload> TYPE = new Type<>(ReikoCars.id("car_action"));
     public static final StreamCodec<ByteBuf, CarActionPayload> STREAM_CODEC =

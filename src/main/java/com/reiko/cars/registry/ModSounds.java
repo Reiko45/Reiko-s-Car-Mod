@@ -36,6 +36,15 @@ public final class ModSounds {
     private ModSounds() {
     }
 
+    static {
+        // the radio's tracks: radio.<track>, looked up by name when they play
+        for (com.reiko.cars.radio.RadioStation station : com.reiko.cars.radio.RadioStation.values()) {
+            for (String track : station.tracks()) {
+                register("radio." + track);
+            }
+        }
+    }
+
     private static Supplier<SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ReikoCars.id(name)));
     }

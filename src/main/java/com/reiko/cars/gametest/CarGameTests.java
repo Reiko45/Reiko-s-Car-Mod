@@ -2068,11 +2068,12 @@ public final class CarGameTests {
             Hitching.use(worker);
             broken.setTowedFrom(broken.position().add(0, 0, -40)); // as if it came from 40 blocks away
             Hitching.use(worker);
-            helper.assertValueEqual(jobXp(worker, mechanic), 45L, "a real tow-in pays");
+            long towed = jobXp(worker, mechanic);
+            check(helper, towed >= 45L, "a real tow-in pays (and may finish a tow-in contract): " + towed);
             Hitching.use(worker);
             broken.setTowedFrom(broken.position().add(0, 0, -40));
             Hitching.use(worker);
-            helper.assertValueEqual(jobXp(worker, mechanic), 45L, "but only once per breakdown");
+            helper.assertValueEqual(jobXp(worker, mechanic), towed, "but only once per breakdown");
             worker.stopRiding();
             truck.discard();
             broken.discard();
@@ -2689,6 +2690,70 @@ public final class CarGameTests {
             check(helper, saved.getInt("Limit") == 50 && saved.getBoolean("Kmh") && saved.getInt("Tickets") == 3, "the sign keeps its limit and books");
         } finally {
             leave(helper, city, driver);
+        }
+        helper.succeed();
+    }
+    // ---- the radio ----
+
+    @GameTest(template = YARD)
+    public static void carRadiosPlayStationsAndDiscs(GameTestHelper helper) {
+        ServerPlayer driver = join(helper);
+        ServerPlayer stranger = join(helper);
+        try {
+            CarEntity car = vehicle(helper, CarType.SEDAN, 5.0, 8.0);
+            int state = car.radioState();
+            check(helper, !com.reiko.cars.radio.CarRadio.on(state) && com.reiko.cars.radio.CarRadio.source(state) == 0
+                    && com.reiko.cars.radio.CarRadio.volume(state) == 6, "a new radio is off, on Neon FM, at 6");
+            driver.startRiding(car, true);
+            var menu = com.reiko.cars.radio.RadioMenu.create(1, driver.getInventory(), car);
+            check(helper, menu.stillValid(driver) && !menu.stillValid(stranger), "only someone in the car works its radio");
+            menu.clickMenuButton(driver, com.reiko.cars.radio.CarRadio.BUTTON_POWER);
+            check(helper, com.reiko.cars.radio.CarRadio.on(car.radioState()), "power turns it on");
+            menu.clickMenuButton(driver, com.reiko.cars.radio.CarRadio.BUTTON_POWER);
+            menu.clickMenuButton(driver, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE + 2);
+            check(helper, com.reiko.cars.radio.CarRadio.on(car.radioState()) && com.reiko.cars.radio.CarRadio.source(car.radioState()) == 2,
+                    "picking Dusty Roads turns it on, tuned there");
+            for (int i = 0; i < 8; i++) {
+                menu.clickMenuButton(driver, com.reiko.cars.radio.CarRadio.BUTTON_LOUDER);
+            }
+            helper.assertValueEqual(com.reiko.cars.radio.CarRadio.volume(car.radioState()), 10, "the volume tops out at 10");
+            for (int i = 0; i < 12; i++) {
+                menu.clickMenuButton(driver, com.reiko.cars.radio.CarRadio.BUTTON_QUIETER);
+            }
+            helper.assertValueEqual(com.reiko.cars.radio.CarRadio.volume(car.radioState()), 0, "and bottoms out at 0");
+            check(helper, !menu.clickMenuButton(driver, 99), "other buttons do nothing");
+
+            // The disc slot takes music discs only.
+            net.minecraft.world.inventory.Slot slot = menu.getSlot(0);
+            check(helper, !slot.mayPlace(new ItemStack(Items.DIAMOND)), "a diamond isn't a disc");
+            check(helper, slot.mayPlace(new ItemStack(Items.MUSIC_DISC_CAT)), "a music disc is");
+            driver.getInventory().add(new ItemStack(Items.MUSIC_DISC_CAT));
+            int discSlot = driver.getInventory().findSlotMatchingItem(new ItemStack(Items.MUSIC_DISC_CAT));
+            int menuSlot = discSlot < 9 ? 28 + discSlot : discSlot - 8;
+            menu.quickMoveStack(driver, menuSlot);
+            check(helper, car.radioDisc().getItem(0).is(Items.MUSIC_DISC_CAT) && car.radioDiscPlaying().is(Items.MUSIC_DISC_CAT),
+                    "shift-clicking puts the disc in, and every client hears of it");
+            menu.clickMenuButton(driver, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE + com.reiko.cars.radio.CarRadio.DISC);
+            check(helper, com.reiko.cars.radio.CarRadio.source(car.radioState()) == com.reiko.cars.radio.CarRadio.DISC, "DISC plays it");
+
+            CompoundTag saved = new CompoundTag();
+            car.saveWithoutId(saved);
+            car.radioDisc().setItem(0, ItemStack.EMPTY);
+            car.setRadioState(com.reiko.cars.radio.CarRadio.DEFAULT);
+            car.load(saved);
+            check(helper, car.radioDisc().getItem(0).is(Items.MUSIC_DISC_CAT) && com.reiko.cars.radio.CarRadio.source(car.radioState()) == com.reiko.cars.radio.CarRadio.DISC,
+                    "the radio's settings and disc are saved");
+
+            check(helper, BuiltInRegistries.SOUND_EVENT.containsKey(com.reiko.cars.radio.RadioStation.sound("neon_highway"))
+                    && BuiltInRegistries.SOUND_EVENT.containsKey(com.reiko.cars.radio.RadioStation.sound("dust_on_the_dash")), "the stations' tracks are registered");
+
+            driver.stopRiding();
+            Vec3 at = car.position();
+            car.kill();
+            check(helper, !helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new net.minecraft.world.phys.AABB(at, at).inflate(3),
+                    item -> item.getItem().is(Items.MUSIC_DISC_CAT)).isEmpty(), "breaking the car drops its disc");
+        } finally {
+            leave(helper, driver, stranger);
         }
         helper.succeed();
     }

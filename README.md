@@ -12,7 +12,7 @@ players for postage. Parking meters ticket cars that overstay, toll gates lift f
 cover crash repairs, and the job board pays drivers, mail carriers, mechanics, truckers and garbage collectors.
 Every vehicle has turn signals and hazard lights, and a locked car's alarm catches anyone without a key. Lay
 **asphalt** roads and paint them, and put up **traffic lights**, signs and street lamps; red-light and speed cameras
-fine drivers for their owners.
+fine drivers for their owners. And every car has a **radio**: three stations of original music, or your own discs.
 
 ## Requirements
 
@@ -63,7 +63,8 @@ blocks on a bucket; a semi about 250, or 180 pulling a trailer; the bus about 30
 is the handbrake and **sneak** gets out. **H** sounds the horn, **L** locks or unlocks the car and **G** hitches a
 trailer, loads a car onto a car hauler, picks up or drops a car in a tow truck, stops the mail van for the mail, or
 does a work vehicle's job. **K** works a police car's or ambulance's lights and siren. The **left and right arrow
-keys** work the turn signals and the **down arrow** the hazards (see [Turn signals, hazards and alarms](#turn-signals-hazards-and-alarms)). While you're
+keys** work the turn signals and the **down arrow** the hazards (see [Turn signals, hazards and alarms](#turn-signals-hazards-and-alarms)).
+**R** opens the [radio](#car-radio). While you're
 in a car, a dashboard in the bottom right shows your speed and a fuel gauge.
 
 - **Fuel:** cars burn fuel for every block they cover, and a little while idling with someone at the wheel. The cars
@@ -119,6 +120,29 @@ Cars from before 1.12.0 have no keys yet: cut one before driving.
   A server can change how long alarms sound, or turn them off, with `driving.alarmSeconds`.
 
 All the keys can be changed under Controls, in the Reiko's Car Mod section.
+
+## Car radio
+
+Every car, truck and bike has a radio. Anyone riding presses **R** to open it:
+
+- **Power**, and three **station presets**, each playing its own tracks one after another:
+
+  | Station | Plays | Tracks |
+  | --- | --- | --- |
+  | **88.1 Neon FM** | synthwave | Neon Highway, Midnight Drive |
+  | **94.5 Chill FM** | lo-fi beats | Rainy Window, Late Bus Home |
+  | **101.3 Dusty Roads** | country guitar | Gravel Road, Dust on the Dash |
+
+  The music was composed and synthesised for this mod.
+- **DISC** plays whatever's in the radio's **disc slot**, over and over: any music disc, vanilla or another mod's.
+  Shift-click a disc in from your inventory.
+- **Volume** from 0 to 10, shown on the display along with what's playing. A new track shows **Now Playing** over
+  the hotbar.
+
+The radio plays while someone's in the car, and keeps its station, volume and disc when everyone gets out. Picking
+the car up (or breaking it) drops the disc, and the radio starts off again when it's put back down. Riders hear it at
+its volume; people nearby hear a quarter of that, or half from a convertible, tractor or bike. It plays on the
+**Jukebox/Note Blocks** volume slider.
 
 ## Roads
 
@@ -715,6 +739,7 @@ src/main/java/com/reiko/cars/
 ├── ReikoCars.java        mod entry point
 ├── car/                  the car entity and its types, fuel (CarFuel, CarTank), wear and tear (CarCondition), the car item, WorkVehicles (sirens, healing, tipping, mixing) and CarSignals (turn signals, hazards, the alarm)
 ├── garbage/              the Trash Can block and block entity, and GarbageService (the garbage truck's round)
+├── radio/                the car radio: its settings (CarRadio), the stations, and its menu
 ├── road/                 asphalt and its markings, Road Paint, Street Poles, Stop Signs and Street Lamps
 ├── traffic/              traffic lights, speed limit signs, their owner screen's menu, and TrafficCameras (the fines)
 ├── icecream/             the ice cream truck's shop: its menu and IceCreamService (pricing and selling)
@@ -732,10 +757,10 @@ src/main/java/com/reiko/cars/
 ├── toll/                 the toll booth and toll gate blocks, their block entities and menus, protection, and TollService (paying and the gate)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
-├── network/              packets: pump, repair bench, mailbox, parking meter, toll, insurance, ice cream and road sign actions, horn, lock, hitch, siren, signals and hazards, the driver's wear reports, tanker load and unload
+├── network/              packets: pump, repair bench, mailbox, parking meter, toll, insurance, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, ice cream, road sign and tanker screens, the speed sign's number, the toll gate's arm, pump display, engine, siren and alarm sounds, keys
+├── client/               car and trailer renderers and models, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)
