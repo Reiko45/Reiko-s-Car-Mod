@@ -113,6 +113,7 @@ public final class ReikoCarsClient {
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, ReikoCarsClient::unleanRider);
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::rollCamera);
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::raiseActionBar);
+        NeoForge.EVENT_BUS.addListener(CarGlass::onRenderStage);
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::lowerActionBar);
         TrailerEntity.openTankerScreen = tanker -> Minecraft.getInstance().setScreen(new TankerScreen(tanker));
     }

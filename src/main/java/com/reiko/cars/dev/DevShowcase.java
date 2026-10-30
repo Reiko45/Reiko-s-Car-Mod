@@ -154,6 +154,8 @@ public final class DevShowcase {
             hudScript();
         } else if (MODE.equals("wall")) {
             wallScript();
+        } else if (MODE.equals("water")) {
+            waterScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -2352,5 +2354,58 @@ public final class DevShowcase {
         at(262, mc -> shot(mc, "161_trailer_wall"));
         at(264, mc -> mc.options.keyDown.setDown(false));
         at(270, mc -> mc.stop());
+    }
+
+    /** Water seen through a car's windows: from the driver's seat, from behind, and from outside. */
+    private static void waterScript() {
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                tile(level, -14, -16, 14, 26);
+                for (int x = -9; x <= 9; x++) {
+                    for (int z = 5; z <= 24; z++) {
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), Blocks.WATER.defaultBlockState());
+                        level.setBlockAndUpdate(new BlockPos(x, -62, z), Blocks.WATER.defaultBlockState());
+                    }
+                }
+                spawn(level, CarType.SEDAN, 0.5, 0.5, 0.0F, 0.6);
+                spawn(level, CarType.CITY_BUS, -6.5, 1.5, 90.0F, 0.6);
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                player.startRiding(car(level, CarType.SEDAN), true);
+            });
+        });
+        at(40, mc -> {
+            mc.player.setYRot(0.0F);
+            mc.player.setXRot(8.0F);
+        });
+        at(95, mc -> shot(mc, "162_water_driver"));
+        at(97, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        at(110, mc -> shot(mc, "163_water_behind"));
+        at(112, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> player.stopRiding());
+        });
+        // outside, looking through the bus's side windows at the pool beyond it
+        at(116, mc -> look(mc, -6.0, -60.0, -5.0, 0.0F, 6.0F));
+        at(135, mc -> shot(mc, "164_water_outside"));
+        // rain, from the driver's seat
+        at(137, mc -> server(mc, player -> {
+            player.serverLevel().setWeatherParameters(0, 6000, true, false);
+            player.getAbilities().flying = false;
+            player.onUpdateAbilities();
+            player.startRiding(car(player.serverLevel(), CarType.SEDAN), true);
+        }));
+        at(180, mc -> {
+            mc.player.setYRot(0.0F);
+            mc.player.setXRot(8.0F);
+        });
+        at(190, mc -> shot(mc, "165_rain_driver"));
+        // (for Fabulous! graphics, run it with graphicsMode:2 in run/options.txt)
+        at(195, mc -> ReikoCars.LOGGER.info("Showcase graphics: {}", mc.options.graphicsMode().get()));
+        at(200, mc -> mc.stop());
     }
 }
