@@ -1,0 +1,25 @@
+{
+  "name": "Road Paver",
+  "icon": "reikocars:road_paver",
+  "category": "reikocars:vehicles/trucks",
+  "sortnum": 10,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:road_paver",
+      "scale": 0.68,
+      "rotate": true,
+      "text": "$(l)1$() seat · $(l)18 mph$() · 10 buckets of diesel"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:road_paver_chassis",
+      "recipe2": "reikocars:road_paver_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:road_paver_interior",
+      "text": "Lays a road behind it as it's driven; 27-slot hopper.$(br2)Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
+    }
+  ]
+}

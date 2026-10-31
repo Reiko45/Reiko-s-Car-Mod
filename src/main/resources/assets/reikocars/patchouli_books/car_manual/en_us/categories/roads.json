@@ -1,6 +1,6 @@
 {
   "name": "Roads and Traffic",
-  "description": "Asphalt, markings, traffic lights, cameras, parking meters and tolls.",
+  "description": "Asphalt, markings, the road paver, traffic lights, cameras, parking meters and tolls.",
   "icon": "reikocars:traffic_light",
   "sortnum": 6
 }

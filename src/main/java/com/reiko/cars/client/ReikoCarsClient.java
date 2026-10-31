@@ -170,6 +170,7 @@ public final class ReikoCarsClient {
             case DUMP_TRUCK -> com.reiko.cars.client.model.DumpTruckModel::createBodyLayer;
             case CEMENT_MIXER -> com.reiko.cars.client.model.CementMixerModel::createBodyLayer;
             case FIRE_TRUCK -> com.reiko.cars.client.model.FireTruckModel::createBodyLayer;
+            case ROAD_PAVER -> com.reiko.cars.client.model.RoadPaverModel::createBodyLayer;
             case SPORT_BIKE -> SportBikeModel::createBodyLayer;
             case CRUISER -> CruiserModel::createBodyLayer;
             case DIRT_BIKE -> DirtBikeModel::createBodyLayer;
@@ -238,6 +239,7 @@ public final class ReikoCarsClient {
         event.register(ModMenus.INSURANCE.get(), InsuranceScreen::new);
         event.register(ModMenus.ICE_CREAM.get(), IceCreamScreen::new);
         event.register(ModMenus.GARAGE.get(), GarageScreen::new);
+        event.register(ModMenus.PAVER.get(), PaverScreen::new);
         event.register(ModMenus.PARKING.get(), ParkingScreen::new);
     }
 

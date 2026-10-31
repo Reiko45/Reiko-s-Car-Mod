@@ -184,6 +184,8 @@ public final class DevShowcase {
             garageScript();
         } else if (MODE.equals("damage")) {
             damageScript();
+        } else if (MODE.equals("paver")) {
+            paverScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -4134,6 +4136,215 @@ public final class DevShowcase {
                 (com.reiko.cars.repair.RepairBenchBlockEntity) player.level().getBlockEntity(new BlockPos(3, -60, -4)))));
         at(290, mc -> shot(mc, "378_damage_bench"));
         at(296, mc -> mc.stop());
+    }
+
+    // ---- the road paver: ./gradlew runClient -Pshowcase=paver ----
+
+    /** The ground's top in the paver's scene: raised six blocks over the flat world's, so there's depth for a ravine. */
+    private static final int PAVER_GROUND = -55;
+
+    private static void paverScript() {
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(4000);
+                level.getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false, level.getServer());
+                player.setGameMode(GameType.CREATIVE);
+                BlockState dirt = Blocks.DIRT.defaultBlockState();
+                BlockState grass = Blocks.GRASS_BLOCK.defaultBlockState();
+                for (int x = -24; x <= 104; x++) {
+                    for (int z = -34; z <= 34; z++) {
+                        // Raised ground, a hill across the way, and a ravine with a stream in it.
+                        int top = PAVER_GROUND;
+                        int hill = 4 - (int) Math.round(Math.abs(x - 29) * 0.8);
+                        if (hill > 0) {
+                            top += hill;
+                        }
+                        boolean ravine = x >= 50 && x <= 57;
+                        for (int y = -62; y <= top + 1; y++) {
+                            BlockPos pos = new BlockPos(x, y, z);
+                            BlockState state;
+                            if (ravine) {
+                                state = y <= -63 ? dirt : y <= -61 ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
+                            } else if (y > top) {
+                                state = Blocks.AIR.defaultBlockState();
+                            } else if (hill > 0 && y > PAVER_GROUND - 1 && y < top) {
+                                state = Blocks.STONE.defaultBlockState();
+                            } else {
+                                state = y == top ? grass : dirt;
+                            }
+                            level.setBlock(pos, state, 2);
+                        }
+                    }
+                }
+                // Two trees in the way, and one beside it.
+                for (int[] tree : new int[][] {{10, 3}, {16, -5}, {4, 12}}) {
+                    for (int y = PAVER_GROUND + 1; y <= PAVER_GROUND + 5; y++) {
+                        level.setBlock(new BlockPos(tree[0], y, tree[1]), Blocks.OAK_LOG.defaultBlockState(), 2);
+                    }
+                    for (int dx = -2; dx <= 2; dx++) {
+                        for (int dz = -2; dz <= 2; dz++) {
+                            for (int dy = 4; dy <= 6; dy++) {
+                                BlockPos leaf = new BlockPos(tree[0] + dx, PAVER_GROUND + dy, tree[1] + dz);
+                                if ((dx != 0 || dz != 0 || dy == 6) && Math.abs(dx) + Math.abs(dz) + (dy == 6 ? 1 : 0) <= 3) {
+                                    level.setBlock(leaf, Blocks.OAK_LEAVES.defaultBlockState().setValue(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, true), 2);
+                                }
+                            }
+                        }
+                    }
+                }
+                double y = PAVER_GROUND + 1.0;
+                CarEntity paver = ModEntities.car(CarType.ROAD_PAVER).create(level);
+                paver.moveTo(-14.5, y, 0.5, 270.0F, 0.0F); // facing east
+                paver.setFuel(CarType.ROAD_PAVER.tankCapacity());
+                paver.setOwner(player);
+                level.addFreshEntity(paver);
+                paver.bed().setItem(0, new ItemStack(ModItems.ASPHALT.get(), 64));
+                paver.bed().setItem(1, new ItemStack(ModItems.ASPHALT.get(), 64));
+                paver.bed().setItem(2, new ItemStack(ModItems.ASPHALT.get(), 64));
+                paver.bed().setItem(3, new ItemStack(ModItems.ROAD_PAINT.get()));
+                paver.bed().setItem(4, new ItemStack(net.minecraft.world.item.Items.SMOOTH_STONE_SLAB, 64));
+                paver.bed().setItem(5, new ItemStack(net.minecraft.world.item.Items.POLISHED_ANDESITE_SLAB, 64));
+                paver.bed().setItem(6, new ItemStack(net.minecraft.world.item.Items.COBBLESTONE, 64));
+                paver.bed().setItem(7, new ItemStack(ModItems.STREET_POLE.get(), 32));
+                paver.bed().setItem(8, new ItemStack(ModItems.STREET_LAMP.get(), 8));
+                // A second paver, for a road at 45 degrees across the first, once that's done.
+                CarEntity diagonal = ModEntities.car(CarType.ROAD_PAVER).create(level);
+                diagonal.moveTo(97.5, y, 22.5, 135.0F, 0.0F); // facing north-west
+                diagonal.setFuel(CarType.ROAD_PAVER.tankCapacity());
+                diagonal.setOwner(player);
+                diagonal.setPaverSettings(new com.reiko.cars.road.PaverSettings(5, com.reiko.cars.road.PaverSettings.Center.DOUBLE, 1, true,
+                        com.reiko.cars.road.PaverSettings.Sides.NONE, 1, 0, com.reiko.cars.road.PaverSettings.LampSides.BOTH, true, true));
+                level.addFreshEntity(diagonal);
+                player.teleportTo(level, -8.0, y + 1.0, -5.5, 120.0F, 18.0F);
+            });
+        });
+        // The paver, parked, then its screen
+        at(70, mc -> look(mc, -10.5, PAVER_GROUND + 2.8, -3.0, 50.0F, 16.0F));
+        at(95, mc -> shot(mc, "380_paver"));
+        at(97, mc -> look(mc, -19.5, PAVER_GROUND + 3.2, 4.0, 235.0F, 16.0F));
+        at(120, mc -> shot(mc, "381_paver_back"));
+        at(122, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> com.reiko.cars.road.PaverMenu.open(player, carAt(player.serverLevel(), -14.5, 0.5)));
+        });
+        at(140, mc -> shot(mc, "382_paver_screen"));
+        // A stand-in driver takes it east, laying road, while the camera watches from beside it.
+        at(142, mc -> {
+            mc.player.closeContainer();
+            mc.options.hideGui = true;
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                // Someone else at the wheel, so the player's camera is free: a stand-in player, logged in as the game tests do.
+                MinecraftServer server = level.getServer();
+                com.mojang.authlib.GameProfile profile = new com.mojang.authlib.GameProfile(java.util.UUID.fromString("5e1e5f2a-7a5e-4c1d-9a11-0d0d0d0d0d01"),
+                        "Paver_Driver");
+                net.minecraft.server.network.CommonListenerCookie cookie = net.minecraft.server.network.CommonListenerCookie.createInitial(profile, false);
+                ServerPlayer driver = new ServerPlayer(server, level, profile, cookie.clientInformation());
+                net.minecraft.network.Connection connection = new net.minecraft.network.Connection(net.minecraft.network.protocol.PacketFlow.SERVERBOUND);
+                new io.netty.channel.embedded.EmbeddedChannel(connection);
+                try {
+                    server.getPlayerList().placeNewPlayer(connection, driver, cookie);
+                } catch (UnsupportedOperationException e) {
+                    // BuildCraft's login packet: the stand-in's in by then.
+                }
+                driver.setGameMode(GameType.CREATIVE);
+                CarEntity paver = carAt(level, -14.5, 0.5);
+                driver.moveTo(paver.getX(), paver.getY(), paver.getZ());
+                driver.startRiding(paver, true);
+                com.reiko.cars.road.RoadPaver.toggle(driver, paver);
+            });
+        });
+        for (int t = 146; t < 626; t++) {
+            at(t, mc -> server(mc, player -> {
+                CarEntity paver = carAt(player.serverLevel(), PAVER_X[0], 0.5);
+                PAVER_X[0] = paverStep(paver);
+            }));
+        }
+        at(206, mc -> look(mc, -7.0, PAVER_GROUND + 4.5, -6.5, 311.0F, 22.0F));
+        at(226, mc -> shot(mc, "383_paving"));
+        at(300, mc -> look(mc, 30.0, PAVER_GROUND + 6.0, -4.5, 58.0F, 26.0F));
+        at(332, mc -> shot(mc, "384_paving_hill"));
+        at(450, mc -> look(mc, 54.5, PAVER_GROUND - 5.0, -10.0, 15.0F, -20.0F));
+        at(482, mc -> shot(mc, "385_paving_bridge"));
+        at(630, mc -> server(mc, player -> {
+            CarEntity paver = carAt(player.serverLevel(), PAVER_X[0], 0.5);
+            if (paver.getControllingPassenger() instanceof net.minecraft.server.level.ServerPlayer driver) {
+                com.reiko.cars.road.RoadPaver.toggle(driver, paver);
+                driver.stopRiding();
+            }
+        }));
+        // The other paver at 45 degrees: the player drives it a little (the dashboard says what G does), then it's finished off.
+        at(634, mc -> server(mc, player -> {
+            player.getAbilities().flying = false;
+            player.onUpdateAbilities();
+            CarEntity diagonal = carAt(player.serverLevel(), 97.5, 22.5);
+            player.startRiding(diagonal, true);
+            com.reiko.cars.road.RoadPaver.toggle(player, diagonal);
+        }));
+        at(640, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+            mc.player.setXRot(25.0F);
+            mc.options.keyUp.setDown(true);
+        });
+        at(700, mc -> shot(mc, "386_paving_hud"));
+        at(702, mc -> {
+            mc.options.keyUp.setDown(false);
+            mc.options.hideGui = true;
+            server(mc, player -> {
+                CarEntity diagonal = (CarEntity) player.getVehicle();
+                for (int i = 0; i < 400 && diagonal.paving() && diagonal.getZ() > -14.0; i++) {
+                    paverStep(diagonal);
+                }
+                com.reiko.cars.road.RoadPaver.toggle(player, diagonal);
+                player.stopRiding();
+            });
+        });
+        // Looking back: down the road, the cut through the hill, the bridge, the crossing, and at night
+        at(712, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            look(mc, -6.0, PAVER_GROUND + 12.0, -9.0, 285.0F, 28.0F);
+        });
+        at(740, mc -> shot(mc, "387_road"));
+        at(742, mc -> look(mc, 18.0, PAVER_GROUND + 9.0, -16.0, 300.0F, 22.0F));
+        at(770, mc -> shot(mc, "388_road_cut"));
+        at(772, mc -> look(mc, 53.5, PAVER_GROUND - 5.0, -12.5, 0.0F, -16.0F));
+        at(800, mc -> shot(mc, "389_road_bridge"));
+        at(802, mc -> look(mc, 80.0, PAVER_GROUND + 16.0, 14.0, 160.0F, 50.0F));
+        at(830, mc -> shot(mc, "390_road_diagonal"));
+        at(832, mc -> {
+            look(mc, 2.0, PAVER_GROUND + 2.6, -5.0, 280.0F, 6.0F);
+            server(mc, player -> player.serverLevel().setDayTime(18_000));
+        });
+        at(870, mc -> shot(mc, "391_road_night"));
+        at(876, mc -> mc.stop());
+    }
+
+    /** Where the stand-in driver's paver has got to, along x. */
+    private static final double[] PAVER_X = {-14.5};
+
+    /**
+     * Moves a paver a fifth of a block the way it faces, onto the ground there (nothing moves a car on the server but its
+     * driver's game), and paves. Returns its x.
+     */
+    private static double paverStep(CarEntity paver) {
+        net.minecraft.world.phys.Vec3 at = paver.position().add(paver.forward().scale(0.2));
+        ServerLevel level = (ServerLevel) paver.level();
+        double y = at.y;
+        for (int by = (int) Math.floor(at.y) + 2; by >= (int) Math.floor(at.y) - 3; by--) {
+            BlockPos pos = BlockPos.containing(at.x, by, at.z);
+            net.minecraft.world.phys.shapes.VoxelShape shape = level.getBlockState(pos).getCollisionShape(level, pos);
+            if (!shape.isEmpty()) {
+                y = by + shape.max(Direction.Axis.Y);
+                break;
+            }
+        }
+        paver.setPos(at.x, y, at.z);
+        com.reiko.cars.road.RoadPaver.tick(paver);
+        return paver.getX();
     }
 
     // ---- garages: ./gradlew runClient -Pshowcase=garages ----

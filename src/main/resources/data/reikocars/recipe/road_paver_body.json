@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "IHI",
+    "IDI",
+    "SSS"
+  ],
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "H": {
+      "item": "minecraft:hopper"
+    },
+    "D": {
+      "tag": "c:dyes/yellow"
+    },
+    "S": {
+      "item": "minecraft:smooth_stone_slab"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:road_paver_body"
+  }
+}

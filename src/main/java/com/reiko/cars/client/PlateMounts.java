@@ -50,6 +50,7 @@ final class PlateMounts {
             case "electric_van" -> new Mount[] {new Mount(7F, -39.25F, 6F, 3F), new Mount(6.5F, 40.75F, 6F, 3F)};
             case "electric_moped" -> new Mount[] {null, new Mount(7.5F, 16F, 4F, 3F)};
             case "fire_truck" -> new Mount[] {new Mount(10F, -65.75F, 6F, 3F), new Mount(21F, 57.75F, 6F, 3F)};
+            case "road_paver" -> new Mount[] {new Mount(13F, -39.75F, 6F, 3F), new Mount(20.5F, 23.25F, 6F, 3F)};
             default -> null;
         };
     }

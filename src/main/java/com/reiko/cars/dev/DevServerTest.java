@@ -72,6 +72,7 @@ public final class DevServerTest {
                 .then(Commands.literal("garage").executes(context -> run(context, DevServerTest::garage)))
                 .then(Commands.literal("parking").executes(context -> run(context, DevServerTest::parking)))
                 .then(Commands.literal("crash").executes(context -> run(context, DevServerTest::crash)))
+                .then(Commands.literal("paver").executes(context -> run(context, DevServerTest::paver)))
                 .then(Commands.literal("op").executes(context -> run(context, player -> player.server.getPlayerList().op(player.getGameProfile()))))
                 .then(Commands.literal("report").then(Commands.argument("what", StringArgumentType.word())
                         .executes(context -> run(context, player -> report(player, StringArgumentType.getString(context, "what")))))));
@@ -293,6 +294,21 @@ public final class DevServerTest {
         car.crash(0.9, net.minecraft.util.Mth.HALF_PI);
         player.teleportTo(player.serverLevel(), WRECK_X + 2.5, Y, WRECK_Z + 4.5, 150.0F, 20.0F);
         log(player, "crashed: " + car.condition().damage());
+    }
+
+    /** Where the road paver starts, facing east. */
+    static final double PAVER_X = 18.5;
+    static final double PAVER_Z = -4.5;
+
+    /** A road paver with asphalt and paint in its hopper, set for a plain five-wide road, with the player at the wheel. */
+    private static void paver(ServerPlayer player) {
+        CarEntity paver = car(player, CarType.ROAD_PAVER, PAVER_X, PAVER_Z, 270.0F);
+        paver.setPaverSettings(new com.reiko.cars.road.PaverSettings(5, com.reiko.cars.road.PaverSettings.Center.DASHED, 1, true,
+                com.reiko.cars.road.PaverSettings.Sides.NONE, 1, 0, com.reiko.cars.road.PaverSettings.LampSides.BOTH, true, true));
+        paver.bed().setItem(0, new ItemStack(ModItems.ASPHALT.get(), 64));
+        paver.bed().setItem(1, new ItemStack(ModItems.ROAD_PAINT.get()));
+        check(player.startRiding(paver, true), "in the paver");
+        log(player, "paver ready");
     }
 
     private static void check(boolean ok, String what) {

@@ -139,6 +139,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private static final EntityDataAccessor<Boolean> DATA_LADDER_UP = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
     /** How many blocks up from the ground the raised ladder reaches. */
     private static final EntityDataAccessor<Integer> DATA_LADDER_HEIGHT = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.INT);
+    /** Whether a road paver's screed is down: it's paving. */
+    private static final EntityDataAccessor<Boolean> DATA_PAVING = SynchedEntityData.defineId(CarEntity.class, EntityDataSerializers.BOOLEAN);
     /** The entity event that flashes the lights, when it's locked or unlocked with a key. */
     private static final byte FLASH_EVENT = 101;
     private static final EntityDataAccessor<CarCondition> DATA_CONDITION = SynchedEntityData.defineId(CarEntity.class, ModDataSerializers.CONDITION);
@@ -244,6 +246,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private final com.reiko.cars.bus.BusLine busLine = new com.reiko.cars.bus.BusLine(this);
     /** The light its headlights and beacons cast in the dark, on the server. */
     private final Headlights headlights = new Headlights(this);
+    /** A road paver's settings, and its road in progress (on the server). */
+    private com.reiko.cars.road.PaverSettings paverSettings = com.reiko.cars.road.PaverSettings.DEFAULT;
+    private final com.reiko.cars.road.RoadPaver.State paverState = new com.reiko.cars.road.RoadPaver.State();
 
     public CarEntity(EntityType<? extends CarEntity> entityType, Level level, CarType type) {
         super(entityType, level);
@@ -284,6 +289,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         builder.define(DATA_LADDER_START, -1L);
         builder.define(DATA_LADDER_UP, false);
         builder.define(DATA_LADDER_HEIGHT, 0);
+        builder.define(DATA_PAVING, false);
         builder.define(DATA_SIGNAL, CarSignals.OFF);
         builder.define(DATA_ALARM_UNTIL, 0L);
         builder.define(DATA_RADIO, com.reiko.cars.radio.CarRadio.DEFAULT);
@@ -881,6 +887,28 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         entityData.set(DATA_LADDER_START, level().getGameTime());
     }
 
+    /** Whether a road paver's screed is down, laying road. */
+    public boolean paving() {
+        return entityData.get(DATA_PAVING);
+    }
+
+    public void setPaving(boolean on) {
+        entityData.set(DATA_PAVING, on);
+    }
+
+    public com.reiko.cars.road.PaverSettings paverSettings() {
+        return paverSettings;
+    }
+
+    public void setPaverSettings(com.reiko.cars.road.PaverSettings settings) {
+        this.paverSettings = settings;
+    }
+
+    /** A road paver's road in progress, on the server. */
+    public com.reiko.cars.road.RoadPaver.State paverState() {
+        return paverState;
+    }
+
     /** The ladder's come all the way down. */
     public void stowLadder() {
         entityData.set(DATA_LADDER_UP, false);
@@ -1295,7 +1323,11 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
                 return refuse(player, Component.translatable("car.reikocars.garaged", ownerName));
             }
             if (player instanceof ServerPlayer serverPlayer) {
-                openBed(serverPlayer);
+                if (type.isPaver()) {
+                    com.reiko.cars.road.PaverMenu.open(serverPlayer, this);
+                } else {
+                    openBed(serverPlayer);
+                }
             }
             return InteractionResult.sidedSuccess(level().isClientSide);
         }
@@ -1699,6 +1731,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (isInWater()) {
             top = Math.min(top, 0.1);
         }
+        if (paving()) {
+            top = Math.min(top, CarsConfig.get(CarsConfig.PAVING_SPEED) / 20.0); // laying road: a walking pace
+        }
         double accel = type.acceleration * tuned.acceleration() * speedScale * wear.power() * tires;
         double brakes = type.braking * tuned.braking() * wear.braking() * tires;
         if (towed() != null) {
@@ -1758,6 +1793,15 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
                 * (0.75 + 0.25 * tires)); // bald tires don't bite into the turn
         // A car bent on one side pulls that way, and the driver has to hold it straight.
         turn += (float) (wear.damage().pull() * turnFactor * Math.signum(speed) * (onGround() ? 1.0 : 0.0));
+        if (paving() && steerTarget == 0.0F && Math.abs(steering) < 0.05F) {
+            // Laying road, left to itself the paver straightens up along the nearest 45 degrees, so the road runs straight.
+            float yaw = getYRot();
+            float snapped = Math.round(yaw / 45.0F) * 45.0F;
+            float off = Mth.wrapDegrees(snapped - yaw);
+            if (Math.abs(off) < 12.0F && Math.abs(speed) > 0.005) {
+                turn = Math.abs(off) <= 0.6F ? -off : -Mth.clamp(off * 0.25F, -1.5F, 1.5F);
+            }
+        }
         Vec3 pivotBefore = forward().scale(-type.pivotBack());
         setYRot(getYRot() - turn);
         pivotShift = type.pivotBack() > 0.0 ? pivotBefore.subtract(forward().scale(-type.pivotBack())) : Vec3.ZERO;
@@ -2340,6 +2384,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
         tag.putDouble("Fuel", fuel);
+        if (type.isPaver()) {
+            com.reiko.cars.road.PaverSettings.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, paverSettings)
+                    .ifSuccess(settings -> tag.put("Paver", settings));
+        }
         tag.putInt("Color", color());
         tag.putBoolean("Locked", isLocked());
         if (owner() != null) {
@@ -2417,6 +2465,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         entityData.set(DATA_UPGRADES, tag.getInt("Upgrades")); // first: a bigger tank holds more
+        if (tag.contains("Paver")) {
+            com.reiko.cars.road.PaverSettings.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, tag.get("Paver")).ifSuccess(settings -> paverSettings = settings);
+        }
         setFuel(tag.getDouble("Fuel"));
         entityData.set(DATA_FUEL, (float) fuel);
         if (tag.contains("Color", Tag.TAG_INT)) {

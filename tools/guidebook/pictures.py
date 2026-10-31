@@ -53,6 +53,10 @@ CROPS = {
     'crash_head_on': ('372_damage_head_on', 295, 165, 555, 425),
     'crash_side': ('373_damage_side', 335, 170, 625, 460),
     'crash_night': ('377_damage_night', 245, 95, 525, 375),
+    'paving': ('383_paving', 120, 60, 560, 480),
+    'paver_screen': ('382_paver_screen', 440, 70, 762, 410),
+    'paver_bridge': ('385_paving_bridge', 170, 0, 650, 480),
+    'paver_crossing': ('390_road_diagonal', 140, 0, 760, 480),
 }
 
 

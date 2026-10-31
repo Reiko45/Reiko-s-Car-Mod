@@ -2,7 +2,7 @@
   "name": "Toll Gates",
   "icon": "reikocars:toll_gate",
   "category": "reikocars:roads",
-  "sortnum": 3,
+  "sortnum": 4,
   "pages": [
     {
       "type": "patchouli:text",

@@ -50,7 +50,9 @@ public final class Hitching {
         DOORS,
         GARAGE,
         PARK,
-        LEAVE_PARKING
+        LEAVE_PARKING,
+        PAVE_START,
+        PAVE_STOP
     }
 
     private Hitching() {
@@ -96,6 +98,9 @@ public final class Hitching {
             }
             case FIRE_TRUCK -> {
                 return car.ladderUp() ? Action.LADDER_DOWN : Action.LADDER_UP;
+            }
+            case ROAD_PAVER -> {
+                return car.paving() ? Action.PAVE_STOP : Action.PAVE_START;
             }
             default -> {
             }
@@ -198,6 +203,10 @@ public final class Hitching {
             }
             case FIRE_TRUCK -> {
                 com.reiko.cars.fire.FireLadder.toggle(player, car);
+                return;
+            }
+            case ROAD_PAVER -> {
+                com.reiko.cars.road.RoadPaver.toggle(player, car);
                 return;
             }
             default -> {

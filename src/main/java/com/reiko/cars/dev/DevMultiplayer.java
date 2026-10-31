@@ -803,7 +803,48 @@ public final class DevMultiplayer {
             check("its key still starts the sedan after the restart", moved > 3.0, String.format("moved %.1f blocks", moved));
             cmd(mc, "reikotest report after_restart");
         });
-        at(2, 160, mc -> {
+        // A road paver: G lowers the screed, it paves as it's driven, G raises it.
+        at(2, 150, mc -> cmd(mc, "reikotest paver"));
+        at(2, 175, mc -> {
+            CarEntity paver = mc.player.getVehicle() instanceof CarEntity riding && riding.carType() == CarType.ROAD_PAVER ? riding : null;
+            check("at the wheel of a road paver", paver != null, String.valueOf(mc.player.getVehicle()));
+            com.reiko.cars.trailer.Hitching.Action action = paver == null ? null : com.reiko.cars.trailer.Hitching.available(paver, mc.player);
+            check("the hitch key's for lowering the screed", action == com.reiko.cars.trailer.Hitching.Action.PAVE_START, String.valueOf(action));
+            press(ReikoCarsClient.HITCH);
+        });
+        at(2, 185, mc -> {
+            CarEntity paver = (CarEntity) mc.player.getVehicle();
+            check("the client sees it paving", paver != null && paver.paving(), paver == null ? "none" : "paving=" + paver.paving());
+            mc.options.keyUp.setDown(true);
+        });
+        at(2, 245, mc -> mc.options.keyUp.setDown(false));
+        at(2, 255, mc -> {
+            int y = DevServerTest.Y - 1;
+            int z = net.minecraft.util.Mth.floor(DevServerTest.PAVER_Z);
+            int lined = 0;
+            int paved = 0;
+            for (int x = 18; x <= 26; x++) {
+                net.minecraft.world.level.block.state.BlockState middle = mc.level.getBlockState(new BlockPos(x, y, z));
+                if (middle.is(com.reiko.cars.registry.ModBlocks.ASPHALT.get())) {
+                    paved++;
+                    if (middle.getValue(com.reiko.cars.road.Asphalt.MARKING) == com.reiko.cars.road.RoadMarking.CENTER_DASHED) {
+                        lined++;
+                    }
+                }
+            }
+            check("a road laid behind it, center line and all", paved >= 6 && lined == paved, paved + " paved, " + lined + " with the line");
+            boolean edges = mc.level.getBlockState(new BlockPos(20, y, z - 2)).is(com.reiko.cars.registry.ModBlocks.ASPHALT.get())
+                    && mc.level.getBlockState(new BlockPos(20, y, z - 2)).getValue(com.reiko.cars.road.Asphalt.MARKING) == com.reiko.cars.road.RoadMarking.EDGE;
+            check("five wide, with edge lines", edges, String.valueOf(mc.level.getBlockState(new BlockPos(20, y, z - 2))));
+            shot(mc, "32_paver");
+            press(ReikoCarsClient.HITCH);
+        });
+        at(2, 270, mc -> {
+            CarEntity paver = (CarEntity) mc.player.getVehicle();
+            check("G raises the screed", paver != null && !paver.paving(), paver == null ? "none" : "paving=" + paver.paving());
+            cmd(mc, "reikotest report paved");
+        });
+        at(2, 290, mc -> {
             ReikoCars.LOGGER.info("MPCHECK done: {} passed, {} failed", passes, fails);
             mc.stop();
         });

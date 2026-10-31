@@ -22,7 +22,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "$(l)Owning a car:$() whoever puts it down owns it. New cars start locked. Paint one by right-clicking it with a dye. Punch it a few times to pick it up (owner only): it keeps its fuel, paint, locks and wear.$(br2)$(l)Off-road:$() grass, sand, snow and dirt slow every car but the off-roader, the heavy-duty pickup, the farm tractor, the dump truck, the electric pickup and the dirt bike."
+      "text": "$(l)Owning a car:$() whoever puts it down owns it. New cars start locked. Paint one by right-clicking it with a dye. Punch it a few times to pick it up (owner only): it keeps its fuel, paint, locks and wear.$(br2)$(l)Off-road:$() grass, sand, snow and dirt slow every car but the off-roader, the heavy-duty pickup, the farm tractor, the dump truck, the road paver, the electric pickup and the dirt bike."
     },
     {
       "type": "patchouli:text",

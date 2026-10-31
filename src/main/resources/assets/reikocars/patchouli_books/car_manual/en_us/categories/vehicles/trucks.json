@@ -1,6 +1,6 @@
 {
   "name": "Work Vehicles",
-  "description": "Diesel trucks, tow trucks, vans and the tractor.",
+  "description": "Diesel trucks, tow trucks, vans, the tractor and the road paver.",
   "icon": "reikocars:semi_truck",
   "sortnum": 3,
   "parent": "reikocars:vehicles"

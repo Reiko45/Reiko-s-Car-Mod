@@ -93,6 +93,12 @@ public enum CarType {
      */
     FIRE_TRUCK(  2.5f,  3.4f,  7.6f,  7,    0.85f, 0.011f, 0.036f, 0.20f, 3.0f, 14, 1000, 0xC62828, 26, false, 2, 4, DIESEL, noFifthWheel(),
             seat(8, -40), seat(-8, -40), seat(7, -24), seat(-7, -24)),
+    /**
+     * A road paver: with its screed down (G) it lays a road behind it as it's driven, from what's in its hopper (see
+     * {@code com.reiko.cars.road.RoadPaver}). One seat, up on its deck.
+     */
+    ROAD_PAVER(  2.6f,  3.25f, 4.9f,  9,    0.40f, 0.008f, 0.040f, 0.15f, 3.6f, 10, 800, 0xF2C014, 33, true,  3, 4, DIESEL, noFifthWheel(),
+            seat(0, 14)),
 
     // Electric: charged at a charging station. Quick off the line, quiet, and they get a little back when braking.
     /** A tall little two-seater for town: nippy, turns on a coin, and sips its battery. */
@@ -259,6 +265,7 @@ public enum CarType {
             case DUMP_TRUCK -> "container.reikocars.dump_bed";
             case CEMENT_MIXER -> "container.reikocars.drum";
             case FIRE_TRUCK -> "container.reikocars.compartments";
+            case ROAD_PAVER -> "container.reikocars.hopper";
             case CITY_EV -> "container.reikocars.trunk";
             case ELECTRIC_SEDAN -> "container.reikocars.frunk";
             case ELECTRIC_VAN -> "container.reikocars.cargo_area";
@@ -303,6 +310,11 @@ public enum CarType {
         return this == POLICE_CAR || this == AMBULANCE || this == FIRE_TRUCK;
     }
 
+    /** The road paver: lays a road as it's driven (see {@code com.reiko.cars.road.RoadPaver}). */
+    public boolean isPaver() {
+        return this == ROAD_PAVER;
+    }
+
     /** The fire truck: a water tank, the fire hose and the ladder (see {@code com.reiko.cars.fire}). */
     public boolean isFireTruck() {
         return this == FIRE_TRUCK;
@@ -327,6 +339,7 @@ public enum CarType {
             case SEMI_TRUCK -> List.of(new Vec3(1.19, 4.3, -0.94), new Vec3(-1.19, 4.3, -0.94));
             case FARM_TRACTOR -> List.of(new Vec3(-0.375, 2.6, 0.81));
             case FLATBED, WRECKER, GARBAGE_TRUCK, DUMP_TRUCK, CEMENT_MIXER -> List.of(new Vec3(-1.03, 3.31, 0.375));
+            case ROAD_PAVER -> List.of(new Vec3(0.59, 2.8, 0.66));
             default -> List.of();
         };
     }
@@ -350,6 +363,7 @@ public enum CarType {
             case AMBULANCE -> 0.95F;
             case GARBAGE_TRUCK, DUMP_TRUCK, CEMENT_MIXER -> 0.68F;
             case FIRE_TRUCK -> 0.55F; // an air horn
+            case ROAD_PAVER -> 0.7F;
             case CITY_EV -> 1.3F;
             case ELECTRIC_SEDAN -> 1.1F;
             case ELECTRIC_PICKUP -> 0.85F;
@@ -377,6 +391,7 @@ public enum CarType {
             case POLICE_CAR -> 0.92F;
             case AMBULANCE -> 0.85F;
             case GARBAGE_TRUCK, DUMP_TRUCK, CEMENT_MIXER, FIRE_TRUCK -> 0.72F;
+            case ROAD_PAVER -> 0.66F;
             case CITY_EV -> 1.15F;
             case ELECTRIC_PICKUP -> 0.85F;
             case ELECTRIC_VAN -> 0.9F;
@@ -463,6 +478,9 @@ public enum CarType {
         }
         if (this == FIRE_TRUCK) {
             return 33 / 16.0; // between its two back axles
+        }
+        if (this == ROAD_PAVER) {
+            return 10 / 16.0; // its big drive wheels
         }
         return fifthWheel == null ? 0.0 : fifthWheel[0] / 16.0;
     }

@@ -121,6 +121,14 @@ public final class CarsConfig {
     public static final ModConfigSpec.DoubleValue GARAGE_HOUR_PRICE;
     public static final ModConfigSpec.DoubleValue GARAGE_DAY_PRICE;
 
+    public static final ModConfigSpec.DoubleValue PAVING_SPEED;
+    public static final ModConfigSpec.DoubleValue PAVER_ASPHALT_PRICE;
+    public static final ModConfigSpec.DoubleValue PAVER_PAINT_PRICE;
+    public static final ModConfigSpec.DoubleValue PAVER_SLAB_PRICE;
+    public static final ModConfigSpec.DoubleValue PAVER_FILL_PRICE;
+    public static final ModConfigSpec.DoubleValue PAVER_POLE_PRICE;
+    public static final ModConfigSpec.DoubleValue PAVER_LAMP_PRICE;
+
     public static final ModConfigSpec.DoubleValue STOP_REACH;
     public static final ModConfigSpec.BooleanValue VILLAGER_PASSENGERS;
     public static final ModConfigSpec.DoubleValue VILLAGER_FARE;
@@ -551,6 +559,30 @@ public final class CarsConfig {
         GARAGE_DAY_PRICE = builder
                 .comment("What a new parking garage charges for a day (a Minecraft day, 20 minutes); its owner can change it.")
                 .defineInRange("defaultPricePerDay", 10.0, 0.0, 1.0E6);
+        builder.pop();
+
+        builder.push("roadPaver");
+        PAVING_SPEED = builder
+                .comment("How fast the road paver goes while it's laying road, in blocks a second.")
+                .defineInRange("pavingSpeed", 4.0, 0.5, 8.0);
+        PAVER_ASPHALT_PRICE = builder
+                .comment("What the road paver pays for a block of asphalt it hasn't got (a slab costs half), from the driver's bank account.")
+                .defineInRange("asphaltPrice", 0.10, 0.0, 1.0E6);
+        PAVER_PAINT_PRICE = builder
+                .comment("What it pays for each block's road marking when it has no Road Paint.")
+                .defineInRange("paintPrice", 0.02, 0.0, 1.0E6);
+        PAVER_SLAB_PRICE = builder
+                .comment("What it pays for a slab of curb or sidewalk it hasn't got.")
+                .defineInRange("slabPrice", 0.05, 0.0, 1.0E6);
+        PAVER_FILL_PRICE = builder
+                .comment("What it pays for a block of fill (earth or stone, to fill dips, and for bridge decks and pillars) it hasn't got.")
+                .defineInRange("fillPrice", 0.02, 0.0, 1.0E6);
+        PAVER_POLE_PRICE = builder
+                .comment("What it pays for a Street Pole it hasn't got (each street lamp stands on four).")
+                .defineInRange("polePrice", 0.25, 0.0, 1.0E6);
+        PAVER_LAMP_PRICE = builder
+                .comment("What it pays for a Street Lamp it hasn't got.")
+                .defineInRange("lampPrice", 1.00, 0.0, 1.0E6);
         builder.pop();
 
         SPEC = builder.build();

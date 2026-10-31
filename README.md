@@ -11,8 +11,9 @@ or run a mechanic's shop and charge for repairs. Tow trucks haul broken-down car
 players for postage. Parking meters ticket cars that overstay, toll gates lift for drivers who pay, insurance offices
 cover crash repairs, and the job board pays drivers, mail carriers, mechanics, truckers and garbage collectors.
 Every vehicle has turn signals and hazard lights, and a locked car's alarm catches anyone without a key. Lay
-**asphalt** roads and paint them, and put up **traffic lights**, signs and street lamps; red-light and speed cameras
-fine drivers for their owners. And every car has a **radio**: three stations of original music, or your own discs.
+**asphalt** roads and paint them (or drive a **road paver** that lays them as it goes, sidewalks, street lamps and
+all, cutting through hills and bridging gaps), and put up **traffic lights**, signs and street lamps; red-light and
+speed cameras fine drivers for their owners. And every car has a **radio**: three stations of original music, or your own discs.
 
 There are **electric cars** too, charged at **charging stations** that BuildCraft engines and kinesis pipes power, and
 that sell the charge for cash or card the same way. And a **fire truck**: a fire hose that sprays from its water
@@ -109,6 +110,7 @@ washing, towing, roads, garages, money and business, public services, and tuning
 | Dump Truck | 2 | 32 mph | 16 buckets of diesel | 54-slot bed that tips to dump its load |
 | Cement Mixer | 2 | 30 mph | 16 buckets of diesel | 18-slot drum that sets concrete powder into concrete, and pours it |
 | Fire Truck | 4 | 38 mph | 14 buckets of diesel | Lights and siren, a 10-bucket water tank for the fire hose, a ladder up the back, 18 slots of compartments (see [Fire trucks](#fire-trucks)) |
+| Road Paver | 1 | 18 mph | 10 buckets of diesel | Lays a road behind it as it's driven (see [The road paver](#the-road-paver)); 27-slot hopper |
 | Sport Bike | 2 | 65 mph | 4 buckets | The fastest thing on the road (see [Motorcycles](#motorcycles)) |
 | Cruiser | 2 | 45 mph | 5 buckets | 9-slot saddlebags (sneak + use) |
 | Dirt Bike | 1 | 42 mph | 3 buckets | Keeps full speed on grass, sand and snow |
@@ -229,14 +231,61 @@ into earshot, or joins a car that's already playing, hears the song from whereve
 - **Asphalt** (block, slab and stairs) makes a road: cars go **15% faster** on it, and their tires wear a quarter
   slower. Craft it from gravel and coal.
 - **Road Paint** marks it. Right-click the air to pick a marking (sneak to go back): a dashed or double yellow center
-  line, a dashed white lane line, an edge line, a stop line, a crosswalk, or an arrow (straight on, left or right).
-  Then right-click the top of asphalt or an asphalt slab: the marking is drawn the way you're facing (arrows point
-  that way, an edge line runs down your left, a stop line lies across the far side). Paint the same thing again to
-  scrape it off. A can paints 256 blocks.
+  line, a dashed white lane line, an edge line, a stop line, a crosswalk, or an arrow (straight on, left or right),
+  and the center, lane and edge lines again from corner to corner, for roads at 45 degrees. Then right-click the top
+  of asphalt or an asphalt slab: the marking is drawn the way you're facing (arrows point that way, an edge line runs
+  down your left, a stop line lies across the far side; a corner-to-corner line runs from your front right to your
+  back left). Paint the same thing again to scrape it off. A can paints 256 blocks.
 - **Street Poles** (stack as many as you like) hold up everything else: traffic lights, signs and street lamps all go
   on top of one, facing whoever puts them up (a lamp's arm reaches out the way you face).
 - **Street Lamps** come on at dusk and go off at dawn.
 - **Stop Signs** are just signs; paint a stop line by them.
+
+### The road paver
+
+The **Road Paver** lays a road as you drive it. It's a diesel work vehicle with one seat up on its deck, a hopper in
+front for what it lays, and a screed behind that lays it. Sneak and right-click it for its screen: the hopper (27
+slots) and the road it lays, set with the arrows:
+
+| Setting | Choices |
+| --- | --- |
+| Width | 3 to 15 blocks, curb to curb (an even width has its center line half a block left of the middle) |
+| Center line | dashed yellow, double yellow, or none |
+| Lanes each way | 1 to 3, with dashed white lines between them (each lane needs 2 blocks) |
+| Edge lines | solid white lines down both edges |
+| Sidewalks | left, right, both or none: raised half a block, with a smooth stone curb along the road |
+| Sidewalk width | 1 to 4 blocks, the curb included |
+| Street lamps | every 8, 12, 16, 24 or 32 blocks, or none: four Street Poles and a Street Lamp, reaching out over the road |
+| Lamps on | left, right, both, or staggered (taking turns) |
+| Shape the land | on: cut and fill to an even grade (below); off: the road lies on the ground as it is |
+| Buy the rest | buy what's missing from your bank account |
+
+Press **G** at the wheel to lower the screed, and drive: while it paves it goes no faster than a walk (4 blocks a
+second), and the road appears behind it. G again raises the screed; it comes up by itself if you get out or it runs
+out of something. Left alone, it steers straight, settling on the nearest 45 degrees, so the road runs straight:
+along the grid, or at 45 degrees with its lines from corner to corner of each block. Round a bend it follows you.
+Where it crosses a road that's already there, it leaves that road as it is.
+
+**Shaping the land:** just ahead of its front bumper, it works the ground to the road's grade: it cuts through hills
+(clearing four blocks above the road, and the trees and sand over it), and fills dips up to four blocks deep. The
+grade follows the ground a few blocks ahead, no steeper than a block in four, with asphalt slabs for the half steps.
+Over water, or a drop more than four blocks deep, it carries on level as a bridge: just the deck, on pillars every 8
+blocks. It leaves alone anything with a block entity (chests and the like), anything unbreakable, the mod's own road
+furniture, and anywhere you couldn't build (spawn protection, or a claim from a mod that protects them).
+
+**Materials:** a block of asphalt for each block of road (a slab on the half steps: an asphalt block makes two), a
+use of Road Paint for each marked block, a slab for each block of sidewalk (smooth stone for the curb; any stone
+slabs you load for the rest, smooth stone if you don't), earth or stone to fill with (dirt, cobblestone, stone,
+deepslate and the like), and four Street Poles and a Street Lamp for each lamp. It takes them from its hopper first,
+then your inventory; with **Buy the rest** on, it buys what's still missing from your bank account (a block of
+asphalt $0.10, a marking $0.02, a slab $0.05, a block of fill $0.02, a pole $0.25, a lamp $1.00, all set in the
+server config). Out of something it can't buy, it stops and says what. In creative it's free. What it digs up goes
+in the hopper while there's room (earth and stone, to fill with later, and ores and logs); ores and logs that don't
+fit are dropped beside the road, and the rest is cleared away.
+
+Its parts: the **chassis** is iron rails around an iron block, an anvil and an iron block; the **body** is iron, a
+hopper, iron over iron, yellow dye, iron over three smooth stone slabs; the **interior** is a clock over leather,
+redstone, leather over iron, asphalt, iron. It takes a Diesel Engine.
 
 ### Traffic lights and cameras
 
@@ -1291,6 +1340,13 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `garages.closeSeconds` | `3` | How long a door a car opened stays open once nothing's going through |
 | `garages.defaultPricePerHour` | `1.0` | What a new parking garage charges an hour (its owner can change it) |
 | `garages.defaultPricePerDay` | `10.0` | What a new parking garage charges a day (its owner can change it) |
+| `roadPaver.pavingSpeed` | `4.0` | How fast the road paver goes while it's paving, in blocks a second |
+| `roadPaver.asphaltPrice` | `0.10` | What it pays for a block of asphalt it hasn't got (a slab costs half) |
+| `roadPaver.paintPrice` | `0.02` | What it pays for a block's marking when it has no Road Paint |
+| `roadPaver.slabPrice` | `0.05` | What it pays for a slab of curb or sidewalk |
+| `roadPaver.fillPrice` | `0.02` | What it pays for a block of fill (earth or stone) |
+| `roadPaver.polePrice` | `0.25` | What it pays for a Street Pole |
+| `roadPaver.lampPrice` | `1.00` | What it pays for a Street Lamp |
 
 Each player can pick **mph** or **km/h**, turn the dashboard off, and (with Xaero's Minimap) choose whether the GPS
 destination and their cars show on the minimap, in `config/reikocars-client.toml`.
@@ -1316,7 +1372,7 @@ game test then checks there's no manual and no recipe for one).
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
-./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs, crash damage, tow trucks, mail, keys, fares, buying and selling), then exit
+./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs, crash damage, the road paver, tow trucks, mail, keys, fares, buying and selling), then exit
 ./gradlew runClient         # start a dev client
 ./gradlew runClient -Pshowcase  # build a test scene, buy fuel, drive, save screenshots to run/screenshots/, quit
 ./gradlew runClient -Pshowcase=workbench  # the same for the Car Workbench and its JEI pages
@@ -1326,6 +1382,7 @@ game test then checks there's no manual and no recipe for one).
 ./gradlew runClient -Pshowcase=cars2      # the same for the hatchback, muscle car, convertible, minivan, van, bus, 4x4, tractor
 ./gradlew runClient -Pshowcase=repair     # the Repair Bench, paying for repairs, its owner's tabs, a worn car's dashboard and smoke, a worn trailer
 ./gradlew runClient -Pshowcase=damage     # crashed cars: crumpled fronts, caved-in sides, cracked and shattered glass, smashed lamps, one headlight at night, the repair bench
+./gradlew runClient -Pshowcase=paver      # the road paver and its screen, paving a road through a hill and over a ravine, a road at 45 degrees crossing it, at night
 ./gradlew runClient -Pshowcase=tow        # the tow trucks loaded and towing, posting a parcel, the mail van's round, the inbox
 ./gradlew runClient -Pshowcase=keys       # no key, cutting one, its tooltip, driving with it, locking it from a distance
 ./gradlew runClient -Pshowcase=fares      # paying a bus fare, a taxi's meter running and paid, the owner's fare screen
@@ -1349,7 +1406,7 @@ and a pickup, sets up camp and sleeps in the camper, loads cows into a livestock
 it up, links a remote to it, pays to park at someone else's parking garage, leaves and comes back, sees a crashed
 car's damage, and
 then waits while the server is restarted (restart it when its log says `REIKOTEST before_restart`), to check
-everything is as it was left. The server needs the mod's jar with the dev-only
+everything is as it was left; then it paves a road with the road paver. The server needs the mod's jar with the dev-only
 `DevServerTest` class added (it builds each scene with `/reikotest`): add
 `build/classes/java/main/com/reiko/cars/dev/DevServerTest.class` to the jar in the server's mods folder. Each check is
 logged as an `MPCHECK` line in the client's log; screenshots go to `run/screenshots/mp_*.png`.
@@ -1421,7 +1478,7 @@ src/main/java/com/reiko/cars/
 ├── garbage/              the Trash Can block and block entity, and GarbageService (the garbage truck's round)
 ├── fire/                 the fire truck's water (FireTrucks), the fire hose and spraying (Firefighting), the ladder and its climbable blocks (FireLadder), the Fire Hydrant, and who lit what (FireEvents)
 ├── radio/                the car radio: its settings (CarRadio), the stations, and its menu
-├── road/                 asphalt and its markings, Road Paint, Street Poles, Stop Signs, Street Lamps and Traffic Cones
+├── road/                 asphalt and its markings, Road Paint, Street Poles, Stop Signs, Street Lamps and Traffic Cones, and the road paver (RoadPaver, its PaverSettings and its screen's PaverMenu)
 ├── traffic/              traffic lights, speed limit signs, their owner screen's menu, and TrafficCameras (the fines)
 ├── icecream/             the ice cream truck's shop: its menu and IceCreamService (pricing and selling)
 ├── pump/                 the gas and diesel pump block, its block entity, menu, protection, and PumpService (selling fuel)
@@ -1457,13 +1514,14 @@ src/main/java/com/reiko/cars/
 ├── network/              packets: the GPS's places and cars, a bus stop's name and routes, a garage's settings and paying to park, pump, repair bench, mailbox, parking meter, toll, car wash, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, the crash damage that CarWreck draws, and the wipers and raindrops on the windshield, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the GPS (GpsClient, its screen and panel, and GpsXaero for Xaero's Minimap), the bus stop's screen and lettering, the garage doors (GarageDoorRenderer) and the garage and parking screens, the camper's screen and its sleepers (CamperClient), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
+├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, the crash damage that CarWreck draws, and the wipers and raindrops on the windshield, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign, road paver and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the GPS (GpsClient, its screen and panel, and GpsXaero for Xaero's Minimap), the bus stop's screen and lettering, the garage doors (GarageDoorRenderer) and the garage and parking screens, the camper's screen and its sleepers (CamperClient), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcases and the multiplayer play test (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)
 tools/guidebook/          the Car Manual's writer (book.py) and its pictures' cropper (pictures.py)
 tools/garage/             draws the garage doors' textures and writes their block states, models, loot tables and recipes (assets.py)
 tools/damage/             draws the Car Window and Car Light items and writes their models and recipes (assets.py)
+tools/paver/              draws the diagonal road markings and writes their models and block states, and the road paver's item models, part recipes and fill tags (assets.py)
 src/xaeroStubs/java/       compile-time stand-ins for the few classes of Xaero's Minimap the GPS uses (not in the jar)
 ```
 

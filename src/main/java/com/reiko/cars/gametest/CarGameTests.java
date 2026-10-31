@@ -2811,7 +2811,7 @@ public final class CarGameTests {
             paint.getItem().use(helper.getLevel(), painter, InteractionHand.MAIN_HAND);
             paint.getItem().use(helper.getLevel(), painter, InteractionHand.MAIN_HAND);
             painter.setShiftKeyDown(false);
-            check(helper, com.reiko.cars.road.RoadPaintItem.marking(paint) == com.reiko.cars.road.RoadMarking.ARROW_RIGHT, "sneaking goes back, round past the first");
+            check(helper, com.reiko.cars.road.RoadPaintItem.marking(paint) == com.reiko.cars.road.RoadMarking.EDGE_DIAGONAL, "sneaking goes back, round past the first");
             paint.getItem().use(helper.getLevel(), painter, InteractionHand.MAIN_HAND);
 
             painter.moveTo(helper.absoluteVec(new Vec3(5.5, 1.0, 9.5)));

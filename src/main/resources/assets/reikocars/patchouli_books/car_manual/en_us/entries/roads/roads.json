@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Cars go $(l)15% faster$() on $(item)Asphalt$(), and their tires wear slower. $(item)Road Paint$() marks it: right-click the air to pick a marking (center lines, lane and edge lines, stop lines, crosswalks, arrows), then the asphalt. Paint the same thing again to scrape it off."
+      "text": "Cars go $(l)15% faster$() on $(item)Asphalt$(), and their tires wear slower. $(item)Road Paint$() marks it: right-click the air to pick a marking (center lines, lane and edge lines, stop lines, crosswalks, arrows, and lines from corner to corner for roads at 45 degrees), then the asphalt. Paint the same thing again to scrape it off."
     },
     {
       "type": "patchouli:crafting",

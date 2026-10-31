@@ -1,0 +1,22 @@
+{
+  "type": "reikocars:car_assembly",
+  "chassis": {
+    "item": "reikocars:road_paver_chassis"
+  },
+  "body": {
+    "item": "reikocars:road_paver_body"
+  },
+  "interior": {
+    "item": "reikocars:road_paver_interior"
+  },
+  "engine": {
+    "item": "reikocars:diesel_engine"
+  },
+  "wheel": {
+    "item": "reikocars:tire"
+  },
+  "result": {
+    "count": 1,
+    "id": "reikocars:road_paver"
+  }
+}

@@ -83,6 +83,7 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
 
         model.pose(car.wheelAngle(partialTick), car.steerAngle(partialTick));
         model.poseWork(car.bedTilt(partialTick) * WorkVehicles.TIP_DEGREES * Mth.DEG_TO_RAD, car.drumSpin(partialTick));
+        model.poseScreed(car.paving() ? 1.5F : 0.0F);
         if (car.carType().isFireTruck()) {
             float out = car.ladderOut(partialTick);
             model.poseLadder(com.reiko.cars.fire.FireLadder.swing(out), com.reiko.cars.fire.FireLadder.extension(out, car.ladderHeight()));
@@ -136,10 +137,10 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
             }
         }
         if (model.hasBeacons()) {
-            // With the siren on, the two sets of beacons flash in turn, a few times a second.
+            // With the siren on (or the paver paving), the two sets of beacons flash in turn, a few times a second.
             boolean firstOn = (car.level().getGameTime() + car.getId()) / 4 % 2 == 0;
             for (boolean first : new boolean[] {true, false}) {
-                boolean flashing = car.sirenOn() && first == firstOn;
+                boolean flashing = (car.sirenOn() || car.paving()) && first == firstOn;
                 if (flashing) {
                     model.renderBeacons(first, poseStack, bent(wrecked, buffers.getBuffer(RenderType.entityTranslucentEmissive(texture)), CarWreck.PLAIN),
                             LightTexture.FULL_BRIGHT, overlay);

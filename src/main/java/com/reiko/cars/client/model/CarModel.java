@@ -28,7 +28,8 @@ import org.jetbrains.annotations.Nullable;
  * in turn while the siren's on; {@code bed}, the dump truck's bed, pivoting at its hinge to tip; and
  * {@code drum_mount}, holding the mixer's {@code drum}, which turns about its own z axis; and {@code ladder}, the fire
  * truck's aerial ladder, pivoting at its foot to swing up, with {@code ladder_fly1} to {@code ladder_fly4} nested in it,
- * each sliding out of the one before (toward -z, its tip).
+ * each sliding out of the one before (toward -z, its tip); and {@code screed}, the road paver's screed, let down a
+ * little while it paves (its beacons flash then too).
  *
  * <p>A motorcycle has no right-hand wheels: {@code wheel_fl} is its front wheel and {@code wheel_rl} its back one.
  * Its front wheel sits inside a {@code fork} bone, with the forks and handlebars, and the whole fork steers.
@@ -65,6 +66,8 @@ public final class CarModel {
     private final ModelPart ladder;
     /** The ladder's fly sections, the base section's first. */
     private final List<ModelPart> flies = new ArrayList<>();
+    @Nullable
+    private final ModelPart screed;
 
     public CarModel(ModelPart root) {
         this.body = root.getChild("body");
@@ -84,6 +87,7 @@ public final class CarModel {
         this.drumMount = child(root, "drum_mount");
         this.drum = drumMount != null && drumMount.hasChild("drum") ? drumMount.getChild("drum") : null;
         this.ladder = child(root, "ladder");
+        this.screed = child(root, "screed");
         for (ModelPart part = ladder; part != null && part.hasChild("ladder_fly" + (flies.size() + 1)); ) {
             part = part.getChild("ladder_fly" + (flies.size() + 1));
             flies.add(part);
@@ -142,6 +146,13 @@ public final class CarModel {
             for (ModelPart fly : flies) {
                 fly.z = fly.getInitialPose().z - extension;
             }
+        }
+    }
+
+    /** Lets the road paver's screed down {@code down} pixels (while it's paving) or back up. */
+    public void poseScreed(float down) {
+        if (screed != null) {
+            screed.y = screed.getInitialPose().y + down;
         }
     }
 
@@ -223,6 +234,9 @@ public final class CarModel {
         }
         if (ladder != null) {
             ladder.render(poseStack, consumer, light, overlay, color);
+        }
+        if (screed != null) {
+            screed.render(poseStack, consumer, light, overlay, color);
         }
     }
 

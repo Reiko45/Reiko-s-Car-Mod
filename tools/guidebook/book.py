@@ -126,13 +126,13 @@ category('vehicles', 'Vehicles', 'Every car, truck, motorcycle and trailer, and 
 category('vehicles/cars', 'Cars and Pickups', 'Everyday cars, SUVs and pickups.', 'reikocars:sedan', 0, 'vehicles')
 category('vehicles/electric', 'Electric Vehicles', 'Cars that run on BuildCraft MJ.', 'reikocars:city_ev', 1, 'vehicles')
 category('vehicles/motorcycles', 'Motorcycles', 'Two wheels: they lean into turns.', 'reikocars:sport_bike', 2, 'vehicles')
-category('vehicles/trucks', 'Work Vehicles', 'Diesel trucks, tow trucks, vans and the tractor.', 'reikocars:semi_truck', 3, 'vehicles')
+category('vehicles/trucks', 'Work Vehicles', 'Diesel trucks, tow trucks, vans, the tractor and the road paver.', 'reikocars:semi_truck', 3, 'vehicles')
 category('vehicles/service', 'Public Service', 'The taxi, bus, police car, ambulance and fire truck.', 'reikocars:city_bus', 4, 'vehicles')
 category('vehicles/trailers', 'Trailers', 'The semi\'s trailers, campers and livestock trailers.', 'reikocars:box_trailer', 5, 'vehicles')
 category('fuel', 'Fuel and Charging', 'Gasoline, diesel and electricity: where they come from and how to sell them.', 'reikocars:gas_pump', 3)
 category('care', 'Repairs and Washing', 'Parts wear out; fix them at a Repair Bench, tow broken cars, wash dirty ones.', 'reikocars:repair_bench', 4)
 category('trailers', 'Towing', 'Hitching trailers to a semi or a pickup, campers and livestock.', 'reikocars:box_trailer', 5)
-category('roads', 'Roads and Traffic', 'Asphalt, markings, traffic lights, cameras, parking meters and tolls.', 'reikocars:traffic_light', 6)
+category('roads', 'Roads and Traffic', 'Asphalt, markings, the road paver, traffic lights, cameras, parking meters and tolls.', 'reikocars:traffic_light', 6)
 category('garages', 'Garages', 'Garage doors any size, remotes and buttons, keeping cars safe, and parking garages.', 'reikocars:garage_door', 7)
 category('business', 'Money and Business', 'Selling cars, dealerships, loans, rentals, impound lots, insurance, the DMV and jobs.', 'reikocars:dealership', 8)
 category('services', 'Public Services', 'Bus routes, mail, emergency vehicles and the work trucks.', 'reikocars:bus_stop_sign', 9)
@@ -392,13 +392,34 @@ entry('trailers', 'livestock', 'Livestock', 'reikocars:livestock_trailer', [
 
 entry('roads', 'roads', 'Roads', 'reikocars:asphalt', [
     text('Cars go $(l)15% faster$() on $(item)Asphalt$(), and their tires wear slower. $(item)Road Paint$() marks it: right-click the air '
-         'to pick a marking (center lines, lane and edge lines, stop lines, crosswalks, arrows), then the asphalt. Paint the same '
-         'thing again to scrape it off.'),
+         'to pick a marking (center lines, lane and edge lines, stop lines, crosswalks, arrows, and lines from corner to corner for '
+         'roads at 45 degrees), then the asphalt. Paint the same thing again to scrape it off.'),
     craft('asphalt', 'road_paint'),
     image('roads', 'Street Poles hold up traffic lights, signs and street lamps, which come on at dusk.'),
     craft('street_pole', 'street_lamp'),
     craft('stop_sign'),
 ], sort=0)
+
+entry('roads', 'paver', 'The Road Paver', 'reikocars:road_paver', [
+    text('The ' + L('vehicles/trucks/road_paver', 'Road Paver') + ' lays a road as you drive it. Fill its hopper (sneak and right-click '
+         'it), get in and press ' + K('hitch') + ' to lower the screed, then drive slowly forward: the road appears behind it, '
+         'with its lines, sidewalks and lamps. ' + K('hitch') + ' again raises it.'),
+    image('paving', 'Laying a road, sidewalks and street lamps as it goes.'),
+    text('Its screen sets the road:$(li)its width, 3 to 15 blocks$(li)a dashed or double yellow center line, lanes each way, edge '
+         'lines$(li)sidewalks, either side$(li)a street lamp every so many blocks$(li)shaping the land$(li)buying what\'s missing'),
+    image('paver_screen', 'The road it lays: sneak and right-click the paver.'),
+    text('$(l)Shaping the land:$() ahead of it, it cuts through hills and fills dips to an even grade, no steeper than a block in '
+         'four. Over water or a drop deeper than four blocks it carries on level as a bridge, on pillars. Off, the road lies on '
+         'the ground as it is.'),
+    image('paver_bridge', 'Bridging a ravine: a deck, on pillars.'),
+    text('$(l)Materials:$() asphalt, road paint for the lines, slabs for sidewalks (smooth stone for the curb), earth or stone to '
+         'fill with, and four poles and a lamp for each lamp. It takes them from the hopper, then your pockets, then (if set to) '
+         'buys the rest from your bank account. In creative it\'s free. What it digs up goes in the hopper.'),
+    text('Left alone, it steers itself straight, to the nearest 45 degrees, so the road runs straight; at 45 degrees its lines '
+         'run from corner to corner of each block. Round a bend it follows you. Where it crosses a road, it leaves that road as '
+         'it is.'),
+    image('paver_crossing', 'Two roads crossing, one at 45 degrees.'),
+], sort=1)
 
 entry('roads', 'traffic_lights', 'Traffic Lights', 'reikocars:traffic_light', [
     text('All $(item)Traffic Light$()s run on one clock: green, yellow, red, with north-south and east-west taking turns. Put one up '
@@ -407,7 +428,7 @@ entry('roads', 'traffic_lights', 'Traffic Lights', 'reikocars:traffic_light', [
     text('$(l)Cameras:$() a light\'s owner right-clicks it to set a fine for running its red; a $(item)Speed Limit Sign$()\'s owner sets '
          'the limit and a speeding fine. Fines come out of the car owner\'s bank account, go to the camera\'s owner, and put penalty '
          'points on the driver\'s ' + L('business/dmv', 'license') + '.'),
-], sort=1)
+], sort=2)
 
 entry('roads', 'parking', 'Parking Meters', 'reikocars:parking_meter', [
     text('A $(item)Parking Meter$() charges the car parked beside it (within 3 blocks). Right-click it, choose 10 to 120 minutes, and '
@@ -416,13 +437,13 @@ entry('roads', 'parking', 'Parking Meters', 'reikocars:parking_meter', [
     craft('parking_meter'),
     text('The owner\'s cars park free. The $(l)Settings$() tab sets the rate and the fine. A car left at an expired meter can be '
          'towed to an ' + L('business/impound', 'impound lot') + '.'),
-], sort=2)
+], sort=3)
 
 entry('roads', 'tolls', 'Toll Gates', 'reikocars:toll_gate', [
     text('A $(item)Toll Gate$() closes the road until the toll is paid. Drive up and press ' + K('hitch') + ' to pay by card or cash, '
          'and the arm swings up. A $(item)Toll Booth$() within 12 blocks sets the toll; its owner gets the money and drives through free.'),
     craft('toll_gate', 'toll_booth'),
-], sort=3)
+], sort=4)
 
 # -- Garages --
 
@@ -676,7 +697,7 @@ GROUPS = {
     'vehicles/electric': ['city_ev', 'electric_sedan', 'electric_pickup', 'electric_van', 'electric_moped'],
     'vehicles/motorcycles': ['sport_bike', 'cruiser', 'dirt_bike', 'scooter'],
     'vehicles/trucks': ['semi_truck', 'delivery_van', 'farm_tractor', 'flatbed', 'wrecker', 'garbage_truck', 'dump_truck', 'cement_mixer',
-                        'ice_cream_truck', 'mail_van'],
+                        'ice_cream_truck', 'mail_van', 'road_paver'],
     'vehicles/service': ['taxi', 'city_bus', 'police_car', 'ambulance', 'fire_truck'],
 }
 TRAILERS = {
@@ -698,6 +719,7 @@ SHORT = {  # shorter notes, to fit under the 3D view; the README has the full on
     'City Bus': 'A driver and nine paying passengers; swing wide',
     'Ambulance': 'Siren; heals whoever rides in the back',
     'Fire Truck': 'Siren, water tank, fire hose and a ladder',
+    'Road Paver': 'Lays a road as it\'s driven; 27-slot hopper',
 }
 ENGINE = {}
 for f in os.listdir(f'{RES}/data/reikocars/recipe'):
