@@ -9,7 +9,7 @@
       "entity": "reikocars:ambulance",
       "scale": 0.613,
       "rotate": true,
-      "text": "$(l)5$() seats · $(l)38 mph$() · 10 buckets of diesel$(br)Siren; heals whoever rides in the back"
+      "text": "$(l)5$() seats · $(l)38 mph$() · 10 buckets of diesel"
     },
     {
       "type": "patchouli:crafting",
@@ -19,7 +19,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "reikocars:ambulance_interior",
-      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
+      "text": "Light bar and siren; heals whoever rides in the back; 9-slot medical cabinet.$(br2)Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
     }
   ]
 }

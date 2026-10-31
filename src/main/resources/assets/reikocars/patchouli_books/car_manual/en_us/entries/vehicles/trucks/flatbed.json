@@ -9,7 +9,7 @@
       "entity": "reikocars:flatbed",
       "scale": 0.439,
       "rotate": true,
-      "text": "$(l)2$() seats · $(l)36 mph$() · 14 buckets of diesel$(br)Carries a car on its deck; 9-slot toolboxes"
+      "text": "$(l)2$() seats · $(l)36 mph$() · 14 buckets of diesel"
     },
     {
       "type": "patchouli:crafting",
@@ -24,7 +24,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "reikocars:flatbed_interior",
-      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires.",
+      "text": "Carries a car on its deck; 9-slot toolboxes.$(br2)Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires.",
       "title": "Interior"
     }
   ]

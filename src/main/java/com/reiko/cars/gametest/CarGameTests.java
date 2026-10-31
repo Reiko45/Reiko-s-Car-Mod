@@ -4864,8 +4864,20 @@ public final class CarGameTests {
 
     @GameTest(template = YARD, timeoutTicks = 40)
     public static void carManualGivenOnceAndCraftable(GameTestHelper helper) {
-        check(helper, com.reiko.cars.guide.Guide.available(), "Patchouli is installed for the tests");
         ServerPlayer player = join(helper);
+        if (!com.reiko.cars.guide.Guide.available()) {
+            // Without Patchouli (./gradlew runGameTestServer -PnoOptionalMods) there's no manual, and no recipe for one.
+            try {
+                check(helper, com.reiko.cars.guide.Guide.book().isEmpty(), "no manual without Patchouli");
+                check(helper, !com.reiko.cars.guide.Guide.giveFirstTime(player), "so none to give");
+                check(helper, helper.getLevel().getServer().getRecipeManager().byKey(com.reiko.cars.guide.Guide.id()).isEmpty(),
+                        "and no recipe for one");
+            } finally {
+                leave(helper, player);
+            }
+            helper.succeed();
+            return;
+        }
         try {
             ItemStack manual = com.reiko.cars.guide.Guide.book();
             check(helper, BuiltInRegistries.ITEM.getKey(manual.getItem()).toString().equals("patchouli:guide_book"), "the manual is a Patchouli book");
@@ -4884,6 +4896,30 @@ public final class CarGameTests {
             check(helper, recipe != null, "the manual has a recipe");
             ItemStack made = recipe.value().getResultItem(helper.getLevel().registryAccess());
             check(helper, ItemStack.isSameItemSameComponents(made, manual), "which makes the Car Manual");
+        } finally {
+            leave(helper, player);
+        }
+        helper.succeed();
+    }
+
+    /** Getting out of any vehicle puts you on the ground beside it, the tall trucks included (not on the roof). */
+    @GameTest(template = YARD, timeoutTicks = 60)
+    public static void gettingOutStandsYouBeside(GameTestHelper helper) {
+        ServerPlayer player = join(helper);
+        try {
+            for (CarType type : CarType.values()) {
+                CarEntity car = vehicle(helper, type, 8.5, 12.5);
+                // Standing on the yard's floor.
+                int ground = helper.getLevel().getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, car.getBlockX(), car.getBlockZ());
+                car.moveTo(car.getX(), ground, car.getZ(), 0.0F, 0.0F);
+                check(helper, player.startRiding(car, true), "into the " + type.id());
+                player.stopRiding();
+                double sideways = Math.hypot(player.getX() - car.getX(), player.getZ() - car.getZ());
+                check(helper, Math.abs(player.getY() - car.getY()) < 0.01,
+                        "out of the " + type.id() + " onto the ground, not at height " + (player.getY() - car.getY()));
+                check(helper, sideways > type.width / 2.0, "beside the " + type.id() + " (" + sideways + " from its middle)");
+                car.discard();
+            }
         } finally {
             leave(helper, player);
         }

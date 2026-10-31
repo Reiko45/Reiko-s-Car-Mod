@@ -58,6 +58,7 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
     @Override
     public void render(CarEntity car, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource buffers, int light) {
         poseStack.pushPose();
+        unmirrorInGui(poseStack);
         leanOver(poseStack, car, entityYaw, partialTick);
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - entityYaw));
         float towPitch = car.towPitch(partialTick);
@@ -152,6 +153,20 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
             poseStack.popPose();
         }
         super.render(car, entityYaw, partialTick, poseStack, buffers, light);
+    }
+
+    /**
+     * Patchouli's entity pages (the Car Manual's 3D views) draw an entity mirrored: a screen's axes are left-handed,
+     * and unlike the inventory's view of the player it doesn't flip z to make up for it, so the lettering on a
+     * vehicle's sides would read backwards there. Drawn that way (flat, unflipped), turns the vehicle the right way
+     * round. In the world, and wherever an entity is drawn as the inventory draws it, this changes nothing.
+     */
+    static void unmirrorInGui(PoseStack poseStack) {
+        org.joml.Matrix4f projection = com.mojang.blaze3d.systems.RenderSystem.getProjectionMatrix();
+        boolean flat = projection.m33() == 1.0F && projection.m23() == 0.0F;
+        if (flat && poseStack.last().pose().determinant() > 0.0F) {
+            poseStack.scale(-1.0F, 1.0F, 1.0F);
+        }
     }
 
     /**

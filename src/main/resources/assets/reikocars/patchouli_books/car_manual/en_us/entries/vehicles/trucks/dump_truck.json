@@ -9,7 +9,7 @@
       "entity": "reikocars:dump_truck",
       "scale": 0.436,
       "rotate": true,
-      "text": "$(l)2$() seats · $(l)32 mph$() · 16 buckets of diesel$(br)54-slot bed that tips to dump its load"
+      "text": "$(l)2$() seats · $(l)32 mph$() · 16 buckets of diesel"
     },
     {
       "type": "patchouli:crafting",
@@ -19,7 +19,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "reikocars:dump_truck_interior",
-      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
+      "text": "54-slot bed that tips to dump its load.$(br2)Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
     }
   ]
 }

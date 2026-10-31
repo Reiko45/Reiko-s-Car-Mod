@@ -137,6 +137,24 @@ category('business', 'Money and Business', 'Selling cars, dealerships, loans, re
 category('services', 'Public Services', 'Bus routes, mail, emergency vehicles and the work trucks.', 'reikocars:bus_stop_sign', 8)
 category('tuning', 'Tuning and Racing', 'Upgrade kits, liveries, and race tracks.', 'reikocars:tuning_bench', 9)
 
+def off_roaders():
+    """The vehicles that keep their speed off-road (CarType's off-road column), by name."""
+    src = open(f'{REPO}/src/main/java/com/reiko/cars/car/CarType.java').read()
+    found = []
+    for m in re.finditer(r'^\s{4}([A-Z_]+)\(([^)]*\))', src, re.M):
+        values = [v.strip() for v in m.group(2).split(',')]
+        if len(values) > 13 and values[13] == 'true':
+            found.append(name(m.group(1).lower()))
+    return found
+
+
+def listed(names):
+    names = ['the ' + n.lower() for n in names]
+    return ', '.join(names[:-1]) + ' and ' + names[-1]
+
+
+OFF_ROAD = off_roaders()
+
 # -- Getting started --
 
 entry('getting_started', 'welcome', 'Welcome', 'reikocars:sedan', [
@@ -182,13 +200,13 @@ entry('driving', 'controls', 'Controls', 'reikocars:car_key', [
     text('Right-click a car to get in: the first one in drives, with one of its keys in your inventory. '
          '$(k:forward) $(k:left) $(k:back) $(k:right) drive and steer, $(k:jump) is the handbrake and $(k:sneak) gets out.'
          f'$(br2){K("horn")} horn$(br){K("lock")} lock or unlock$(br){K("hitch")} hitch, load, tow, or a work vehicle\'s job'),
-    text(f'{K("siren")} lights and siren (police, ambulance, fire)$(br){K("signal_left")} {K("signal_right")} turn signals$(br)'
+    text(f'{K("siren")} lights and siren (police, ambulance, fire)$(br){K("signal_left")} and {K("signal_right")} turn signals$(br)'
          f'{K("hazards")} hazards$(br){K("radio")} radio$(br){K("gps")} GPS$(br2)'
          'All of these can be changed under Controls, in the Reiko\'s Car Mod section.'),
     image('dashboard', 'The dashboard shows your speed, fuel, the road and any warning lights.'),
     text('$(l)Owning a car:$() whoever puts it down owns it. New cars start locked. Paint one by right-clicking it with a dye. '
          'Punch it a few times to pick it up (owner only): it keeps its fuel, paint, locks and wear.$(br2)'
-         '$(l)Off-road:$() grass, sand, snow and dirt slow every car but the off-roader, the heavy-duty pickup, the tractor and the dirt bike.'),
+         '$(l)Off-road:$() grass, sand, snow and dirt slow every car but ' + listed(OFF_ROAD) + '.'),
     text('$(l)Headlights$() come on with the engine and really light the road in the dark, about twelve blocks ahead.$(br2)'
          '$(l)Running things over$() hurts mobs and knocks them aside; players only with PvP on. Cars climb a full block, so curbs and '
          'stairs don\'t stop them, and can\'t be blown up or burned.'),
@@ -570,6 +588,25 @@ def scaled(width, height, length):
     return target / default, round(offset, 3)
 
 
+def lines(t, width=30):
+    """About how many lines text takes on a page."""
+    t = re.sub(r'\$\(k:[^)]+\)', 'G', t)
+    t = re.sub(r'\$\(br2\)', '\n\n', t)
+    t = re.sub(r'\$\((br|li)\)', '\n', t)
+    t = re.sub(r'\$\([^)]*\)', '', t)
+    n = 0
+    for para in t.split('\n'):
+        line = 0
+        n += 1
+        for word in para.split(' '):
+            if line and line + 1 + len(word) > width:
+                n += 1
+                line = len(word)
+            else:
+                line += (1 if line else 0) + len(word)
+    return n
+
+
 DIMS = car_dimensions()
 TDIMS = trailer_dimensions()
 TABLE = readme_cars()
@@ -584,11 +621,11 @@ GROUPS = {
 }
 TRAILERS = {
     'box_trailer': '54 slots of cargo, opened like a double chest.',
-    'tanker_trailer': '64 buckets of any one fluid: fill it with a bucket, or load and unload at tanks.',
-    'car_hauler': 'Carries two cars: drive them up to the back and press G.',
-    'camper': 'Bumper-pull, on a tow ball. Sleeps 2, 27 cupboard slots, a stove, and a camp when parked.',
+    'tanker_trailer': '64 buckets of any one fluid, loaded and unloaded at tanks.',
+    'car_hauler': 'Carries two cars: drive them up to its back and press ' + K('hitch') + '.',
+    'camper': 'On a tow ball. Sleeps 2; 27 cupboard slots, a stove, and a camp when parked.',
     'livestock_trailer': 'Bumper-pull, on a tow ball. Pens for 6 cows, 3 horses or 12 chickens.',
-    'fifth_wheel_camper': 'For the semi. Sleeps 2, 45 cupboard slots, a stove, a slide-out and a camp when parked.',
+    'fifth_wheel_camper': 'For the semi. Sleeps 2; 45 cupboard slots, a stove, a slide-out and a camp.',
     'semi_livestock_trailer': 'For the semi. Pens for 12 cows, 6 horses or 24 chickens.',
 }
 SHORT = {  # shorter notes, to fit under the 3D view; the README has the full ones
@@ -620,7 +657,13 @@ for cat, cars in GROUPS.items():
         w, h, l = DIMS[car]
         scale, offset = scaled(w, h, l)
         engine, wheels = ENGINE[car]
-        stats = f'$(l){seats}$() seat{"s" if seats != "1" else ""} · $(l){speed}$() · {tank}$(br){SHORT.get(title) or plain(notes)}'
+        stats = f'$(l){seats}$() seat{"s" if seats != "1" else ""} · $(l){speed}$() · {tank}'
+        note = SHORT.get(title) or plain(notes)
+        later = ''
+        if lines(stats + '$(br)' + note) <= 3:
+            stats += '$(br)' + note
+        else:
+            later = plain(notes) + '.$(br2)'  # the whole note, on the interior's page where there's room
         pages = [entity(car, scale, stats, offset)]
         chassis, body, interior = f'{car}_chassis', f'{car}_body', f'{car}_interior'
         if fits(output(chassis)) and fits(output(body)):
@@ -629,7 +672,7 @@ for cat, cars in GROUPS.items():
             pages.append(craft(chassis, None, None, None if fits(output(chassis)) else 'Chassis'))
             pages.append(craft(body, None, None, None if fits(output(body)) else 'Body'))
         tires = 'two Tires' if wheels == 2 else 'four Tires'
-        pages.append(craft(interior, None, f'Then at the Car Workbench, with {I(engine)} and {tires}.',
+        pages.append(craft(interior, None, later + f'Then at the Car Workbench, with {I(engine)} and {tires}.',
                            None if fits(output(interior)) else 'Interior'))
         entry(cat, car, title, f'reikocars:{car}', pages, sort=n)
 
@@ -650,26 +693,7 @@ entry('vehicles/motorcycles', 'riding', 'Riding Motorcycles', 'reikocars:motorcy
 
 # ---- writing it out ----
 
-def lines(t, width=30):
-    """About how many lines text takes on a page."""
-    t = re.sub(r'\$\(k:[^)]+\)', 'G', t)
-    t = re.sub(r'\$\(br2\)', '\n\n', t)
-    t = re.sub(r'\$\((br|li)\)', '\n', t)
-    t = re.sub(r'\$\([^)]*\)', '', t)
-    n = 0
-    for para in t.split('\n'):
-        line = 0
-        n += 1
-        for word in para.split(' '):
-            if line and line + 1 + len(word) > width:
-                n += 1
-                line = len(word)
-            else:
-                line += (1 if line else 0) + len(word)
-    return n
-
-
-FITS = {'patchouli:image': 4, 'patchouli:entity': 4}  # text starts 120 and 115 px down a 156 px page
+FITS = {'patchouli:image': 4, 'patchouli:entity': 3}  # text starts 120 and 115 px down a 156 px page
 
 def write(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -727,6 +751,12 @@ def main():
         for page in pages:
             for link in re.findall(r'\$\(l:([^)]+)\)', page.get('text', '')):
                 assert link in ids or link in {c[0] for c in CATEGORIES}, (eid, link)
+    # Every spread, for the dev showcase that reads the whole book (./gradlew runClient -Pshowcase=book).
+    os.makedirs(f'{REPO}/run', exist_ok=True)
+    with open(f'{REPO}/run/guide-spreads.txt', 'w') as f:
+        for cat, eid, title, icon, sort, pages, priority in ENTRIES:
+            for page in range(0, len(pages), 2):
+                f.write(f'{cat}/{eid} {page}\n')
     print(len(CATEGORIES), 'categories,', len(ENTRIES), 'entries,', sum(len(e[5]) for e in ENTRIES), 'pages')
     print('images:', ' '.join(sorted(IMAGES)))
 

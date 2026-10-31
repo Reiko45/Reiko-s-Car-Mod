@@ -34,6 +34,7 @@ public final class TrailerRenderer extends EntityRenderer<TrailerEntity> {
             return;
         }
         poseStack.pushPose();
+        CarRenderer.unmirrorInGui(poseStack); // the right way round in the Car Manual
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - entityYaw));
         float hurt = trailer.getHurtTime() - partialTick;
         float damage = Math.max(0.0F, trailer.getDamage() - partialTick);

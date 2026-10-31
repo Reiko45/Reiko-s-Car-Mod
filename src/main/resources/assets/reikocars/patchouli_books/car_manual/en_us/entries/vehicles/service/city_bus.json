@@ -9,7 +9,7 @@
       "entity": "reikocars:city_bus",
       "scale": 0.45,
       "rotate": true,
-      "text": "$(l)10$() seats · $(l)29 mph$() · 16 buckets of diesel$(br)A driver and nine paying passengers; swing wide"
+      "text": "$(l)10$() seats · $(l)29 mph$() · 16 buckets of diesel"
     },
     {
       "type": "patchouli:crafting",
@@ -19,7 +19,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "reikocars:city_bus_interior",
-      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
+      "text": "A driver and nine passengers, who pay a fare; turns about its back axle, so swing wide.$(br2)Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
     }
   ]
 }

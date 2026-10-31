@@ -367,13 +367,20 @@ public final class ReikoCarsClient {
      */
     /**
      * In third person, stands the camera far enough back to see the whole vehicle: a semi and its trailer are 15
-     * blocks long, and the usual 4 blocks would put the camera inside the trailer.
+     * blocks long, and the usual 4 blocks would put the camera inside the trailer. With a trailer, the camera goes back
+     * past the trailer's back end, measured from where the trailer really is: a camper's tongue puts it well behind its
+     * pickup.
      */
     private static void pullCameraBack(CalculateDetachedCameraDistanceEvent event) {
         Entity viewer = event.getCamera().getEntity();
         if (viewer.getRootVehicle() instanceof CarEntity car && car != viewer) {
-            double length = car.carType().length + (car.trailer() != null ? car.trailer().trailerType().length + 1.0 : 0.0);
-            event.setDistance(Math.max(event.getDistance(), (float) (length * 0.75 + 1.0)));
+            double reach = car.carType().length * 0.75 + 1.0;
+            com.reiko.cars.trailer.TrailerEntity trailer = car.trailer();
+            if (trailer != null) {
+                double toMiddle = Math.hypot(trailer.getX() - viewer.getX(), trailer.getZ() - viewer.getZ());
+                reach = Math.max(reach, toMiddle + trailer.trailerType().length / 2.0 + 2.0);
+            }
+            event.setDistance(Math.max(event.getDistance(), (float) reach));
         }
     }
 

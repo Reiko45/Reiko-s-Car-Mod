@@ -150,7 +150,8 @@ fit beside the hotbar, at a big GUI scale, it moves to the top right, under your
   that follow the car and tidy themselves away), so it works with any shaders and mobs won't spawn where it falls. A
   server can turn it off with `driving.realHeadlights`, leaving the lights to just glow.
 - **Off-road:** grass, dirt, sand, snow and the like (the `reikocars:off_road` block tag) slow every car but the
-  off-roader, the heavy-duty pickup, the farm tractor and the dirt bike. Ice is slippery.
+  off-roader, the heavy-duty pickup, the farm tractor, the dump truck, the electric pickup and the dirt bike. Ice is
+  slippery.
 - **Running things over** hurts mobs and knocks them aside, more the faster you go. Players only get hurt with PvP
   on, and never your own pets.
 - Cars climb a full block, so curbs, slabs and stairs don't stop them. Cars can't be blown up or burned.
@@ -1236,6 +1237,9 @@ Car Manual's pages are written by `tools/guidebook/book.py` (`python3 tools/guid
 the workbench recipes and the car table above; edit that and run it rather than the book's JSON. Its pictures are
 cropped from showcase screenshots by `tools/guidebook/pictures.py` (it needs Pillow).
 
+`-PnoOptionalMods` leaves JEI and Patchouli out of a dev run, to check the mod works without them (the Car Manual's
+game test then checks there's no manual and no recipe for one).
+
 ```sh
 ./gradlew build             # build the jar into build/libs/
 ./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs, tow trucks, mail, keys, fares, buying and selling), then exit
@@ -1257,8 +1261,20 @@ cropped from showcase screenshots by `tools/guidebook/pictures.py` (it needs Pil
 ./gradlew runClient -Pshowcase=gps -PxaeroJars=/path/to/folder  # the GPS's tabs, driving and walking to a destination, arriving, the minimap
 ./gradlew runClient -Pshowcase=busstops   # a bus stop sign and shelter, the owner's screens, a bus route, the doors, the bell, villagers aboard
 ./gradlew runClient -Pshowcase=guide      # the Car Manual: its pictures' scenes, then its pages, one screenshot each
+./gradlew runClient -Pshowcase=book       # every spread of the Car Manual, and a check that every item and block has a name and model
+./gradlew runClient -Pshowcase=rig3p      # riding a semi with its trailer and a pickup with a camper, in third person
+./gradlew runClient -Pshowcase=mp         # joins a dedicated server on localhost and plays through the mod (see below)
 ./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
+
+The `mp` showcase plays as a survival player on a real dedicated server: it joins, is given the manual, builds a
+sedan at the workbench, cuts a key, buys fuel with cash, drives, opens the radio and GPS, hitches and tows with a semi
+and a pickup, sets up camp and sleeps in the camper, loads cows into a livestock trailer, leaves and comes back, and
+then waits while the server is restarted (restart it when its log says `REIKOTEST before_restart`), to check
+everything is as it was left. The server needs the mod's jar with the dev-only
+`DevServerTest` class added (it builds each scene with `/reikotest`): add
+`build/classes/java/main/com/reiko/cars/dev/DevServerTest.class` to the jar in the server's mods folder. Each check is
+logged as an `MPCHECK` line in the client's log; screenshots go to `run/screenshots/mp_*.png`.
 
 ## Editing the models
 
@@ -1364,7 +1380,7 @@ src/main/java/com/reiko/cars/
 ├── config/               server settings
 ├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, and the wipers and raindrops on the windshield, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the GPS (GpsClient, its screen and panel, and GpsXaero for Xaero's Minimap), the bus stop's screen and lettering, the camper's screen and its sleepers (CamperClient), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
-└── dev/                  the showcase script (dev only, not in the jar)
+└── dev/                  the showcases and the multiplayer play test (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)
 tools/guidebook/          the Car Manual's writer (book.py) and its pictures' cropper (pictures.py)
 src/xaeroStubs/java/       compile-time stand-ins for the few classes of Xaero's Minimap the GPS uses (not in the jar)

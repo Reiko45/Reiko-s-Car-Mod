@@ -9,7 +9,7 @@
       "entity": "reikocars:semi_truck",
       "scale": 0.59,
       "rotate": true,
-      "text": "$(l)2$() seats · $(l)38 mph$() · 12 buckets of diesel$(br)Runs on diesel and pulls a trailer"
+      "text": "$(l)2$() seats · $(l)38 mph$() · 12 buckets of diesel"
     },
     {
       "type": "patchouli:crafting",
@@ -19,7 +19,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "reikocars:semi_truck_interior",
-      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
+      "text": "Runs on diesel and pulls a trailer.$(br2)Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
     }
   ]
 }

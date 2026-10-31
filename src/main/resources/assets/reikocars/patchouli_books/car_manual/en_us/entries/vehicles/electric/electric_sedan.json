@@ -9,7 +9,7 @@
       "entity": "reikocars:electric_sedan",
       "scale": 0.607,
       "rotate": true,
-      "text": "$(l)4$() seats · $(l)56 mph$() · 160,000 MJ battery$(br)The quickest car off the line; glass roof, 9-slot frunk",
+      "text": "$(l)4$() seats · $(l)56 mph$() · 160,000 MJ battery",
       "offset": -0.3
     },
     {
@@ -20,7 +20,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "reikocars:electric_sedan_interior",
-      "text": "Then at the Car Workbench, with $(item)Electric Motor$() and four Tires.",
+      "text": "The quickest car off the line; glass roof, 9-slot frunk.$(br2)Then at the Car Workbench, with $(item)Electric Motor$() and four Tires.",
       "title": "Interior"
     }
   ]

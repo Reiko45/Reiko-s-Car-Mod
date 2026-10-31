@@ -9,7 +9,7 @@
       "entity": "reikocars:city_ev",
       "scale": 0.732,
       "rotate": true,
-      "text": "$(l)2$() seats · $(l)33 mph$() · 80,000 MJ battery$(br)Electric: nippy, turns tight, 9-slot trunk",
+      "text": "$(l)2$() seats · $(l)33 mph$() · 80,000 MJ battery",
       "offset": -0.125
     },
     {
@@ -20,7 +20,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "reikocars:city_ev_interior",
-      "text": "Then at the Car Workbench, with $(item)Electric Motor$() and four Tires."
+      "text": "Electric: nippy, turns tight, 9-slot trunk.$(br2)Then at the Car Workbench, with $(item)Electric Motor$() and four Tires."
     }
   ]
 }

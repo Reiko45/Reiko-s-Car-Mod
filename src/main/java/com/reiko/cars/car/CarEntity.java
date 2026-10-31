@@ -1533,8 +1533,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         double reach = type.width / 2.0 + passenger.getBbWidth() / 2.0 + 0.2;
         for (double sideSign : new double[] {side, -side}) {
             Vec3 offset = new Vec3(sideSign * reach, 0.0, 0.0).yRot(-getYRot() * Mth.DEG_TO_RAD);
-            BlockPos pos = BlockPos.containing(getX() + offset.x, getBoundingBox().maxY, getZ() + offset.z);
-            for (BlockPos candidate : new BlockPos[] {pos, pos.below(), pos.below(2)}) {
+            // The ground beside the car: level with its wheels, or a step up or down (a curb). (Not from its roof down:
+            // a truck's roof is more than three blocks up, and nothing up there would be found to stand on.)
+            BlockPos pos = BlockPos.containing(getX() + offset.x, getY() + 0.01, getZ() + offset.z);
+            for (BlockPos candidate : new BlockPos[] {pos, pos.above(), pos.below()}) {
                 double floor = level().getBlockFloorHeight(candidate);
                 if (!DismountHelper.isBlockFloorValid(floor)) {
                     continue;

@@ -9,7 +9,7 @@
       "entity": "reikocars:electric_pickup",
       "scale": 0.596,
       "rotate": true,
-      "text": "$(l)4$() seats · $(l)42 mph$() · 200,000 MJ battery$(br)Crew cab, 27-slot truck bed, full speed off-road, tow ball",
+      "text": "$(l)4$() seats · $(l)42 mph$() · 200,000 MJ battery",
       "offset": -0.15
     },
     {
@@ -24,7 +24,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "reikocars:electric_pickup_interior",
-      "text": "Then at the Car Workbench, with $(item)Electric Motor$() and four Tires.",
+      "text": "Crew cab, 27-slot truck bed, full speed off-road, tow ball.$(br2)Then at the Car Workbench, with $(item)Electric Motor$() and four Tires.",
       "title": "Interior"
     }
   ]

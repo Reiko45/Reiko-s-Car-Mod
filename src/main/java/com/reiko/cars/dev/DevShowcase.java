@@ -20,10 +20,6 @@ import com.reiko.cars.registry.ModBlocks;
 import com.reiko.cars.registry.ModEntities;
 import com.reiko.cars.registry.ModItems;
 import com.reiko.cars.client.CarWorkbenchScreen;
-import com.reiko.cars.compat.jei.ReikoCarsJeiPlugin;
-import mezz.jei.api.constants.VanillaTypes;
-import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.runtime.IJeiRuntime;
 import net.neoforged.fml.ModList;
 import com.reiko.cars.workbench.CarPart;
 import com.reiko.cars.workbench.CarWorkbenchBlock;
@@ -102,7 +98,7 @@ public final class DevShowcase {
 
     @SubscribeEvent
     static void onScreen(ScreenEvent.Opening event) {
-        if (!ENABLED || worldRequested || !(event.getNewScreen() instanceof TitleScreen)) {
+        if (!ENABLED || MODE.equals("mp") || worldRequested || !(event.getNewScreen() instanceof TitleScreen)) { // mp: DevMultiplayer joins a server instead
             return;
         }
         worldRequested = true;
@@ -180,6 +176,10 @@ public final class DevShowcase {
             campScript();
         } else if (MODE.equals("guide")) {
             guideScript();
+        } else if (MODE.equals("book")) {
+            bookScript();
+        } else if (MODE.equals("rig3p")) {
+            rigCameraScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -197,6 +197,11 @@ public final class DevShowcase {
         if (tick == 1 && !MODE.equals("keys")) {
             // The older scripts drive their cars without cutting keys first.
             minecraft.getSingleplayerServer().execute(() -> com.reiko.cars.config.CarsConfig.REQUIRE_KEYS.set(false));
+        }
+        if (tick == 1 && !MODE.equals("guide") && !MODE.equals("book")) {
+            // Every new player gets the Car Manual; out of the way, so it isn't in hand in every screenshot.
+            server(minecraft, player -> player.getInventory().clearOrCountMatchingItems(
+                    stack -> BuiltInRegistries.ITEM.getKey(stack.getItem()).getNamespace().equals("patchouli"), -1, player.inventoryMenu.getCraftSlots()));
         }
         for (Step step : STEPS) {
             if (step.at == tick) {
@@ -440,9 +445,9 @@ public final class DevShowcase {
         at(305, mc -> shot(mc, "17_workbench_built"));
         at(310, mc -> mc.player.closeContainer());
         // JEI: the sedan's recipe, what a chassis is used for, and the "+" button's transfer.
-        at(320, mc -> jeiShow(RecipeIngredientRole.OUTPUT, new ItemStack(ModItems.car(CarType.SEDAN))));
+        at(320, mc -> jeiShow(true, new ItemStack(ModItems.car(CarType.SEDAN))));
         at(350, mc -> shot(mc, "18_jei_sedan_recipe"));
-        at(355, mc -> jeiShow(RecipeIngredientRole.INPUT, new ItemStack(ModItems.part(CarType.OFF_ROADER, CarPart.CHASSIS))));
+        at(355, mc -> jeiShow(false, new ItemStack(ModItems.part(CarType.OFF_ROADER, CarPart.CHASSIS))));
         at(385, mc -> shot(mc, "19_jei_chassis_uses"));
         at(390, mc -> {
             mc.setScreen(null);
@@ -455,37 +460,59 @@ public final class DevShowcase {
         at(410, mc -> jeiTransfer(mc, CarType.SEDAN));    // the sedan still has no interior: refused
         at(415, mc -> jeiTransfer(mc, CarType.PICKUP_TRUCK));
         at(440, mc -> shot(mc, "20_jei_transfer_pickup"));
-        at(445, mc -> jeiShow(RecipeIngredientRole.OUTPUT, new ItemStack(ModItems.car(CarType.PICKUP_TRUCK))));
+        at(445, mc -> jeiShow(true, new ItemStack(ModItems.car(CarType.PICKUP_TRUCK))));
         at(475, mc -> shot(mc, "21_jei_over_workbench"));
         at(480, mc -> mc.player.closeContainer());
         at(490, mc -> mc.stop());
     }
 
-    private static void jeiShow(RecipeIngredientRole role, ItemStack stack) {
-        IJeiRuntime runtime = ModList.get().isLoaded("jei") ? ReikoCarsJeiPlugin.runtime() : null;
-        if (runtime == null) {
-            ReikoCars.LOGGER.warn("Showcase: JEI isn't running");
+    /** Opens JEI's recipes for {@code stack}: where it's made ({@code output}) or what it's used in. */
+    private static void jeiShow(boolean output, ItemStack stack) {
+        if (!ModList.get().isLoaded("jei")) {
+            ReikoCars.LOGGER.warn("Showcase: JEI isn't installed");
             return;
         }
-        runtime.getRecipesGui().show(runtime.getJeiHelpers().getFocusFactory().createFocus(role, VanillaTypes.ITEM_STACK, stack));
+        Jei.show(output, stack);
     }
 
     /** Does what JEI's "+" button does on a car's recipe while the workbench is open, logging whether JEI allows it. */
     private static void jeiTransfer(Minecraft minecraft, CarType type) {
-        IJeiRuntime runtime = ModList.get().isLoaded("jei") ? ReikoCarsJeiPlugin.runtime() : null;
-        if (runtime == null || !(minecraft.player.containerMenu instanceof CarWorkbenchMenu menu)) {
-            ReikoCars.LOGGER.warn("Showcase: no JEI or no workbench open");
+        if (!ModList.get().isLoaded("jei")) {
+            ReikoCars.LOGGER.warn("Showcase: JEI isn't installed");
             return;
         }
-        var category = runtime.getRecipeManager().getRecipeCategory(ReikoCarsJeiPlugin.CAR_ASSEMBLY);
-        var recipe = menu.recipes().get(type.ordinal());
-        var layout = runtime.getRecipeManager().createRecipeLayoutDrawable(category, recipe,
-                runtime.getJeiHelpers().getFocusFactory().createFocusGroup(List.of())).orElseThrow();
-        var handler = runtime.getRecipeTransferManager().getRecipeTransferHandler(menu, category).orElseThrow();
-        var check = handler.transferRecipe(menu, recipe, layout.getRecipeSlotsView(), minecraft.player, false, false);
-        ReikoCars.LOGGER.info("Showcase: JEI transfer of the {}: {}", type.id(), check == null ? "allowed" : "refused (" + check.getType() + ")");
-        if (check == null) {
-            handler.transferRecipe(menu, recipe, layout.getRecipeSlotsView(), minecraft.player, false, true);
+        Jei.transfer(minecraft, type);
+    }
+
+    /** Everything that touches JEI, in a class of its own: only loaded when JEI is there to be used. */
+    private static final class Jei {
+        static void show(boolean output, ItemStack stack) {
+            mezz.jei.api.runtime.IJeiRuntime runtime = com.reiko.cars.compat.jei.ReikoCarsJeiPlugin.runtime();
+            if (runtime == null) {
+                ReikoCars.LOGGER.warn("Showcase: JEI isn't running");
+                return;
+            }
+            runtime.getRecipesGui().show(runtime.getJeiHelpers().getFocusFactory().createFocus(
+                    output ? mezz.jei.api.recipe.RecipeIngredientRole.OUTPUT : mezz.jei.api.recipe.RecipeIngredientRole.INPUT,
+                    mezz.jei.api.constants.VanillaTypes.ITEM_STACK, stack));
+        }
+
+        static void transfer(Minecraft minecraft, CarType type) {
+            mezz.jei.api.runtime.IJeiRuntime runtime = com.reiko.cars.compat.jei.ReikoCarsJeiPlugin.runtime();
+            if (runtime == null || !(minecraft.player.containerMenu instanceof CarWorkbenchMenu menu)) {
+                ReikoCars.LOGGER.warn("Showcase: no JEI or no workbench open");
+                return;
+            }
+            var category = runtime.getRecipeManager().getRecipeCategory(com.reiko.cars.compat.jei.ReikoCarsJeiPlugin.CAR_ASSEMBLY);
+            var recipe = menu.recipes().get(type.ordinal());
+            var layout = runtime.getRecipeManager().createRecipeLayoutDrawable(category, recipe,
+                    runtime.getJeiHelpers().getFocusFactory().createFocusGroup(List.of())).orElseThrow();
+            var handler = runtime.getRecipeTransferManager().getRecipeTransferHandler(menu, category).orElseThrow();
+            var check = handler.transferRecipe(menu, recipe, layout.getRecipeSlotsView(), minecraft.player, false, false);
+            ReikoCars.LOGGER.info("Showcase: JEI transfer of the {}: {}", type.id(), check == null ? "allowed" : "refused (" + check.getType() + ")");
+            if (check == null) {
+                handler.transferRecipe(menu, recipe, layout.getRecipeSlotsView(), minecraft.player, false, true);
+            }
         }
     }
 
@@ -693,9 +720,9 @@ public final class DevShowcase {
         });
         at(785, mc -> clickCar(mc, CarType.SEMI_TRUCK.ordinal()));
         at(810, mc -> shot(mc, "42_workbench_semi"));
-        at(815, mc -> jeiShow(RecipeIngredientRole.OUTPUT, new ItemStack(ModItems.car(CarType.SEMI_TRUCK))));
+        at(815, mc -> jeiShow(true, new ItemStack(ModItems.car(CarType.SEMI_TRUCK))));
         at(845, mc -> shot(mc, "43_jei_semi_recipe"));
-        at(850, mc -> jeiShow(RecipeIngredientRole.OUTPUT, new ItemStack(ModItems.trailer(TrailerType.TANKER_TRAILER))));
+        at(850, mc -> jeiShow(true, new ItemStack(ModItems.trailer(TrailerType.TANKER_TRAILER))));
         at(880, mc -> shot(mc, "44_jei_tanker_recipe"));
         // A car hauler at the workbench, two tires short: no engine or interior slot for a trailer.
         at(885, mc -> {
@@ -810,7 +837,7 @@ public final class DevShowcase {
         }));
         at(510, mc -> clickCar(mc, CarType.CRUISER.ordinal()));
         at(535, mc -> shot(mc, "59_workbench_cruiser"));
-        at(540, mc -> jeiShow(RecipeIngredientRole.OUTPUT, new ItemStack(ModItems.car(CarType.SCOOTER))));
+        at(540, mc -> jeiShow(true, new ItemStack(ModItems.car(CarType.SCOOTER))));
         at(570, mc -> shot(mc, "60_jei_scooter"));
         at(575, mc -> mc.player.closeContainer());
         at(585, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
@@ -883,7 +910,7 @@ public final class DevShowcase {
         }));
         at(430, mc -> shot(mc, "77_van_cargo"));
         at(432, mc -> mc.player.closeContainer());
-        at(440, mc -> jeiShow(RecipeIngredientRole.OUTPUT, new ItemStack(ModItems.car(CarType.CITY_BUS))));
+        at(440, mc -> jeiShow(true, new ItemStack(ModItems.car(CarType.CITY_BUS))));
         at(470, mc -> shot(mc, "78_jei_bus"));
         at(475, mc -> mc.setScreen(null));
         at(480, mc -> mc.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player)));
@@ -2292,6 +2319,47 @@ public final class DevShowcase {
         minecraft.resizeDisplay();
     }
 
+    /** Riding a semi with its trailer, and a pickup with a camper, in third person: is the rig in view? */
+    private static void rigCameraScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                tile(level, -20, -10, 80, 30);
+                CarEntity semi = spawned(level, CarType.SEMI_TRUCK, 0.5, 0.5, -90.0F, 0.6);
+                behind(level, TrailerType.BOX_TRAILER, semi, 0.0F).startRiding(semi, true);
+                CarEntity pickup = spawned(level, CarType.PICKUP_TRUCK, 0.5, 20.5, -90.0F, 0.6);
+                behind(level, TrailerType.CAMPER, pickup, 0.0F).startRiding(pickup, true);
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                player.startRiding(semi, true);
+            });
+        });
+        at(40, mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        at(60, mc -> shot(mc, "rig_semi_parked"));
+        at(61, mc -> mc.player.setXRot(20.0F));
+        at(75, mc -> shot(mc, "rig_semi_parked_pitch20"));
+        at(62, mc -> mc.options.keyUp.setDown(true));
+        at(110, mc -> shot(mc, "rig_semi_moving"));
+        at(112, mc -> mc.options.keyUp.setDown(false));
+        at(150, mc -> shot(mc, "rig_semi_stopped"));
+        at(152, mc -> server(mc, player -> {
+            player.stopRiding();
+            player.startRiding(car(player.serverLevel(), CarType.PICKUP_TRUCK), true);
+        }));
+        at(180, mc -> shot(mc, "rig_pickup_parked"));
+        at(181, mc -> mc.player.setXRot(20.0F));
+        at(195, mc -> shot(mc, "rig_pickup_parked_pitch20"));
+        at(196, mc -> mc.player.setYRot(mc.player.getYRot() + 60.0F));
+        at(210, mc -> shot(mc, "rig_pickup_looking_aside"));
+        at(211, mc -> mc.player.setYRot(mc.player.getYRot() - 60.0F));
+        at(212, mc -> mc.options.keyUp.setDown(true));
+        at(260, mc -> shot(mc, "rig_pickup_moving"));
+        at(262, mc -> mc.options.keyUp.setDown(false));
+        at(280, mc -> mc.stop());
+    }
+
     private static void hudScript() {
         at(20, mc -> {
             mc.options.hideGui = false;
@@ -3221,8 +3289,10 @@ public final class DevShowcase {
         });
         at(90, mc -> clickAt(mc, 160, 44 + 1 * 15 + 7));
         at(92, mc -> clickAt(mc, 160, 44 + 8 * 15 + 7)); // the fuel tank
+        at(94, mc -> hoverOn(mc, 2, 2)); // the mouse off the buttons, so no tooltip covers the rows
         at(100, mc -> shot(mc, "251_tune_tab"));
         at(102, mc -> clickAt(mc, 142, 44 + 9 * 15 + 3 + 12 + 12 + 20 + 5));
+        at(104, mc -> hoverOn(mc, 2, 2));
         at(118, mc -> shot(mc, "252_tuned"));
         at(120, mc -> clickAt(mc, 74, 22));
         at(124, mc -> {
@@ -4118,6 +4188,82 @@ public final class DevShowcase {
 
     private static void book(String entry, int page) {
         com.reiko.cars.guide.Guide.open(entry, page);
+    }
+
+    /**
+     * Every spread of the Car Manual, one screenshot each (book_all_NNN_entry_page.png), from the list
+     * tools/guidebook/book.py writes to run/guide-spreads.txt; and first an audit of every item and block's name and
+     * model, logged as "AUDIT" lines.
+     */
+    private static void bookScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            server(mc, player -> player.serverLevel().setDayTime(6000));
+            int items = 0;
+            int problems = 0;
+            net.minecraft.client.resources.model.BakedModel missing = mc.getModelManager().getMissingModel();
+            for (net.minecraft.world.item.Item item : BuiltInRegistries.ITEM) {
+                ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
+                if (!id.getNamespace().equals(ReikoCars.MODID)) {
+                    continue;
+                }
+                items++;
+                ItemStack stack = new ItemStack(item);
+                if (!net.minecraft.client.resources.language.I18n.exists(item.getDescriptionId())) {
+                    problems++;
+                    ReikoCars.LOGGER.warn("AUDIT item {} has no name ({})", id, item.getDescriptionId());
+                }
+                if (mc.getItemRenderer().getModel(stack, mc.level, mc.player, 0) == missing) {
+                    problems++;
+                    ReikoCars.LOGGER.warn("AUDIT item {} has no model", id);
+                }
+            }
+            int states = 0;
+            for (net.minecraft.world.level.block.Block block : BuiltInRegistries.BLOCK) {
+                ResourceLocation id = BuiltInRegistries.BLOCK.getKey(block);
+                if (!id.getNamespace().equals(ReikoCars.MODID)) {
+                    continue;
+                }
+                if (!net.minecraft.client.resources.language.I18n.exists(block.getDescriptionId())) {
+                    problems++;
+                    ReikoCars.LOGGER.warn("AUDIT block {} has no name", id);
+                }
+                for (BlockState state : block.getStateDefinition().getPossibleStates()) {
+                    states++;
+                    if (state.getRenderShape() == net.minecraft.world.level.block.RenderShape.MODEL
+                            && mc.getBlockRenderer().getBlockModel(state) == missing) {
+                        problems++;
+                        ReikoCars.LOGGER.warn("AUDIT block state {} has no model", state);
+                    }
+                }
+            }
+            for (net.minecraft.world.entity.EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+                ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(type);
+                if (id.getNamespace().equals(ReikoCars.MODID) && !net.minecraft.client.resources.language.I18n.exists(type.getDescriptionId())) {
+                    problems++;
+                    ReikoCars.LOGGER.warn("AUDIT entity {} has no name", id);
+                }
+            }
+            ReikoCars.LOGGER.info("AUDIT done: {} items, {} block states, {} problems", items, states, problems);
+        });
+        List<String[]> spreads = new ArrayList<>();
+        try {
+            for (String line : java.nio.file.Files.readAllLines(java.nio.file.Path.of("guide-spreads.txt"))) {
+                if (!line.isBlank()) {
+                    spreads.add(line.trim().split(" "));
+                }
+            }
+        } catch (java.io.IOException e) {
+            ReikoCars.LOGGER.error("Showcase book: no guide-spreads.txt in the run folder", e);
+        }
+        for (int i = 0; i < spreads.size(); i++) {
+            String[] spread = spreads.get(i);
+            int at = 40 + i * 14;
+            String name = String.format("book_all_%03d_%s_%s", i, spread[0].replace('/', '_'), spread[1]);
+            at(at, mc -> book(spread[0], Integer.parseInt(spread[1])));
+            at(at + 11, mc -> shot(mc, name));
+        }
+        at(40 + spreads.size() * 14 + 10, mc -> mc.stop());
     }
 
     private static void guideScript() {

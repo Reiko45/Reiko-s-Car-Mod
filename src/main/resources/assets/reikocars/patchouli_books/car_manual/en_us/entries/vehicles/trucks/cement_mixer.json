@@ -9,7 +9,7 @@
       "entity": "reikocars:cement_mixer",
       "scale": 0.441,
       "rotate": true,
-      "text": "$(l)2$() seats · $(l)30 mph$() · 16 buckets of diesel$(br)Its drum sets concrete powder into concrete"
+      "text": "$(l)2$() seats · $(l)30 mph$() · 16 buckets of diesel"
     },
     {
       "type": "patchouli:crafting",
@@ -19,7 +19,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "reikocars:cement_mixer_interior",
-      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
+      "text": "18-slot drum that sets concrete powder into concrete, and pours it.$(br2)Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
     }
   ]
 }

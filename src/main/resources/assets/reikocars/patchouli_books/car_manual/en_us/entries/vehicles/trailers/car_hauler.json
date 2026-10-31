@@ -9,7 +9,7 @@
       "entity": "reikocars:car_hauler",
       "scale": 0.313,
       "rotate": true,
-      "text": "Carries two cars: drive them up to the back and press G."
+      "text": "Carries two cars: drive them up to its back and press $(k:key.reikocars.hitch)."
     },
     {
       "type": "patchouli:crafting",

@@ -9,7 +9,7 @@
       "entity": "reikocars:heavy_pickup",
       "scale": 0.569,
       "rotate": true,
-      "text": "$(l)4$() seats · $(l)38 mph$() · 14 buckets of diesel$(br)Lifted 4x4: full speed off-road, tow ball",
+      "text": "$(l)4$() seats · $(l)38 mph$() · 14 buckets of diesel",
       "offset": -0.025
     },
     {
@@ -25,7 +25,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "reikocars:heavy_pickup_interior",
-      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires.",
+      "text": "Lifted crew-cab 4x4: 27-slot truck bed, full speed off-road, tow ball.$(br2)Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires.",
       "title": "Interior"
     }
   ]

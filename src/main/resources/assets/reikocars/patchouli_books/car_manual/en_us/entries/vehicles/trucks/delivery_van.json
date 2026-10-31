@@ -9,7 +9,7 @@
       "entity": "reikocars:delivery_van",
       "scale": 0.599,
       "rotate": true,
-      "text": "$(l)2$() seats · $(l)34 mph$() · 10 buckets of diesel$(br)54-slot cargo area (sneak + use)"
+      "text": "$(l)2$() seats · $(l)34 mph$() · 10 buckets of diesel"
     },
     {
       "type": "patchouli:crafting",
@@ -19,7 +19,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "reikocars:delivery_van_interior",
-      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
+      "text": "54-slot cargo area (sneak + use).$(br2)Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
     }
   ]
 }

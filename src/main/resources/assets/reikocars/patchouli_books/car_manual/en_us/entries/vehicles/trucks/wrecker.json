@@ -9,7 +9,7 @@
       "entity": "reikocars:wrecker",
       "scale": 0.459,
       "rotate": true,
-      "text": "$(l)2$() seats · $(l)38 mph$() · 12 buckets of diesel$(br)Lifts a car by its front wheels; 18-slot toolboxes"
+      "text": "$(l)2$() seats · $(l)38 mph$() · 12 buckets of diesel"
     },
     {
       "type": "patchouli:crafting",
@@ -24,7 +24,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "reikocars:wrecker_interior",
-      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires.",
+      "text": "Tows a car on its wheel-lift by the front wheels; 18-slot toolboxes.$(br2)Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires.",
       "title": "Interior"
     }
   ]

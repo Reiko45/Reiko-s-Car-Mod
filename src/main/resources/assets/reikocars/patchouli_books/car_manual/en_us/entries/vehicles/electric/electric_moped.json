@@ -9,7 +9,7 @@
       "entity": "reikocars:electric_moped",
       "scale": 0.666,
       "rotate": true,
-      "text": "$(l)2$() seats · $(l)31 mph$() · 30,000 MJ battery$(br)Room for two; quiet, and goes a long way on a charge"
+      "text": "$(l)2$() seats · $(l)31 mph$() · 30,000 MJ battery"
     },
     {
       "type": "patchouli:crafting",
@@ -23,7 +23,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "reikocars:electric_moped_interior",
-      "text": "Then at the Car Workbench, with $(item)Electric Motor$() and two Tires.",
+      "text": "Room for two; quiet, and goes a long way on a charge.$(br2)Then at the Car Workbench, with $(item)Electric Motor$() and two Tires.",
       "title": "Interior"
     }
   ]

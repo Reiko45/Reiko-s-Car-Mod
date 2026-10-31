@@ -19,7 +19,7 @@ CROPS = {
     'camp_night': ('354_camper_camp_night', 268, 30, 568, 330),
     'camper_screen': ('352_camper_screen', 254, 30, 600, 376),
     'car_wash': ('279_washing_2', 100, 20, 540, 460),
-    'dashboard': ('158_hud_wide', 646, 266, 854, 474),
+    'dashboard': ('rig_semi_moving', 640, 270, 854, 480),  # -Pshowcase=rig3p
     'dmv': ('230_dmv_and_route', 260, 80, 620, 440),
     'finance': ('205_sale_finance', 236, 40, 616, 420),
     'gps_driving': ('315_gps_driving', 230, 0, 650, 420),
@@ -34,7 +34,7 @@ CROPS = {
     'rain': ('295_tire_spray', 295, 100, 655, 460),
     'rentals': ('200_rental_lot', 330, 0, 810, 480),
     'snow_on_cars': ('296_snow_on_cars', 80, 15, 430, 365),
-    'tune_tab': ('251_tune_tab', 242, 10, 612, 380),
+    'tune_tab': ('251_tune_tab', 238, 0, 612, 374),
     'wash_bay': ('282_bay_spraying', 240, 40, 620, 420),
     'welcome': ('g_welcome', 200, 100, 560, 460),
     'workbench': ('g_workbench', 185, 0, 665, 480),

@@ -9,7 +9,7 @@
       "entity": "reikocars:tanker_trailer",
       "scale": 0.433,
       "rotate": true,
-      "text": "64 buckets of any one fluid: fill it with a bucket, or load and unload at tanks."
+      "text": "64 buckets of any one fluid, loaded and unloaded at tanks."
     },
     {
       "type": "patchouli:crafting",
