@@ -49,8 +49,10 @@ public final class PlacesRegistry extends SavedData {
     /**
      * One place.
      *
-     * @param variant gasoline or diesel for a pump (the fuel's ordinal); 0 for a drive-through car wash, 1 for a wash bay
-     * @param price   a pump's price a bucket, a charger's a 1,000 MJ, a car wash's a wash, in cents; -1 for none
+     * @param variant gasoline or diesel for a pump (the fuel's ordinal); 0 for a drive-through car wash, 1 for a wash bay;
+     *                0 for a parking meter, 1 for a parking garage
+     * @param price   a pump's price a bucket, a charger's a 1,000 MJ, a car wash's a wash, a parking garage's an hour, in
+     *                cents; -1 for none
      * @param open    whether it can serve anyone: a pump with fuel in it, a car wash with an owner
      * @param extra   a bus stop's routes ("1, 4"); "" for anything else
      */
@@ -84,6 +86,9 @@ public final class PlacesRegistry extends SavedData {
             case RentalDeskBlockEntity desk -> new Place(pos, kind, desk.ownerName(), 0, -1, true);
             case TuningBenchBlockEntity bench -> new Place(pos, kind, bench.ownerName(), 0, -1, true);
             case ParkingMeterBlockEntity meter -> new Place(pos, kind, meter.ownerName(), 0, -1, true);
+            // (a parking garage goes by its name, or its owner's if it hasn't one; its price is an hour's)
+            case com.reiko.cars.garage.GarageDoorBlockEntity door -> new Place(pos, kind,
+                    door.settings().name().isEmpty() ? door.ownerName() : door.settings().name(), 1, door.settings().hourPrice(), true);
             case DmvOfficeBlockEntity office -> new Place(pos, kind, office.ownerName(), 0, -1, true);
             case InsuranceOfficeBlockEntity office -> new Place(pos, kind, office.ownerName(), 0, -1, true);
             case ImpoundOfficeBlockEntity office -> new Place(pos, kind, office.ownerName(), 0, -1, true);

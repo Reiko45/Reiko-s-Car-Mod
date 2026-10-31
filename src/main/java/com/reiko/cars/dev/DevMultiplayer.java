@@ -267,6 +267,10 @@ public final class DevMultiplayer {
                 String.format("%.2f", camera.getPosition().distanceTo(minecraft.player.getEyePosition())));
     }
 
+    private static com.reiko.cars.garage.GarageDoorBlockEntity garageDoor(Minecraft minecraft, BlockPos anchor) {
+        return minecraft.level.getBlockEntity(anchor) instanceof com.reiko.cars.garage.GarageDoorBlockEntity door && door.isAnchor() ? door : null;
+    }
+
     private static String pos(Entity entity) {
         return entity == null ? "none" : String.format("%.1f,%.1f,%.1f", entity.getX(), entity.getY(), entity.getZ());
     }
@@ -623,10 +627,100 @@ public final class DevMultiplayer {
             shot(mc, "22_let_out");
         });
 
+        // Garages: the owner opens the door, sets it up on its screen, links a remote and shuts it with it; then pays to
+        // park at someone else's parking garage.
+        at(0, 1510, mc -> cmd(mc, "reikotest garage"));
+        at(0, 1540, mc -> {
+            emptyHand(mc);
+            useBlock(mc, new BlockPos(43, DevServerTest.Y, 0), Direction.NORTH);
+        });
+        at(0, 1585, mc -> {
+            com.reiko.cars.garage.GarageDoorBlockEntity door = garageDoor(mc, DevServerTest.GARAGE_DOOR);
+            check("the garage door is a door, 4 by 3, on the client", door != null && door.width() == 4 && door.height() == 3,
+                    door == null ? "no door" : door.width() + "x" + door.height());
+            check("it opens for its owner, and the client sees it go up", door != null && door.wantsOpen() && door.progress() >= 1.0F,
+                    door == null ? "no door" : "open=" + door.wantsOpen() + " progress=" + door.progress());
+            boolean clear = mc.level.getBlockState(new BlockPos(43, DevServerTest.Y, 0)).getValue(com.reiko.cars.garage.GarageDoorBlock.OPEN);
+            check("its doorway's clear", clear, "open=" + clear);
+            shot(mc, "25_garage_open");
+        });
+        at(0, 1590, mc -> mc.options.keyShift.setDown(true));
+        at(0, 1596, mc -> useBlock(mc, new BlockPos(43, DevServerTest.Y + 2, 0), Direction.NORTH));
+        at(0, 1602, mc -> mc.options.keyShift.setDown(false));
+        at(0, 1615, mc -> {
+            boolean open = mc.player.containerMenu instanceof com.reiko.cars.garage.GarageMenu;
+            check("sneak-right-clicking the door opens its screen", open, screen(mc));
+            shot(mc, "26_garage_screen");
+            if (open) {
+                PacketDistributor.sendToServer(com.reiko.cars.network.GarageActionPayload.save(mc.player.containerMenu.containerId, "MP Garage", 1 | 2,
+                        "1.00", "10.00"));
+            }
+        });
+        at(0, 1635, mc -> {
+            com.reiko.cars.garage.GarageDoorBlockEntity door = garageDoor(mc, DevServerTest.GARAGE_DOOR);
+            check("it's named on its screen", door != null && door.settings().name().equals("MP Garage"),
+                    door == null ? "no door" : door.settings().name());
+            mc.player.closeContainer();
+        });
+        at(0, 1640, mc -> {
+            check("holding a garage remote", holdItem(mc, BuiltInRegistries.ITEM.get(ReikoCars.id("garage_remote"))), "");
+            mc.options.keyShift.setDown(true);
+        });
+        at(0, 1646, mc -> useBlock(mc, new BlockPos(44, DevServerTest.Y + 2, 0), Direction.NORTH));
+        at(0, 1652, mc -> mc.options.keyShift.setDown(false));
+        at(0, 1665, mc -> {
+            com.reiko.cars.garage.RemoteLinks links = mc.player.getMainHandItem().get(com.reiko.cars.registry.ModDataComponents.GARAGE_LINKS.get());
+            check("the remote's linked to the door", links != null && links.links().size() == 1 && links.links().getFirst().name().equals("MP Garage"),
+                    String.valueOf(links));
+            mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
+        });
+        at(0, 1705, mc -> {
+            com.reiko.cars.garage.GarageDoorBlockEntity door = garageDoor(mc, DevServerTest.GARAGE_DOOR);
+            check("a click of the remote shuts it", door != null && !door.wantsOpen() && door.progress() <= 0.0F,
+                    door == null ? "no door" : "open=" + door.wantsOpen() + " progress=" + door.progress());
+            boolean closed = !mc.level.getBlockState(new BlockPos(43, DevServerTest.Y, 0)).getValue(com.reiko.cars.garage.GarageDoorBlock.OPEN);
+            check("its doorway's closed off", closed, "closed=" + closed);
+            shot(mc, "27_garage_shut_by_remote");
+        });
+        at(0, 1710, mc -> cmd(mc, "reikotest parking"));
+        at(0, 1735, mc -> {
+            CarEntity car = mc.player.getVehicle() instanceof CarEntity riding ? riding : null;
+            check("at the wheel by Sam's parking garage", car != null, String.valueOf(mc.player.getVehicle()));
+            com.reiko.cars.trailer.Hitching.Action action = car == null ? null : com.reiko.cars.trailer.Hitching.available(car, mc.player);
+            check("the hitch key's for paying to park", action == com.reiko.cars.trailer.Hitching.Action.PARK, String.valueOf(action));
+            shot(mc, "28_parking_hint");
+            press(ReikoCarsClient.HITCH);
+        });
+        at(0, 1755, mc -> {
+            boolean open = mc.player.containerMenu instanceof com.reiko.cars.garage.ParkingMenu;
+            check("the parking screen opens", open, screen(mc));
+            shot(mc, "29_parking_screen");
+            if (mc.player.containerMenu instanceof com.reiko.cars.garage.ParkingMenu menu) {
+                PacketDistributor.sendToServer(com.reiko.cars.network.GarageActionPayload.pay(menu.containerId, 0, menu.price(0), Payment.cash()));
+            }
+        });
+        at(0, 1775, mc -> {
+            com.reiko.cars.garage.GarageDoorBlockEntity shutter = garageDoor(mc, DevServerTest.SHUTTER_DOOR);
+            check("paid: the screen closes and the shutter goes up", mc.screen == null && shutter != null && shutter.wantsOpen(),
+                    screen(mc) + " " + (shutter == null ? "no shutter" : "open=" + shutter.wantsOpen()));
+            check("the car's on its books", shutter != null && shutter.parked().size() == 1 && shutter.earned() > 0,
+                    shutter == null ? "no shutter" : "parked=" + shutter.parked().size() + " earned=" + shutter.earned());
+            shot(mc, "30_parking_paid");
+            cmd(mc, "reikotest report garages");
+        });
+        at(0, 1780, mc -> {
+            if (mc.screen != null) {
+                mc.player.closeContainer();
+            }
+            mc.options.keyShift.setDown(true);
+        });
+        at(0, 1786, mc -> mc.options.keyShift.setDown(false));
+        at(0, 1800, mc -> cmd(mc, "reikotest op"));
+
         // Leave, losing the manual, and come back: it isn't given again.
-        at(0, 1510, mc -> cmd(mc, "reikotest clearmanual"));
-        at(0, 1530, mc -> cmd(mc, "reikotest report leaving"));
-        at(0, 1550, mc -> {
+        at(0, 1830, mc -> cmd(mc, "reikotest clearmanual"));
+        at(0, 1850, mc -> cmd(mc, "reikotest report leaving"));
+        at(0, 1870, mc -> {
             ReikoCars.LOGGER.info("MPCHECK leaving the server");
             mc.level.disconnect();
             mc.disconnect(new TitleScreen());
@@ -666,6 +760,12 @@ public final class DevMultiplayer {
             check("the parked camper keeps its camp", camper != null && camper.campOut(), camper == null ? "none" : "campOut=" + camper.campOut());
             long cows = mc.level.getEntitiesOfClass(Cow.class, mc.player.getBoundingBox().inflate(80.0)).size();
             check("the cows let out are still about", cows >= 5, cows + " cows");
+            com.reiko.cars.garage.GarageDoorBlockEntity door = garageDoor(mc, DevServerTest.GARAGE_DOOR);
+            check("the garage door is still a door, named, after the restart", door != null && door.width() == 4 && door.settings().name().equals("MP Garage"),
+                    door == null ? "no door" : door.width() + "x" + door.height() + " " + door.settings().name());
+            com.reiko.cars.garage.GarageDoorBlockEntity shutter = garageDoor(mc, DevServerTest.SHUTTER_DOOR);
+            check("the parking garage remembers the car parked", shutter != null && shutter.parked().size() == 1,
+                    shutter == null ? "no shutter" : "parked=" + shutter.parked().size());
             shot(mc, "24_after_restart");
             if (sedan != null) {
                 cmd(mc, String.format("tp @s %.1f -60 %.1f", sedan.getX(), sedan.getZ() + 2.5));

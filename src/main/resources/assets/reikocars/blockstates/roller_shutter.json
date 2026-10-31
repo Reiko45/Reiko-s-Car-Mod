@@ -1,0 +1,43 @@
+{
+  "variants": {
+    "facing=south,part=single": {
+      "model": "reikocars:block/roller_shutter"
+    },
+    "facing=south,part=anchor": {
+      "model": "reikocars:block/roller_shutter_part"
+    },
+    "facing=south,part=member": {
+      "model": "reikocars:block/roller_shutter_part"
+    },
+    "facing=west,part=single": {
+      "model": "reikocars:block/roller_shutter",
+      "y": 90
+    },
+    "facing=west,part=anchor": {
+      "model": "reikocars:block/roller_shutter_part"
+    },
+    "facing=west,part=member": {
+      "model": "reikocars:block/roller_shutter_part"
+    },
+    "facing=north,part=single": {
+      "model": "reikocars:block/roller_shutter",
+      "y": 180
+    },
+    "facing=north,part=anchor": {
+      "model": "reikocars:block/roller_shutter_part"
+    },
+    "facing=north,part=member": {
+      "model": "reikocars:block/roller_shutter_part"
+    },
+    "facing=east,part=single": {
+      "model": "reikocars:block/roller_shutter",
+      "y": 270
+    },
+    "facing=east,part=anchor": {
+      "model": "reikocars:block/roller_shutter_part"
+    },
+    "facing=east,part=member": {
+      "model": "reikocars:block/roller_shutter_part"
+    }
+  }
+}

@@ -89,6 +89,10 @@ public final class ModDataComponents {
             builder -> builder.persistent(com.mojang.serialization.Codec.floatRange(0.0F, 1.0F))
                     .networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.FLOAT));
 
+    /** The garage doors a remote opens. */
+    public static final Supplier<DataComponentType<com.reiko.cars.garage.RemoteLinks>> GARAGE_LINKS = COMPONENTS.registerComponentType("garage_links",
+            builder -> builder.persistent(com.reiko.cars.garage.RemoteLinks.CODEC).networkSynchronized(com.reiko.cars.garage.RemoteLinks.STREAM_CODEC));
+
     private ModDataComponents() {
     }
 }

@@ -73,6 +73,8 @@ public enum PlaceKind {
                 : entity instanceof RentalDeskBlockEntity ? RENTAL
                 : entity instanceof TuningBenchBlockEntity ? TUNING
                 : entity instanceof ParkingMeterBlockEntity ? PARKING
+                : entity instanceof com.reiko.cars.garage.GarageDoorBlockEntity door && door.isAnchor() && door.settings().parking()
+                        && door.owner() != null ? PARKING
                 : entity instanceof DmvOfficeBlockEntity ? DMV
                 : entity instanceof InsuranceOfficeBlockEntity ? INSURANCE
                 : entity instanceof ImpoundOfficeBlockEntity ? IMPOUND

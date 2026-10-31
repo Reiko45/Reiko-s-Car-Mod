@@ -109,7 +109,7 @@ public final class DevShowcase {
             rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false, null);
             rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, null);
             LevelSettings settings = new LevelSettings("showcase-" + System.currentTimeMillis(), GameType.CREATIVE, false,
-                    Difficulty.PEACEFUL, !MODE.equals("repair") && !MODE.equals("lots") && !MODE.equals("sales") && !MODE.equals("tolls") && !MODE.equals("insurance") && !MODE.equals("work"), rules, WorldDataConfiguration.DEFAULT); // no cheats: a customer, not an admin
+                    Difficulty.PEACEFUL, !MODE.equals("repair") && !MODE.equals("lots") && !MODE.equals("sales") && !MODE.equals("tolls") && !MODE.equals("insurance") && !MODE.equals("work") && !MODE.equals("garages"), rules, WorldDataConfiguration.DEFAULT); // no cheats: a customer, not an admin
             minecraft.createWorldOpenFlows().createFreshLevel(settings.levelName(), settings, new WorldOptions(1L, false, false),
                     registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT)
                             .value().createWorldDimensions(), new TitleScreen());
@@ -180,6 +180,8 @@ public final class DevShowcase {
             bookScript();
         } else if (MODE.equals("rig3p")) {
             rigCameraScript();
+        } else if (MODE.equals("garages")) {
+            garageScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -4024,6 +4026,230 @@ public final class DevShowcase {
         at(478, mc -> look(mc, 5.6, -59.1, -1.5, -90.0F, 14.0F));
         at(500, mc -> shot(mc, "342_bus_stop_sign_night"));
         at(508, mc -> mc.stop());
+    }
+
+    // ---- garages: ./gradlew runClient -Pshowcase=garages ----
+
+    /** The house's sectional door's anchor (its bottom left from outside: facing north, that's its east end), and the warehouse's shutter's. */
+    private static final BlockPos HOUSE_DOOR = new BlockPos(6, -60, 0);
+    private static final BlockPos WAREHOUSE_DOOR = new BlockPos(21, -60, 0);
+
+    /** A garage: walls and a roof from {@code (x0, z0)} to {@code (x1, z1)}, {@code wallTop} high, and a doorway in its north wall. */
+    private static void garageBuilding(ServerLevel level, int x0, int z0, int x1, int z1, int wallTop, BlockState wall, BlockState roof, int doorX0,
+                                       int doorX1, int doorTop) {
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                boolean edge = x == x0 || x == x1 || z == z0 || z == z1;
+                level.setBlockAndUpdate(new BlockPos(x, -61, z), edge ? wall : Blocks.SMOOTH_STONE.defaultBlockState());
+                for (int y = -60; y <= wallTop; y++) {
+                    boolean doorway = z == z0 && x >= doorX0 && x <= doorX1 && y <= doorTop;
+                    level.setBlockAndUpdate(new BlockPos(x, y, z), edge && !doorway ? wall : Blocks.AIR.defaultBlockState());
+                }
+                boolean lamp = !edge && (x - x0) % 4 == 2 && (z - z0) % 4 == 2;
+                level.setBlockAndUpdate(new BlockPos(x, wallTop + 1, z), lamp ? Blocks.SEA_LANTERN.defaultBlockState() : roof);
+            }
+        }
+    }
+
+    /** A door's panels, put up by {@code owner}, a block at a time. */
+    private static void garagePanels(ServerLevel level, net.minecraft.world.level.block.Block block, ServerPlayer owner, int x0, int x1, int top) {
+        for (int y = -60; y <= top; y++) {
+            for (int x = x0; x <= x1; x++) {
+                BlockPos pos = new BlockPos(x, y, 0);
+                BlockState state = block.defaultBlockState().setValue(com.reiko.cars.garage.GarageDoorBlock.FACING, Direction.NORTH);
+                level.setBlockAndUpdate(pos, state);
+                state.getBlock().setPlacedBy(level, pos, level.getBlockState(pos), owner, ItemStack.EMPTY);
+            }
+        }
+    }
+
+    private static com.reiko.cars.garage.GarageDoorBlockEntity garageDoor(ServerLevel level, BlockPos anchor) {
+        return com.reiko.cars.garage.GarageDoors.doorAt(level, anchor);
+    }
+
+    private static void garageScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(5000);
+                level.getGameRules().getRule(net.minecraft.world.level.GameRules.RULE_DAYLIGHT).set(false, level.getServer());
+                for (int x = -6; x <= 32; x++) {
+                    for (int z = -14; z <= -1; z++) {
+                        boolean road = z <= -10;
+                        boolean drive = !road && ((x >= 2 && x <= 7) || (x >= 15 && x <= 22));
+                        BlockState ground = road ? ModBlocks.ASPHALT.get().defaultBlockState()
+                                : drive ? Blocks.LIGHT_GRAY_CONCRETE.defaultBlockState() : Blocks.GRASS_BLOCK.defaultBlockState();
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), ground);
+                    }
+                }
+                // The house's garage: a sectional door 4 wide and 3 high, with room over it inside.
+                garageBuilding(level, 0, 0, 9, 10, -56, Blocks.WHITE_TERRACOTTA.defaultBlockState(), Blocks.DARK_OAK_PLANKS.defaultBlockState(), 3, 6, -58);
+                garagePanels(level, ModBlocks.GARAGE_DOOR.get(), player, 3, 6, -58);
+                // A warehouse: a roller shutter 6 wide and 4 high, Sam's, run as a parking garage.
+                garageBuilding(level, 13, 0, 26, 14, -55, Blocks.LIGHT_GRAY_CONCRETE.defaultBlockState(), Blocks.GRAY_CONCRETE.defaultBlockState(), 16, 21,
+                        -57);
+                ServerPlayer sam = extraPlayer(level.getServer(), "Sam");
+                sam.teleportTo(level, 30.5, -60.0, 20.5, 0.0F, 0.0F);
+                garagePanels(level, ModBlocks.ROLLER_SHUTTER.get(), sam, 16, 21, -57);
+                com.reiko.cars.garage.ParkingService.save(sam, garageDoor(level, WAREHOUSE_DOOR), "Harbor Parking", 1 | 2 | 8, "1.50", "12.00");
+                // A car parked in the warehouse already.
+                spawned(level, CarType.PICKUP_TRUCK, 23.5, 9.0, 180.0F, 0.5).setOwner(sam);
+                EconomyService.INSTANCE.ensureAccount(player.server, player.getUUID(), player.getGameProfile().getName());
+                Purse.give(player, 5_000);
+                CardService.issue(player, "1234");
+                player.setGameMode(GameType.CREATIVE);
+            });
+        });
+        at(22, mc -> mc.player.getInventory().selected = 8); // an empty hand
+        // Both, shut, from across the road (just the view: no crosshair, hotbar or chat)
+        at(58, mc -> mc.options.hideGui = true);
+        at(60, mc -> look(mc, 13.5, -57.0, -19.0, 0.0F, 6.0F));
+        at(84, mc -> shot(mc, "350_garages_closed"));
+        // The house's door going up, then up
+        at(86, mc -> look(mc, 5.0, -58.4, -9.0, 0.0F, 6.0F));
+        at(92, mc -> server(mc, player -> com.reiko.cars.garage.GarageDoors.open(garageDoor(player.serverLevel(), HOUSE_DOOR), false)));
+        at(104, mc -> shot(mc, "351_sectional_opening"));
+        at(130, mc -> shot(mc, "352_sectional_open"));
+        // Inside: the door up under the ceiling, its rails and opener
+        at(132, mc -> look(mc, 5.0, -59.4, 5.0, 180.0F, -38.0F));
+        at(152, mc -> shot(mc, "353_sectional_inside"));
+        // The warehouse's shutter coiling up
+        at(154, mc -> {
+            look(mc, 19.0, -58.0, -11.0, 0.0F, 4.0F);
+            server(mc, player -> com.reiko.cars.garage.GarageDoors.close(garageDoor(player.serverLevel(), HOUSE_DOOR)));
+        });
+        at(160, mc -> server(mc, player -> com.reiko.cars.garage.GarageDoors.open(garageDoor(player.serverLevel(), WAREHOUSE_DOOR), false)));
+        at(176, mc -> shot(mc, "354_shutter_opening"));
+        at(206, mc -> shot(mc, "355_shutter_open"));
+        at(208, mc -> look(mc, 19.0, -57.6, 9.5, 180.0F, -12.0F));
+        at(228, mc -> shot(mc, "356_shutter_inside"));
+        // The house's door painted blue
+        at(230, mc -> {
+            look(mc, 5.0, -58.4, -8.0, 0.0F, 6.0F);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                com.reiko.cars.garage.GarageDoorBlockEntity door = garageDoor(level, HOUSE_DOOR);
+                int blue = net.minecraft.world.item.DyeColor.LIGHT_BLUE.getTextureDiffuseColor() & 0xFFFFFF;
+                for (BlockPos cell : com.reiko.cars.garage.GarageDoors.cells(door)) {
+                    if (level.getBlockEntity(cell) instanceof com.reiko.cars.garage.GarageDoorBlockEntity panel) {
+                        panel.setSettings(panel.settings().withColor(blue));
+                        panel.sync();
+                    }
+                }
+                com.reiko.cars.garage.GarageDoors.close(garageDoor(level, WAREHOUSE_DOOR));
+            });
+        });
+        at(252, mc -> shot(mc, "357_sectional_painted"));
+        // Two cars to drive up in: parked a while first, so the doors don't open for them till they move.
+        at(253, mc -> server(mc, player -> {
+            spawned(player.serverLevel(), CarType.SEDAN, 5.0, -4.4, 0.0F, 0.8).setOwner(player);
+            spawned(player.serverLevel(), CarType.HATCHBACK, 18.5, -4.4, 0.0F, 0.8).setOwner(player);
+        }));
+        // Driving up to it: the hitch key works the door, and it opens as the car comes
+        at(266, mc -> server(mc, player -> {
+            player.setGameMode(GameType.SURVIVAL);
+            player.getAbilities().flying = false;
+            player.onUpdateAbilities();
+            player.startRiding(carAt(player.serverLevel(), 5.0, -4.4), true);
+        }));
+        at(268, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+            mc.player.setXRot(12.0F);
+        });
+        at(282, mc -> shot(mc, "358_garage_hint"));
+        at(284, mc -> mc.options.keyUp.setDown(true));
+        at(290, mc -> {
+            mc.options.keyUp.setDown(false);
+            mc.options.keyJump.setDown(true);
+            mc.options.hideGui = true;
+        });
+        at(310, mc -> shot(mc, "359_opens_for_the_car"));
+        at(312, mc -> {
+            mc.options.hideGui = false;
+            mc.options.keyJump.setDown(false);
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                player.stopRiding();
+                player.teleportTo(player.serverLevel(), 5.0, -60.0, -6.0, 0.0F, 0.0F);
+            });
+        });
+        // The owner's screen
+        at(316, mc -> server(mc, player -> com.reiko.cars.garage.GarageMenu.open(player, garageDoor(player.serverLevel(), HOUSE_DOOR))));
+        at(330, mc -> shot(mc, "360_garage_screen"));
+        // Sam's parking garage: pull up, press G, pay
+        at(332, mc -> {
+            mc.setScreen(null);
+            server(mc, player -> player.startRiding(carAt(player.serverLevel(), 18.5, -4.4), true));
+        });
+        at(338, mc -> {
+            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+            mc.player.setXRot(12.0F);
+        });
+        at(356, mc -> shot(mc, "361_parking_hint"));
+        at(358, mc -> server(mc, com.reiko.cars.trailer.Hitching::use));
+        at(372, mc -> shot(mc, "362_parking_screen"));
+        at(374, mc -> {
+            if (mc.player.containerMenu instanceof com.reiko.cars.garage.ParkingMenu menu) {
+                PacketDistributor.sendToServer(com.reiko.cars.network.GarageActionPayload.pay(menu.containerId, 1, menu.price(1), Payment.cash()));
+            }
+        });
+        at(390, mc -> shot(mc, "363_parking_paid"));
+        // On the GPS
+        at(392, mc -> mc.setScreen(new com.reiko.cars.client.GpsScreen()));
+        at(398, mc -> {
+            for (char c : "parking".toCharArray()) {
+                mc.screen.charTyped(c, 0);
+            }
+        });
+        at(406, mc -> shot(mc, "364_parking_gps"));
+        at(408, mc -> {
+            mc.setScreen(null);
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> player.stopRiding());
+        });
+        // Evening, the lights on inside
+        at(410, mc -> {
+            server(mc, player -> {
+                player.serverLevel().setDayTime(13_000);
+                com.reiko.cars.garage.GarageDoors.open(garageDoor(player.serverLevel(), HOUSE_DOOR), false);
+            });
+            look(mc, 9.0, -57.5, -14.0, -20.0F, 6.0F);
+            mc.options.hideGui = true;
+        });
+        at(450, mc -> shot(mc, "365_garage_evening"));
+        // Loose panels (not a rectangle, so not a door), buttons, and the items
+        at(452, mc -> server(mc, player -> {
+            ServerLevel level = player.serverLevel();
+            level.setDayTime(5000);
+            BlockState panel = ModBlocks.GARAGE_DOOR.get().defaultBlockState().setValue(com.reiko.cars.garage.GarageDoorBlock.FACING, Direction.NORTH);
+            BlockState slat = ModBlocks.ROLLER_SHUTTER.get().defaultBlockState().setValue(com.reiko.cars.garage.GarageDoorBlock.FACING, Direction.NORTH);
+            for (BlockPos pos : new BlockPos[] {new BlockPos(10, -60, -3), new BlockPos(11, -60, -3), new BlockPos(10, -59, -3)}) {
+                level.setBlockAndUpdate(pos, panel);
+                panel.getBlock().setPlacedBy(level, pos, level.getBlockState(pos), player, ItemStack.EMPTY);
+            }
+            for (BlockPos pos : new BlockPos[] {new BlockPos(13, -60, -3), new BlockPos(14, -60, -3), new BlockPos(13, -59, -3)}) {
+                level.setBlockAndUpdate(pos, slat);
+                slat.getBlock().setPlacedBy(level, pos, level.getBlockState(pos), player, ItemStack.EMPTY);
+            }
+            BlockState button = ModBlocks.GARAGE_BUTTON.get().defaultBlockState().setValue(com.reiko.cars.garage.GarageButtonBlock.FACING, Direction.NORTH);
+            BlockPos wall = new BlockPos(14, -59, -1);
+            level.setBlockAndUpdate(wall, button);
+            button.getBlock().setPlacedBy(level, wall, button, player, ItemStack.EMPTY);
+            player.getInventory().setItem(3, new ItemStack(ModItems.GARAGE_DOOR.get(), 16));
+            player.getInventory().setItem(4, new ItemStack(ModItems.ROLLER_SHUTTER.get(), 16));
+            player.getInventory().setItem(5, new ItemStack(ModItems.GARAGE_BUTTON.get()));
+            player.getInventory().setItem(6, new ItemStack(ModItems.GARAGE_REMOTE.get()));
+        }));
+        at(454, mc -> {
+            mc.options.hideGui = false;
+            mc.player.getInventory().selected = 6;
+            look(mc, 12.5, -59.2, -6.5, 0.0F, 12.0F);
+        });
+        at(476, mc -> shot(mc, "366_loose_panels_and_items"));
+        at(480, mc -> mc.stop());
     }
 
     // ---- campers and livestock trailers: ./gradlew runClient -Pshowcase=campers ----

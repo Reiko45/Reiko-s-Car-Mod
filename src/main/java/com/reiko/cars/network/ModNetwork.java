@@ -68,6 +68,7 @@ public final class ModNetwork {
         registrar.playToServer(RoadSignActionPayload.TYPE, RoadSignActionPayload.STREAM_CODEC, ModNetwork::handleRoadSign);
         registrar.playToServer(GpsRequestPayload.TYPE, GpsRequestPayload.STREAM_CODEC, ModNetwork::handleGps);
         registrar.playToServer(BusStopActionPayload.TYPE, BusStopActionPayload.STREAM_CODEC, ModNetwork::handleBusStop);
+        registrar.playToServer(GarageActionPayload.TYPE, GarageActionPayload.STREAM_CODEC, ModNetwork::handleGarage);
         // (Back to the client: kept in the GPS's inbox, for its screen and the minimap.)
         registrar.playToClient(GpsPlacesPayload.TYPE, GpsPlacesPayload.STREAM_CODEC,
                 (payload, context) -> com.reiko.cars.gps.GpsInbox.receive(payload));
@@ -86,6 +87,41 @@ public final class ModNetwork {
             com.reiko.cars.bus.BusStopMenu.open(player, menu.stop()); // reopen with the new settings
         }
         ShopFeedback.send(player, result);
+    }
+
+    private static void handleGarage(GarageActionPayload payload, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer player) || player.containerMenu.containerId != payload.containerId()
+                || !player.containerMenu.stillValid(player)) {
+            return;
+        }
+        if (payload.action() == GarageActionPayload.PAY && player.containerMenu instanceof com.reiko.cars.garage.ParkingMenu menu) {
+            int option = menu.leaving() ? com.reiko.cars.garage.ParkingService.LEAVE : payload.option();
+            ShopActionResult result = com.reiko.cars.garage.ParkingService.pay(player, menu.anchor(), option, payload.expected(), payload.payment());
+            if (result.success()) {
+                player.closeContainer();
+                player.displayClientMessage(result.message(), true);
+            } else {
+                ShopFeedback.send(player, result);
+            }
+        } else if (player.containerMenu instanceof com.reiko.cars.garage.GarageMenu menu) {
+            com.reiko.cars.garage.GarageDoorBlockEntity door = menu.door(player);
+            if (door == null) {
+                player.closeContainer();
+                return;
+            }
+            ShopActionResult result;
+            if (payload.action() == GarageActionPayload.SAVE) {
+                result = com.reiko.cars.garage.ParkingService.save(player, door, payload.name(), payload.flags(), payload.hour(), payload.day());
+            } else if (payload.action() == GarageActionPayload.RESET) {
+                result = com.reiko.cars.garage.ParkingService.resetRemotes(player, door);
+            } else {
+                return;
+            }
+            if (result.success()) {
+                com.reiko.cars.garage.GarageMenu.open(player, door); // reopen with the new settings
+            }
+            ShopFeedback.send(player, result);
+        }
     }
 
     private static void handleGps(GpsRequestPayload payload, IPayloadContext context) {

@@ -71,7 +71,8 @@ public final class Towing {
 
     /**
      * The car {@code truck} would pick up: the nearest one {@code driver} may use, with nobody in it, small enough,
-     * whose front (for the wrecker) or nearer end (for the flatbed) is up against the truck's back.
+     * whose front (for the wrecker) or nearer end (for the flatbed) is up against the truck's back. A car shut in a
+     * garage only by someone with its key.
      */
     @Nullable
     public static CarEntity towable(CarEntity truck, Player driver) {
@@ -84,6 +85,7 @@ public final class Towing {
                         car -> car != truck && car.isAlive() && !car.isPassenger() && car.getPassengers().isEmpty()
                                 && car.carType().towableBy(type)
                                 && (car.canBeUsedBy(driver) || com.reiko.cars.impound.ImpoundService.badlyParked(car))
+                                && (car.owner() == null || car.holdsKeyFor(driver) || !com.reiko.cars.garage.GarageDoors.garaged(car))
                                 && Math.abs(car.getY() - truck.getY()) <= 1.5
                                 && reach(truck, car, point) <= REACH)
                 .stream().min(Comparator.comparingDouble(car -> reach(truck, car, point))).orElse(null);

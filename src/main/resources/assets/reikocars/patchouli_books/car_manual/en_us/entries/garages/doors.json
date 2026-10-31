@@ -1,0 +1,45 @@
+{
+  "name": "Garage Doors",
+  "icon": "reikocars:garage_door",
+  "category": "reikocars:garages",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Build a garage door any size from panels: fill a doorway with $(item)Garage Door$()s or $(item)Roller Shutter$()s and, once they make a full rectangle, they join into one door, up to 16 wide and 10 high.$(br2)Right-click it to open or close it. It won't come down on anything in the way."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/garage_opening.png"
+      ],
+      "border": true,
+      "text": "A Garage Door's panels roll up into the garage, under the ceiling if there's room."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:garage_door",
+      "recipe2": "reikocars:roller_shutter"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/shutter.png"
+      ],
+      "border": true,
+      "text": "A Roller Shutter's slats coil up into a box over the opening."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Paint$() a door with any dye. A Garage Door has a row of $(l)windows$() along its top.$(br2)Sneak-right-click a door with an empty hand for its screen: its name, windows on or off, opening for cars, and which side's the garage (it tells by the roof). Only its owner, or an admin, can paint it, set it up or break it."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/garage_inside.png"
+      ],
+      "border": true,
+      "text": "Up under the ceiling, on its rails."
+    }
+  ]
+}

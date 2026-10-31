@@ -268,6 +268,10 @@ public final class GpsService {
                                 .collect(java.util.stream.Collectors.joining(", ")));
             }
             case PARKING -> {
+                long garageHour = cluster.stream().filter(place -> place.variant() == 1).mapToLong(PlacesRegistry.Place::price).min().orElse(-1L);
+                if (garageHour >= 0) {
+                    return Component.translatable("gps.reikocars.detail.garage", price(garageHour));
+                }
                 return cluster.size() > 1 ? Component.translatable("gps.reikocars.detail.meters", cluster.size()) : Component.empty();
             }
             default -> {

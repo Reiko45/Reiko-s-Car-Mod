@@ -73,6 +73,11 @@ public final class ModMenus {
     public static final Supplier<MenuType<com.reiko.cars.insurance.InsuranceMenu>> INSURANCE = MENUS.register("insurance",
             () -> IMenuTypeExtension.create(com.reiko.cars.insurance.InsuranceMenu::new));
 
+    public static final Supplier<MenuType<com.reiko.cars.garage.GarageMenu>> GARAGE = MENUS.register("garage",
+            () -> IMenuTypeExtension.create(com.reiko.cars.garage.GarageMenu::new));
+    public static final Supplier<MenuType<com.reiko.cars.garage.ParkingMenu>> PARKING = MENUS.register("parking",
+            () -> IMenuTypeExtension.create(com.reiko.cars.garage.ParkingMenu::new));
+
     private ModMenus() {
     }
 }

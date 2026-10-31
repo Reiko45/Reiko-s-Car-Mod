@@ -263,6 +263,35 @@ public final class ModBlocks {
     public static final DeferredBlock<com.reiko.cars.traffic.SpeedSignBlock> SPEED_SIGN = BLOCKS.register("speed_sign",
             () -> new com.reiko.cars.traffic.SpeedSignBlock(streetMetal().strength(2.5F, 1200.0F).pushReaction(PushReaction.BLOCK)));
 
+    // ---- garages ----
+
+    private static BlockBehaviour.Properties garageDoor(MapColor color) {
+        return BlockBehaviour.Properties.of()
+                .mapColor(color)
+                .strength(3.0F, 6.0F)
+                .sound(SoundType.METAL)
+                .noOcclusion()
+                .dynamicShape()
+                .isViewBlocking((state, level, pos) -> false)
+                .pushReaction(PushReaction.BLOCK);
+    }
+
+    /** A house's sectional garage door panel: touching panels join into one door, which rolls up into the ceiling. */
+    public static final DeferredBlock<com.reiko.cars.garage.GarageDoorBlock> GARAGE_DOOR = BLOCKS.register("garage_door",
+            () -> new com.reiko.cars.garage.GarageDoorBlock(com.reiko.cars.garage.GarageDoorBlock.Style.SECTIONAL, garageDoor(MapColor.SNOW)));
+    /** A metal roller shutter panel: touching panels join into one shutter, which coils up at the top. */
+    public static final DeferredBlock<com.reiko.cars.garage.GarageDoorBlock> ROLLER_SHUTTER = BLOCKS.register("roller_shutter",
+            () -> new com.reiko.cars.garage.GarageDoorBlock(com.reiko.cars.garage.GarageDoorBlock.Style.SHUTTER, garageDoor(MapColor.METAL)));
+    /** A wall button for the garage door nearby. */
+    public static final DeferredBlock<com.reiko.cars.garage.GarageButtonBlock> GARAGE_BUTTON = BLOCKS.register("garage_button",
+            () -> new com.reiko.cars.garage.GarageButtonBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.QUARTZ)
+                    .strength(1.0F, 6.0F)
+                    .sound(SoundType.STONE)
+                    .noCollission()
+                    .noOcclusion()
+                    .pushReaction(PushReaction.DESTROY)));
+
     private ModBlocks() {
     }
 }

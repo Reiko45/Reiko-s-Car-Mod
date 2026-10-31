@@ -47,7 +47,10 @@ public final class Hitching {
         POUR,
         LADDER_UP,
         LADDER_DOWN,
-        DOORS
+        DOORS,
+        GARAGE,
+        PARK,
+        LEAVE_PARKING
     }
 
     private Hitching() {
@@ -61,6 +64,16 @@ public final class Hitching {
         }
         if (car.dirt() > 0.0F && com.reiko.cars.wash.CarWashService.washFor(car) != null) {
             return Action.WASH;
+        }
+        com.reiko.cars.garage.GarageDoorBlockEntity garage = com.reiko.cars.garage.ParkingService.doorAhead(car);
+        if (garage != null) {
+            if (com.reiko.cars.garage.ParkingService.wantsTicket(car, driver, garage)) {
+                return com.reiko.cars.garage.GarageDoors.depth(car.position(), garage) < 0.0 ? Action.LEAVE_PARKING : Action.PARK;
+            }
+            if (com.reiko.cars.garage.ParkingService.through(car, driver, garage)
+                    || (garage.settings().parking() && com.reiko.cars.garage.ParkingService.paidUp(car, garage))) {
+                return Action.GARAGE;
+            }
         }
         if (car.carType().runsRoutes()) {
             return com.reiko.cars.bus.BusService.stopNear(car) != null ? Action.DOORS : null;
@@ -151,6 +164,9 @@ public final class Hitching {
             return;
         }
         if (com.reiko.cars.wash.CarWashService.use(player, car)) {
+            return;
+        }
+        if (com.reiko.cars.garage.ParkingService.use(player, car)) {
             return;
         }
         if (car.carType().runsRoutes()) {

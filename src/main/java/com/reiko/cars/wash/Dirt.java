@@ -120,7 +120,7 @@ public final class Dirt {
         if (dirt != before) {
             car.setDirt(dirt);
         }
-        if (car.tickCount % RUST_EVERY == 0 && dirt >= FILTHY) {
+        if (car.tickCount % RUST_EVERY == 0 && dirt >= FILTHY && !com.reiko.cars.garage.GarageDoors.garaged(car)) {
             double wear = CarsConfig.get(CarsConfig.FILTHY_BODY_WEAR) * RUST_EVERY / DAY;
             if (wear > 0.0) {
                 CarCondition condition = car.condition();

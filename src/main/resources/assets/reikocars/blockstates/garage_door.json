@@ -1,0 +1,43 @@
+{
+  "variants": {
+    "facing=south,part=single": {
+      "model": "reikocars:block/garage_door"
+    },
+    "facing=south,part=anchor": {
+      "model": "reikocars:block/garage_door_part"
+    },
+    "facing=south,part=member": {
+      "model": "reikocars:block/garage_door_part"
+    },
+    "facing=west,part=single": {
+      "model": "reikocars:block/garage_door",
+      "y": 90
+    },
+    "facing=west,part=anchor": {
+      "model": "reikocars:block/garage_door_part"
+    },
+    "facing=west,part=member": {
+      "model": "reikocars:block/garage_door_part"
+    },
+    "facing=north,part=single": {
+      "model": "reikocars:block/garage_door",
+      "y": 180
+    },
+    "facing=north,part=anchor": {
+      "model": "reikocars:block/garage_door_part"
+    },
+    "facing=north,part=member": {
+      "model": "reikocars:block/garage_door_part"
+    },
+    "facing=east,part=single": {
+      "model": "reikocars:block/garage_door",
+      "y": 270
+    },
+    "facing=east,part=anchor": {
+      "model": "reikocars:block/garage_door_part"
+    },
+    "facing=east,part=member": {
+      "model": "reikocars:block/garage_door_part"
+    }
+  }
+}

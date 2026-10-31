@@ -106,6 +106,7 @@ public final class ReikoCarsClient {
         modBus.addListener(ReikoCarsClient::registerKeys);
         modBus.addListener(ReikoCarsClient::registerHud);
         modBus.addListener(ReikoCarsClient::registerItemColors);
+        modBus.addListener(ReikoCarsClient::registerBlockColors);
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::onClientTick);
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::keepEnginesRunning);
         NeoForge.EVENT_BUS.addListener(ReikoCarsClient::pullCameraBack);
@@ -206,6 +207,7 @@ public final class ReikoCarsClient {
         BlockEntityRenderers.register(ModBlockEntities.CAR_WASH.get(), CarWashRenderer::new);
         BlockEntityRenderers.register(ModBlockEntities.WASH_BAY.get(), WashBayRenderer::new);
         BlockEntityRenderers.register(ModBlockEntities.BUS_STOP.get(), BusStopRenderer::new);
+        BlockEntityRenderers.register(ModBlockEntities.GARAGE_DOOR.get(), GarageDoorRenderer::new);
         event.registerEntityRenderer(ModEntities.BENCH_SEAT.get(), net.minecraft.client.renderer.entity.NoopRenderer::new);
     }
 
@@ -235,6 +237,8 @@ public final class ReikoCarsClient {
         event.register(ModMenus.RADIO.get(), RadioScreen::new);
         event.register(ModMenus.INSURANCE.get(), InsuranceScreen::new);
         event.register(ModMenus.ICE_CREAM.get(), IceCreamScreen::new);
+        event.register(ModMenus.GARAGE.get(), GarageScreen::new);
+        event.register(ModMenus.PARKING.get(), ParkingScreen::new);
     }
 
     private static void registerKeys(RegisterKeyMappingsEvent event) {
@@ -269,6 +273,22 @@ public final class ReikoCarsClient {
             com.reiko.cars.key.CarKey key = stack.get(com.reiko.cars.registry.ModDataComponents.CAR_KEY.get());
             return tintIndex == 0 ? FastColor.ARGB32.opaque(key == null ? 0x808080 : key.color()) : -1;
         }, ModItems.CAR_KEY.get());
+        // A garage door panel's item in its default paint.
+        event.register((stack, tintIndex) -> tintIndex == 0 ? FastColor.ARGB32.opaque(com.reiko.cars.garage.GarageDoorBlock.Style.SECTIONAL.defaultColor) : -1,
+                ModItems.GARAGE_DOOR.get());
+        event.register((stack, tintIndex) -> tintIndex == 0 ? FastColor.ARGB32.opaque(com.reiko.cars.garage.GarageDoorBlock.Style.SHUTTER.defaultColor) : -1,
+                ModItems.ROLLER_SHUTTER.get());
+    }
+
+    /** A loose garage door panel takes its paint (its block entity's), as its block model's tint. */
+    private static void registerBlockColors(RegisterColorHandlersEvent.Block event) {
+        event.register((state, level, pos, tintIndex) -> {
+            if (tintIndex != 0 || level == null || pos == null) {
+                return -1;
+            }
+            return level.getBlockEntity(pos) instanceof com.reiko.cars.garage.GarageDoorBlockEntity panel ? FastColor.ARGB32.opaque(panel.color())
+                    : state.getBlock() instanceof com.reiko.cars.garage.GarageDoorBlock door ? FastColor.ARGB32.opaque(door.style().defaultColor) : -1;
+        }, com.reiko.cars.registry.ModBlocks.GARAGE_DOOR.get(), com.reiko.cars.registry.ModBlocks.ROLLER_SHUTTER.get());
     }
 
     /** Hands the driver's keys to their car before it ticks, and sends the horn and lock keys. */

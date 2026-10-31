@@ -1,0 +1,32 @@
+{
+  "name": "Parking Garages",
+  "icon": "reikocars:roller_shutter",
+  "category": "reikocars:garages",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "On a door's screen, turn on $(l)Parking garage$() and set its prices: an hour and a day.$(br2)Drivers pull up and press $(k:key.reikocars.hitch) to pay for 1 to 12 hours or 1 to 7 days, by card or cash, to you. The door then opens for their car, coming and going, until its time's up."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/parking_screen.png"
+      ],
+      "border": true,
+      "text": "Pull up, press $(k:key.reikocars.hitch), and pay."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A car still inside when its time's up pays for the hours it's overstayed to get out. Your own cars park free, and anyone with a remote.$(br2)Parking garages are on the $(l:driving/gps)GPS$(/l), with their hourly price. An hour is a Minecraft hour (50 seconds), a day a Minecraft day."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/garage_evening.png"
+      ],
+      "border": true,
+      "text": "Open for business."
+    }
+  ]
+}

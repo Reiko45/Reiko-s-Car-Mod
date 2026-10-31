@@ -133,9 +133,10 @@ category('fuel', 'Fuel and Charging', 'Gasoline, diesel and electricity: where t
 category('care', 'Repairs and Washing', 'Parts wear out; fix them at a Repair Bench, tow broken cars, wash dirty ones.', 'reikocars:repair_bench', 4)
 category('trailers', 'Towing', 'Hitching trailers to a semi or a pickup, campers and livestock.', 'reikocars:box_trailer', 5)
 category('roads', 'Roads and Traffic', 'Asphalt, markings, traffic lights, cameras, parking meters and tolls.', 'reikocars:traffic_light', 6)
-category('business', 'Money and Business', 'Selling cars, dealerships, loans, rentals, impound lots, insurance, the DMV and jobs.', 'reikocars:dealership', 7)
-category('services', 'Public Services', 'Bus routes, mail, emergency vehicles and the work trucks.', 'reikocars:bus_stop_sign', 8)
-category('tuning', 'Tuning and Racing', 'Upgrade kits, liveries, and race tracks.', 'reikocars:tuning_bench', 9)
+category('garages', 'Garages', 'Garage doors any size, remotes and buttons, keeping cars safe, and parking garages.', 'reikocars:garage_door', 7)
+category('business', 'Money and Business', 'Selling cars, dealerships, loans, rentals, impound lots, insurance, the DMV and jobs.', 'reikocars:dealership', 8)
+category('services', 'Public Services', 'Bus routes, mail, emergency vehicles and the work trucks.', 'reikocars:bus_stop_sign', 9)
+category('tuning', 'Tuning and Racing', 'Upgrade kits, liveries, and race tracks.', 'reikocars:tuning_bench', 10)
 
 def off_roaders():
     """The vehicles that keep their speed off-road (CarType's off-road column), by name."""
@@ -404,6 +405,47 @@ entry('roads', 'tolls', 'Toll Gates', 'reikocars:toll_gate', [
          'and the arm swings up. A $(item)Toll Booth$() within 12 blocks sets the toll; its owner gets the money and drives through free.'),
     craft('toll_gate', 'toll_booth'),
 ], sort=3)
+
+# -- Garages --
+
+entry('garages', 'doors', 'Garage Doors', 'reikocars:garage_door', [
+    text('Build a garage door any size from panels: fill a doorway with $(item)Garage Door$()s or $(item)Roller Shutter$()s and, '
+         'once they make a full rectangle, they join into one door, up to 16 wide and 10 high.$(br2)Right-click it to open or '
+         'close it. It won\'t come down on anything in the way.'),
+    image('garage_opening', 'A Garage Door\'s panels roll up into the garage, under the ceiling if there\'s room.'),
+    craft('garage_door', 'roller_shutter'),
+    image('shutter', 'A Roller Shutter\'s slats coil up into a box over the opening.'),
+    text('$(l)Paint$() a door with any dye. A Garage Door has a row of $(l)windows$() along its top.$(br2)Sneak-right-click a door '
+         'with an empty hand for its screen: its name, windows on or off, opening for cars, and which side\'s the garage (it tells '
+         'by the roof). Only its owner, or an admin, can paint it, set it up or break it.'),
+    image('garage_inside', 'Up under the ceiling, on its rails.'),
+], sort=0)
+
+entry('garages', 'opening', 'Remotes and Buttons', 'reikocars:garage_remote', [
+    text('A door opens for its owner, an admin, and anyone carrying a $(item)Garage Remote$() linked to it. From inside, anyone '
+         'can open it: nobody\'s shut in.$(br2)Drive up to it and it $(l)opens by itself$(), then shuts behind you once you\'re '
+         'through. ' + K('hitch') + ' opens or closes it from the car, too.'),
+    image('opens_for_car', 'Its owner\'s cars open it, whoever\'s driving.'),
+    text('$(l)Remotes:$() sneak-right-click your door with one to link it (up to 4 doors) and give it to whoever you want to let '
+         'in. Right-click it, even driving, to open or close the nearest of its doors within 64 blocks. $(l)Reset remotes$() on the '
+         'door\'s screen stops them all working.$(br2)A $(item)Garage Door Button$() on a wall works the nearest door within 16 blocks.'),
+    craft('garage_remote', 'garage_button'),
+    text('$(l)Safe inside:$() a car shut in a garage, behind a closed door and under a roof, can\'t be stolen, towed or impounded. '
+         'Locked or not, only its owner and whoever has its key can get in it or tow it away.$(br2)It doesn\'t rust while it\'s in '
+         'there, and no snow settles on it.'),
+    image('garage_shut', 'Shut, painted, windows along the top: whatever\'s inside is safe.'),
+], sort=1)
+
+entry('garages', 'parking_garages', 'Parking Garages', 'reikocars:roller_shutter', [
+    text('On a door\'s screen, turn on $(l)Parking garage$() and set its prices: an hour and a day.$(br2)Drivers pull up and press '
+         + K('hitch') + ' to pay for 1 to 12 hours or 1 to 7 days, by card or cash, to you. The door then opens for their car, '
+         'coming and going, until its time\'s up.'),
+    image('parking_screen', 'Pull up, press ' + K('hitch') + ', and pay.'),
+    text('A car still inside when its time\'s up pays for the hours it\'s overstayed to get out. Your own cars park free, and '
+         'anyone with a remote.$(br2)Parking garages are on the ' + L('driving/gps', 'GPS') + ', with their hourly price. An hour is a '
+         'Minecraft hour (50 seconds), a day a Minecraft day.'),
+    image('garage_evening', 'Open for business.'),
+], sort=2)
 
 # -- Business --
 

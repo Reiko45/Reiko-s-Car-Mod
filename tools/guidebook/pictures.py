@@ -43,6 +43,13 @@ CROPS = {
     'roads': ('g_roads', 266, 65, 566, 365),
     'semi': ('g_semi', 310, 130, 630, 450),
     'pickup_camper': ('g_pickup_camper', 176, 60, 596, 480),
+    'garage_opening': ('351_sectional_opening', 237, 30, 617, 410),
+    'garage_inside': ('353_sectional_inside', 217, 20, 637, 440),
+    'shutter': ('354_shutter_opening', 212, 20, 612, 420),
+    'opens_for_car': ('359_opens_for_the_car', 207, 0, 647, 440),
+    'parking_screen': ('362_parking_screen', 204, 66, 648, 412),
+    'garage_evening': ('365_garage_evening', 230, 40, 830, 440),
+    'garage_shut': ('357_sectional_painted', 227, 15, 627, 415),
 }
 
 
@@ -61,6 +68,8 @@ def picture(shot, box):
 def main(wanted):
     os.makedirs(OUT, exist_ok=True)
     for name, (shot, *box) in CROPS.items():
+        if not os.path.exists(f'{SHOTS}/{shot}.png') and os.path.exists(f'{OUT}/{name}.png'):
+            continue  # its showcase hasn't been run here: keep the picture there is
         # 256 colors is plenty for a picture this size, and a sixth of the file
         picture(shot, tuple(box)).quantize(256, method=Image.Quantize.FASTOCTREE).save(f'{OUT}/{name}.png', optimize=True)
     names = sorted(CROPS)

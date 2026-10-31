@@ -74,6 +74,13 @@ public final class ModBlockEntities {
             () -> BlockEntityType.Builder.of(com.reiko.cars.bus.BusStopBlockEntity::new, ModBlocks.BUS_STOP_SIGN.get(), ModBlocks.BUS_SHELTER.get())
                     .build(null));
 
+    /** A garage door panel (a door's first panel keeps the door). */
+    public static final Supplier<BlockEntityType<com.reiko.cars.garage.GarageDoorBlockEntity>> GARAGE_DOOR = BLOCK_ENTITIES.register("garage_door",
+            () -> BlockEntityType.Builder.of(com.reiko.cars.garage.GarageDoorBlockEntity::new, ModBlocks.GARAGE_DOOR.get(), ModBlocks.ROLLER_SHUTTER.get())
+                    .build(null));
+    public static final Supplier<BlockEntityType<com.reiko.cars.garage.GarageButtonBlockEntity>> GARAGE_BUTTON = BLOCK_ENTITIES.register(
+            "garage_button", () -> BlockEntityType.Builder.of(com.reiko.cars.garage.GarageButtonBlockEntity::new, ModBlocks.GARAGE_BUTTON.get()).build(null));
+
     private ModBlockEntities() {
     }
 }

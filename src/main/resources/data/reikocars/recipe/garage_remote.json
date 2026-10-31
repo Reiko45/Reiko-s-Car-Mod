@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    {
+      "tag": "c:ingots/iron"
+    },
+    {
+      "tag": "c:dusts/redstone"
+    },
+    {
+      "tag": "minecraft:buttons"
+    }
+  ],
+  "result": {
+    "id": "reikocars:garage_remote",
+    "count": 1
+  }
+}

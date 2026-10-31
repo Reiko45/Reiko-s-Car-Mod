@@ -49,6 +49,11 @@ stock its cupboards, cook on its stove, and when it's parked its awning, steps a
 trailers** carry cows, sheep, pigs, goats, horses, llamas and chickens: lead them up the ramp and watch them ride
 between the slats.
 
+**Garages:** build a **garage door** any size from panels (a house's sectional door that rolls up under the ceiling,
+or a metal **roller shutter**), paint it, and open it by hand, with a **remote**, a wall button, or just by driving up
+to it. A car shut in a garage can't be stolen, towed or impounded. Or run it as a **parking garage**, charging drivers
+by the hour or the day.
+
 A **Car Manual** (with Patchouli installed) explains all of it in game, with every vehicle turning in 3D, its recipes
 and pictures: every player gets one the first time they join.
 
@@ -67,7 +72,7 @@ and pictures: every player gets one the first time they join.
 
 The mod's guide book, shown by **Patchouli**. It has a chapter for each part of the mod: getting started, driving,
 every vehicle (each turning in 3D, with its seats, top speed, tank and recipes), fuel and charging, repairs and
-washing, towing, roads, money and business, public services, and tuning and racing, with screenshots of each.
+washing, towing, roads, garages, money and business, public services, and tuning and racing, with screenshots of each.
 
 - **Getting one:** every player is given one the first time they join a world (once: not again after dying or
   losing it). Make another from a **book** and an **iron ingot**, or open it from the **Guide** button at the top of
@@ -925,6 +930,47 @@ wall cars can't get past.
 
 New meters charge $0.50 per 10 minutes with a $10.00 fine, and new booths a $2.00 toll (see [Settings](#settings)).
 
+## Garages
+
+A garage door is built from panels: **Garage Doors** (a house's sectional door, in white panels, rolling up into the
+garage) or **Roller Shutters** (metal slats that coil up into a box over the opening). Fill a doorway with them and,
+as soon as they make a full rectangle, they join into **one door**, up to **16 wide and 10 high** (see
+[Settings](#settings)). Until then they're loose panels; the action bar says how far there is to go. Panels of
+different kinds, facing different ways or put up by different players don't join.
+
+- **Opening it:** right-click it. A door opens for its **owner** (whoever put its panels up), an admin, and anyone
+  carrying a **Garage Remote** linked to it; from **inside**, anyone can open it, so nobody's shut in. It takes a
+  second or two to go up or down, clears the doorway a row at a time, and backs up rather than come down on anyone or
+  anything in the way.
+- **Driving up:** a door **opens by itself** for a car coming at it (on either side, within 8 blocks) if its driver
+  may open it or it's the owner's car, and shuts again 3 seconds after the car's through. In front of a door, the
+  dashboard shows **[G] Open/close garage door** for the key too.
+- **Remotes:** sneak-right-click your door with a remote to link it (up to **4 doors** a remote; again to unlink),
+  then give it to whoever you want to let in. Right-click with it, anywhere, even driving, to open or close the
+  nearest of its doors within **64 blocks**. **Reset remotes** on the door's screen gives the door a new code, and
+  every remote linked to it stops working.
+- **Buttons:** a **Garage Door Button** on a wall works the nearest door within **16 blocks** (sneak-right-click it
+  to look again). Inside the garage it's for anyone; outside, only for whoever may open the door. No redstone.
+- **Its screen:** sneak-right-click the door with an empty hand. Its **name** (shown on remotes and the GPS),
+  **windows** (a row along the top of a sectional door), whether it **opens for cars**, and which side's the garage
+  (worked out from the roof when it's built: **Swap sides** if it guessed wrong).
+- **Paint:** right-click it with any dye. Only its owner (or an admin) can paint it, set it up or break it.
+
+A sectional door rolls up its track and, where there's room above the opening inside, lies flat under the ceiling on
+its rails, with an opener; with no room there it slides up into the wall.
+
+**Safe in the garage:** a car behind a **closed** garage door (within 16 blocks of it, across its width) and under a
+**roof** can't be got into, towed away or impounded by anyone but its owner and whoever has its key, locked or not. It
+doesn't rust while it's in there, and no snow settles on it.
+
+**Parking garages:** turn on **Parking garage** on the door's screen and set its prices for an **hour** and a
+**day** (a Minecraft hour is 50 seconds; new garages charge $1.00 and $10.00). A driver who pulls up to it (and couldn't
+open it anyway) sees **[G] Pay to park**: press **G** and pay for 1, 2, 6 or 12 hours or 1, 2, 3 or 7 days, by
+**Card** with PIN or **Cash**, plus sales tax, to the owner. The door then opens for that car, coming and going,
+until its time's up. A car still inside after that sees **[G] Pay to leave**: the hours it's overstayed, to get out.
+The owner's cars (and anyone with a remote) park free. Parking garages are on the GPS, with their hourly price, and the
+door's screen shows how many cars are parked, the visits and the takings.
+
 ## Insurance
 
 **Insurance Offices** sell car insurance. Whoever puts one up owns it (only they or an admin can break it): they're
@@ -1019,6 +1065,10 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | Stop Sign | iron ingot, red dye, iron ingot over iron ingot, white dye, iron ingot, a street pole below |
 | Bus Stop Sign | blue dye, white dye, blue dye over blue dye, iron ingot, blue dye, a street pole below |
 | Bus Shelter | three iron ingots over glass pane, Bus Stop Sign, glass pane over glass pane, wooden slab, glass pane |
+| Garage Door ×4 | iron ingot, planks, iron ingot, over iron ingot, planks, iron ingot |
+| Roller Shutter ×4 | iron nugget, iron ingot, iron nugget, over iron nugget, iron ingot, iron nugget |
+| Garage Remote | an iron ingot, redstone and any button (shapeless) |
+| Garage Door Button | a stone button, redstone and an iron nugget (shapeless) |
 | Speed Limit Sign | iron ingot, white dye, iron ingot over iron ingot, black dye, iron ingot, a street pole below |
 | Street Lamp | three iron ingots over a street pole and glowstone |
 | Trash Can | iron ingot, iron trapdoor, iron ingot on top, iron ingot, green dye, iron ingot across the middle, three iron ingots below |
@@ -1217,6 +1267,12 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `roads.redLightFine` | `15.0` | A new traffic light's red-light camera fine (its owner can change it) |
 | `roads.speedingFine` | `20.0` | A new speed limit sign's camera fine (its owner can change it) |
 | `guide.giveOnFirstJoin` | `true` | Every player is given the [Car Manual](#the-car-manual) the first time they join (needs Patchouli) |
+| `garages.maxWidth` | `16` | The widest a garage door can be, in panels |
+| `garages.maxHeight` | `10` | The tallest a garage door can be, in panels |
+| `garages.openReach` | `8.0` | How far from a garage door a car driving up to it opens it |
+| `garages.closeSeconds` | `3` | How long a door a car opened stays open once nothing's going through |
+| `garages.defaultPricePerHour` | `1.0` | What a new parking garage charges an hour (its owner can change it) |
+| `garages.defaultPricePerDay` | `10.0` | What a new parking garage charges a day (its owner can change it) |
 
 Each player can pick **mph** or **km/h**, turn the dashboard off, and (with Xaero's Minimap) choose whether the GPS
 destination and their cars show on the minimap, in `config/reikocars-client.toml`.
@@ -1260,6 +1316,7 @@ game test then checks there's no manual and no recipe for one).
 ./gradlew runClient -Pshowcase=tune       # the Tuning Bench and a livery, the race track, a time trial and a race start, the kits
 ./gradlew runClient -Pshowcase=gps -PxaeroJars=/path/to/folder  # the GPS's tabs, driving and walking to a destination, arriving, the minimap
 ./gradlew runClient -Pshowcase=busstops   # a bus stop sign and shelter, the owner's screens, a bus route, the doors, the bell, villagers aboard
+./gradlew runClient -Pshowcase=garages    # a garage door and a roller shutter going up, inside, painted, opening for a car, the screens, paying to park
 ./gradlew runClient -Pshowcase=guide      # the Car Manual: its pictures' scenes, then its pages, one screenshot each
 ./gradlew runClient -Pshowcase=book       # every spread of the Car Manual, and a check that every item and block has a name and model
 ./gradlew runClient -Pshowcase=rig3p      # riding a semi with its trailer and a pickup with a camper, in third person
@@ -1269,7 +1326,8 @@ game test then checks there's no manual and no recipe for one).
 
 The `mp` showcase plays as a survival player on a real dedicated server: it joins, is given the manual, builds a
 sedan at the workbench, cuts a key, buys fuel with cash, drives, opens the radio and GPS, hitches and tows with a semi
-and a pickup, sets up camp and sleeps in the camper, loads cows into a livestock trailer, leaves and comes back, and
+and a pickup, sets up camp and sleeps in the camper, loads cows into a livestock trailer, opens a garage door and sets
+it up, links a remote to it, pays to park at someone else's parking garage, leaves and comes back, and
 then waits while the server is restarted (restart it when its log says `REIKOTEST before_restart`), to check
 everything is as it was left. The server needs the mod's jar with the dev-only
 `DevServerTest` class added (it builds each scene with `/reikotest`): add
@@ -1356,6 +1414,7 @@ src/main/java/com/reiko/cars/
 ├── finance/              car loans: the Loan, where they're kept (LoanData), and LoanService (terms, daily payments, repossession, paying off)
 ├── impound/              the Impound Office block, block entity, menu and protection, the lots (ImpoundRegistry), and ImpoundService (towing in, fees, releasing)
 ├── bus/                  bus stops: the Bus Stop Sign and the Bus Shelter (and its bench seat), their block entity, menu and naming (BusStopService), every stop's routes (BusStopRegistry), a bus's route (BusLine), and BusService (waiting, the doors, the bell, villagers)
+├── garage/               garage doors: the panels (GarageDoorBlock and its block entity, which on a door's anchor panel keeps the door), joining them into doors and opening them (GarageDoors), their settings, remotes (GarageRemoteItem, RemoteLinks), the wall button, the owner's screen's menu, and parking garages (ParkingService, ParkingMenu)
 ├── gps/                  the GPS: the places it knows of (PlacesRegistry, PlaceKind), where every car is (CarLocator), GpsService (gas stations and their prices, your cars) and GpsMath
 ├── weather/              the road's grip in rain, storms, snow and ice (RoadWeather), snow on cars and lightning (CarWeather), and spray off the tires (TireSpray)
 ├── wash/                 dirt (Dirt), washing by hand (HandWash), the Car Wash arch and the Wash Bay with their block entities and menus, CarWashService and WashBayService (paying, washing, spraying), and the Pressure Washer
@@ -1375,14 +1434,15 @@ src/main/java/com/reiko/cars/
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
 ├── compat/patchouli/     the Car Manual's book, through Patchouli's API (only touched when Patchouli is installed)
 ├── guide/                the Car Manual: giving it on first join, and opening it (Guide)
-├── network/              packets: the GPS's places and cars, a bus stop's name and routes, pump, repair bench, mailbox, parking meter, toll, car wash, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
+├── network/              packets: the GPS's places and cars, a bus stop's name and routes, a garage's settings and paying to park, pump, repair bench, mailbox, parking meter, toll, car wash, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, and the wipers and raindrops on the windshield, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the GPS (GpsClient, its screen and panel, and GpsXaero for Xaero's Minimap), the bus stop's screen and lettering, the camper's screen and its sleepers (CamperClient), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
+├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, and the wipers and raindrops on the windshield, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the GPS (GpsClient, its screen and panel, and GpsXaero for Xaero's Minimap), the bus stop's screen and lettering, the garage doors (GarageDoorRenderer) and the garage and parking screens, the camper's screen and its sleepers (CamperClient), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcases and the multiplayer play test (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)
 tools/guidebook/          the Car Manual's writer (book.py) and its pictures' cropper (pictures.py)
+tools/garage/             draws the garage doors' textures and writes their block states, models, loot tables and recipes (assets.py)
 src/xaeroStubs/java/       compile-time stand-ins for the few classes of Xaero's Minimap the GPS uses (not in the jar)
 ```
 

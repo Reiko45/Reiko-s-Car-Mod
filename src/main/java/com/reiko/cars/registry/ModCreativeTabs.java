@@ -59,6 +59,10 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.FIRE_HOSE.get());
                 output.accept(ModItems.CAR_WASH.get());
                 output.accept(ModItems.WASH_BAY.get());
+                output.accept(ModItems.GARAGE_DOOR.get());
+                output.accept(ModItems.ROLLER_SHUTTER.get());
+                output.accept(ModItems.GARAGE_BUTTON.get());
+                output.accept(ModItems.GARAGE_REMOTE.get());
                 output.accept(ModItems.ASPHALT.get());
                 output.accept(ModItems.ASPHALT_SLAB.get());
                 output.accept(ModItems.ASPHALT_STAIRS.get());

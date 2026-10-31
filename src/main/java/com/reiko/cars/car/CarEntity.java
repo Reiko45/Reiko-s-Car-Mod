@@ -1034,6 +1034,23 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return isOwner(player) || player.hasPermissions(2) || CarKeys.holds(player, lockCode()) || rentedBy(player);
     }
 
+    /** Whether {@code player} could open it if it were locked: its owner, an admin, someone with its key, its renter. */
+    public boolean holdsKeyFor(Player player) {
+        return opens(player);
+    }
+
+    /**
+     * Shut in a garage (see {@link com.reiko.cars.garage.GarageDoors#garaged}), locked or not, it's only for whoever
+     * could open it locked, and anyone joining them inside.
+     */
+    private boolean garagedAgainst(Player player) {
+        if (owner() == null || opens(player) || hasPassenger(player)
+                || getPassengers().stream().anyMatch(passenger -> passenger instanceof Player rider && opens(rider))) {
+            return false;
+        }
+        return com.reiko.cars.garage.GarageDoors.garaged(this);
+    }
+
     // ---- keys ----
 
     @Override
@@ -1254,6 +1271,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             if (!canBeUsedBy(player)) {
                 return refuseLocked(player);
             }
+            if (garagedAgainst(player)) {
+                return refuse(player, Component.translatable("car.reikocars.garaged", ownerName));
+            }
             if (player instanceof ServerPlayer serverPlayer) {
                 openBed(serverPlayer);
             }
@@ -1302,6 +1322,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
         if (!canBeUsedBy(player)) {
             return refuseLocked(player);
+        }
+        if (garagedAgainst(player)) {
+            return refuse(player, Component.translatable("car.reikocars.garaged", ownerName));
         }
         if (!level().isClientSide) {
             return player.startRiding(this) ? InteractionResult.CONSUME : InteractionResult.PASS;

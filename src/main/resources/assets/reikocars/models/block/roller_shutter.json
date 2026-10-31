@@ -1,0 +1,72 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "front": "reikocars:block/roller_shutter",
+    "back": "reikocars:block/roller_shutter",
+    "particle": "reikocars:block/roller_shutter"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        6.5
+      ],
+      "to": [
+        16,
+        16,
+        9.5
+      ],
+      "faces": {
+        "south": {
+          "texture": "#front",
+          "tintindex": 0
+        },
+        "north": {
+          "texture": "#back",
+          "tintindex": 0
+        },
+        "up": {
+          "texture": "#back",
+          "tintindex": 0,
+          "uv": [
+            0,
+            0,
+            16,
+            3
+          ]
+        },
+        "down": {
+          "texture": "#back",
+          "tintindex": 0,
+          "uv": [
+            0,
+            13,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#back",
+          "tintindex": 0,
+          "uv": [
+            0,
+            0,
+            3,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#back",
+          "tintindex": 0,
+          "uv": [
+            13,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    }
+  ]
+}

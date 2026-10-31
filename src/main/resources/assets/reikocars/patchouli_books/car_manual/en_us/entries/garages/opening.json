@@ -1,0 +1,41 @@
+{
+  "name": "Remotes and Buttons",
+  "icon": "reikocars:garage_remote",
+  "category": "reikocars:garages",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A door opens for its owner, an admin, and anyone carrying a $(item)Garage Remote$() linked to it. From inside, anyone can open it: nobody's shut in.$(br2)Drive up to it and it $(l)opens by itself$(), then shuts behind you once you're through. $(k:key.reikocars.hitch) opens or closes it from the car, too."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/opens_for_car.png"
+      ],
+      "border": true,
+      "text": "Its owner's cars open it, whoever's driving."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Remotes:$() sneak-right-click your door with one to link it (up to 4 doors) and give it to whoever you want to let in. Right-click it, even driving, to open or close the nearest of its doors within 64 blocks. $(l)Reset remotes$() on the door's screen stops them all working.$(br2)A $(item)Garage Door Button$() on a wall works the nearest door within 16 blocks."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:garage_remote",
+      "recipe2": "reikocars:garage_button"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Safe inside:$() a car shut in a garage, behind a closed door and under a roof, can't be stolen, towed or impounded. Locked or not, only its owner and whoever has its key can get in it or tow it away.$(br2)It doesn't rust while it's in there, and no snow settles on it."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/garage_shut.png"
+      ],
+      "border": true,
+      "text": "Shut, painted, windows along the top: whatever's inside is safe."
+    }
+  ]
+}

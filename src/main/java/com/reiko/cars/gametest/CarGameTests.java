@@ -139,7 +139,7 @@ public final class CarGameTests {
     }
 
     /** Logs a fake player in, which opens their bank account (as the economy mod's own tests do). */
-    private static ServerPlayer join(GameTestHelper helper) {
+    static ServerPlayer join(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         UUID id = UUID.randomUUID();
         String name = "car_" + id.toString().replace("-", "").substring(0, 10);
@@ -158,7 +158,7 @@ public final class CarGameTests {
         return player;
     }
 
-    private static void leave(GameTestHelper helper, ServerPlayer... players) {
+    static void leave(GameTestHelper helper, ServerPlayer... players) {
         MinecraftServer server = helper.getLevel().getServer();
         for (ServerPlayer player : players) {
             if (player.isPassenger()) {
@@ -205,12 +205,12 @@ public final class CarGameTests {
         player.getInventory().add(CarKeys.keyFor(vehicle));
     }
 
-    private static void check(GameTestHelper helper, boolean condition, String what) {
+    static void check(GameTestHelper helper, boolean condition, String what) {
         helper.assertTrue(condition, what);
     }
 
     /** Runs one step of a test: if it fails, {@code done} runs (sending the test's players away) before the failure goes on. */
-    private static void run(GameTestHelper helper, Runnable done, Runnable step) {
+    static void run(GameTestHelper helper, Runnable done, Runnable step) {
         try {
             step.run();
         } catch (RuntimeException e) {
@@ -916,7 +916,7 @@ public final class CarGameTests {
     private static final String YARD = "yard";
 
     /** A {@code type} in the yard, its middle at ({@code x}, {@code z}), facing south (+z). */
-    private static CarEntity vehicle(GameTestHelper helper, CarType type, double x, double z) {
+    static CarEntity vehicle(GameTestHelper helper, CarType type, double x, double z) {
         CarEntity car = ModEntities.car(type).create(helper.getLevel());
         Vec3 at = helper.absoluteVec(new Vec3(x, 1.0, z));
         car.moveTo(at.x, at.y, at.z, 0.0F, 0.0F);

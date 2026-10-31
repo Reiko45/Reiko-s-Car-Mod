@@ -130,6 +130,13 @@ public final class ModItems {
     /** A fifth of a body repair. */
     public static final DeferredItem<Item> BODY_PANEL = ITEMS.registerSimpleItem("body_panel");
 
+    public static final DeferredItem<BlockItem> GARAGE_DOOR = ITEMS.registerSimpleBlockItem(ModBlocks.GARAGE_DOOR);
+    public static final DeferredItem<BlockItem> ROLLER_SHUTTER = ITEMS.registerSimpleBlockItem(ModBlocks.ROLLER_SHUTTER);
+    public static final DeferredItem<BlockItem> GARAGE_BUTTON = ITEMS.registerSimpleBlockItem(ModBlocks.GARAGE_BUTTON);
+    /** Opens and shuts the garage doors it's linked to. */
+    public static final DeferredItem<com.reiko.cars.garage.GarageRemoteItem> GARAGE_REMOTE = ITEMS.register("garage_remote",
+            () -> new com.reiko.cars.garage.GarageRemoteItem(new Item.Properties().stacksTo(1)));
+
     public static final DeferredItem<BlockItem> ASPHALT = ITEMS.registerSimpleBlockItem(ModBlocks.ASPHALT);
     public static final DeferredItem<BlockItem> ASPHALT_SLAB = ITEMS.registerSimpleBlockItem(ModBlocks.ASPHALT_SLAB);
     public static final DeferredItem<BlockItem> ASPHALT_STAIRS = ITEMS.registerSimpleBlockItem(ModBlocks.ASPHALT_STAIRS);

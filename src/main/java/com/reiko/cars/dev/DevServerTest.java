@@ -69,6 +69,9 @@ public final class DevServerTest {
                 .then(Commands.literal("rig").executes(context -> run(context, DevServerTest::rig)))
                 .then(Commands.literal("night").executes(context -> run(context, player -> player.serverLevel().setDayTime(13000))))
                 .then(Commands.literal("clearmanual").executes(context -> run(context, DevServerTest::clearManual)))
+                .then(Commands.literal("garage").executes(context -> run(context, DevServerTest::garage)))
+                .then(Commands.literal("parking").executes(context -> run(context, DevServerTest::parking)))
+                .then(Commands.literal("op").executes(context -> run(context, player -> player.server.getPlayerList().op(player.getGameProfile()))))
                 .then(Commands.literal("report").then(Commands.argument("what", StringArgumentType.word())
                         .executes(context -> run(context, player -> report(player, StringArgumentType.getString(context, "what")))))));
     }
@@ -213,6 +216,71 @@ public final class DevServerTest {
         log(player, "rig ready: tanker hitched=" + tanker.isPassenger() + ", cows aboard=" + pens.getPassengers().size());
     }
 
+    /** Where the garages are: the house's door's anchor (its east end: it faces north), and the warehouse's. */
+    static final BlockPos GARAGE_DOOR = new BlockPos(45, Y, 0);
+    static final BlockPos SHUTTER_DOOR = new BlockPos(53, Y, 0);
+
+    /** Walls and a roof from x0 to x1, z 0 to 8, with a doorway 3 high from doorX0 to doorX1 in the north wall. */
+    private static void garageWalls(ServerLevel level, int x0, int x1, int doorX0, int doorX1) {
+        for (int x = x0; x <= x1; x++) {
+            for (int z = 0; z <= 8; z++) {
+                boolean edge = x == x0 || x == x1 || z == 0 || z == 8;
+                for (int y = Y; y <= Y + 3; y++) {
+                    boolean doorway = z == 0 && x >= doorX0 && x <= doorX1 && y <= Y + 2;
+                    level.setBlockAndUpdate(new BlockPos(x, y, z), edge && !doorway ? Blocks.WHITE_CONCRETE.defaultBlockState() : Blocks.AIR.defaultBlockState());
+                }
+                level.setBlockAndUpdate(new BlockPos(x, Y + 4, z), Blocks.GRAY_CONCRETE.defaultBlockState());
+            }
+        }
+    }
+
+    /**
+     * Two garages: the player's, its sectional door's panels put up one by one; and a warehouse with a roller shutter
+     * owned by "Sam", run as a parking garage. A garage remote for the player, who's no longer an admin (admins open
+     * every door), in front of their door.
+     */
+    private static void garage(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        garageWalls(level, 40, 48, 42, 45);
+        for (int y = Y; y <= Y + 2; y++) {
+            for (int x = 42; x <= 45; x++) {
+                BlockPos pos = new BlockPos(x, y, 0);
+                BlockState panel = ModBlocks.GARAGE_DOOR.get().defaultBlockState().setValue(com.reiko.cars.garage.GarageDoorBlock.FACING, Direction.NORTH);
+                level.setBlockAndUpdate(pos, panel);
+                panel.getBlock().setPlacedBy(level, pos, level.getBlockState(pos), player, ItemStack.EMPTY);
+            }
+        }
+        garageWalls(level, 50, 56, 51, 53);
+        java.util.UUID sam = java.util.UUID.nameUUIDFromBytes("Sam".getBytes());
+        EconomyService.INSTANCE.ensureAccount(player.server, sam, "Sam"); // the money goes somewhere (Sam's never been on)
+        for (int y = Y; y <= Y + 2; y++) {
+            for (int x = 51; x <= 53; x++) {
+                BlockPos pos = new BlockPos(x, y, 0);
+                level.setBlockAndUpdate(pos, ModBlocks.ROLLER_SHUTTER.get().defaultBlockState()
+                        .setValue(com.reiko.cars.garage.GarageDoorBlock.FACING, Direction.NORTH));
+                ((com.reiko.cars.garage.GarageDoorBlockEntity) level.getBlockEntity(pos)).setOwner(sam, "Sam");
+            }
+        }
+        com.reiko.cars.garage.GarageDoors.rejoin(level, SHUTTER_DOOR);
+        com.reiko.cars.garage.GarageDoorBlockEntity shutter = com.reiko.cars.garage.GarageDoors.doorAt(level, SHUTTER_DOOR);
+        check(shutter != null && shutter.width() == 3, "the shutter's a door");
+        check(com.reiko.cars.garage.ParkingService.save(player, shutter, "Sam's Parking", 1 | 2 | 8, "1.00", "8.00").success(), "parking set up");
+        com.reiko.cars.garage.GarageDoorBlockEntity door = com.reiko.cars.garage.GarageDoors.doorAt(level, GARAGE_DOOR);
+        check(door != null && door.width() == 4 && door.height() == 3, "the house's door is 4 by 3");
+        give(player, new ItemStack(ModItems.GARAGE_REMOTE.get()));
+        player.server.getPlayerList().deop(player.getGameProfile());
+        player.teleportTo(level, 43.5, Y, -2.5, 0.0F, 10.0F);
+        log(player, "garage ready: door " + door.width() + "x" + door.height() + " anchor " + door.getBlockPos().toShortString()
+                + ", parking " + shutter.settings().name());
+    }
+
+    /** The player's hatchback, pulled up to Sam's shutter, the player at the wheel. */
+    private static void parking(ServerPlayer player) {
+        CarEntity car = car(player, CarType.HATCHBACK, 52.5, -4.2, 0.0F);
+        check(player.startRiding(car, true), "in the hatchback");
+        log(player, "parking ready");
+    }
+
     private static void check(boolean ok, String what) {
         if (!ok) {
             throw new IllegalStateException("reikotest: " + what + " failed");
@@ -255,6 +323,13 @@ public final class DevServerTest {
         for (GasPumpBlockEntity pump : List.of(PUMP).stream().map(level::getBlockEntity)
                 .filter(GasPumpBlockEntity.class::isInstance).map(GasPumpBlockEntity.class::cast).toList()) {
             log(player, what + ": pump tank=" + pump.tank().getFluidAmount());
+        }
+        for (BlockPos anchor : new BlockPos[] {GARAGE_DOOR, SHUTTER_DOOR}) {
+            com.reiko.cars.garage.GarageDoorBlockEntity door = com.reiko.cars.garage.GarageDoors.doorAt(level, anchor);
+            if (door != null) {
+                log(player, what + ": garage door " + anchor.toShortString() + " " + door.width() + "x" + door.height() + " name=" + door.settings().name()
+                        + " open=" + door.wantsOpen() + " progress=" + door.progress() + " parked=" + door.parked().size() + " earned=" + door.earned());
+            }
         }
         log(player, what + ": cash=" + Purse.value(player));
     }

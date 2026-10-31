@@ -114,6 +114,13 @@ public final class CarsConfig {
 
     public static final ModConfigSpec.BooleanValue GIVE_MANUAL;
 
+    public static final ModConfigSpec.IntValue GARAGE_MAX_WIDTH;
+    public static final ModConfigSpec.IntValue GARAGE_MAX_HEIGHT;
+    public static final ModConfigSpec.DoubleValue GARAGE_REACH;
+    public static final ModConfigSpec.IntValue GARAGE_CLOSE_SECONDS;
+    public static final ModConfigSpec.DoubleValue GARAGE_HOUR_PRICE;
+    public static final ModConfigSpec.DoubleValue GARAGE_DAY_PRICE;
+
     public static final ModConfigSpec.DoubleValue STOP_REACH;
     public static final ModConfigSpec.BooleanValue VILLAGER_PASSENGERS;
     public static final ModConfigSpec.DoubleValue VILLAGER_FARE;
@@ -523,6 +530,27 @@ public final class CarsConfig {
         GIVE_MANUAL = builder
                 .comment("Whether every player is given the Car Manual (the mod's guide book, which needs Patchouli) the first time they join.")
                 .define("giveOnFirstJoin", true);
+        builder.pop();
+
+        builder.push("garages");
+        GARAGE_MAX_WIDTH = builder
+                .comment("The widest a garage door can be, in panels.")
+                .defineInRange("maxWidth", 16, 1, 32);
+        GARAGE_MAX_HEIGHT = builder
+                .comment("The tallest a garage door can be, in panels.")
+                .defineInRange("maxHeight", 10, 1, 16);
+        GARAGE_REACH = builder
+                .comment("How far from a garage door a car driving up to it opens it, in blocks.")
+                .defineInRange("openReach", 8.0, 2.0, 24.0);
+        GARAGE_CLOSE_SECONDS = builder
+                .comment("How long a garage door a car opened stays open once nothing's going through, in seconds.")
+                .defineInRange("closeSeconds", 3, 1, 60);
+        GARAGE_HOUR_PRICE = builder
+                .comment("What a new parking garage charges for an hour (a Minecraft hour, 50 seconds); its owner can change it.")
+                .defineInRange("defaultPricePerHour", 1.0, 0.0, 1.0E6);
+        GARAGE_DAY_PRICE = builder
+                .comment("What a new parking garage charges for a day (a Minecraft day, 20 minutes); its owner can change it.")
+                .defineInRange("defaultPricePerDay", 10.0, 0.0, 1.0E6);
         builder.pop();
 
         SPEC = builder.build();

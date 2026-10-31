@@ -28,6 +28,9 @@
     "reikocars:car_wash",
     "reikocars:wash_bay",
     "reikocars:bus_stop_sign",
-    "reikocars:bus_shelter"
+    "reikocars:bus_shelter",
+    "reikocars:garage_door",
+    "reikocars:roller_shutter",
+    "reikocars:garage_button"
   ]
 }
