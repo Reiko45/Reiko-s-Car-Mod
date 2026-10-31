@@ -1,0 +1,25 @@
+{
+  "name": "Farm Tractor",
+  "icon": "reikocars:farm_tractor",
+  "category": "reikocars:vehicles/trucks",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:farm_tractor",
+      "scale": 0.82,
+      "rotate": true,
+      "text": "$(l)1$() seat · $(l)20 mph$() · 6 buckets of diesel$(br)Full speed on grass, dirt and farmland; tow ball"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:farm_tractor_chassis",
+      "recipe2": "reikocars:farm_tractor_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:farm_tractor_interior",
+      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
+    }
+  ]
+}

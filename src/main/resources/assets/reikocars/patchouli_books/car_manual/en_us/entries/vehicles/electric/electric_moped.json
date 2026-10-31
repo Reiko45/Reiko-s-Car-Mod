@@ -1,0 +1,30 @@
+{
+  "name": "Electric Moped",
+  "icon": "reikocars:electric_moped",
+  "category": "reikocars:vehicles/electric",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:electric_moped",
+      "scale": 0.666,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)31 mph$() · 30,000 MJ battery$(br)Room for two; quiet, and goes a long way on a charge"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:electric_moped_chassis"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:electric_moped_body",
+      "title": "Body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:electric_moped_interior",
+      "text": "Then at the Car Workbench, with $(item)Electric Motor$() and two Tires.",
+      "title": "Interior"
+    }
+  ]
+}

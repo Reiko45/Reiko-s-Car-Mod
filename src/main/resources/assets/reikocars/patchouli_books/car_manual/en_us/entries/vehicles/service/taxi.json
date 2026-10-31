@@ -1,0 +1,26 @@
+{
+  "name": "Taxi",
+  "icon": "reikocars:taxi",
+  "category": "reikocars:vehicles/service",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:taxi",
+      "scale": 0.659,
+      "rotate": true,
+      "text": "$(l)4$() seats · $(l)40 mph$() · 8 buckets$(br)Runs a fare meter; lit TAXI sign",
+      "offset": -0.025
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:taxi_chassis",
+      "recipe2": "reikocars:taxi_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:taxi_interior",
+      "text": "Then at the Car Workbench, with $(item)Car Engine$() and four Tires."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "Box Trailer",
+  "icon": "reikocars:box_trailer",
+  "category": "reikocars:vehicles/trailers",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:box_trailer",
+      "scale": 0.427,
+      "rotate": true,
+      "text": "54 slots of cargo, opened like a double chest."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:box_trailer_body",
+      "text": "Then at the Car Workbench, on a $(item)Trailer Chassis$() with four Tires."
+    }
+  ]
+}

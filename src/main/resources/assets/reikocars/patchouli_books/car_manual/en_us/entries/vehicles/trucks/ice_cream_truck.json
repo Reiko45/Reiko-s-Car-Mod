@@ -1,0 +1,30 @@
+{
+  "name": "Ice Cream Truck",
+  "icon": "reikocars:ice_cream_truck",
+  "category": "reikocars:vehicles/trucks",
+  "sortnum": 8,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:ice_cream_truck",
+      "scale": 0.669,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)32 mph$() · 9 buckets$(br)A shop on wheels, with a 27-slot freezer"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:ice_cream_truck_chassis",
+      "title": "Chassis"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:ice_cream_truck_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:ice_cream_truck_interior",
+      "text": "Then at the Car Workbench, with $(item)Car Engine$() and four Tires.",
+      "title": "Interior"
+    }
+  ]
+}

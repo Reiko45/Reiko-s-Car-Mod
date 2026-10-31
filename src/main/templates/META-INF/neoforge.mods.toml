@@ -51,3 +51,12 @@ Cars wear out as they're driven; fix them at a Repair Bench, with your own parts
     versionRange="[24,)"
     ordering="NONE"
     side="CLIENT"
+
+# Optional: with Patchouli, the Car Manual (the mod's guide book) is given to every player on their first join, can be
+# crafted, and opens from the Car Workbench.
+[[dependencies.${mod_id}]]
+    modId="patchouli"
+    type="optional"
+    versionRange="[1.21-80,)"
+    ordering="NONE"
+    side="BOTH"

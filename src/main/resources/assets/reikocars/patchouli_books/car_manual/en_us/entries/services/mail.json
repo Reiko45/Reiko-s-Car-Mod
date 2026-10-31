@@ -1,0 +1,16 @@
+{
+  "name": "Mail",
+  "icon": "reikocars:mailbox",
+  "category": "reikocars:services",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(item)Mailbox$()es send parcels between players. Right-click one, type who it's for, put things in and pay the postage: the parcel waits in the mailbox and its flag goes up.$(br2)The $(item)Mail Van$() carries the mail: drive up beside a mailbox and press $(k:key.reikocars.hitch) to collect and deliver. The driver earns each parcel's postage."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:mailbox"
+    }
+  ]
+}

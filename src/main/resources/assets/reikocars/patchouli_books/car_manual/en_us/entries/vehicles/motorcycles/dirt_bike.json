@@ -1,0 +1,25 @@
+{
+  "name": "Dirt Bike",
+  "icon": "reikocars:dirt_bike",
+  "category": "reikocars:vehicles/motorcycles",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:dirt_bike",
+      "scale": 0.574,
+      "rotate": true,
+      "text": "$(l)1$() seat · $(l)42 mph$() · 3 buckets$(br)Keeps full speed on grass, sand and snow"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:dirt_bike_chassis",
+      "recipe2": "reikocars:dirt_bike_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:dirt_bike_interior",
+      "text": "Then at the Car Workbench, with $(item)Motorcycle Engine$() and two Tires."
+    }
+  ]
+}

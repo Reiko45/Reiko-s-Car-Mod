@@ -1,0 +1,32 @@
+{
+  "name": "Weather",
+  "icon": "minecraft:snowball",
+  "category": "reikocars:driving",
+  "sortnum": 5,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Rain, snow and storms take away grip: a car is slower to get going, takes longer to stop, and slides wide in hard turns.$(br)$(li)Rain: 80% grip$(li)Thunderstorm: 65%$(li)Snow: 55%$(li)Ice: like glass$(br2)The dashboard shows WET, STORM, SNOW or ICE."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/rain.png"
+      ],
+      "border": true,
+      "text": "Wipers sweep the windshield in rain and snow; water sprays up behind the wheels."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/snow_on_cars.png"
+      ],
+      "border": true,
+      "text": "Snow covers parked cars, and blows off once they're driven."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Lightning sometimes strikes a car in a storm, but the people inside are safe.$(br2)$(item)Winter Tires$(), fitted at a $(l:tuning/tuning)Tuning Bench$(/l), win back most of the grip on snow and ice and half of it in the rain. Headlights come on by themselves in bad weather."
+    }
+  ]
+}

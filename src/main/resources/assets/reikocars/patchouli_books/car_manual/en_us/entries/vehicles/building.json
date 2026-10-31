@@ -1,0 +1,13 @@
+{
+  "name": "Building a Vehicle",
+  "icon": "reikocars:car_workbench",
+  "category": "reikocars:vehicles",
+  "sortnum": -1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Every vehicle in this chapter is built at the $(l:getting_started/workbench)Car Workbench$(/l) from its own parts. Each entry shows the vehicle turning in 3D, what it does, and how to craft its parts."
+    }
+  ],
+  "priority": true
+}

@@ -1,0 +1,25 @@
+{
+  "name": "Ambulance",
+  "icon": "reikocars:ambulance",
+  "category": "reikocars:vehicles/service",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:ambulance",
+      "scale": 0.613,
+      "rotate": true,
+      "text": "$(l)5$() seats · $(l)38 mph$() · 10 buckets of diesel$(br)Siren; heals whoever rides in the back"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:ambulance_chassis",
+      "recipe2": "reikocars:ambulance_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:ambulance_interior",
+      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
+    }
+  ]
+}

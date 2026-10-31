@@ -1,0 +1,20 @@
+{
+  "name": "Liveries",
+  "icon": "minecraft:white_dye",
+  "category": "reikocars:tuning",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The Tuning Bench's $(l)Livery$() tab puts a $(l)race number$() on both doors and $(l)racing stripes$() in any color along the hood, roof and trunk. It's free."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/livery.png"
+      ],
+      "border": true,
+      "text": "A car with a race number and stripes."
+    }
+  ]
+}

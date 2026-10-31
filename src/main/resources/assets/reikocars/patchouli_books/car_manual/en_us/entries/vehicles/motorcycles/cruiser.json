@@ -1,0 +1,25 @@
+{
+  "name": "Cruiser",
+  "icon": "reikocars:cruiser",
+  "category": "reikocars:vehicles/motorcycles",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:cruiser",
+      "scale": 0.591,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)45 mph$() · 5 buckets$(br)9-slot saddlebags (sneak + use)"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:cruiser_chassis",
+      "recipe2": "reikocars:cruiser_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:cruiser_interior",
+      "text": "Then at the Car Workbench, with $(item)Motorcycle Engine$() and two Tires."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "Electric Cars",
+  "icon": "reikocars:charging_station",
+  "category": "reikocars:fuel",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Five vehicles run on electricity: the City EV, Electric Sedan, Electric Pickup, Electric Van and Electric Moped. Their batteries are charged at a $(item)Charging Station$(), in BuildCraft MJ. They don't idle, they need no oil, and braking puts some charge back."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:charging_station"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A charging station stores 500,000 MJ, fed by BuildCraft engines or kinesis pipes on either half (or other mods' cables). Park within 6 blocks, right-click it and pay by card or cash for as much charge as you want. A full charge costs far less than a tank of gasoline."
+    }
+  ]
+}

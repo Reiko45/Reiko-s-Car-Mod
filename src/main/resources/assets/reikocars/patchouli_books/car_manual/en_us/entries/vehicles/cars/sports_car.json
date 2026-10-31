@@ -1,0 +1,26 @@
+{
+  "name": "Sports Car",
+  "icon": "reikocars:sports_car",
+  "category": "reikocars:vehicles/cars",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:sports_car",
+      "scale": 0.659,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)58 mph$() · 6 buckets$(br)Fast, quick to accelerate, thirsty",
+      "offset": -0.325
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:sports_car_chassis",
+      "recipe2": "reikocars:sports_car_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:sports_car_interior",
+      "text": "Then at the Car Workbench, with $(item)Car Engine$() and four Tires."
+    }
+  ]
+}

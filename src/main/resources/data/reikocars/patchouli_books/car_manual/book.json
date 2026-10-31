@@ -1,0 +1,13 @@
+{
+  "name": "Car Manual",
+  "landing_text": "Everything about $(l)Reiko's Car Mod$(): building and driving cars, keeping them running, and making money with them.$(br2)Open a chapter on the right, or search for anything.",
+  "subtitle": "Reiko's Car Mod",
+  "use_resource_pack": true,
+  "model": "reikocars:car_manual",
+  "creative_tab": "reikocars:cars",
+  "show_progress": false,
+  "text_overflow_mode": "resize",
+  "index_icon": "reikocars:sedan",
+  "header_color": "7A1F1F",
+  "nameplate_color": "E8C060"
+}

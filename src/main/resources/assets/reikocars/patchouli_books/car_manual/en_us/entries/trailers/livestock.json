@@ -1,0 +1,32 @@
+{
+  "name": "Livestock",
+  "icon": "reikocars:livestock_trailer",
+  "category": "reikocars:trailers",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Livestock trailers carry cows, sheep, pigs, goats, horses, donkeys, mules, llamas and chickens. Each pen holds one horse, two cows, or four chickens.$(br2)Parked, the back gate drops down as a $(l)ramp$()."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/livestock_ramp.png"
+      ],
+      "border": true,
+      "text": "Lead animals up the ramp on leads and they walk in. You get the leads back."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(li)Right-click the trailer with animals following on leads to load them all.$(li)Right-click with an empty hand to let them all out down the ramp.$(li)Right-click with a lead to take the last one out on it.$(br2)Inside, they ride along between the slats."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/livestock.png"
+      ],
+      "border": true,
+      "text": "Animals ride wherever the trailer goes."
+    }
+  ]
+}

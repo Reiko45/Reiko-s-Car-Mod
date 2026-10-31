@@ -1,0 +1,33 @@
+{
+  "name": "Controls",
+  "icon": "reikocars:car_key",
+  "category": "reikocars:driving",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Right-click a car to get in: the first one in drives, with one of its keys in your inventory. $(k:forward) $(k:left) $(k:back) $(k:right) drive and steer, $(k:jump) is the handbrake and $(k:sneak) gets out.$(br2)$(k:key.reikocars.horn) horn$(br)$(k:key.reikocars.lock) lock or unlock$(br)$(k:key.reikocars.hitch) hitch, load, tow, or a work vehicle's job"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(k:key.reikocars.siren) lights and siren (police, ambulance, fire)$(br)$(k:key.reikocars.signal_left) $(k:key.reikocars.signal_right) turn signals$(br)$(k:key.reikocars.hazards) hazards$(br)$(k:key.reikocars.radio) radio$(br)$(k:key.reikocars.gps) GPS$(br2)All of these can be changed under Controls, in the Reiko's Car Mod section."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/dashboard.png"
+      ],
+      "border": true,
+      "text": "The dashboard shows your speed, fuel, the road and any warning lights."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Owning a car:$() whoever puts it down owns it. New cars start locked. Paint one by right-clicking it with a dye. Punch it a few times to pick it up (owner only): it keeps its fuel, paint, locks and wear.$(br2)$(l)Off-road:$() grass, sand, snow and dirt slow every car but the off-roader, the heavy-duty pickup, the tractor and the dirt bike."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Headlights$() come on with the engine and really light the road in the dark, about twelve blocks ahead.$(br2)$(l)Running things over$() hurts mobs and knocks them aside; players only with PvP on. Cars climb a full block, so curbs and stairs don't stop them, and can't be blown up or burned."
+    }
+  ],
+  "priority": true
+}

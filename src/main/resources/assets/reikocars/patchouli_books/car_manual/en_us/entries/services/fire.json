@@ -1,0 +1,37 @@
+{
+  "name": "Fire Trucks",
+  "icon": "reikocars:fire_truck",
+  "category": "reikocars:services",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The $(item)Fire Truck$() has a $(l)water tank$(), a $(l)hose$() and an $(l)aerial ladder$(). Hold right-click with a $(item)Fire Hose$() within 16 blocks of it to spray water up to twenty blocks: it puts out fire, campfires and burning mobs."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/hose.png"
+      ],
+      "border": true,
+      "text": "Every fire put out pays the Firefighter job."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Fill the tank at a $(item)Fire Hydrant$() (park within 6 blocks), from open water beside the truck, or by the bucket.$(br2)Park and press $(k:key.reikocars.hitch): the ladder swings up behind the truck, up to 16 blocks. Climb it like scaffolding."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:fire_hose",
+      "recipe2": "reikocars:fire_hydrant"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/ladder.png"
+      ],
+      "border": true,
+      "text": "The ladder runs up a wall when the truck backs up to a building."
+    }
+  ]
+}

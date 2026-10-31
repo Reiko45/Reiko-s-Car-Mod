@@ -1,0 +1,28 @@
+{
+  "name": "Dealerships and Loans",
+  "icon": "reikocars:dealership",
+  "category": "reikocars:business",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A $(item)Car Dealership$()'s owner parks cars within 10 blocks of it to make a lot, prices them on the $(l)Lot$() tab, and sets what it pays for trade-ins. Customers buy from the lot, or sell their own car to the dealership."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:dealership"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/finance.png"
+      ],
+      "border": true,
+      "text": "Buy on $(l)finance$(): 20% down, then ten daily payments, with 10% interest."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Until a loan's paid off, the car can't be sold or picked up. Miss three payments in a row and it's $(4)repossessed$() to the nearest impound lot. Pay off the loan early from the dealership's Trade in tab."
+    }
+  ]
+}

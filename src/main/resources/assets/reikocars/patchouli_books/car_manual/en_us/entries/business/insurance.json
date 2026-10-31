@@ -1,0 +1,16 @@
+{
+  "name": "Insurance",
+  "icon": "reikocars:insurance_office",
+  "category": "reikocars:business",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Park within 10 blocks of an $(item)Insurance Office$() and buy cover: a term of 7 Minecraft days. Then when crash damage to the body is repaired at a Repair Bench, the insurer pays back what it cost over the deductible, up to the claim limit.$(br2)Wear isn't covered. The office's owner sets the prices and pays the claims."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:insurance_office"
+    }
+  ]
+}

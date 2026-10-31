@@ -1,0 +1,7 @@
+{
+  "name": "Trailers",
+  "description": "The semi's trailers, campers and livestock trailers.",
+  "icon": "reikocars:box_trailer",
+  "sortnum": 5,
+  "parent": "reikocars:vehicles"
+}

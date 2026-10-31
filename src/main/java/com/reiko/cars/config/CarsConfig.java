@@ -112,6 +112,8 @@ public final class CarsConfig {
     public static final ModConfigSpec.IntValue BAY_SECONDS;
     public static final ModConfigSpec.DoubleValue LANCE_REACH;
 
+    public static final ModConfigSpec.BooleanValue GIVE_MANUAL;
+
     public static final ModConfigSpec.DoubleValue STOP_REACH;
     public static final ModConfigSpec.BooleanValue VILLAGER_PASSENGERS;
     public static final ModConfigSpec.DoubleValue VILLAGER_FARE;
@@ -515,6 +517,12 @@ public final class CarsConfig {
         LANCE_REACH = builder
                 .comment("How far from its Wash Bay a pressure washer's hose reaches, in blocks.")
                 .defineInRange("lanceReach", 8.0, 2.0, 32.0);
+        builder.pop();
+
+        builder.push("guide");
+        GIVE_MANUAL = builder
+                .comment("Whether every player is given the Car Manual (the mod's guide book, which needs Patchouli) the first time they join.")
+                .define("giveOnFirstJoin", true);
         builder.pop();
 
         SPEC = builder.build();

@@ -1,0 +1,25 @@
+{
+  "name": "Racing",
+  "icon": "reikocars:race_control",
+  "category": "reikocars:tuning",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A $(item)Race Control$() is the start and finish line. Put down $(item)Race Flag$()s and right-click each to number it: a lap is every flag in order and back over the line.$(br2)$(l)Time trials$() are free. $(l)Races$() take an entry fee into a pot, and the winner takes it."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:race_control",
+      "recipe2": "reikocars:race_flag"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/racing.png"
+      ],
+      "border": true,
+      "text": "Racing: the clock, your lap, the next checkpoint and your place."
+    }
+  ]
+}

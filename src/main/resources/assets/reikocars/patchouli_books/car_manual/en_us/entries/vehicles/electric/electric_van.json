@@ -1,0 +1,25 @@
+{
+  "name": "Electric Van",
+  "icon": "reikocars:electric_van",
+  "category": "reikocars:vehicles/electric",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:electric_van",
+      "scale": 0.602,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)36 mph$() · 160,000 MJ battery$(br)54-slot cargo area"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:electric_van_chassis",
+      "recipe2": "reikocars:electric_van_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:electric_van_interior",
+      "text": "Then at the Car Workbench, with $(item)Electric Motor$() and four Tires."
+    }
+  ]
+}

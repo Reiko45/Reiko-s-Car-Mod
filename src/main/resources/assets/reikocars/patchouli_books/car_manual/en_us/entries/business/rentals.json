@@ -1,0 +1,24 @@
+{
+  "name": "Car Rentals",
+  "icon": "reikocars:rental_desk",
+  "category": "reikocars:business",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Park your cars within 10 blocks of a $(item)Car Rental Desk$() to make a fleet. Customers pick a car and rent it for 1 to 7 days (a day is 20 minutes), paid to the desk's owner.$(br2)A renter drives it without a key. When the time's up, it drives itself back to the lot once nobody's in it."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:rental_desk"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/rentals.png"
+      ],
+      "border": true,
+      "text": "A rental lot."
+    }
+  ]
+}

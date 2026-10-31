@@ -1,0 +1,20 @@
+{
+  "name": "The Tow Ball",
+  "icon": "reikocars:pickup_truck",
+  "category": "reikocars:trailers",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The pickups, the Off-Roader, the Minivan and the Farm Tractor have a $(l)tow ball$(). They pull the $(item)Camper$() and the $(item)Livestock Trailer$().$(br2)Put the trailer down, back up to its tongue so the ball is under the coupler, and press $(k:key.reikocars.hitch). Press it again to unhitch."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/pickup_camper.png"
+      ],
+      "border": true,
+      "text": "A camper on a pickup's ball: it swings round behind on bends."
+    }
+  ]
+}

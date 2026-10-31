@@ -1,0 +1,16 @@
+{
+  "name": "Tow Trucks",
+  "icon": "reikocars:flatbed",
+  "category": "reikocars:care",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Two diesel tow trucks fetch broken-down cars. Back up to the car and press $(k:key.reikocars.hitch):$(li)The $(l)flatbed$() winches it up onto its deck.$(li)The $(l)wrecker$() lifts it by its front wheels; it swings out behind on bends.$(br2)$(k:key.reikocars.hitch) again puts it down."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "They take any car, van or pickup up to about 4.8 blocks long (the flatbed takes motorcycles too), if it's yours or unlocked and nobody's in it. Towing someone else's broken-down car to a Repair Bench pays the Mechanic job. Cars at an expired parking meter can be towed to an $(l:business/impound)impound lot$(/l), locked or not."
+    }
+  ]
+}

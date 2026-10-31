@@ -1,0 +1,16 @@
+{
+  "name": "Buying and Selling",
+  "icon": "reikocars:for_sale_sign",
+  "category": "reikocars:business",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Right-click your car with a $(item)For Sale Sign$() to put it up for sale at a price. Anyone else right-clicks it to buy, by card or cash, and the money goes to you. The buyer gets a key for new locks, so your keys stop fitting."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:for_sale_sign"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "name": "Licenses and the DMV",
+  "icon": "reikocars:dmv_office",
+  "category": "reikocars:business",
+  "sortnum": 5,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Every car gets its own $(l)license plate$(). At a $(item)DMV Office$() you can pay for the $(l)driving test$(), buy a new license card, or buy a $(l)custom plate$() for a car parked nearby."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:dmv_office",
+      "recipe2": "reikocars:traffic_cone"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/dmv.png"
+      ],
+      "border": true,
+      "text": "The test: drive through the DMV's numbered Traffic Cones in order, inside 5 minutes."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Red-light and speed cameras put $(l)penalty points$() on your license; 12 at once suspends it for 3 days. Without a valid license, cameras add a $25 fine, and a $(thing)Police Officer$() with a $(item)Ticket Book$() can fine you."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:ticket_book"
+    }
+  ]
+}

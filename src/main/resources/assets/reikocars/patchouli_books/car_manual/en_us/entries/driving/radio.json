@@ -1,0 +1,20 @@
+{
+  "name": "Car Radio",
+  "icon": "minecraft:jukebox",
+  "category": "reikocars:driving",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Everyone riding can press $(k:key.reikocars.radio) to open the radio: power, three stations and a disc slot.$(br)$(li)$(l)88.1 Neon FM$(): synthwave$(li)$(l)94.5 Chill FM$(): lo-fi beats$(li)$(l)101.3 Dusty Roads$(): country guitar$(br2)The stations play round the clock, so every car on one hears the same moment of the same song."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/radio.png"
+      ],
+      "border": true,
+      "text": "DISC plays the music disc in the slot, on repeat. People outside hear it too."
+    }
+  ]
+}

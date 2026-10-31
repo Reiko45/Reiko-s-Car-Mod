@@ -1,0 +1,26 @@
+{
+  "name": "Convertible",
+  "icon": "reikocars:convertible",
+  "category": "reikocars:vehicles/cars",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:convertible",
+      "scale": 0.626,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)51 mph$() · 6 buckets$(br)Open-top roadster",
+      "offset": -0.4
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:convertible_chassis",
+      "recipe2": "reikocars:convertible_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:convertible_interior",
+      "text": "Then at the Car Workbench, with $(item)Car Engine$() and four Tires."
+    }
+  ]
+}

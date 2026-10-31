@@ -1,0 +1,37 @@
+{
+  "name": "Bus Stops",
+  "icon": "reikocars:bus_stop_sign",
+  "category": "reikocars:services",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A $(item)Bus Stop Sign$() or a $(item)Bus Shelter$() makes a stop. Its owner right-clicks it to name it and put it on up to three $(l)routes$(), with its stop number on each."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:bus_stop_sign",
+      "recipe2": "reikocars:bus_shelter"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/bus_shelter.png"
+      ],
+      "border": true,
+      "text": "Right-click a stop to wait there, or sit on a shelter's bench."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Give a bus a route where its fare is set. Stopped at a stop, its driver presses $(k:key.reikocars.hitch) to open the doors: whoever rang gets off and whoever's waiting gets on. Passengers press $(k:key.reikocars.hitch) to ring for the next stop. Villagers ride too, and pay."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/bus_route.png"
+      ],
+      "border": true,
+      "text": "Everyone aboard is told each stop, and the next one."
+    }
+  ]
+}

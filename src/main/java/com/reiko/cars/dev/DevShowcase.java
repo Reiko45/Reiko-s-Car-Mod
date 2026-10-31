@@ -178,6 +178,8 @@ public final class DevShowcase {
             busScript();
         } else if (MODE.equals("campers")) {
             campScript();
+        } else if (MODE.equals("guide")) {
+            guideScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -4107,5 +4109,112 @@ public final class DevShowcase {
             server(mc, player -> ReikoCars.LOGGER.info("Showcase camper: up at {}, spawn {}", player.position(), player.getRespawnPosition()));
         });
         at(386, mc -> mc.stop());
+    }
+
+    // ---- the Car Manual and the pictures in it: ./gradlew runClient -Pshowcase=guide ----
+
+    private static final BlockPos GUIDE_BENCH = new BlockPos(52, -60, 20);
+    private static final BlockPos GUIDE_PUMP = new BlockPos(80, -60, 20);
+
+    private static void book(String entry, int page) {
+        com.reiko.cars.guide.Guide.open(entry, page);
+    }
+
+    private static void guideScript() {
+        at(20, mc -> {
+            mc.options.hideGui = false;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                ReikoCars.LOGGER.info("Showcase guide: holding {}", player.getInventory().items.stream().filter(stack -> !stack.isEmpty())
+                        .map(stack -> stack.getHoverName().getString()).toList());
+                crossing(level, player);
+                spawn(level, CarType.SEDAN, 1.5, 7.0, 180.0F, 0.6);
+                spawn(level, CarType.CITY_BUS, -10.0, 1.5, -90.0F, 0.6);
+                spawn(level, CarType.TAXI, -1.5, -12.0, 0.0F, 0.6);
+                // A line-up for the first page
+                CarType[] lineUp = {CarType.SPORT_BIKE, CarType.SPORTS_CAR, CarType.SEDAN, CarType.PICKUP_TRUCK, CarType.POLICE_CAR,
+                        CarType.FIRE_TRUCK, CarType.CITY_BUS};
+                for (int i = 0; i < lineUp.length; i++) {
+                    spawn(level, lineUp[i], 44.5 + i * 3.4, -40.0, 0.0F, 0.6);
+                }
+                // The workbench, a pump with a car at it, a convertible for the radio
+                level.setBlockAndUpdate(GUIDE_BENCH, ModBlocks.CAR_WORKBENCH.get().defaultBlockState().setValue(CarWorkbenchBlock.FACING, Direction.SOUTH));
+                placePump(level, GUIDE_PUMP, player, "fuel_light", 12_000, 375);
+                ((GasPumpBlockEntity) level.getBlockEntity(GUIDE_PUMP)).setOwner(null);
+                spawn(level, CarType.SEDAN, 80.5, 23.0, 90.0F, 0.3);
+                spawn(level, CarType.CONVERTIBLE, 110.5, 20.5, 0.0F, 0.6);
+                // A semi with its box trailer, and a pickup with a camper
+                CarEntity semi = spawned(level, CarType.SEMI_TRUCK, 60.5, 62.0, 200.0F, 0.6);
+                behind(level, TrailerType.BOX_TRAILER, semi, 12.0F).startRiding(semi, true);
+                CarEntity pickup = spawned(level, CarType.PICKUP_TRUCK, 92.5, 62.0, 160.0F, 0.6);
+                behind(level, TrailerType.CAMPER, pickup, -10.0F).startRiding(pickup, true);
+                EconomyService.INSTANCE.ensureAccount(player.server, player.getUUID(), player.getGameProfile().getName());
+                Purse.give(player, 8_000);
+            });
+        });
+        at(24, mc -> mc.player.getInventory().selected = 0);
+        at(40, mc -> shot(mc, "g_manual_in_hand"));
+        // Scenes for the book's pictures: no hand, no hotbar
+        at(41, mc -> mc.options.hideGui = true);
+        at(42, mc -> look(mc, 54.7, -57.5, -31.0, 180.0F, 15.0F));
+        at(80, mc -> shot(mc, "g_welcome"));
+        at(82, mc -> look(mc, 14.0, -46.0, 20.0, 145.0F, 38.0F));
+        at(110, mc -> shot(mc, "g_roads"));
+        at(112, mc -> look(mc, 71.0, -55.5, 60.0, 64.0F, 12.0F));
+        at(140, mc -> shot(mc, "g_semi"));
+        at(142, mc -> look(mc, 99.0, -57.5, 60.0, 54.5F, 14.0F));
+        at(170, mc -> shot(mc, "g_pickup_camper"));
+        at(171, mc -> {
+            mc.options.hideGui = false;
+            mc.player.getInventory().selected = 8; // an empty hand from here on
+        });
+        // The workbench, half a sedan in it
+        at(172, mc -> server(mc, player -> {
+            player.teleportTo(player.serverLevel(), 52.5, -60.0, 23.0, 180.0F, 20.0F);
+            player.getAbilities().flying = false;
+            player.onUpdateAbilities();
+            give(player, ModItems.part(CarType.SEDAN, CarPart.CHASSIS), 1);
+            give(player, ModItems.part(CarType.SEDAN, CarPart.BODY), 1);
+            give(player, ModItems.CAR_ENGINE.get(), 1);
+            give(player, ModItems.TIRE.get(), 2);
+            player.openMenu(player.serverLevel().getBlockState(GUIDE_BENCH).getMenuProvider(player.serverLevel(), GUIDE_BENCH));
+        }));
+        at(190, mc -> clickCar(mc, CarType.SEDAN.ordinal()));
+        at(215, mc -> shot(mc, "g_workbench"));
+        at(217, mc -> mc.player.closeContainer());
+        // A pump, a car at its hose
+        at(220, mc -> look(mc, 83.0, -60.0, 25.0, 135.0F, 10.0F));
+        at(232, mc -> server(mc, player -> PumpMenu.open(player, (GasPumpBlockEntity) player.level().getBlockEntity(GUIDE_PUMP))));
+        at(255, mc -> shot(mc, "g_pump"));
+        at(257, mc -> mc.player.closeContainer());
+        // The radio
+        at(260, mc -> server(mc, player -> {
+            player.getAbilities().flying = false;
+            player.onUpdateAbilities();
+            player.startRiding(carAt(player.serverLevel(), 110.5, 20.5), true);
+        }));
+        at(270, mc -> server(mc, player -> com.reiko.cars.radio.RadioMenu.open(player, carAt(player.serverLevel(), 110.5, 20.5))));
+        at(280, mc -> radioButton(mc, com.reiko.cars.radio.CarRadio.BUTTON_SOURCE));
+        at(300, mc -> shot(mc, "g_radio"));
+        at(302, mc -> mc.player.closeContainer());
+        at(310, mc -> shot(mc, "g_dashboard"));
+        at(312, mc -> server(mc, player -> player.stopRiding()));
+        // The book itself
+        at(316, mc -> com.reiko.cars.guide.Guide.openFront());
+        at(330, mc -> shot(mc, "book_landing"));
+        String[][] pages = {{"getting_started/welcome", "0"}, {"getting_started/first_car", "0"}, {"getting_started/first_car", "2"},
+                {"driving/controls", "2"}, {"driving/radio", "0"}, {"driving/weather", "0"}, {"care/wear", "0"}, {"trailers/tow_ball", "0"},
+                {"vehicles/cars/heavy_pickup", "0"}, {"vehicles/cars/heavy_pickup", "2"}, {"vehicles/trucks/wrecker", "2"},
+                {"vehicles/trailers/semi_livestock_trailer", "0"}, {"fuel/charging", "0"}, {"business/dmv", "0"}, {"roads/traffic_lights", "0"},
+                {"business/jobs", "0"}, {"tuning/tuning", "4"}};
+        for (int i = 0; i < pages.length; i++) {
+            String[] page = pages[i];
+            int at = 332 + i * 16;
+            at(at, mc -> book(page[0], Integer.parseInt(page[1])));
+            at(at + 12, mc -> shot(mc, "book_" + page[0].replace('/', '_') + "_" + page[1]));
+        }
+        at(332 + pages.length * 16 + 4, mc -> mc.stop());
     }
 }

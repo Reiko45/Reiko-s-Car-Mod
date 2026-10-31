@@ -1,0 +1,32 @@
+{
+  "name": "Heavy-Duty Pickup",
+  "icon": "reikocars:heavy_pickup",
+  "category": "reikocars:vehicles/cars",
+  "sortnum": 8,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:heavy_pickup",
+      "scale": 0.569,
+      "rotate": true,
+      "text": "$(l)4$() seats · $(l)38 mph$() · 14 buckets of diesel$(br)Lifted 4x4: full speed off-road, tow ball",
+      "offset": -0.025
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:heavy_pickup_chassis",
+      "title": "Chassis"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:heavy_pickup_body",
+      "title": "Body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:heavy_pickup_interior",
+      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires.",
+      "title": "Interior"
+    }
+  ]
+}

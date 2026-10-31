@@ -1,0 +1,27 @@
+{
+  "name": "Electric Sedan",
+  "icon": "reikocars:electric_sedan",
+  "category": "reikocars:vehicles/electric",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:electric_sedan",
+      "scale": 0.607,
+      "rotate": true,
+      "text": "$(l)4$() seats · $(l)56 mph$() · 160,000 MJ battery$(br)The quickest car off the line; glass roof, 9-slot frunk",
+      "offset": -0.3
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:electric_sedan_chassis",
+      "recipe2": "reikocars:electric_sedan_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:electric_sedan_interior",
+      "text": "Then at the Car Workbench, with $(item)Electric Motor$() and four Tires.",
+      "title": "Interior"
+    }
+  ]
+}

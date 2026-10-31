@@ -1,0 +1,26 @@
+{
+  "name": "Minivan",
+  "icon": "reikocars:minivan",
+  "category": "reikocars:vehicles/cars",
+  "sortnum": 5,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:minivan",
+      "scale": 0.588,
+      "rotate": true,
+      "text": "$(l)6$() seats · $(l)34 mph$() · 10 buckets$(br)Three rows of seats, 9-slot trunk (sneak + use), tow ball",
+      "offset": -0.125
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:minivan_chassis",
+      "recipe2": "reikocars:minivan_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:minivan_interior",
+      "text": "Then at the Car Workbench, with $(item)Car Engine$() and four Tires."
+    }
+  ]
+}

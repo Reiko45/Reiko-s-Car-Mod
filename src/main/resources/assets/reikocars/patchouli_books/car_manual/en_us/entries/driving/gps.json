@@ -1,0 +1,32 @@
+{
+  "name": "GPS",
+  "icon": "minecraft:compass",
+  "category": "reikocars:driving",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Press $(k:key.reikocars.gps), in a car or on foot, and pick somewhere to go:$(li)$(l)Places$(): gas stations, chargers, mechanics, car washes, dealerships and every other business, nearest first, with their prices. Type to search.$(li)$(l)My Cars$(): your cars, wherever you left them.$(li)$(l)Coordinates$(): any X and Z.$(br2)A chime tells you when you've arrived."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/gps_places.png"
+      ],
+      "border": true,
+      "text": "The Places list, with prices."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/gps_driving.png"
+      ],
+      "border": true,
+      "text": "An arrow at the top points the way, with the distance and time to go."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)With Xaero's Minimap$(), the destination shows as a $(thing)GPS$() waypoint on the minimap and World Map, your cars show on the minimap, and a $(l)Waypoints$() tab lists your waypoints to head for."
+    }
+  ]
+}

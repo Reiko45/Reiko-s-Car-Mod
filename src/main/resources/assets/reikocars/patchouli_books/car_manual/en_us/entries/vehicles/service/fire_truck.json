@@ -1,0 +1,25 @@
+{
+  "name": "Fire Truck",
+  "icon": "reikocars:fire_truck",
+  "category": "reikocars:vehicles/service",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:fire_truck",
+      "scale": 0.459,
+      "rotate": true,
+      "text": "$(l)4$() seats · $(l)38 mph$() · 14 buckets of diesel$(br)Siren, water tank, fire hose and a ladder"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:fire_truck_chassis",
+      "recipe2": "reikocars:fire_truck_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:fire_truck_interior",
+      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
+    }
+  ]
+}

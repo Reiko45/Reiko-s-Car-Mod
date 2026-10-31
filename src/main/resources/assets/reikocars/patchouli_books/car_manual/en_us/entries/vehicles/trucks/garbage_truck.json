@@ -1,0 +1,26 @@
+{
+  "name": "Garbage Truck",
+  "icon": "reikocars:garbage_truck",
+  "category": "reikocars:vehicles/trucks",
+  "sortnum": 5,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:garbage_truck",
+      "scale": 0.414,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)31 mph$() · 14 buckets of diesel$(br)Empties trash cans"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:garbage_truck_chassis",
+      "recipe2": "reikocars:garbage_truck_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:garbage_truck_interior",
+      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires.",
+      "title": "Interior"
+    }
+  ]
+}

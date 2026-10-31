@@ -1,0 +1,6 @@
+{
+  "name": "Public Services",
+  "description": "Bus routes, mail, emergency vehicles and the work trucks.",
+  "icon": "reikocars:bus_stop_sign",
+  "sortnum": 8
+}

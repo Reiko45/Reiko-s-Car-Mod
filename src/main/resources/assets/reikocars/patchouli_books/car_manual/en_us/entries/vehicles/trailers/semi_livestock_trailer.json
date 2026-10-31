@@ -1,0 +1,21 @@
+{
+  "name": "Semi Livestock Trailer",
+  "icon": "reikocars:semi_livestock_trailer",
+  "category": "reikocars:vehicles/trailers",
+  "sortnum": 6,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:semi_livestock_trailer",
+      "scale": 0.427,
+      "rotate": true,
+      "text": "For the semi. Pens for 12 cows, 6 horses or 24 chickens."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:semi_livestock_trailer_body",
+      "text": "Then at the Car Workbench, on a $(item)Trailer Chassis$() with four Tires.",
+      "title": "Body"
+    }
+  ]
+}

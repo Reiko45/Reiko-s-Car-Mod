@@ -1,0 +1,16 @@
+{
+  "name": "Car Jobs",
+  "icon": "minecraft:emerald",
+  "category": "reikocars:business",
+  "sortnum": 7,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Reiko's Economy Mod's job board has seven car jobs, which pay as you work:$(li)$(l)Driver$(): taxi rides, bus passengers, bus stops$(li)$(l)Mail Carrier$(): parcels$(li)$(l)Mechanic$(): repairs, tuning, tow-ins"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(li)$(l)Trucker$(): fuel delivered by tanker, and hauling a loaded trailer$(li)$(l)Garbage Collector$(): trash cans emptied$(li)$(l)Firefighter$(): fires put out$(li)$(l)Police Officer$(): unlicensed drivers ticketed"
+    }
+  ]
+}

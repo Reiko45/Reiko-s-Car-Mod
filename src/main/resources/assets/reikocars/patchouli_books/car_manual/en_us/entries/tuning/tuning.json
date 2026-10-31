@@ -1,0 +1,57 @@
+{
+  "name": "The Tuning Bench",
+  "icon": "reikocars:tuning_bench",
+  "category": "reikocars:tuning",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Park within 6 blocks of a $(item)Tuning Bench$() and right-click it to fit upgrade kits: fit your own free, or buy them from the bench's stock. Only a car's owner can have it tuned."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:tuning_bench"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/tune_tab.png"
+      ],
+      "border": true,
+      "text": "The Tune tab shows each kit and how far the car has it."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(li)$(l)Engine Tune Kit$(): +6% speed a stage (up to 3)$(li)$(l)Turbocharger$(): +25% acceleration$(li)$(l)Sport Tires$(): turn sharper$(li)$(l)Off-Road Tires$(): less slowed off-road$(li)$(l)Winter Tires$(): grip on snow and ice"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(li)$(l)Performance Brakes$(): stop harder$(li)$(l)Lowering Springs$(): turn sharper$(li)$(l)Lift Kit$(): better off-road$(li)$(l)Extended Fuel Tank$() or $(l)Extra Battery Module$(): go further$(br2)Each costs something: more fuel, more wear, or a little speed."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:engine_tune_kit",
+      "recipe2": "reikocars:turbocharger"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:sport_tires",
+      "recipe2": "reikocars:off_road_tires"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:winter_tires",
+      "recipe2": "reikocars:performance_brakes"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:lowering_springs",
+      "recipe2": "reikocars:lift_kit"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:extended_fuel_tank",
+      "recipe2": "reikocars:battery_module"
+    }
+  ]
+}

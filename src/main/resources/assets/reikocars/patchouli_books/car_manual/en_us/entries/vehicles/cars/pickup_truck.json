@@ -1,0 +1,26 @@
+{
+  "name": "Pickup Truck",
+  "icon": "reikocars:pickup_truck",
+  "category": "reikocars:vehicles/cars",
+  "sortnum": 7,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:pickup_truck",
+      "scale": 0.656,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)36 mph$() · 12 buckets$(br)27-slot truck bed (sneak + use), tow ball",
+      "offset": -0.2
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:pickup_truck_chassis",
+      "recipe2": "reikocars:pickup_truck_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:pickup_truck_interior",
+      "text": "Then at the Car Workbench, with $(item)Car Engine$() and four Tires."
+    }
+  ]
+}

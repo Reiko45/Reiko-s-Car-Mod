@@ -1,0 +1,28 @@
+{
+  "name": "Semi Trailers",
+  "icon": "reikocars:box_trailer",
+  "category": "reikocars:trailers",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The $(item)Semi Truck$() pulls one trailer at a time:$(li)$(l)Box Trailer$(): 54 slots of cargo$(li)$(l)Tanker Trailer$(): 64 buckets of any fluid$(li)$(l)Car Hauler$(): two cars$(li)and the big $(l)Fifth-Wheel Camper$() and $(l)Semi Livestock Trailer$()"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/semi.png"
+      ],
+      "border": true,
+      "text": "Put a trailer down facing the way you'll drive, back the semi under its front and press $(k:key.reikocars.hitch)."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The trailer swings round behind you and cuts corners, so take them wide. Pulling one, the semi is slower and burns more fuel. Back up too far round and it $(4)jackknifes$().$(br2)Trailers are solid, and the rig stops if the trailer would hit a wall."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)The tanker:$() fill it with a bucket, or park it beside tanks and right-click it with an empty hand to load from them all, or unload into them: a row of pumps, say.$(br2)$(l)The car hauler:$() drive a car up to its back and press $(k:key.reikocars.hitch) to drive on; $(k:key.reikocars.hitch) again drives off."
+    }
+  ]
+}

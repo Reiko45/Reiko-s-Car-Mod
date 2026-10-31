@@ -1,0 +1,12 @@
+{
+  "name": "Police and Ambulance",
+  "icon": "reikocars:police_car",
+  "category": "reikocars:services",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The driver's $(k:key.reikocars.siren) turns on the $(l)light bar and siren$(). The $(item)Ambulance$() heals everyone riding in the back. A $(thing)Police Officer$() checks plates and licenses with a $(item)Ticket Book$() (see $(l:business/dmv)the DMV$(/l))."
+    }
+  ]
+}

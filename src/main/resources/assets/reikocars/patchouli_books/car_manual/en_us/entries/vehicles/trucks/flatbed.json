@@ -1,0 +1,31 @@
+{
+  "name": "Flatbed Tow Truck",
+  "icon": "reikocars:flatbed",
+  "category": "reikocars:vehicles/trucks",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:flatbed",
+      "scale": 0.439,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)36 mph$() · 14 buckets of diesel$(br)Carries a car on its deck; 9-slot toolboxes"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:flatbed_chassis",
+      "title": "Chassis"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:flatbed_body",
+      "title": "Body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:flatbed_interior",
+      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires.",
+      "title": "Interior"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "City Bus",
+  "icon": "reikocars:city_bus",
+  "category": "reikocars:vehicles/service",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:city_bus",
+      "scale": 0.45,
+      "rotate": true,
+      "text": "$(l)10$() seats · $(l)29 mph$() · 16 buckets of diesel$(br)A driver and nine paying passengers; swing wide"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:city_bus_chassis",
+      "recipe2": "reikocars:city_bus_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:city_bus_interior",
+      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
+    }
+  ]
+}

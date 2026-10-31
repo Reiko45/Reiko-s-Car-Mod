@@ -1,0 +1,7 @@
+{
+  "name": "Cars and Pickups",
+  "description": "Everyday cars, SUVs and pickups.",
+  "icon": "reikocars:sedan",
+  "sortnum": 0,
+  "parent": "reikocars:vehicles"
+}

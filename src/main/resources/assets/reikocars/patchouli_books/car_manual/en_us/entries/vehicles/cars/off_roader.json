@@ -1,0 +1,26 @@
+{
+  "name": "Off-Roader",
+  "icon": "reikocars:off_roader",
+  "category": "reikocars:vehicles/cars",
+  "sortnum": 6,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:off_roader",
+      "scale": 0.683,
+      "rotate": true,
+      "text": "$(l)4$() seats · $(l)38 mph$() · 10 buckets$(br)Keeps full speed on grass, sand and snow; tow ball",
+      "offset": -0.175
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:off_roader_chassis",
+      "recipe2": "reikocars:off_roader_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:off_roader_interior",
+      "text": "Then at the Car Workbench, with $(item)Car Engine$() and four Tires."
+    }
+  ]
+}

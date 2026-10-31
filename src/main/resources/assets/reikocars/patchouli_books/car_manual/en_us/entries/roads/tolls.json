@@ -1,0 +1,17 @@
+{
+  "name": "Toll Gates",
+  "icon": "reikocars:toll_gate",
+  "category": "reikocars:roads",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A $(item)Toll Gate$() closes the road until the toll is paid. Drive up and press $(k:key.reikocars.hitch) to pay by card or cash, and the arm swings up. A $(item)Toll Booth$() within 12 blocks sets the toll; its owner gets the money and drives through free."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:toll_gate",
+      "recipe2": "reikocars:toll_booth"
+    }
+  ]
+}

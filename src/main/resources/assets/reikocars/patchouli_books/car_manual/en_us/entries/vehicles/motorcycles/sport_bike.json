@@ -1,0 +1,25 @@
+{
+  "name": "Sport Bike",
+  "icon": "reikocars:sport_bike",
+  "category": "reikocars:vehicles/motorcycles",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:sport_bike",
+      "scale": 0.638,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)65 mph$() · 4 buckets$(br)The fastest thing on the road"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:sport_bike_chassis",
+      "recipe2": "reikocars:sport_bike_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:sport_bike_interior",
+      "text": "Then at the Car Workbench, with $(item)Motorcycle Engine$() and two Tires."
+    }
+  ]
+}

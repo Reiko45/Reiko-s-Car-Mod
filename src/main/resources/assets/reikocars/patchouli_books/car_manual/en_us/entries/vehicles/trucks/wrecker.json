@@ -1,0 +1,31 @@
+{
+  "name": "Wrecker Tow Truck",
+  "icon": "reikocars:wrecker",
+  "category": "reikocars:vehicles/trucks",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:wrecker",
+      "scale": 0.459,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)38 mph$() · 12 buckets of diesel$(br)Lifts a car by its front wheels; 18-slot toolboxes"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:wrecker_chassis",
+      "title": "Chassis"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:wrecker_body",
+      "title": "Body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:wrecker_interior",
+      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires.",
+      "title": "Interior"
+    }
+  ]
+}

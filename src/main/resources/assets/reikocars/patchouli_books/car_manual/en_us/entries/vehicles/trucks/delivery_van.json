@@ -1,0 +1,25 @@
+{
+  "name": "Delivery Van",
+  "icon": "reikocars:delivery_van",
+  "category": "reikocars:vehicles/trucks",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:delivery_van",
+      "scale": 0.599,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)34 mph$() · 10 buckets of diesel$(br)54-slot cargo area (sneak + use)"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:delivery_van_chassis",
+      "recipe2": "reikocars:delivery_van_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:delivery_van_interior",
+      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
+    }
+  ]
+}

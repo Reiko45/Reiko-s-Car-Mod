@@ -1,0 +1,20 @@
+{
+  "name": "Car Hauler",
+  "icon": "reikocars:car_hauler",
+  "category": "reikocars:vehicles/trailers",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:car_hauler",
+      "scale": 0.313,
+      "rotate": true,
+      "text": "Carries two cars: drive them up to the back and press G."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:car_hauler_body",
+      "text": "Then at the Car Workbench, on a $(item)Trailer Chassis$() with four Tires."
+    }
+  ]
+}

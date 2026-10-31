@@ -1,0 +1,6 @@
+{
+  "name": "Repairs and Washing",
+  "description": "Parts wear out; fix them at a Repair Bench, tow broken cars, wash dirty ones.",
+  "icon": "reikocars:repair_bench",
+  "sortnum": 4
+}

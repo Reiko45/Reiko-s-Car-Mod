@@ -1504,5 +1504,7 @@
   "trailer.reikocars.livestock.full": "There's no room left in the pens.",
   "trailer.reikocars.livestock.help": "Lead farm animals up the ramp (or click here with them on leads) to load them.",
   "trailer.reikocars.livestock.unloaded": "Let %s animals out.",
-  "trailer.reikocars.livestock.led_out": "Led the %s out."
+  "trailer.reikocars.livestock.led_out": "Led the %s out.",
+  "gui.reikocars.workbench.guide": "Guide",
+  "gui.reikocars.workbench.guide.hint": "Open the Car Manual at its page on building cars (closes the workbench; your parts come back to you)"
 }

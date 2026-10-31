@@ -1,0 +1,21 @@
+{
+  "name": "Traffic Lights",
+  "icon": "reikocars:traffic_light",
+  "category": "reikocars:roads",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "All $(item)Traffic Light$()s run on one clock: green, yellow, red, with north-south and east-west taking turns. Put one up facing each road into a crossing. Redstone holds a light on red."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:traffic_light",
+      "recipe2": "reikocars:speed_sign"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Cameras:$() a light's owner right-clicks it to set a fine for running its red; a $(item)Speed Limit Sign$()'s owner sets the limit and a speeding fine. Fines come out of the car owner's bank account, go to the camera's owner, and put penalty points on the driver's $(l:business/dmv)license$(/l)."
+    }
+  ]
+}

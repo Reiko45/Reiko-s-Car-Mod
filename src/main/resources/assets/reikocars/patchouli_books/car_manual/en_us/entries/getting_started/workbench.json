@@ -1,0 +1,38 @@
+{
+  "name": "The Car Workbench",
+  "icon": "reikocars:car_workbench",
+  "category": "reikocars:getting_started",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Cars and trailers are put together at a $(item)Car Workbench$(). Right-click it: the buttons along the top are the vehicles it builds. Hover over one to see which parts you have; click it to put every part you carry into place. A green tick means you carry them all."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:car_workbench"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/workbench.png"
+      ],
+      "border": true,
+      "text": "Slots laid out like the car from above; parts not fitted yet show as blue ghosts."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Every car takes a $(thing)chassis$(), a $(thing)body$(), an $(thing)interior$(), an engine and four tires; a motorcycle two tires. Diesel trucks take a $(item)Diesel Engine$(), motorcycles a $(item)Motorcycle Engine$() and electric cars an $(item)Electric Motor$(). A trailer takes the $(item)Trailer Chassis$(), its own body and four tires.$(br2)Parts left in the workbench go back to you when you close it. With $(thing)JEI$(), each vehicle has a recipe page too."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:diesel_engine",
+      "recipe2": "reikocars:motorcycle_engine"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:electric_motor",
+      "recipe2": "reikocars:trailer_chassis"
+    }
+  ]
+}

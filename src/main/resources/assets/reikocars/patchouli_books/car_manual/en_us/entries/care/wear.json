@@ -1,0 +1,16 @@
+{
+  "name": "Wear and Tear",
+  "icon": "reikocars:engine_parts",
+  "category": "reikocars:care",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Each car has five parts, from 100% down to 0%:$(li)$(l)Oil$(): an oil change every 50,000 blocks or so$(li)$(l)Engine$(): slowly, and in hard crashes$(li)$(l)Tires$(): by distance, faster off-road$(li)$(l)Brakes$(): every stop$(li)$(l)Body$(): crashes"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Worn parts make a car slower, thirstier and slower to stop. The dashboard's warning lights turn amber, then orange, and flash red when a part is gone: at 0% the car $(4)breaks down$() and won't run until it's repaired. Cars are never destroyed.$(br2)Trailers wear their tires, brakes and body too. Electric cars have no oil."
+    }
+  ]
+}

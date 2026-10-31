@@ -1,0 +1,25 @@
+{
+  "name": "Cement Mixer",
+  "icon": "reikocars:cement_mixer",
+  "category": "reikocars:vehicles/trucks",
+  "sortnum": 7,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:cement_mixer",
+      "scale": 0.441,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)30 mph$() · 16 buckets of diesel$(br)Its drum sets concrete powder into concrete"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:cement_mixer_chassis",
+      "recipe2": "reikocars:cement_mixer_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:cement_mixer_interior",
+      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
+    }
+  ]
+}

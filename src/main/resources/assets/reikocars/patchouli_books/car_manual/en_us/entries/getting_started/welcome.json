@@ -1,0 +1,30 @@
+{
+  "name": "Welcome",
+  "icon": "reikocars:sedan",
+  "category": "reikocars:getting_started",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Reiko's Car Mod$() adds over thirty drivable cars, trucks and motorcycles, and trailers to tow behind them. They run on $(thing)BuildCraft Reborn$() fuels (or its MJ, for the electric ones), and everything you buy is paid in $(thing)Reiko's Economy Mod$() money, by card or cash."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/welcome.png"
+      ],
+      "border": true,
+      "text": "Cars wear out, get dirty, need keys, fuel and insurance, and earn their keep."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "This book has a chapter for each part of the mod. Start with $(l:getting_started/first_car)Your First Car$(/l), then look things up as you need them.$(br2)Most blocks in this mod belong to whoever puts them down: only they (or an admin) can break them, and they set the prices and keep the money."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:car_manual",
+      "text": "Lost this book? Make another from a book and an iron ingot, or open it from the Car Workbench's Guide button."
+    }
+  ],
+  "priority": true
+}

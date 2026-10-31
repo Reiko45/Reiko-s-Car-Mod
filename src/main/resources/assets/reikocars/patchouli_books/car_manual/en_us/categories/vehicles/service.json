@@ -1,0 +1,7 @@
+{
+  "name": "Public Service",
+  "description": "The taxi, bus, police car, ambulance and fire truck.",
+  "icon": "reikocars:city_bus",
+  "sortnum": 4,
+  "parent": "reikocars:vehicles"
+}

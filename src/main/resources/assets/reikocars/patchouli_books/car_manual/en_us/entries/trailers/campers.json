@@ -1,0 +1,40 @@
+{
+  "name": "Campers",
+  "icon": "reikocars:camper",
+  "category": "reikocars:trailers",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Right-click a camper to go inside: $(l)cupboards$() for your things, a $(l)stove$() that cooks food as a smoker does (only while it's parked), and a $(l)Sleep$() button."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/camper_screen.png"
+      ],
+      "border": true,
+      "text": "Food on top, fuel underneath, and what's cooked on the right."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Sleeping$() works like a bed: it sets your spawn outside the door, and once enough players are asleep the night passes. Only in a parked camper, at night, with no monsters close by. Each camper sleeps two; you wake outside."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/camp.png"
+      ],
+      "border": true,
+      "text": "Parked, the camp unfolds: awning, lights, steps, jacks, and chairs to sit in."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/camp_night.png"
+      ],
+      "border": true,
+      "text": "At night the lights and the windows glow. Hitch it and everything folds away."
+    }
+  ]
+}

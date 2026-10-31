@@ -1,0 +1,20 @@
+{
+  "name": "Livestock Trailer",
+  "icon": "reikocars:livestock_trailer",
+  "category": "reikocars:vehicles/trailers",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:livestock_trailer",
+      "scale": 0.564,
+      "rotate": true,
+      "text": "Bumper-pull, on a tow ball. Pens for 6 cows, 3 horses or 12 chickens."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:livestock_trailer_body",
+      "text": "Then at the Car Workbench, on a $(item)Trailer Chassis$() with four Tires."
+    }
+  ]
+}

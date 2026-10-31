@@ -1,0 +1,20 @@
+{
+  "name": "Parking Meters",
+  "icon": "reikocars:parking_meter",
+  "category": "reikocars:roads",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A $(item)Parking Meter$() charges the car parked beside it (within 3 blocks). Right-click it, choose 10 to 120 minutes, and pay by card or cash to its owner.$(br2)Overstay and, after a minute's grace, the car's owner gets a $(4)parking ticket$(), and another every 15 minutes."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:parking_meter"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The owner's cars park free. The $(l)Settings$() tab sets the rate and the fine. A car left at an expired meter can be towed to an $(l:business/impound)impound lot$(/l)."
+    }
+  ]
+}

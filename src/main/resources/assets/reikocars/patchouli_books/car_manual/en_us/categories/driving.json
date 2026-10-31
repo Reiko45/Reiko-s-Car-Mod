@@ -1,0 +1,6 @@
+{
+  "name": "Driving",
+  "description": "The controls, keys, turn signals, the radio, the GPS and the weather.",
+  "icon": "reikocars:car_key",
+  "sortnum": 1
+}

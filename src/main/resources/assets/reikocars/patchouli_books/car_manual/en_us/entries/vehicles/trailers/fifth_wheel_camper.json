@@ -1,0 +1,21 @@
+{
+  "name": "Fifth-Wheel Camper",
+  "icon": "reikocars:fifth_wheel_camper",
+  "category": "reikocars:vehicles/trailers",
+  "sortnum": 5,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:fifth_wheel_camper",
+      "scale": 0.473,
+      "rotate": true,
+      "text": "For the semi. Sleeps 2, 45 cupboard slots, a stove, a slide-out and a camp when parked."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:fifth_wheel_camper_body",
+      "text": "Then at the Car Workbench, on a $(item)Trailer Chassis$() with four Tires.",
+      "title": "Body"
+    }
+  ]
+}

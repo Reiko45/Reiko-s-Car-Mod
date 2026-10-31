@@ -1,0 +1,31 @@
+{
+  "name": "Electric Pickup",
+  "icon": "reikocars:electric_pickup",
+  "category": "reikocars:vehicles/electric",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:electric_pickup",
+      "scale": 0.596,
+      "rotate": true,
+      "text": "$(l)4$() seats · $(l)42 mph$() · 200,000 MJ battery$(br)Crew cab, 27-slot truck bed, full speed off-road, tow ball",
+      "offset": -0.15
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:electric_pickup_chassis",
+      "title": "Chassis"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:electric_pickup_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:electric_pickup_interior",
+      "text": "Then at the Car Workbench, with $(item)Electric Motor$() and four Tires.",
+      "title": "Interior"
+    }
+  ]
+}

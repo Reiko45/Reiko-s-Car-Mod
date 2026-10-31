@@ -83,6 +83,17 @@ public final class CarWorkbenchScreen extends AbstractContainerScreen<CarWorkben
         nextPage = addRenderableWidget(Button.builder(Component.literal(">"), button -> turnPage(1))
                 .bounds(arrows + 14, topPos + BUTTON_Y, 12, BUTTON_SIZE).build());
         updatePageButtons();
+        if (com.reiko.cars.guide.Guide.available()) {
+            // The Car Manual, at its page on building cars. The workbench closes first (handing back its parts), so
+            // the server isn't left with it open behind the book.
+            Button guide = addRenderableWidget(Button.builder(Component.translatable("gui.reikocars.workbench.guide"), button -> {
+                if (minecraft != null && minecraft.player != null) {
+                    minecraft.player.closeContainer();
+                    com.reiko.cars.guide.Guide.open("getting_started/workbench");
+                }
+            }).bounds(leftPos + WIDTH - 48, topPos + 3, 40, 12).build());
+            guide.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.reikocars.workbench.guide.hint")));
+        }
     }
 
     private int pages() {

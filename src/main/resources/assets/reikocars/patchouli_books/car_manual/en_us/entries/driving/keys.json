@@ -1,0 +1,20 @@
+{
+  "name": "Car Keys",
+  "icon": "reikocars:car_key",
+  "category": "reikocars:driving",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Every vehicle needs one of its keys to start, $(l)even for its owner$(). With none in your inventory the dashboard says $(4)NO KEY$().$(br2)Craft $(item)Blank Key$()s, then sneak and right-click your car with one to cut a key for it. Only the owner can cut keys; cut as many as you like and hand them out."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:blank_key"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A key lets whoever carries it start and drive the car, get in when it's locked, open its trunk and lock or unlock it. Right-click with a key to lock its car from up to 32 blocks away.$(br2)$(l)Lost one?$() Sneak and right-click the car twice with one of its keys: only that key fits from then on. Trailers take keys too."
+    }
+  ]
+}

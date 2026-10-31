@@ -1,0 +1,7 @@
+{
+  "name": "Electric Vehicles",
+  "description": "Cars that run on BuildCraft MJ.",
+  "icon": "reikocars:city_ev",
+  "sortnum": 1,
+  "parent": "reikocars:vehicles"
+}

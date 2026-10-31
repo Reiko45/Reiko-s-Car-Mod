@@ -1,0 +1,26 @@
+{
+  "name": "Muscle Car",
+  "icon": "reikocars:muscle_car",
+  "category": "reikocars:vehicles/cars",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:muscle_car",
+      "scale": 0.604,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)54 mph$() · 8 buckets$(br)Big V8: quick off the line, slow to turn, thirsty",
+      "offset": -0.4
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:muscle_car_chassis",
+      "recipe2": "reikocars:muscle_car_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:muscle_car_interior",
+      "text": "Then at the Car Workbench, with $(item)Car Engine$() and four Tires."
+    }
+  ]
+}

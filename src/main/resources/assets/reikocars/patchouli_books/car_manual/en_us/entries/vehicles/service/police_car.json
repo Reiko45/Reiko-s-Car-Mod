@@ -1,0 +1,26 @@
+{
+  "name": "Police Car",
+  "icon": "reikocars:police_car",
+  "category": "reikocars:vehicles/service",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:police_car",
+      "scale": 0.615,
+      "rotate": true,
+      "text": "$(l)4$() seats · $(l)47 mph$() · 9 buckets$(br)Light bar and siren; 9-slot trunk",
+      "offset": -0.125
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:police_car_chassis",
+      "recipe2": "reikocars:police_car_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:police_car_interior",
+      "text": "Then at the Car Workbench, with $(item)Car Engine$() and four Tires."
+    }
+  ]
+}

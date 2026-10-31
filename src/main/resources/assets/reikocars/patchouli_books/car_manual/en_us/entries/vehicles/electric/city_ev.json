@@ -1,0 +1,26 @@
+{
+  "name": "City EV",
+  "icon": "reikocars:city_ev",
+  "category": "reikocars:vehicles/electric",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:city_ev",
+      "scale": 0.732,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)33 mph$() · 80,000 MJ battery$(br)Electric: nippy, turns tight, 9-slot trunk",
+      "offset": -0.125
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:city_ev_chassis",
+      "recipe2": "reikocars:city_ev_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:city_ev_interior",
+      "text": "Then at the Car Workbench, with $(item)Electric Motor$() and four Tires."
+    }
+  ]
+}

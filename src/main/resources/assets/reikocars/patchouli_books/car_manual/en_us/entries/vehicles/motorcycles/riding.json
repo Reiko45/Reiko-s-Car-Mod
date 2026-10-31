@@ -1,0 +1,12 @@
+{
+  "name": "Riding Motorcycles",
+  "icon": "reikocars:motorcycle_engine",
+  "category": "reikocars:vehicles/motorcycles",
+  "sortnum": -1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Motorcycles ride like cars (same keys, fuel, locks and pumps), but turn tighter and $(l)lean into turns$(), more the faster you go, and so do their riders. Parked, a bike stands on its kickstand.$(br2)They're built with a $(item)Motorcycle Engine$() and two tires: the front wheel in the front left slot, the back wheel in the rear left."
+    }
+  ]
+}

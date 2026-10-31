@@ -1,0 +1,34 @@
+{
+  "name": "Roads",
+  "icon": "reikocars:asphalt",
+  "category": "reikocars:roads",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Cars go $(l)15% faster$() on $(item)Asphalt$(), and their tires wear slower. $(item)Road Paint$() marks it: right-click the air to pick a marking (center lines, lane and edge lines, stop lines, crosswalks, arrows), then the asphalt. Paint the same thing again to scrape it off."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:asphalt",
+      "recipe2": "reikocars:road_paint"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/roads.png"
+      ],
+      "border": true,
+      "text": "Street Poles hold up traffic lights, signs and street lamps, which come on at dusk."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:street_pole",
+      "recipe2": "reikocars:street_lamp"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:stop_sign"
+    }
+  ]
+}

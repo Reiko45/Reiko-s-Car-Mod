@@ -1,0 +1,25 @@
+{
+  "name": "Dump Truck",
+  "icon": "reikocars:dump_truck",
+  "category": "reikocars:vehicles/trucks",
+  "sortnum": 6,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:dump_truck",
+      "scale": 0.436,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)32 mph$() · 16 buckets of diesel$(br)54-slot bed that tips to dump its load"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:dump_truck_chassis",
+      "recipe2": "reikocars:dump_truck_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:dump_truck_interior",
+      "text": "Then at the Car Workbench, with $(item)Diesel Engine$() and four Tires."
+    }
+  ]
+}

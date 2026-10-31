@@ -1,0 +1,12 @@
+{
+  "name": "Taxi and Bus Fares",
+  "icon": "reikocars:taxi",
+  "category": "reikocars:business",
+  "sortnum": 6,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)The bus:$() sit down while someone's driving and pay the fare, by card or cash.$(br2)$(l)The taxi:$() get in and the meter runs; when you get out the fare comes out of your bank account. Both are paid to the driver.$(br2)The owner sets the fares by sneaking and right-clicking the vehicle with an empty hand."
+    }
+  ]
+}

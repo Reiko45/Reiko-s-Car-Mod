@@ -1,0 +1,25 @@
+{
+  "name": "Work Trucks",
+  "icon": "reikocars:garbage_truck",
+  "category": "reikocars:services",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Garbage truck:$() back its hopper up to $(item)Trash Can$()s and press $(k:key.reikocars.hitch) to empty them.$(br2)$(l)Dump truck:$() load its bed (sneak + right-click), then $(k:key.reikocars.hitch) tips it out.$(br2)$(l)Cement mixer:$() its drum sets concrete powder into concrete while the engine runs; $(k:key.reikocars.hitch) pours it."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:trash_can"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Ice cream truck:$() a shop on wheels. Stock its freezer (sneak + right-click), price each kind at the serving hatch, and everyone else buys from it by card or cash. Its horn plays a jingle."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:vanilla_ice_cream",
+      "recipe2": "reikocars:chocolate_ice_cream"
+    }
+  ]
+}

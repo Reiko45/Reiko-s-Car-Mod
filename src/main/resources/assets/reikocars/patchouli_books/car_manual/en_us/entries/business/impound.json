@@ -1,0 +1,24 @@
+{
+  "name": "Impound Lots",
+  "icon": "reikocars:impound_office",
+  "category": "reikocars:business",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "An $(item)Impound Office$()'s lot is everything within 10 blocks. Cars towed in from expired parking meters, and cars repossessed over missed loan payments, are held there under an $(4)IMPOUNDED$() sign.$(br2)Right-click the office to pay the release fee and get your car back."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:impound_office"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/impound.png"
+      ],
+      "border": true,
+      "text": "An impound lot."
+    }
+  ]
+}

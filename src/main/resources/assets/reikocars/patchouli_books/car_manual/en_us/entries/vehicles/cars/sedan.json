@@ -1,0 +1,26 @@
+{
+  "name": "Sedan",
+  "icon": "reikocars:sedan",
+  "category": "reikocars:vehicles/cars",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:sedan",
+      "scale": 0.659,
+      "rotate": true,
+      "text": "$(l)4$() seats · $(l)40 mph$() · 8 buckets$(br)All-rounder",
+      "offset": -0.225
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:sedan_chassis",
+      "recipe2": "reikocars:sedan_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:sedan_interior",
+      "text": "Then at the Car Workbench, with $(item)Car Engine$() and four Tires."
+    }
+  ]
+}

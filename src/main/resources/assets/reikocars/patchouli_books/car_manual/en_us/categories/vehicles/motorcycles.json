@@ -1,0 +1,7 @@
+{
+  "name": "Motorcycles",
+  "description": "Two wheels: they lean into turns.",
+  "icon": "reikocars:sport_bike",
+  "sortnum": 2,
+  "parent": "reikocars:vehicles"
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Signals and Alarms",
+  "icon": "minecraft:redstone_torch",
+  "category": "reikocars:driving",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(k:key.reikocars.signal_left) and $(k:key.reikocars.signal_right) signal a turn: that side's lamps blink amber and an arrow blinks on the dashboard. A signal cancels itself after the turn. $(k:key.reikocars.hazards) blinks both sides; a car that breaks down puts its hazards on by itself."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Car alarms:$() a locked car's alarm goes off when someone without its key hits it or tries to get in. It sounds for half a minute with every light flashing, and its owner is told where and who. Stop it with $(k:key.reikocars.lock), with its key, or by getting in."
+    }
+  ]
+}

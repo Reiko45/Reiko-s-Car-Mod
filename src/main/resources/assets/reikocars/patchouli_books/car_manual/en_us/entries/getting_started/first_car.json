@@ -1,0 +1,27 @@
+{
+  "name": "Your First Car",
+  "icon": "reikocars:sedan",
+  "category": "reikocars:getting_started",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(li)Craft a $(item)Car Workbench$() and put it down.$(li)Craft the car's three parts: its $(thing)chassis$(), $(thing)body$() and $(thing)interior$() (see $(l:vehicles)Vehicles$(/l) for each car's).$(li)Craft an engine (a $(item)Car Engine$() for most cars) and four $(item)Tire$()s."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(li)Build the car at the workbench (see $(l:getting_started/workbench)The Car Workbench$(/l)) and put it down.$(li)Cut a key: sneak and right-click the car with a $(item)Blank Key$() ($(l:driving/keys)Car Keys$(/l)).$(li)Fill it up at a pump ($(l:fuel/pumps)Gas and Diesel Pumps$(/l)) and drive off ($(l:driving/controls)Controls$(/l))."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:tire",
+      "text": "Tires are made from dried kelp and black dye."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:car_engine",
+      "text": "The engine is built round a BuildCraft Combustion Engine."
+    }
+  ],
+  "priority": true
+}

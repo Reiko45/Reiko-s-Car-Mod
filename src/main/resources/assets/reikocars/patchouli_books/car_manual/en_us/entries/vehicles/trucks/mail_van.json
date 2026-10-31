@@ -1,0 +1,25 @@
+{
+  "name": "Mail Van",
+  "icon": "reikocars:mail_van",
+  "category": "reikocars:vehicles/trucks",
+  "sortnum": 9,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:mail_van",
+      "scale": 0.658,
+      "rotate": true,
+      "text": "$(l)2$() seats · $(l)35 mph$() · 9 buckets$(br)Collects and delivers parcels; 36 slots of mail"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:mail_van_chassis",
+      "recipe2": "reikocars:mail_van_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:mail_van_interior",
+      "text": "Then at the Car Workbench, with $(item)Car Engine$() and four Tires."
+    }
+  ]
+}

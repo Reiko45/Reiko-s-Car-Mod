@@ -1,0 +1,34 @@
+{
+  "name": "The Repair Bench",
+  "icon": "reikocars:repair_bench",
+  "category": "reikocars:care",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Park within 6 blocks of a $(item)Repair Bench$() and right-click it. It shows the car part by part. $(l)Fit$() puts in parts you carry, free; the $(l)price$() button has the bench fit parts from its own stock, paid to its owner by card or cash."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:repair_bench"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "An oil change takes a $(item)Motor Oil$(), brakes a set of $(item)Brake Pads$(). $(item)Engine Parts$() put back a quarter of the engine, $(item)Body Panel$()s a fifth of the body, and tires take a full set of $(item)Tire$()s. Diesel trucks and trailers take two of each."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:motor_oil",
+      "recipe2": "reikocars:brake_pads"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:engine_parts",
+      "recipe2": "reikocars:body_panel"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The bench's owner gets $(l)Stock$() and $(l)Prices$() tabs, to run it as a mechanic's shop: hoppers and pipes can fill its stock. Fitting parts to someone else's car pays the $(thing)Mechanic$() job."
+    }
+  ]
+}

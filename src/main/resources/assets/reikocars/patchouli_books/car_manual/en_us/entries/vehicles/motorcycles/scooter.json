@@ -1,0 +1,25 @@
+{
+  "name": "Scooter",
+  "icon": "reikocars:scooter",
+  "category": "reikocars:vehicles/motorcycles",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:scooter",
+      "scale": 0.74,
+      "rotate": true,
+      "text": "$(l)1$() seat · $(l)27 mph$() · 2 buckets$(br)Slow, but about 2,500 blocks to a bucket"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:scooter_chassis",
+      "recipe2": "reikocars:scooter_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:scooter_interior",
+      "text": "Then at the Car Workbench, with $(item)Motorcycle Engine$() and two Tires."
+    }
+  ]
+}

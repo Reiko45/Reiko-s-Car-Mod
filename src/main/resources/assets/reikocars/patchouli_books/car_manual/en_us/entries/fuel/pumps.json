@@ -1,0 +1,29 @@
+{
+  "name": "Gas and Diesel Pumps",
+  "icon": "reikocars:gas_pump",
+  "category": "reikocars:fuel",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The $(item)Gas Pump$() sells gasoline and the $(item)Diesel Pump$() diesel. Each is two blocks tall and holds 16 buckets. Pipe fuel into either half from any side (nothing comes back out), or fill it from a bucket."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:gas_pump",
+      "recipe2": "reikocars:diesel_pump"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/pump.png"
+      ],
+      "border": true,
+      "text": "Right-click a pump to fill the car at its hose (within 6 blocks) or your buckets."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Pay by card or cash. The money goes straight to the pump's owner, even while they're offline. The owner fills up free, and sets the price per bucket at the bottom of the screen; the display on the pump shows it, or EMPTY."
+    }
+  ]
+}

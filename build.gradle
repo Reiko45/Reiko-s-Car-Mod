@@ -83,6 +83,7 @@ repositories {
         url = "https://maven.blamejared.com/"
         content {
             includeGroup "mezz.jei"
+            includeGroup "vazkii.patchouli"
         }
     }
 }
@@ -98,6 +99,13 @@ dependencies {
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
     localRuntime("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}") {
         transitive = false // the mod jar has everything it needs inside it
+    }
+
+    // Patchouli is optional too: it shows the Car Manual (assets/reikocars/patchouli_books/car_manual). Only its API is
+    // compiled against, in compat/patchouli; the full mod is on the dev runs' classpath, to read the book there.
+    compileOnly "vazkii.patchouli:Patchouli:${patchouli_version}:api"
+    localRuntime("vazkii.patchouli:Patchouli:${patchouli_version}") {
+        transitive = false
     }
 
     // Xaero's Minimap is optional too: the GPS shows its destination and your cars on it, and lists its waypoints.

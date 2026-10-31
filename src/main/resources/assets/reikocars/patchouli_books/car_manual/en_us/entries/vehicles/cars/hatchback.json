@@ -1,0 +1,26 @@
+{
+  "name": "Hatchback",
+  "icon": "reikocars:hatchback",
+  "category": "reikocars:vehicles/cars",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:entity",
+      "entity": "reikocars:hatchback",
+      "scale": 0.694,
+      "rotate": true,
+      "text": "$(l)4$() seats · $(l)36 mph$() · 6 buckets$(br)Small and cheap, about 800 blocks to a bucket",
+      "offset": -0.175
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:hatchback_chassis",
+      "recipe2": "reikocars:hatchback_body"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:hatchback_interior",
+      "text": "Then at the Car Workbench, with $(item)Car Engine$() and four Tires."
+    }
+  ]
+}

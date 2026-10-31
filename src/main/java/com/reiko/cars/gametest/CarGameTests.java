@@ -4861,4 +4861,32 @@ public final class CarGameTests {
             throw e;
         }
     }
+
+    @GameTest(template = YARD, timeoutTicks = 40)
+    public static void carManualGivenOnceAndCraftable(GameTestHelper helper) {
+        check(helper, com.reiko.cars.guide.Guide.available(), "Patchouli is installed for the tests");
+        ServerPlayer player = join(helper);
+        try {
+            ItemStack manual = com.reiko.cars.guide.Guide.book();
+            check(helper, BuiltInRegistries.ITEM.getKey(manual.getItem()).toString().equals("patchouli:guide_book"), "the manual is a Patchouli book");
+            // Joining gives one (unless the config says not to); either way there's one after giveFirstTime.
+            com.reiko.cars.guide.Guide.giveFirstTime(player);
+            java.util.function.Supplier<Integer> manuals = () -> player.getInventory().items.stream()
+                    .filter(stack -> ItemStack.isSameItemSameComponents(stack, manual)).mapToInt(ItemStack::getCount).sum();
+            helper.assertValueEqual(manuals.get(), 1, "one manual on first join");
+            check(helper, !com.reiko.cars.guide.Guide.giveFirstTime(player), "and only the once");
+            player.getInventory().clearContent();
+            check(helper, !com.reiko.cars.guide.Guide.giveFirstTime(player), "not even after losing it");
+            helper.assertValueEqual(manuals.get(), 0, "so no second copy");
+
+            // Lost it? Craft another: a book and an iron ingot.
+            var recipe = helper.getLevel().getServer().getRecipeManager().byKey(com.reiko.cars.guide.Guide.id()).orElse(null);
+            check(helper, recipe != null, "the manual has a recipe");
+            ItemStack made = recipe.value().getResultItem(helper.getLevel().registryAccess());
+            check(helper, ItemStack.isSameItemSameComponents(made, manual), "which makes the Car Manual");
+        } finally {
+            leave(helper, player);
+        }
+        helper.succeed();
+    }
 }

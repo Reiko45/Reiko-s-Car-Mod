@@ -30,7 +30,7 @@ A **Tuning Bench** fits engine stages, turbos, tires, brakes and suspension kits
 a **Race Control** and numbered **race flags** make a race track, with timed laps, a best-lap board, and races for a
 pot of entry fees.
 
-Rain, snow and **thunderstorms** make the roads slippery: **windscreen wipers** sweep the rain off, spray flies off the
+Rain, snow and **thunderstorms** make the roads slippery: **windshield wipers** sweep the rain off, spray flies off the
 tires, snow piles up on parked cars, lightning strikes now and then, and **Winter Tires** grip on snow and ice.
 
 Cars get **dirty** off-road, in mud and in the rain, and it shows. A drive-through **Car Wash** with spinning
@@ -49,6 +49,9 @@ stock its cupboards, cook on its stove, and when it's parked its awning, steps a
 trailers** carry cows, sheep, pigs, goats, horses, llamas and chickens: lead them up the ramp and watch them ride
 between the slats.
 
+A **Car Manual** (with Patchouli installed) explains all of it in game, with every vehicle turning in 3D, its recipes
+and pictures: every player gets one the first time they join.
+
 ## Requirements
 
 - Minecraft 1.21.1, NeoForge 21.1.265 or newer (as Reiko's Economy Mod needs)
@@ -57,6 +60,21 @@ between the slats.
 - Optional: [JEI](https://www.curseforge.com/minecraft/mc-mods/jei) 19.21 or newer, for the recipe pages below
 - Optional: [Xaero's Minimap](https://www.curseforge.com/minecraft/mc-mods/xaeros-minimap) 24.x (made with 24.7.1),
   and its World Map, for the [GPS](#gps) on the map
+- Optional: [Patchouli](https://www.curseforge.com/minecraft/mc-mods/patchouli) 1.21-80 or newer (made with
+  1.21.1-93), for the [Car Manual](#the-car-manual)
+
+## The Car Manual
+
+The mod's guide book, shown by **Patchouli**. It has a chapter for each part of the mod: getting started, driving,
+every vehicle (each turning in 3D, with its seats, top speed, tank and recipes), fuel and charging, repairs and
+washing, towing, roads, money and business, public services, and tuning and racing, with screenshots of each.
+
+- **Getting one:** every player is given one the first time they join a world (once: not again after dying or
+  losing it). Make another from a **book** and an **iron ingot**, or open it from the **Guide** button at the top of
+  the Car Workbench (that opens it at the page on building cars).
+- **Searching:** Patchouli's search box, on the book's front page, finds any entry.
+- **Keys:** the book shows each key as you have it set (the hitch key as **G**, unless you've changed it).
+- **Without Patchouli** there's no book, no recipe and no Guide button; everything else works the same.
 
 ## The cars
 
@@ -740,13 +758,13 @@ slides wide in hard turns:
 - **Tires matter:** **Winter Tires** (a kit at the [Tuning Bench](#tuning)) win back most of the grip lost on snow
   (80%), bite into ice, and win back half of it in the rain. Off-road tires win back a third in snow; sport tires are
   worse in the wet. The dashboard shows the road beside the lock: **WET**, **STORM**, **SNOW** or **ICE**.
-- **Wipers:** every car (not the motorcycles) has wipers on its windscreen: two blades, or one in the middle of a
+- **Wipers:** every car (not the motorcycles) has wipers on its windshield: two blades, or one in the middle of a
   narrow screen. They sweep while rain or snow falls on the car and its engine runs, faster in a storm. Raindrops (or
   snowflakes) gather on the glass while it's coming down, engine running or not, and the blades wipe away the ones
   they pass over; once it stops, they dry up. You see it all from the driver's seat, and so does anyone outside.
 - **Spray:** water sprays up behind the wheels on a wet road, and snow on a snowy one, more the faster you go.
 - **Snow on parked cars:** a car standing in falling snow is covered in about a minute and a half: its roof, hood,
-  trunk and windscreen (the glass stays clear while the engine runs). It blows off as the car's driven (in twenty
+  trunk and windshield (the glass stays clear while the engine runs). It blows off as the car's driven (in twenty
   blocks or so), melts in the rain or anywhere too warm to snow, and washes off at a car wash or with a bucket of
   water.
 - **Thunderstorms:** besides the worse grip, lightning strikes a car out in a storm now and then (about six times an
@@ -949,7 +967,7 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | Item | Recipe |
 | --- | --- |
 | Car Workbench | iron ingots on top, iron gear, crafting table, iron gear across the middle, iron legs |
-| Tire ×4 | dried kelp in the corners, black dye on the sides, centre empty |
+| Tire ×4 | dried kelp in the corners, black dye on the sides, center empty |
 | Car Engine | iron ingots, iron gears, pistons around a BuildCraft **Combustion Engine** |
 | Gas Pump | iron ingots, glass pane, BuildCraft **Tank**, iron gear |
 | Diesel Pump | as the Gas Pump, with green dye either side of the iron gear |
@@ -1081,7 +1099,7 @@ their interiors a BuildCraft **Iron Chipset** (the computer):
 
 | Part | City EV | Electric Sedan | Electric Pickup | Electric Van | Electric Moped |
 | --- | --- | --- | --- | --- | --- |
-| **Chassis** | iron rails (`I I`) round a Battery Pack | as the City EV, a gold gear between iron below | Battery Packs top and bottom middle, iron ingots in the other edge slots (centre empty) | as the pickup, with an iron gear in the centre | a Battery Pack in the centre, iron top left, either side of it and bottom right |
+| **Chassis** | iron rails (`I I`) round a Battery Pack | as the City EV, a gold gear between iron below | Battery Packs top and bottom middle, iron ingots in the other edge slots (center empty) | as the pickup, with an iron gear in the center | a Battery Pack in the center, iron top left, either side of it and bottom right |
 | **Body** | glass panes over glowstone, light blue dye, glowstone, iron below | as the City EV with white dye, iron, gold ingot, iron below | as the City EV with green dye | iron, glass, iron over glowstone, blue dye, glowstone, iron below | glass pane over glowstone, white dye, glowstone, iron below |
 | **Interior** | chipset over wool, redstone, wool, wool below | chipset over leather, redstone, leather, leather, glass pane, leather below | chipset over leather, redstone, leather, three leather below | chipset over wool, redstone, wool, three wool below | chipset over leather, redstone, leather, leather below |
 
@@ -1197,6 +1215,7 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `roads.allRedSeconds` | `1.0` | How long every light at a crossing is red between one way's turn and the other's |
 | `roads.redLightFine` | `15.0` | A new traffic light's red-light camera fine (its owner can change it) |
 | `roads.speedingFine` | `20.0` | A new speed limit sign's camera fine (its owner can change it) |
+| `guide.giveOnFirstJoin` | `true` | Every player is given the [Car Manual](#the-car-manual) the first time they join (needs Patchouli) |
 
 Each player can pick **mph** or **km/h**, turn the dashboard off, and (with Xaero's Minimap) choose whether the GPS
 destination and their cars show on the minimap, in `config/reikocars-client.toml`.
@@ -1211,6 +1230,11 @@ JEI) and puts JEI in the dev runs. `-Pjei_version=...` tries another version.
 Xaero's Minimap isn't ours to share, so the GPS compiles against stand-ins for the few of its classes it uses
 (`src/xaeroStubs/`), which never go in the jar. To try it in a dev client, put Xaero's Minimap's jar (and World
 Map's, if you like) in a folder and pass it: `./gradlew runClient -PxaeroJars=/path/to/folder`.
+
+Patchouli comes from its Maven repository too: the build compiles against its API and puts it in the dev runs. The
+Car Manual's pages are written by `tools/guidebook/book.py` (`python3 tools/guidebook/book.py`), from its own text,
+the workbench recipes and the car table above; edit that and run it rather than the book's JSON. Its pictures are
+cropped from showcase screenshots by `tools/guidebook/pictures.py` (it needs Pillow).
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
@@ -1232,14 +1256,15 @@ Map's, if you like) in a folder and pass it: `./gradlew runClient -PxaeroJars=/p
 ./gradlew runClient -Pshowcase=tune       # the Tuning Bench and a livery, the race track, a time trial and a race start, the kits
 ./gradlew runClient -Pshowcase=gps -PxaeroJars=/path/to/folder  # the GPS's tabs, driving and walking to a destination, arriving, the minimap
 ./gradlew runClient -Pshowcase=busstops   # a bus stop sign and shelter, the owner's screens, a bus route, the doors, the bell, villagers aboard
+./gradlew runClient -Pshowcase=guide      # the Car Manual: its pictures' scenes, then its pages, one screenshot each
 ./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
 
 ## Editing the models
 
 The cars are Blockbench projects in `blockbench/` (format: Modded Entity, box UV), built at Minecraft's own scale:
-one texture pixel to one model pixel. They have real wheel arches with dark wells, tyres with recessed rims and a
-hub, raked windscreens and rear windows, furnished cabins (seats, dashboards with lit gauges, steering wheels, door
+one texture pixel to one model pixel. They have real wheel arches with dark wells, tires with recessed rims and a
+hub, raked windshields and rear windows, furnished cabins (seats, dashboards with lit gauges, steering wheels, door
 panels), and detailed lights, grilles, bumpers, mirrors and trim. Each has the same top-level bones, which the mod
 relies on:
 
@@ -1267,7 +1292,7 @@ two axles of wheels, `wheel_l1`, `wheel_r1`, `wheel_l2` and `wheel_r2`. Their te
 `textures/entity/trailer/`. The front faces north, and the kingpin (which sits on the semi's fifth wheel) must stay
 56 pixels ahead of the middle and 18 up, as set in `trailer/TrailerType.java`.
 
-These bones can hold child bones of their own, turned at an angle: the windscreens, rear windows and pillars, the
+These bones can hold child bones of their own, turned at an angle: the windshields, rear windows and pillars, the
 steering wheels, a motorcycle's raked fork legs (`fork_legs`, inside `fork`, so they steer with it), the semi's roof
 fairing, the tanker's tank. A child is drawn the way its parent is (tinted under `body`, lit under `lights`). Some
 textures aren't square (512×256, say); Blockbench and the game both take that.
@@ -1289,9 +1314,9 @@ The Car Wash is a block model per part of its arch, all sharing `textures/block/
 left post's foot, with the pay terminal), `car_wash_base_far`, `car_wash_post`, `car_wash_beam_end` and
 `car_wash_beam_1` to `car_wash_beam_4`, which spell CAR WASH two letters a block (backwards from behind, so it reads
 from both sides). Its brushes are drawn in code (`client/CarWashRenderer.java`), and the dirt and snow on cars are
-made from each car's own texture (`client/CarGrime.java`). The wipers find each car's windscreen in its model (the
+made from each car's own texture (`client/CarGrime.java`). The wipers find each car's windshield in its model (the
 biggest forward-facing pane of see-through glass in `trim`, with any panes in line with it: `client/Wipers.java`), so a
-new car gets them as long as its windscreen is glass that faces forward.
+new car gets them as long as its windshield is glass that faces forward.
 
 ## Project layout
 
@@ -1332,13 +1357,16 @@ src/main/java/com/reiko/cars/
 ├── toll/                 the toll booth and toll gate blocks, their block entities and menus, protection, and TollService (paying and the gate)
 ├── mail/                 the mailbox block, block entity, menu and protection, parcels, the address list (MailRegistry), and MailService (sending and the mail van)
 ├── compat/jei/           the JEI plugin (only loaded when JEI is installed)
+├── compat/patchouli/     the Car Manual's book, through Patchouli's API (only touched when Patchouli is installed)
+├── guide/                the Car Manual: giving it on first join, and opening it (Guide)
 ├── network/              packets: the GPS's places and cars, a bus stop's name and routes, pump, repair bench, mailbox, parking meter, toll, car wash, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, and the wipers and raindrops on the windscreen, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the GPS (GpsClient, its screen and panel, and GpsXaero for Xaero's Minimap), the bus stop's screen and lettering, the camper's screen and its sleepers (CamperClient), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
+├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, and the wipers and raindrops on the windshield, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the GPS (GpsClient, its screen and panel, and GpsXaero for Xaero's Minimap), the bus stop's screen and lettering, the camper's screen and its sleepers (CamperClient), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcase script (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)
+tools/guidebook/          the Car Manual's writer (book.py) and its pictures' cropper (pictures.py)
 src/xaeroStubs/java/       compile-time stand-ins for the few classes of Xaero's Minimap the GPS uses (not in the jar)
 ```
 

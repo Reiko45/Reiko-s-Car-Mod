@@ -1,0 +1,16 @@
+{
+  "name": "Gasoline and Diesel",
+  "icon": "reikocars:diesel_pump",
+  "category": "reikocars:fuel",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Cars run on $(thing)gasoline$(): BuildCraft's $(item)Light Fuel$() (and the Mixed Light and Gaseous Fuels), or other mods' gasoline. Diesel trucks run on $(thing)diesel$(): BuildCraft's $(item)Dense Fuel$() and Mixed Heavy Fuels, or other mods' diesel. Neither takes the other's fuel, and nothing runs on crude oil."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A sedan goes about 600 blocks on a bucket, a semi about 250. A car burns fuel for every block it drives, and a little while idling. Its tooltip says what it runs on.$(br2)Refine BuildCraft oil into fuel, pipe it into a pump, and sell it: see $(l:fuel/pumps)Gas and Diesel Pumps$(/l)."
+    }
+  ]
+}

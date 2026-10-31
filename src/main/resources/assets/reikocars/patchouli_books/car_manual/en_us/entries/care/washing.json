@@ -1,0 +1,33 @@
+{
+  "name": "Dirt and Car Washes",
+  "icon": "reikocars:car_wash",
+  "category": "reikocars:care",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Cars get dirty as they're driven, more off-road, most in mud, twice as fast in the rain. A filthy car sells for less and its body slowly $(4)rusts$().$(br2)Right-click a car with a $(item)Water Bucket$() to wash some of it off, or use a car wash."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/car_wash.png"
+      ],
+      "border": true,
+      "text": "The Car Wash: drive up, press $(k:key.reikocars.hitch) to pay, then drive through slowly."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:car_wash",
+      "recipe2": "reikocars:wash_bay"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/wash_bay.png"
+      ],
+      "border": true,
+      "text": "The Wash Bay rents you a pressure washer: hold right-click to spray a car clean."
+    }
+  ]
+}
