@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:licensed",
+  "display": {
+    "icon": {
+      "id": "reikocars:speed_sign"
+    },
+    "title": {
+      "translate": "advancements.reikocars.caught_on_camera.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.caught_on_camera.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "camera": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "camera"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "camera"
+    ]
+  ]
+}

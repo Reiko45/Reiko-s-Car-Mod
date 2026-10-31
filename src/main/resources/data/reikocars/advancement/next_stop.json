@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:on_the_job",
+  "display": {
+    "icon": {
+      "id": "reikocars:bus_stop_sign"
+    },
+    "title": {
+      "translate": "advancements.reikocars.next_stop.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.next_stop.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "job_bus_stop": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "job_bus_stop"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "job_bus_stop"
+    ]
+  ]
+}

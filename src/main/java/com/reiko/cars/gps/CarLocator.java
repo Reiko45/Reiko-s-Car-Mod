@@ -73,6 +73,12 @@ public final class CarLocator extends SavedData {
             spots.put(spot.car(), spot);
             setDirty();
         }
+        if (before == null || !before.owner().equals(owner)) {
+            // A car new to its owner: how many they've got now.
+            if (car.level() instanceof ServerLevel level) {
+                com.reiko.cars.advancement.CarAdvancements.reach(level.getServer().getPlayerList().getPlayer(owner), "fleet", ownedBy(owner));
+            }
+        }
     }
 
     public void forget(UUID car) {
@@ -84,6 +90,17 @@ public final class CarLocator extends SavedData {
     @Nullable
     public Spot find(UUID car) {
         return spots.get(car);
+    }
+
+    /** How many cars {@code player} owns. */
+    public int ownedBy(UUID player) {
+        int owned = 0;
+        for (Spot spot : spots.values()) {
+            if (player.equals(spot.owner())) {
+                owned++;
+            }
+        }
+        return owned;
     }
 
     /** The cars {@code player} owns or is renting. */

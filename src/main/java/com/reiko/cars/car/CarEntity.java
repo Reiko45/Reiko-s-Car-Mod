@@ -628,6 +628,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             CarCondition after = condition.afterCrash(impact, damage);
             setCondition(after.withDamage(after.damage().afterCrash(impact * Math.min(1.0, damage), angle, condition.body() - after.body(),
                     type.isBike(), random)));
+            if (getControllingPassenger() instanceof net.minecraft.server.level.ServerPlayer driver) {
+                com.reiko.cars.advancement.CarAdvancements.award(driver, "crash");
+            }
         }
         TrailerEntity towed = trailer();
         if (towed != null) {
@@ -1984,6 +1987,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             com.reiko.cars.traffic.TrafficCameras.check(this, previous, pos, speed);
         }
         LivingEntity driver = getControllingPassenger();
+        if (driver instanceof net.minecraft.server.level.ServerPlayer player && moved > 0.0) {
+            com.reiko.cars.advancement.CarAdvancements.drove(player, this, moved);
+        }
         double load = trailer() != null ? 1.4 : towed() != null ? 1.3 : 1.0;
         if (driver != null && fuel > 0 && !isBrokenDown() && keyedIn()) {
             haul(driver, moved);
@@ -1994,6 +2000,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             if (fuel <= 0 && driver instanceof Player player) {
                 player.displayClientMessage(Component.translatable(type.isElectric() ? "car.reikocars.battery_flat" : "car.reikocars.out_of_fuel"),
                         true);
+                if (player instanceof net.minecraft.server.level.ServerPlayer driven) {
+                    com.reiko.cars.advancement.CarAdvancements.award(driven, "out_of_fuel");
+                }
             }
         }
         if (driver != null && moved > 0.0) {

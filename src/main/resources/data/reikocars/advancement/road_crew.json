@@ -1,0 +1,32 @@
+{
+  "parent": "reikocars:on_the_job",
+  "display": {
+    "icon": {
+      "id": "reikocars:road_paver"
+    },
+    "title": {
+      "translate": "advancements.reikocars.road_crew.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.road_crew.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "pave": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "pave",
+        "min": 100
+      }
+    }
+  },
+  "requirements": [
+    [
+      "pave"
+    ]
+  ]
+}

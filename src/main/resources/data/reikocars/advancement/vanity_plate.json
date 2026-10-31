@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:licensed",
+  "display": {
+    "icon": {
+      "id": "reikocars:dmv_office"
+    },
+    "title": {
+      "translate": "advancements.reikocars.vanity_plate.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.vanity_plate.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "plate": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "plate"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "plate"
+    ]
+  ]
+}

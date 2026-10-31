@@ -120,7 +120,7 @@ def entry(cat, eid, title, icon, pages, sort=0, priority=False):
     ENTRIES.append((cat, eid, title, icon, sort, pages, priority))
 
 
-category('getting_started', 'Getting Started', 'What the mod is, building your first car, and the Car Workbench.', 'reikocars:car_workbench', 0)
+category('getting_started', 'Getting Started', 'What the mod is, building your first car, the Car Workbench, and the advancements.', 'reikocars:car_workbench', 0)
 category('driving', 'Driving', 'The controls, keys, turn signals, the radio, the GPS and the weather.', 'reikocars:car_key', 1)
 category('vehicles', 'Vehicles', 'Every car, truck, motorcycle and trailer, and how to build each one.', 'reikocars:sedan', 2)
 category('vehicles/cars', 'Cars and Pickups', 'Everyday cars, SUVs and pickups.', 'reikocars:sedan', 0, 'vehicles')
@@ -194,6 +194,17 @@ entry('getting_started', 'workbench', 'The Car Workbench', 'reikocars:car_workbe
     craft('diesel_engine', 'motorcycle_engine'),
     craft('electric_motor', 'trailer_chassis'),
 ], sort=2)
+
+entry('getting_started', 'advancements', 'Advancements', 'minecraft:knowledge_book', [
+    text('The mod has its own tab of $(thing)advancements$() (press ' + K('key.advancements') + '): 26 of them, starting with your first '
+         'drive. Its branches: road trips, fuel, owning cars, the law, looking after a car (from a wash to a dent, a repair, a '
+         'tuning kit and a race), trailers, and the driving jobs.'),
+    image('advancement_toast', 'Five cars to your name: a goal reached.'),
+    text('The hardest:$(li)$(l)Cross Country$(): 10,000 blocks without getting out, worth 100 experience$(li)$(l)Fleet Owner$(): '
+         'five cars of your own at once$(li)$(l)Checkered Flag$(): win a race$(li)$(l)Road Crew$(): 100 blocks of road with a '
+         'Road Paver in one go'),
+    image('advancements', 'The Reiko\'s Cars tab, with your first drive at its root.'),
+], sort=3)
 
 # -- Driving --
 

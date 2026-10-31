@@ -86,6 +86,7 @@ public final class LicenseService {
             license = data.issue(player.getUUID(), player.getGameProfile().getName(), now(player.server), issuedBy, player.getRandom());
         }
         give(player, license);
+        com.reiko.cars.advancement.CarAdvancements.award(player, "license");
         return license;
     }
 

@@ -1,0 +1,32 @@
+{
+  "name": "Advancements",
+  "icon": "minecraft:knowledge_book",
+  "category": "reikocars:getting_started",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The mod has its own tab of $(thing)advancements$() (press $(k:key.advancements)): 26 of them, starting with your first drive. Its branches: road trips, fuel, owning cars, the law, looking after a car (from a wash to a dent, a repair, a tuning kit and a race), trailers, and the driving jobs."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/advancement_toast.png"
+      ],
+      "border": true,
+      "text": "Five cars to your name: a goal reached."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The hardest:$(li)$(l)Cross Country$(): 10,000 blocks without getting out, worth 100 experience$(li)$(l)Fleet Owner$(): five cars of your own at once$(li)$(l)Checkered Flag$(): win a race$(li)$(l)Road Crew$(): 100 blocks of road with a Road Paver in one go"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/advancements.png"
+      ],
+      "border": true,
+      "text": "The Reiko's Cars tab, with your first drive at its root."
+    }
+  ]
+}

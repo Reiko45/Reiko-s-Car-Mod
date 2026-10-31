@@ -124,6 +124,7 @@ public final class ChargerService {
 
         station.drainMj(amount);
         car.addFuel(amount);
+        com.reiko.cars.advancement.CarAdvancements.award(player, "charge");
         if (!free) {
             station.recordSale(amount, total);
         }

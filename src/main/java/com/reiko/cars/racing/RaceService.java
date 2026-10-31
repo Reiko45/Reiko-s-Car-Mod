@@ -514,6 +514,7 @@ public final class RaceService {
             if (driver != null) {
                 driver.playNotifySound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 0.8F, 1.0F);
             }
+            com.reiko.cars.advancement.CarAdvancements.award(server.getPlayerList().getPlayer(racer.id), "race_win");
         } else if (driver != null) {
             driver.sendSystemMessage(Component.translatable("race.reikocars.finished", position, lapTime(time)).withStyle(ChatFormatting.AQUA));
         }

@@ -181,6 +181,7 @@ public final class RoadPaverGameTests {
             int[] pieces = {0};
             check(helper, looseEnds(helper, 0, m -> m == RoadMarking.CENTER_DASHED, pieces) == 2 && pieces[0] >= 25,
                     "one unbroken center line: " + pieces[0] + " pieces");
+            check(helper, AdvancementGameTests.earned(driver, "road_crew"), "Road Crew earned");
             RoadPaver.toggle(driver, paver);
             check(helper, !paver.paving(), "G raises the screed");
             // The line goes right to the end of the road, on the last block laid too.

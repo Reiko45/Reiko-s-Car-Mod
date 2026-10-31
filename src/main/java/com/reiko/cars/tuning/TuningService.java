@@ -214,6 +214,7 @@ public final class TuningService {
         }
         Component done = Component.translatable("tuning.reikocars.bought",
                 ComponentUtils.formatList(kits.stream().map(TuningKit::displayName).toList(), Component.literal(", ")), car.kindName());
+        com.reiko.cars.advancement.CarAdvancements.award(player, "tune");
         return ShopActionResult.ok(charge == null ? done : ShopPayments.receipt(done, payment, charge));
     }
 

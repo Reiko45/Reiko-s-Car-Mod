@@ -49,6 +49,7 @@ public final class CarJobs {
     public static void work(@Nullable ServerPlayer player, ResourceLocation action, int amount) {
         if (player != null && amount > 0) {
             JobsApi.work(player, action, amount);
+            com.reiko.cars.advancement.CarAdvancements.job(player, action);
         }
     }
 

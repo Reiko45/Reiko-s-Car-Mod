@@ -39,6 +39,7 @@ public final class ReikoCars {
         ModRecipes.TYPES.register(modBus);
         ModRecipes.SERIALIZERS.register(modBus);
         ModSounds.SOUNDS.register(modBus);
+        com.reiko.cars.advancement.CarAdvancements.TRIGGERS.register(modBus);
         ModCreativeTabs.TABS.register(modBus);
         container.registerConfig(ModConfig.Type.SERVER, CarsConfig.SPEC);
     }

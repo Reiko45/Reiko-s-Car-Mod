@@ -801,6 +801,9 @@ public final class DevMultiplayer {
             CarEntity sedan = car(mc, CarType.SEDAN);
             double moved = sedan == null ? 0.0 : sedan.position().distanceTo(carStart);
             check("its key still starts the sedan after the restart", moved > 3.0, String.format("moved %.1f blocks", moved));
+            // Driving it opened the mod's advancement tab: the server's told the client.
+            check("driving earned the mod's first advancement", mc.player.connection.getAdvancements().getTree().get(ReikoCars.id("root")) != null,
+                    "root " + (mc.player.connection.getAdvancements().getTree().get(ReikoCars.id("root")) != null ? "shown" : "not shown"));
             cmd(mc, "reikotest report after_restart");
         });
         // A road paver: G lowers the screed, it paves as it's driven, G raises it.

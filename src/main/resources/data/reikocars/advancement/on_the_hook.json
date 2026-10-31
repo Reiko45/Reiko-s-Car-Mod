@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:on_the_job",
+  "display": {
+    "icon": {
+      "id": "reikocars:wrecker"
+    },
+    "title": {
+      "translate": "advancements.reikocars.on_the_hook.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.on_the_hook.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "job_tow": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "job_tow"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "job_tow"
+    ]
+  ]
+}

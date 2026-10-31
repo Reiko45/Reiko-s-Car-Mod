@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:root",
+  "display": {
+    "icon": {
+      "id": "reikocars:gas_pump"
+    },
+    "title": {
+      "translate": "advancements.reikocars.fill_up.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.fill_up.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "fuel": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "fuel"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "fuel"
+    ]
+  ]
+}

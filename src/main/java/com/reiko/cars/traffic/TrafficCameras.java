@@ -181,6 +181,9 @@ public final class TrafficCameras {
         if (car.getControllingPassenger() instanceof ServerPlayer driver && driver != owner) {
             driver.sendSystemMessage(line.copy().withStyle(ChatFormatting.GOLD));
         }
+        if (car.getControllingPassenger() instanceof ServerPlayer driver) {
+            com.reiko.cars.advancement.CarAdvancements.award(driver, "camera");
+        }
         ServerPlayer cameraOwner = server.getPlayerList().getPlayer(payee);
         if (cameraOwner != null) {
             cameraOwner.sendSystemMessage(Component.translatable("traffic.reikocars.camera_owner", car.ownerName(), what, eco.format(pay)));

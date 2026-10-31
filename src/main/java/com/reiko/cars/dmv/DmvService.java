@@ -182,6 +182,7 @@ public final class DmvService {
             plates.release(car.plate());
         }
         car.setPlate(plate);
+        com.reiko.cars.advancement.CarAdvancements.award(player, "plate");
         dmv.recordPlate(price);
         car.level().playSound(null, car.getX(), car.getY(), car.getZ(), SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.PLAYERS, 1.0F, 1.0F);
         return done(Component.translatable("dmv.reikocars.plate_bought", car.kindName(), plate), payment, charge);

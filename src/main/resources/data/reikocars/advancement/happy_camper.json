@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:hitched",
+  "display": {
+    "icon": {
+      "id": "reikocars:camper"
+    },
+    "title": {
+      "translate": "advancements.reikocars.happy_camper.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.happy_camper.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "camper": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "camper"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "camper"
+    ]
+  ]
+}

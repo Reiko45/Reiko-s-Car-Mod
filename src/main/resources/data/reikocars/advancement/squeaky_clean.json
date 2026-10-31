@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:root",
+  "display": {
+    "icon": {
+      "id": "reikocars:car_wash"
+    },
+    "title": {
+      "translate": "advancements.reikocars.squeaky_clean.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.squeaky_clean.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "wash": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "wash"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "wash"
+    ]
+  ]
+}

@@ -186,6 +186,8 @@ public final class DevShowcase {
             damageScript();
         } else if (MODE.equals("paver")) {
             paverScript();
+        } else if (MODE.equals("advancements")) {
+            advancementsScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -4142,6 +4144,71 @@ public final class DevShowcase {
 
     /** The ground's top in the paver's scene: raised six blocks over the flat world's, so there's depth for a ravine. */
     private static final int PAVER_GROUND = -55;
+
+    /** The mod's advancements: a toast as one's earned, then the tab, about half earned. */
+    private static void advancementsScript() {
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(6000);
+                // A stretch of road with a dashed line, and a sedan on it.
+                for (int x = -14; x <= 14; x++) {
+                    for (int z = 2; z <= 6; z++) {
+                        BlockState road = ModBlocks.ASPHALT.get().defaultBlockState();
+                        if (z == 4 && Math.floorMod(x, 2) == 0) {
+                            road = road.setValue(com.reiko.cars.road.Asphalt.MARKING, com.reiko.cars.road.RoadMarking.CENTER_DASHED)
+                                    .setValue(com.reiko.cars.road.Asphalt.FACING, net.minecraft.core.Direction.EAST);
+                        }
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), road);
+                    }
+                }
+                spawned(level, CarType.SEDAN, 2.5, 5.5, 270.0F, 0.6);
+                // About half the tab earned already.
+                for (String event : new String[] {"drive", "fuel", "charge", "buy_car", "license", "plate", "crash", "repair", "hitch", "tune",
+                        "job", "job_taxi_ride", "garage", "wash"}) {
+                    com.reiko.cars.advancement.CarAdvancements.award(player, event);
+                }
+                com.reiko.cars.advancement.CarAdvancements.reach(player, "trip", 1200.0);
+            });
+            look(mc, -5.0, -58.6, 0.0, 300.0F, 14.0F);
+        });
+        at(50, mc -> {
+            mc.getToasts().clear();
+            mc.options.hideGui = false; // toasts are part of the GUI
+            mc.gameRenderer.setRenderHand(false);
+        });
+        // A fifth car: Fleet Owner.
+        at(60, mc -> server(mc, player -> com.reiko.cars.advancement.CarAdvancements.reach(player, "fleet", 5.0)));
+        at(82, mc -> mc.gui.getChat().clearMessages(false));
+        at(84, mc -> shot(mc, "395_advancement_toast"));
+        at(90, mc -> {
+            mc.getToasts().clear();
+            net.minecraft.client.multiplayer.ClientAdvancements advancements = mc.player.connection.getAdvancements();
+            mc.setScreen(new net.minecraft.client.gui.screens.advancements.AdvancementsScreen(advancements));
+            advancements.setSelectedTab(advancements.get(ReikoCars.id("root")), true);
+        });
+        at(92, mc -> {
+            // The pointer off in the corner (opening the screen put it in the middle), so it isn't over an advancement
+            // with its tooltip up.
+            try {
+                for (String name : new String[] {"xpos", "ypos"}) {
+                    java.lang.reflect.Field field = net.minecraft.client.MouseHandler.class.getDeclaredField(name);
+                    field.setAccessible(true);
+                    field.setDouble(mc.mouseHandler, 1.0);
+                }
+            } catch (ReflectiveOperationException e) {
+                ReikoCars.LOGGER.warn("Couldn't move the pointer", e);
+            }
+        });
+        at(110, mc -> shot(mc, "396_advancements"));
+        at(112, mc -> mc.screen.mouseScrolled(0.0, 0.0, 0.0, 10.0));
+        at(122, mc -> shot(mc, "397_advancements_top"));
+        at(124, mc -> mc.screen.mouseScrolled(0.0, 0.0, 0.0, -20.0));
+        at(134, mc -> shot(mc, "398_advancements_bottom"));
+        at(140, mc -> mc.stop());
+    }
 
     private static void paverScript() {
         at(20, mc -> {

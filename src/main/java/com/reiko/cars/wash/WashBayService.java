@@ -210,6 +210,9 @@ public final class WashBayService {
         for (CarEntity car : order) {
             if (car.dirt() > 0.0F) {
                 car.setDirt(car.dirt() - RATE);
+                if (car.dirt() <= 0.0F && player instanceof net.minecraft.server.level.ServerPlayer washer) {
+                    com.reiko.cars.advancement.CarAdvancements.award(washer, "wash");
+                }
             }
             car.setSnow(car.snow() - RATE * 2.0F);
         }

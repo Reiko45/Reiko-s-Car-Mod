@@ -561,6 +561,9 @@ public final class GarageDoors {
             }
             if (letsIn(car, driver, door)) {
                 wanted = true;
+                if (driver instanceof net.minecraft.server.level.ServerPlayer player) {
+                    com.reiko.cars.advancement.CarAdvancements.award(player, "garage");
+                }
                 break;
             }
         }

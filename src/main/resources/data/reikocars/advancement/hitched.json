@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:root",
+  "display": {
+    "icon": {
+      "id": "reikocars:box_trailer"
+    },
+    "title": {
+      "translate": "advancements.reikocars.hitched.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.hitched.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "hitch": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "hitch"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "hitch"
+    ]
+  ]
+}

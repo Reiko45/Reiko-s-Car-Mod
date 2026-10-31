@@ -1137,6 +1137,9 @@ public final class RoadPaver {
             set(at, there, road);
             state.roads.put(key(x, z), at.asLong());
             state.laid++;
+            if (state.laid % 10 == 0) {
+                com.reiko.cars.advancement.CarAdvancements.reach(driver, "pave", state.laid);
+            }
             clearPlants(at.above(), 2);
         }
 

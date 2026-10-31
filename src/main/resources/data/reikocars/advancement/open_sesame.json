@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:off_the_lot",
+  "display": {
+    "icon": {
+      "id": "reikocars:garage_remote"
+    },
+    "title": {
+      "translate": "advancements.reikocars.open_sesame.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.open_sesame.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "garage": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "garage"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "garage"
+    ]
+  ]
+}

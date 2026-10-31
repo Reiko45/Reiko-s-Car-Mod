@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:on_the_job",
+  "display": {
+    "icon": {
+      "id": "reikocars:taxi"
+    },
+    "title": {
+      "translate": "advancements.reikocars.keep_the_change.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.keep_the_change.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "job_taxi_ride": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "job_taxi_ride"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "job_taxi_ride"
+    ]
+  ]
+}

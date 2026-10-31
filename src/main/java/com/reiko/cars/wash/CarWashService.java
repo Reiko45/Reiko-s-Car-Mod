@@ -202,6 +202,9 @@ public final class CarWashService {
                     if (driver instanceof Player player) {
                         player.displayClientMessage(Component.translatable("car_wash.reikocars.clean"), true);
                     }
+                    if (driver instanceof net.minecraft.server.level.ServerPlayer player) {
+                        com.reiko.cars.advancement.CarAdvancements.award(player, "wash");
+                    }
                 } else if (driver instanceof Player player && now % 5 == 0) {
                     player.displayClientMessage(Component.translatable("car_wash.reikocars.washing", Math.round(car.dirt() * 100)), true);
                 }

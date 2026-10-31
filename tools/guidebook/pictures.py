@@ -58,6 +58,8 @@ CROPS = {
     'paver_bridge': ('393_bridge_railings', 150, 0, 630, 480),
     'paver_crossing': ('390_road_diagonal', 140, 0, 760, 480),
     'paver_bend': ('394_road_bend', 230, 50, 640, 460),
+    'advancement_toast': ('395_advancement_toast', 374, 0, 854, 400),
+    'advancements': ('396_advancements', 180, 100, 520, 370),
 }
 
 

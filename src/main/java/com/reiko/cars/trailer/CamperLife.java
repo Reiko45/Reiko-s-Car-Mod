@@ -136,6 +136,7 @@ public final class CamperLife {
         });
         if (slept.right().isPresent()) {
             camper.sleepers().put(player, new Sleeper(bed, camper.level().getGameTime(), camper.position()));
+            com.reiko.cars.advancement.CarAdvancements.award(player, "camper");
         }
     }
 

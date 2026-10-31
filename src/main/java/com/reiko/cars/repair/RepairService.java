@@ -299,6 +299,7 @@ public final class RepairService {
             }
         }
         finished(bench, car);
+        com.reiko.cars.advancement.CarAdvancements.award(player, "repair");
         Component jobList = list(jobs);
         if (free) {
             return ShopActionResult.ok(Component.translatable("repair.reikocars.repaired_free", jobList));

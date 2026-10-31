@@ -261,6 +261,7 @@ public final class CarGameTests {
 
             ShopActionResult result = PumpService.fill(buyer, pump, car, 2000, FOUR_DOLLARS, Payment.cash());
             check(helper, result.success(), "cash fill-up: " + result.message().getString());
+            check(helper, AdvancementGameTests.earned(buyer, "fill_up"), "Fill 'Er Up earned");
             near(helper, car.fuel(), 180_000, "two buckets of light fuel in the tank");
             helper.assertValueEqual(pump.fuel().getAmount(), 3000, "fuel left in the pump");
             helper.assertValueEqual(Purse.value(buyer), 200L, "$8.00 cash spent");

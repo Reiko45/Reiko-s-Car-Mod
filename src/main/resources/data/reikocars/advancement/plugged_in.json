@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:fill_up",
+  "display": {
+    "icon": {
+      "id": "reikocars:charging_station"
+    },
+    "title": {
+      "translate": "advancements.reikocars.plugged_in.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.plugged_in.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "charge": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "charge"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "charge"
+    ]
+  ]
+}

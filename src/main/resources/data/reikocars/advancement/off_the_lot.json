@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:root",
+  "display": {
+    "icon": {
+      "id": "reikocars:dealership"
+    },
+    "title": {
+      "translate": "advancements.reikocars.off_the_lot.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.off_the_lot.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "buy_car": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "buy_car"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "buy_car"
+    ]
+  ]
+}

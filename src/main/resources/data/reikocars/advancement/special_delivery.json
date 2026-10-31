@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:on_the_job",
+  "display": {
+    "icon": {
+      "id": "reikocars:parcel"
+    },
+    "title": {
+      "translate": "advancements.reikocars.special_delivery.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.special_delivery.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "delivery": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "delivery"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "delivery"
+    ]
+  ]
+}

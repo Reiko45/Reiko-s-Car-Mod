@@ -235,6 +235,10 @@ public final class Hitching {
             trailer.startRiding(car, true);
             clank(car, 1.1F);
             player.displayClientMessage(Component.translatable("trailer.reikocars.hitched", trailer.getDisplayName()), true);
+            com.reiko.cars.advancement.CarAdvancements.award(player, "hitch");
+            if (car.carType().isTractor() && trailer.trailerType().isSemiTrailer()) {
+                com.reiko.cars.advancement.CarAdvancements.award(player, "semi");
+            }
             return;
         }
         if (car.getVehicle() instanceof TrailerEntity hauler) {

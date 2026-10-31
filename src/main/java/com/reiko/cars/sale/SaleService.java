@@ -221,6 +221,7 @@ public final class SaleService {
             lot.recordSale(price);
         }
         handOver(car, buyer);
+        com.reiko.cars.advancement.CarAdvancements.award(buyer, "buy_car");
         if (terms != null) {
             com.reiko.cars.finance.LoanService.start(buyer, car, lot, terms);
         }

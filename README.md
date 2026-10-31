@@ -55,6 +55,9 @@ or a metal **roller shutter**), paint it, and open it by hand, with a **remote**
 to it. A car shut in a garage can't be stolen, towed or impounded. Or run it as a **parking garage**, charging drivers
 by the hour or the day.
 
+Twenty-six **advancements**, in their own tab, run from your first drive and first road trip to a fleet of five
+cars, winning a race and 10,000 blocks without getting out.
+
 A **Car Manual** (with Patchouli installed) explains all of it in game, with every vehicle turning in 3D, its recipes
 and pictures: every player gets one the first time they join.
 
@@ -1080,6 +1083,48 @@ trash cans emptied, fires put out, unlicensed drivers stopped, or deliveries of 
 change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`, `bus_stop`, `parcel_delivered`, `repair_part`,
 `tow`, `impound_tow`, `fuel_delivered`, `haul_distance`, `trash_collected`, `fire_put_out` and `unlicensed_ticket`.
 
+## Advancements
+
+The mod has its own tab of advancements (press **L**), 26 of them, from your first drive to winning a race. The tab
+appears the first time you drive; each branch follows one side of the mod, and an advancement shows once the one
+before it (or the one before that) is done.
+
+| Advancement | How | After |
+| --- | --- | --- |
+| Reiko's Cars | Get behind the wheel and drive |  |
+| First Road Trip | Drive 1,000 blocks without getting out | Reiko's Cars |
+| Cross Country (challenge) | Drive 10,000 blocks without getting out; 100 experience | First Road Trip |
+| Fill 'Er Up | Fill up a car at a gas or diesel pump | Reiko's Cars |
+| Plugged In | Charge an electric car at a charging station | Fill 'Er Up |
+| Running on Empty | Run out of fuel (or a flat battery) while driving | Fill 'Er Up |
+| Off the Lot | Buy a car from a dealership or from its owner | Reiko's Cars |
+| Fleet Owner (goal) | Own five cars at once | Off the Lot |
+| Open Sesame | Drive up to a garage door that opens for you | Off the Lot |
+| Licensed to Drive | Pass the driving test at a DMV | Reiko's Cars |
+| Vanity Plate | Buy a custom license plate at a DMV | Licensed to Drive |
+| Smile for the Camera | Get fined by a red-light or speed camera | Licensed to Drive |
+| Squeaky Clean | Wash a dirty car clean, at a car wash, a wash bay or with a bucket of water | Reiko's Cars |
+| Fender Bender | Dent a car in a crash | Squeaky Clean |
+| Good as New | Have a car fixed up at a Repair Bench | Fender Bender |
+| Tuned Up | Fit a kit to a car at a Tuning Bench | Good as New |
+| Checkered Flag (goal) | Win a race | Tuned Up |
+| Hitched | Hitch up a trailer | Reiko's Cars |
+| Big Rig | Hitch a semi-trailer to a semi truck | Hitched |
+| Happy Camper | Sleep in a camper | Hitched |
+| On the Job | Get paid for a driving job: a taxi fare, a bus stop, a delivery, a tow and more | Reiko's Cars |
+| Keep the Change | Get paid a taxi fare | On the Job |
+| Next Stop | Stop at the next bus stop on your bus's route | On the Job |
+| Special Delivery | Deliver a parcel from a mail van | On the Job |
+| On the Hook | Tow someone's broken-down car to a Repair Bench | On the Job |
+| Road Crew | Lay 100 blocks of road with a Road Paver in one go | On the Job |
+
+A road trip is the blocks driven since getting in, until getting out (or logging out). Fleet Owner counts the cars
+that are yours, wherever they're parked (not rentals); cars you already own count when you log in. The advancements are
+in `data/reikocars/advancement`, written by `tools/advancements/advancements.py`; each waits on the mod's trigger,
+`reikocars:car`, for an event (`drive`, `trip`, `fuel`, `charge`, `out_of_fuel`, `buy_car`, `fleet`, `garage`,
+`license`, `plate`, `camera`, `wash`, `crash`, `repair`, `tune`, `race_win`, `hitch`, `semi`, `camper`, `job`,
+`job_taxi_ride`, `job_bus_stop`, `delivery`, `job_tow`, `pave`) with an optional `min`, so a datapack can add its own.
+
 ## Recipes
 
 | Item | Recipe |
@@ -1379,7 +1424,7 @@ game test then checks there's no manual and no recipe for one).
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
-./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs, crash damage, the road paver, tow trucks, mail, keys, fares, buying and selling), then exit
+./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs, crash damage, the road paver, tow trucks, mail, keys, fares, buying and selling, advancements), then exit
 ./gradlew runClient         # start a dev client
 ./gradlew runClient -Pshowcase  # build a test scene, buy fuel, drive, save screenshots to run/screenshots/, quit
 ./gradlew runClient -Pshowcase=workbench  # the same for the Car Workbench and its JEI pages
@@ -1390,6 +1435,7 @@ game test then checks there's no manual and no recipe for one).
 ./gradlew runClient -Pshowcase=repair     # the Repair Bench, paying for repairs, its owner's tabs, a worn car's dashboard and smoke, a worn trailer
 ./gradlew runClient -Pshowcase=damage     # crashed cars: crumpled fronts, caved-in sides, cracked and shattered glass, smashed lamps, one headlight at night, the repair bench
 ./gradlew runClient -Pshowcase=paver      # the road paver and its screen, paving a road through a hill, over a ravine and round a bend, a road at 45 degrees crossing it, at night
+./gradlew runClient -Pshowcase=advancements # an advancement's toast, and the mod's advancement tab
 ./gradlew runClient -Pshowcase=tow        # the tow trucks loaded and towing, posting a parcel, the mail van's round, the inbox
 ./gradlew runClient -Pshowcase=keys       # no key, cutting one, its tooltip, driving with it, locking it from a distance
 ./gradlew runClient -Pshowcase=fares      # paying a bus fare, a taxi's meter running and paid, the owner's fare screen
@@ -1481,6 +1527,7 @@ new car gets them as long as its windshield is glass that faces forward.
 ```text
 src/main/java/com/reiko/cars/
 ├── ReikoCars.java        mod entry point
+├── advancement/          the advancements' trigger (CarTrigger) and CarAdvancements, which tells it what happened on the road
 ├── car/                  the car entity and its types, CarDeliveries (moving a car anywhere, loaded or not), fuel (CarFuel, CarTank), wear and tear (CarCondition), crash damage (CarDamage: dents, glass, lamps, pulling), the car item, WorkVehicles (sirens, healing, tipping, mixing) and CarSignals (turn signals, hazards, the alarm)
 ├── garbage/              the Trash Can block and block entity, and GarbageService (the garbage truck's round)
 ├── fire/                 the fire truck's water (FireTrucks), the fire hose and spraying (Firefighting), the ladder and its climbable blocks (FireLadder), the Fire Hydrant, and who lit what (FireEvents)
@@ -1527,6 +1574,7 @@ src/main/java/com/reiko/cars/
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)
 tools/guidebook/          the Car Manual's writer (book.py) and its pictures' cropper (pictures.py)
 tools/garage/             draws the garage doors' textures and writes their block states, models, loot tables and recipes (assets.py)
+tools/advancements/       writes the advancements and their names (advancements.py)
 tools/damage/             draws the Car Window and Car Light items and writes their models and recipes (assets.py)
 tools/paver/              draws the diagonal road markings and the paver's line pieces (edge lines, turns and shallow bends), writes their models and block states, and the road paver's item models, part recipes and fill tags (assets.py)
 src/xaeroStubs/java/       compile-time stand-ins for the few classes of Xaero's Minimap the GPS uses (not in the jar)

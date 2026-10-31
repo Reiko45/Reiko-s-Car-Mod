@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:squeaky_clean",
+  "display": {
+    "icon": {
+      "id": "reikocars:body_panel"
+    },
+    "title": {
+      "translate": "advancements.reikocars.fender_bender.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.fender_bender.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "crash": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "crash"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "crash"
+    ]
+  ]
+}

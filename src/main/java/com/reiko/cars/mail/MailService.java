@@ -240,6 +240,9 @@ public final class MailService {
             EconomyApi.get().deposit(server, driver.getUUID(), earned, "reikocars.mail_delivery");
         }
         com.reiko.cars.job.CarJobs.work(driver, com.reiko.cars.job.CarJobs.PARCEL_DELIVERED, paidParcels);
+        if (delivered > 0) {
+            com.reiko.cars.advancement.CarAdvancements.award(driver, "delivery");
+        }
         bag.setChanged();
 
         if (collected == 0 && delivered == 0) {

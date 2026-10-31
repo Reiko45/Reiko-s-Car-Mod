@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:tuned_up",
+  "display": {
+    "icon": {
+      "id": "reikocars:race_flag"
+    },
+    "title": {
+      "translate": "advancements.reikocars.checkered_flag.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.checkered_flag.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "race_win": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "race_win"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "race_win"
+    ]
+  ]
+}

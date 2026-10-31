@@ -134,6 +134,7 @@ public final class PumpService {
 
         FluidStack pumped = pump.tank().drain(amount, IFluidHandler.FluidAction.EXECUTE);
         car.addFuel(CarFuel.energyOf(pumped, pumped.getAmount()));
+        com.reiko.cars.advancement.CarAdvancements.award(player, "fuel");
         return bill.finish(player, pump, pumped, payment, "pump.reikocars.pumped");
     }
 

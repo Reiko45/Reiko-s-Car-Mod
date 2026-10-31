@@ -1,0 +1,32 @@
+{
+  "parent": "reikocars:off_the_lot",
+  "display": {
+    "icon": {
+      "id": "reikocars:car_key"
+    },
+    "title": {
+      "translate": "advancements.reikocars.fleet_owner.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.fleet_owner.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "fleet": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "fleet",
+        "min": 5
+      }
+    }
+  },
+  "requirements": [
+    [
+      "fleet"
+    ]
+  ]
+}

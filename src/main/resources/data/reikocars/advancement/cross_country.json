@@ -1,0 +1,35 @@
+{
+  "parent": "reikocars:first_road_trip",
+  "display": {
+    "icon": {
+      "id": "reikocars:off_roader"
+    },
+    "title": {
+      "translate": "advancements.reikocars.cross_country.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.cross_country.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "trip": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "trip",
+        "min": 10000
+      }
+    }
+  },
+  "requirements": [
+    [
+      "trip"
+    ]
+  ],
+  "rewards": {
+    "experience": 100
+  }
+}

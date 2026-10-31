@@ -1,0 +1,31 @@
+{
+  "display": {
+    "icon": {
+      "id": "reikocars:sedan"
+    },
+    "title": {
+      "translate": "advancements.reikocars.root.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.root.description"
+    },
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false,
+    "background": "reikocars:textures/block/asphalt.png"
+  },
+  "criteria": {
+    "drive": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "drive"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "drive"
+    ]
+  ]
+}

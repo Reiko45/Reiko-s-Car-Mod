@@ -49,6 +49,9 @@ public final class HandWash {
         }
         player.setItemInHand(hand, ItemUtils.createFilledResult(held, player, result.getResult()));
         car.setDirt(car.dirt() - Dirt.BUCKET_WASH * sink.filled / BUCKET);
+        if (car.dirt() <= 0.0F && player instanceof net.minecraft.server.level.ServerPlayer washer) {
+            com.reiko.cars.advancement.CarAdvancements.award(washer, "wash");
+        }
         car.setSnow(car.snow() - Dirt.BUCKET_WASH * sink.filled / BUCKET);
         splash(car);
         player.displayClientMessage(car.dirt() <= 0.0F ? Component.translatable("dirt.reikocars.washed_clean")

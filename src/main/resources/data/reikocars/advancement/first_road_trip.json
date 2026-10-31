@@ -1,0 +1,32 @@
+{
+  "parent": "reikocars:root",
+  "display": {
+    "icon": {
+      "id": "reikocars:convertible"
+    },
+    "title": {
+      "translate": "advancements.reikocars.first_road_trip.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.first_road_trip.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "trip": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "trip",
+        "min": 1000
+      }
+    }
+  },
+  "requirements": [
+    [
+      "trip"
+    ]
+  ]
+}

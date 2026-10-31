@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:root",
+  "display": {
+    "icon": {
+      "id": "reikocars:drivers_license"
+    },
+    "title": {
+      "translate": "advancements.reikocars.licensed.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.licensed.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "license": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "license"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "license"
+    ]
+  ]
+}

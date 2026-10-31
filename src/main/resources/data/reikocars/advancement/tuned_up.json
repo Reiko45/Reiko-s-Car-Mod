@@ -1,0 +1,31 @@
+{
+  "parent": "reikocars:good_as_new",
+  "display": {
+    "icon": {
+      "id": "reikocars:turbocharger"
+    },
+    "title": {
+      "translate": "advancements.reikocars.tuned_up.title"
+    },
+    "description": {
+      "translate": "advancements.reikocars.tuned_up.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "tune": {
+      "trigger": "reikocars:car",
+      "conditions": {
+        "event": "tune"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tune"
+    ]
+  ]
+}
