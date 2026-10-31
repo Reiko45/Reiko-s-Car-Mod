@@ -128,6 +128,7 @@ public final class CarsConfig {
     public static final ModConfigSpec.DoubleValue PAVER_FILL_PRICE;
     public static final ModConfigSpec.DoubleValue PAVER_POLE_PRICE;
     public static final ModConfigSpec.DoubleValue PAVER_LAMP_PRICE;
+    public static final ModConfigSpec.DoubleValue PAVER_RAILING_PRICE;
 
     public static final ModConfigSpec.DoubleValue STOP_REACH;
     public static final ModConfigSpec.BooleanValue VILLAGER_PASSENGERS;
@@ -583,6 +584,9 @@ public final class CarsConfig {
         PAVER_LAMP_PRICE = builder
                 .comment("What it pays for a Street Lamp it hasn't got.")
                 .defineInRange("lampPrice", 1.00, 0.0, 1.0E6);
+        PAVER_RAILING_PRICE = builder
+                .comment("What it pays for a block of wall for a bridge's railing it hasn't got (stone brick wall).")
+                .defineInRange("railingPrice", 0.10, 0.0, 1.0E6);
         builder.pop();
 
         SPEC = builder.build();

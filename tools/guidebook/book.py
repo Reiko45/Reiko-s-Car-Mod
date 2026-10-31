@@ -409,16 +409,17 @@ entry('roads', 'paver', 'The Road Paver', 'reikocars:road_paver', [
          'lines$(li)sidewalks, either side$(li)a street lamp every so many blocks$(li)shaping the land$(li)buying what\'s missing'),
     image('paver_screen', 'The road it lays: sneak and right-click the paver.'),
     text('$(l)Shaping the land:$() ahead of it, it cuts through hills and fills dips to an even grade, no steeper than a block in '
-         'four. Over water or a drop deeper than four blocks it carries on level as a bridge, on pillars. Off, the road lies on '
-         'the ground as it is.'),
-    image('paver_bridge', 'Bridging a ravine: a deck, on pillars.'),
+         'four, the land beside sloping back. Over water or a drop deeper than four blocks it carries on level as a bridge, on '
+         'pillars, with railings. Off, the road lies on the ground as it is.'),
+    image('paver_bridge', 'Bridging a ravine: a deck on pillars, with railings.'),
     text('$(l)Materials:$() asphalt, road paint for the lines, slabs for sidewalks (smooth stone for the curb), earth or stone to '
-         'fill with, and four poles and a lamp for each lamp. It takes them from the hopper, then your pockets, then (if set to) '
-         'buys the rest from your bank account. In creative it\'s free. What it digs up goes in the hopper.'),
+         'fill with, four poles and a lamp for each lamp, and walls for railings. It takes them from the hopper, then your '
+         'pockets, then (if set to) buys the rest from your bank account. In creative it\'s free. What it digs up goes in the hopper.'),
     text('Left alone, it steers itself straight, to the nearest 45 degrees, so the road runs straight; at 45 degrees its lines '
-         'run from corner to corner of each block. Round a bend it follows you. Where it crosses a road, it leaves that road as '
-         'it is.'),
+         'run from corner to corner of each block. Round a bend it follows you, and so do its lines. Where it crosses a road, it '
+         'leaves that road as it is.'),
     image('paver_crossing', 'Two roads crossing, one at 45 degrees.'),
+    image('paver_bend', 'Round a bend, its lines following it.'),
 ], sort=1)
 
 entry('roads', 'traffic_lights', 'Traffic Lights', 'reikocars:traffic_light', [

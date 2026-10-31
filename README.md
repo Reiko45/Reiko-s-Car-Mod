@@ -263,23 +263,29 @@ slots) and the road it lays, set with the arrows:
 Press **G** at the wheel to lower the screed, and drive: while it paves it goes no faster than a walk (4 blocks a
 second), and the road appears behind it. G again raises the screed; it comes up by itself if you get out or it runs
 out of something. Left alone, it steers straight, settling on the nearest 45 degrees, so the road runs straight:
-along the grid, or at 45 degrees with its lines from corner to corner of each block. Round a bend it follows you.
-Where it crosses a road that's already there, it leaves that road as it is.
+along the grid, or at 45 degrees with its lines from corner to corner of each block. Round a bend it follows you,
+and its lines follow the bend, joining up from block to block. Where it crosses a road that's already there, it
+leaves that road as it is.
 
 **Shaping the land:** just ahead of its front bumper, it works the ground to the road's grade: it cuts through hills
 (clearing four blocks above the road, and the trees and sand over it), and fills dips up to four blocks deep. The
 grade follows the ground a few blocks ahead, no steeper than a block in four, with asphalt slabs for the half steps.
-Over water, or a drop more than four blocks deep, it carries on level as a bridge: just the deck, on pillars every 8
-blocks. It leaves alone anything with a block entity (chests and the like), anything unbreakable, the mod's own road
-furniture, and anywhere you couldn't build (spawn protection, or a claim from a mod that protects them).
+Beside the road, a cut's sides slope back a block for each block out, and where it fills, a bank slopes down the same
+way, out to 8 blocks from the road. It cuts back only the land (earth, stone, sand, snow and plants, and a tree
+standing on what it cuts) and builds banks only on the land, never into water or over a road. Over water, or a drop
+more than four blocks deep, it carries on level as a bridge: just the deck, on pillars every 8 blocks, with a wall
+along each side for a railing; the land beside a bridge is left as it is. It leaves alone anything with a block
+entity (chests and the like), anything unbreakable, the mod's own road furniture, and anywhere you couldn't build
+(spawn protection, or a claim from a mod that protects them).
 
 **Materials:** a block of asphalt for each block of road (a slab on the half steps: an asphalt block makes two), a
 use of Road Paint for each marked block, a slab for each block of sidewalk (smooth stone for the curb; any stone
 slabs you load for the rest, smooth stone if you don't), earth or stone to fill with (dirt, cobblestone, stone,
-deepslate and the like), and four Street Poles and a Street Lamp for each lamp. It takes them from its hopper first,
-then your inventory; with **Buy the rest** on, it buys what's still missing from your bank account (a block of
-asphalt $0.10, a marking $0.02, a slab $0.05, a block of fill $0.02, a pole $0.25, a lamp $1.00, all set in the
-server config). Out of something it can't buy, it stops and says what. In creative it's free. What it digs up goes
+deepslate and the like), four Street Poles and a Street Lamp for each lamp, and a wall for each block of a bridge's
+railing (any walls you load; stone brick if it buys them). It takes them from its hopper first, then your inventory;
+with **Buy the rest** on, it buys what's still missing from your bank account (a block of asphalt $0.10, a marking
+$0.02, a slab $0.05, a block of fill $0.02, a pole $0.25, a lamp $1.00, a wall $0.10, all set in the server
+config). Out of something it can't buy, it stops and says what. In creative it's free. What it digs up goes
 in the hopper while there's room (earth and stone, to fill with later, and ores and logs); ores and logs that don't
 fit are dropped beside the road, and the rest is cleared away.
 
@@ -1347,6 +1353,7 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `roadPaver.fillPrice` | `0.02` | What it pays for a block of fill (earth or stone) |
 | `roadPaver.polePrice` | `0.25` | What it pays for a Street Pole |
 | `roadPaver.lampPrice` | `1.00` | What it pays for a Street Lamp |
+| `roadPaver.railingPrice` | `0.10` | What it pays for a block of wall for a bridge's railing |
 
 Each player can pick **mph** or **km/h**, turn the dashboard off, and (with Xaero's Minimap) choose whether the GPS
 destination and their cars show on the minimap, in `config/reikocars-client.toml`.
@@ -1382,7 +1389,7 @@ game test then checks there's no manual and no recipe for one).
 ./gradlew runClient -Pshowcase=cars2      # the same for the hatchback, muscle car, convertible, minivan, van, bus, 4x4, tractor
 ./gradlew runClient -Pshowcase=repair     # the Repair Bench, paying for repairs, its owner's tabs, a worn car's dashboard and smoke, a worn trailer
 ./gradlew runClient -Pshowcase=damage     # crashed cars: crumpled fronts, caved-in sides, cracked and shattered glass, smashed lamps, one headlight at night, the repair bench
-./gradlew runClient -Pshowcase=paver      # the road paver and its screen, paving a road through a hill and over a ravine, a road at 45 degrees crossing it, at night
+./gradlew runClient -Pshowcase=paver      # the road paver and its screen, paving a road through a hill, over a ravine and round a bend, a road at 45 degrees crossing it, at night
 ./gradlew runClient -Pshowcase=tow        # the tow trucks loaded and towing, posting a parcel, the mail van's round, the inbox
 ./gradlew runClient -Pshowcase=keys       # no key, cutting one, its tooltip, driving with it, locking it from a distance
 ./gradlew runClient -Pshowcase=fares      # paying a bus fare, a taxi's meter running and paid, the owner's fare screen
@@ -1521,7 +1528,7 @@ blockbench/               the car, motorcycle, truck and trailer models (Blockbe
 tools/guidebook/          the Car Manual's writer (book.py) and its pictures' cropper (pictures.py)
 tools/garage/             draws the garage doors' textures and writes their block states, models, loot tables and recipes (assets.py)
 tools/damage/             draws the Car Window and Car Light items and writes their models and recipes (assets.py)
-tools/paver/              draws the diagonal road markings and writes their models and block states, and the road paver's item models, part recipes and fill tags (assets.py)
+tools/paver/              draws the diagonal road markings and the paver's line pieces (edge lines, turns and shallow bends), writes their models and block states, and the road paver's item models, part recipes and fill tags (assets.py)
 src/xaeroStubs/java/       compile-time stand-ins for the few classes of Xaero's Minimap the GPS uses (not in the jar)
 ```
 

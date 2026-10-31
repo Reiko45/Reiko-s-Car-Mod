@@ -834,7 +834,7 @@ public final class DevMultiplayer {
             }
             check("a road laid behind it, center line and all", paved >= 6 && lined == paved, paved + " paved, " + lined + " with the line");
             boolean edges = mc.level.getBlockState(new BlockPos(20, y, z - 2)).is(com.reiko.cars.registry.ModBlocks.ASPHALT.get())
-                    && mc.level.getBlockState(new BlockPos(20, y, z - 2)).getValue(com.reiko.cars.road.Asphalt.MARKING) == com.reiko.cars.road.RoadMarking.EDGE;
+                    && mc.level.getBlockState(new BlockPos(20, y, z - 2)).getValue(com.reiko.cars.road.Asphalt.MARKING) == com.reiko.cars.road.RoadMarking.EDGE_LINE;
             check("five wide, with edge lines", edges, String.valueOf(mc.level.getBlockState(new BlockPos(20, y, z - 2))));
             shot(mc, "32_paver");
             press(ReikoCarsClient.HITCH);

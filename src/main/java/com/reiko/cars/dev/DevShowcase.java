@@ -4212,7 +4212,7 @@ public final class DevShowcase {
                 paver.bed().setItem(8, new ItemStack(ModItems.STREET_LAMP.get(), 8));
                 // A second paver, for a road at 45 degrees across the first, once that's done.
                 CarEntity diagonal = ModEntities.car(CarType.ROAD_PAVER).create(level);
-                diagonal.moveTo(97.5, y, 22.5, 135.0F, 0.0F); // facing north-west
+                diagonal.moveTo(60.5, y, 18.5, 135.0F, 0.0F); // facing north-west: over the ravine and across the first road
                 diagonal.setFuel(CarType.ROAD_PAVER.tankCapacity());
                 diagonal.setOwner(player);
                 diagonal.setPaverSettings(new com.reiko.cars.road.PaverSettings(5, com.reiko.cars.road.PaverSettings.Center.DOUBLE, 1, true,
@@ -4252,15 +4252,22 @@ public final class DevShowcase {
                 }
                 driver.setGameMode(GameType.CREATIVE);
                 CarEntity paver = carAt(level, -14.5, 0.5);
+                PAVER[0] = paver.getId();
+                PAVER[1] = 0;
                 driver.moveTo(paver.getX(), paver.getY(), paver.getZ());
                 driver.startRiding(paver, true);
                 com.reiko.cars.road.RoadPaver.toggle(driver, paver);
             });
         });
-        for (int t = 146; t < 626; t++) {
+        // East through the hill and over the ravine, then round a bend to the south (12.7 blocks out), and on south.
+        for (int t = 146; t < 698; t++) {
             at(t, mc -> server(mc, player -> {
-                CarEntity paver = carAt(player.serverLevel(), PAVER_X[0], 0.5);
-                PAVER_X[0] = paverStep(paver);
+                CarEntity paver = (CarEntity) player.serverLevel().getEntity(PAVER[0]);
+                boolean turning = paver.getX() > 62.0 && PAVER[1] < 100;
+                if (turning) {
+                    PAVER[1]++;
+                }
+                paverStep(paver, turning ? 0.9F : 0.0F);
             }));
         }
         at(206, mc -> look(mc, -7.0, PAVER_GROUND + 4.5, -6.5, 311.0F, 22.0F));
@@ -4269,69 +4276,78 @@ public final class DevShowcase {
         at(332, mc -> shot(mc, "384_paving_hill"));
         at(450, mc -> look(mc, 54.5, PAVER_GROUND - 5.0, -10.0, 15.0F, -20.0F));
         at(482, mc -> shot(mc, "385_paving_bridge"));
-        at(630, mc -> server(mc, player -> {
-            CarEntity paver = carAt(player.serverLevel(), PAVER_X[0], 0.5);
+        at(588, mc -> look(mc, 57.0, PAVER_GROUND + 9.0, 1.0, 293.0F, 27.0F));
+        at(612, mc -> shot(mc, "392_paving_bend"));
+        at(700, mc -> server(mc, player -> {
+            CarEntity paver = (CarEntity) player.serverLevel().getEntity(PAVER[0]);
             if (paver.getControllingPassenger() instanceof net.minecraft.server.level.ServerPlayer driver) {
                 com.reiko.cars.road.RoadPaver.toggle(driver, paver);
                 driver.stopRiding();
             }
         }));
         // The other paver at 45 degrees: the player drives it a little (the dashboard says what G does), then it's finished off.
-        at(634, mc -> server(mc, player -> {
+        at(704, mc -> server(mc, player -> {
             player.getAbilities().flying = false;
             player.onUpdateAbilities();
-            CarEntity diagonal = carAt(player.serverLevel(), 97.5, 22.5);
+            CarEntity diagonal = carAt(player.serverLevel(), 60.5, 18.5);
             player.startRiding(diagonal, true);
             com.reiko.cars.road.RoadPaver.toggle(player, diagonal);
         }));
-        at(640, mc -> {
+        at(710, mc -> {
             mc.options.hideGui = false;
             mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
             mc.player.setXRot(25.0F);
             mc.options.keyUp.setDown(true);
         });
-        at(700, mc -> shot(mc, "386_paving_hud"));
-        at(702, mc -> {
+        at(760, mc -> shot(mc, "386_paving_hud"));
+        at(762, mc -> {
             mc.options.keyUp.setDown(false);
             mc.options.hideGui = true;
             server(mc, player -> {
                 CarEntity diagonal = (CarEntity) player.getVehicle();
                 for (int i = 0; i < 400 && diagonal.paving() && diagonal.getZ() > -14.0; i++) {
-                    paverStep(diagonal);
+                    paverStep(diagonal, 0.0F);
                 }
                 com.reiko.cars.road.RoadPaver.toggle(player, diagonal);
                 player.stopRiding();
             });
         });
         // Looking back: down the road, the cut through the hill, the bridge, the crossing, and at night
-        at(712, mc -> {
+        at(772, mc -> {
             mc.options.setCameraType(CameraType.FIRST_PERSON);
             look(mc, -6.0, PAVER_GROUND + 12.0, -9.0, 285.0F, 28.0F);
         });
-        at(740, mc -> shot(mc, "387_road"));
-        at(742, mc -> look(mc, 18.0, PAVER_GROUND + 9.0, -16.0, 300.0F, 22.0F));
-        at(770, mc -> shot(mc, "388_road_cut"));
-        at(772, mc -> look(mc, 53.5, PAVER_GROUND - 5.0, -12.5, 0.0F, -16.0F));
-        at(800, mc -> shot(mc, "389_road_bridge"));
-        at(802, mc -> look(mc, 80.0, PAVER_GROUND + 16.0, 14.0, 160.0F, 50.0F));
-        at(830, mc -> shot(mc, "390_road_diagonal"));
-        at(832, mc -> {
+        at(800, mc -> shot(mc, "387_road"));
+        at(802, mc -> look(mc, 18.0, PAVER_GROUND + 9.0, -16.0, 300.0F, 22.0F));
+        at(830, mc -> shot(mc, "388_road_cut"));
+        at(832, mc -> look(mc, 53.5, PAVER_GROUND - 5.0, -12.5, 0.0F, -16.0F));
+        at(860, mc -> shot(mc, "389_road_bridge"));
+        at(862, mc -> look(mc, 49.0, PAVER_GROUND + 4.0, -14.0, 338.0F, 18.0F));
+        at(890, mc -> shot(mc, "393_bridge_railings"));
+        at(892, mc -> look(mc, 54.0, PAVER_GROUND + 18.0, 24.0, 158.0F, 50.0F));
+        at(920, mc -> shot(mc, "390_road_diagonal"));
+        at(922, mc -> look(mc, 64.0, PAVER_GROUND + 22.0, 24.0, 194.0F, 55.0F));
+        at(950, mc -> shot(mc, "394_road_bend"));
+        at(952, mc -> {
             look(mc, 2.0, PAVER_GROUND + 2.6, -5.0, 280.0F, 6.0F);
             server(mc, player -> player.serverLevel().setDayTime(18_000));
         });
-        at(870, mc -> shot(mc, "391_road_night"));
-        at(876, mc -> mc.stop());
+        at(990, mc -> shot(mc, "391_road_night"));
+        at(996, mc -> mc.stop());
     }
 
-    /** Where the stand-in driver's paver has got to, along x. */
-    private static final double[] PAVER_X = {-14.5};
+    /** The stand-in driver's paver's entity id, and how many steps of its bend it's made. */
+    private static final int[] PAVER = {-1, 0};
 
     /**
-     * Moves a paver a fifth of a block the way it faces, onto the ground there (nothing moves a car on the server but its
-     * driver's game), and paves. Returns its x.
+     * Moves a paver a fifth of a block the way it faces, turning {@code turn} degrees about its drive wheels as a driven
+     * one does, onto the ground there (nothing moves a car on the server but its driver's game), and paves.
      */
-    private static double paverStep(CarEntity paver) {
-        net.minecraft.world.phys.Vec3 at = paver.position().add(paver.forward().scale(0.2));
+    private static void paverStep(CarEntity paver, float turn) {
+        net.minecraft.world.phys.Vec3 before = paver.forward().scale(-paver.carType().pivotBack());
+        paver.setYRot(paver.getYRot() + turn);
+        net.minecraft.world.phys.Vec3 shift = before.subtract(paver.forward().scale(-paver.carType().pivotBack()));
+        net.minecraft.world.phys.Vec3 at = paver.position().add(shift).add(paver.forward().scale(0.2));
         ServerLevel level = (ServerLevel) paver.level();
         double y = at.y;
         for (int by = (int) Math.floor(at.y) + 2; by >= (int) Math.floor(at.y) - 3; by--) {
@@ -4344,7 +4360,6 @@ public final class DevShowcase {
         }
         paver.setPos(at.x, y, at.z);
         com.reiko.cars.road.RoadPaver.tick(paver);
-        return paver.getX();
     }
 
     // ---- garages: ./gradlew runClient -Pshowcase=garages ----

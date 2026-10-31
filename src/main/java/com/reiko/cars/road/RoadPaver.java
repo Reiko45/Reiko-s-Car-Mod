@@ -80,8 +80,13 @@ public final class RoadPaver {
     public static final int POLE_HEIGHT = 4;
     /** How far ahead of the front bumper the ground is got ready. */
     public static final double FRONT_REACH = 1.5;
-    /** How near (in degrees) to a multiple of 45 the paver must be heading to follow a straight line. */
+    /** How near (in degrees) to a multiple of 45 the paver must be heading to follow a straight line, and for how many ticks. */
     public static final float STRAIGHT = 0.5F;
+    public static final int STRAIGHT_TICKS = 3;
+    /** Beside a cut or a bank, the ground's sloped off a block out for each block up or down, this far out from the road. */
+    public static final int BATTER = 8;
+    /** How high over the road a cut's slopes are cleared. */
+    public static final int CUT_HEIGHT = 16;
     /** Blocks the paver can dig into its hopper and fill with: earth and stone. */
     public static final TagKey<Block> FILL_BLOCKS = BlockTags.create(ReikoCars.id("paver_fill"));
     public static final TagKey<Item> FILL_ITEMS = ItemTags.create(ReikoCars.id("paver_fill"));
@@ -96,8 +101,8 @@ public final class RoadPaver {
         SIDEWALK,
         /** Where a lamp stands beside a road with no sidewalk. */
         VERGE,
-        /** Beyond the road, cleared for the paver to pass. */
-        CLEARANCE
+        /** Beyond the road and its sidewalks: a bridge's railing, or a cut's or a bank's slope. */
+        BATTER
     }
 
     /** What it lays, and where it finds it. */
@@ -109,7 +114,8 @@ public final class RoadPaver {
         SIDEWALK,
         FILL,
         POLE,
-        LAMP;
+        LAMP,
+        RAILING;
 
         public Component displayName() {
             return Component.translatable("gui.reikocars.paver.material." + name().toLowerCase(java.util.Locale.ROOT));
@@ -125,6 +131,7 @@ public final class RoadPaver {
                 case FILL -> CarsConfig.get(CarsConfig.PAVER_FILL_PRICE);
                 case POLE -> CarsConfig.get(CarsConfig.PAVER_POLE_PRICE);
                 case LAMP -> CarsConfig.get(CarsConfig.PAVER_LAMP_PRICE);
+                case RAILING -> CarsConfig.get(CarsConfig.PAVER_RAILING_PRICE);
             };
             return Math.max(0L, Math.round(dollars * 100.0));
         }
@@ -152,6 +159,53 @@ public final class RoadPaver {
                 return size() > 4096;
             }
         };
+        /** The road blocks laid this run, by column, and the rank of the line painted on each (edges first). */
+        final Map<Long, Long> roads = new LinkedHashMap<>(4096, 0.75F, false) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<Long, Long> eldest) {
+                return size() > 16384;
+            }
+        };
+        final Map<Long, Integer> painted = new LinkedHashMap<>(4096, 0.75F, false) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<Long, Integer> eldest) {
+                return size() > 16384;
+            }
+        };
+        /** Each line down the road, followed block by block; and the settings they were set up for. */
+        final List<Track> tracks = new ArrayList<>();
+        @Nullable
+        PaverSettings tracksFor;
+
+        /** The path the paver's turned about (its drive wheels), for the back pass to follow. */
+        final java.util.ArrayDeque<Trail> trail = new java.util.ArrayDeque<>();
+
+        /** The point {@code distance} along the trail (dropping what's behind it, which is done with). */
+        Vec3 trailAt(double distance) {
+            while (trail.size() > 2) {
+                java.util.Iterator<Trail> it = trail.iterator();
+                it.next();
+                if (it.next().distance() <= distance) {
+                    trail.pollFirst();
+                } else {
+                    break;
+                }
+            }
+            Trail a = null;
+            for (Trail b : trail) {
+                if (a != null && b.distance() >= distance) {
+                    double t = b.distance() - a.distance() < 1.0E-9 ? 1.0 : (distance - a.distance()) / (b.distance() - a.distance());
+                    t = Mth.clamp(t, 0.0, 1.0);
+                    return new Vec3(Mth.lerp(t, a.at().x, b.at().x), b.at().y, Mth.lerp(t, a.at().z, b.at().z));
+                }
+                a = b;
+            }
+            return trail.peekLast().at();
+        }
+
+        /** Ticks it's been heading straight along a multiple of 45 degrees, and which way it was heading last tick. */
+        int straightTicks;
+        float lastYaw = Float.NaN;
         double nextLamp;
         int lampIndex;
         double nextPillar;
@@ -170,6 +224,13 @@ public final class RoadPaver {
             line = null;
             levels.clear();
             bridges.clear();
+            roads.clear();
+            painted.clear();
+            tracks.clear();
+            tracksFor = null;
+            trail.clear();
+            straightTicks = 0;
+            lastYaw = Float.NaN;
             lampIndex = 0;
             owed = 0;
         }
@@ -182,6 +243,36 @@ public final class RoadPaver {
         public long laid() {
             return laid;
         }
+    }
+
+    /**
+     * One line down the road, followed from block to block as the paver goes: the block it's in, the anchor (in half
+     * blocks, world-wide) where it came into it, and the last point it was at. Each block's piece is painted as the line
+     * leaves it, from where it came in to where it goes out, so the next block's piece starts where it ended.
+     */
+    static final class Track {
+        final Job.Stripe stripe;
+        final int rank;
+        @Nullable
+        Vec3 last;
+        int x;
+        int z;
+        int[] entry;
+        /**
+         * The piece painted ahead of time in the block it's in, as if the line went straight on (so the lines show as
+         * the road's laid, and the last block has them when it stops); null if none. Painted again as it leaves.
+         */
+        @Nullable
+        RoadMarking.Piece ahead;
+
+        Track(Job.Stripe stripe, int rank) {
+            this.stripe = stripe;
+            this.rank = rank;
+        }
+    }
+
+    /** A point on the path the paver's turned about, and how far along the path it is. */
+    record Trail(Vec3 at, double distance) {
     }
 
     /** One pass's progress along the path: where it's got to, which way it was going, and how far it's come. */
@@ -264,19 +355,32 @@ public final class RoadPaver {
         Vec3 forward = forward(yaw);
         double half = paver.carType().length / 2.0;
         Vec3 frontPoint = paver.position().add(forward.scale(half + FRONT_REACH));
-        Vec3 rearPoint = paver.position().subtract(forward.scale(half - 0.25));
+        // The road's laid along the path the paver turns about (its drive wheels), which bends smoothly, as far back as
+        // the screed: its back end swings out round a bend, so its own path wouldn't.
+        Vec3 pivot = paver.position().subtract(forward.scale(paver.carType().pivotBack()));
+        double lag = half - paver.carType().pivotBack() - 0.25;
         Job job = new Job(level, paver, driver, paver.paverSettings(), state);
         if (state.front.at == null) {
             // Just started: the road starts at the paver's own level, under its back end.
+            Vec3 rearPoint = pivot.subtract(forward.scale(lag));
             state.grade = Math.round(paver.getY() * 2.0) / 2.0;
             state.front.at = rearPoint.subtract(forward.scale(STEP));
             state.front.yaw = yaw;
             state.rear.at = rearPoint.subtract(forward.scale(STEP));
             state.rear.yaw = yaw;
+            state.trail.clear();
+            state.trail.add(new Trail(rearPoint.subtract(forward.scale(STEP)), -lag - STEP));
+            state.trail.add(new Trail(pivot, 0.0));
             state.nextLamp = job.settings.lampSpacing() / 2.0;
             state.lampIndex = 0;
             state.nextPillar = PILLAR_EVERY / 2.0;
         }
+        Trail last = state.trail.peekLast();
+        double moved = Math.sqrt(Mth.square(pivot.x - last.at().x) + Mth.square(pivot.z - last.at().z));
+        if (moved > 0.01 && (pivot.x - last.at().x) * forward.x + (pivot.z - last.at().z) * forward.z > 0.0) {
+            state.trail.add(new Trail(pivot, last.distance() + moved));
+        }
+        Vec3 rearPoint = state.trailAt(state.trail.peekLast().distance() - lag);
         try {
             if (job.settings.shape()) {
                 advance(state.front, frontPoint, yaw, line, job.extent(true), job::prepare);
@@ -315,15 +419,20 @@ public final class RoadPaver {
             dz = to.z - from.z;
             distance = STEP;
         }
+        if (line == null && distance > 1.0E-3) {
+            // Round a bend, the back (or front) of the paver doesn't go quite the way the paver faces: it swings out. The
+            // road there runs the way that end's actually going.
+            yaw = (float) (Mth.atan2(-dx, dz) * Mth.RAD_TO_DEG);
+        }
         float turn = Mth.wrapDegrees(yaw - fromYaw);
-        // Enough cross-sections that they're STEP apart along the middle, and not much more round the outside of a bend.
-        int count = Mth.clamp((int) Math.ceil(Math.max(distance / STEP, Math.abs(turn) * Mth.DEG_TO_RAD * extent / 0.8)), 1, 64);
+        // Enough cross-sections that they're STEP apart along the middle, and round the outside of a bend too.
+        int count = Mth.clamp((int) Math.ceil(Math.max(distance / STEP, Math.abs(turn) * Mth.DEG_TO_RAD * extent / STEP)), 1, 128);
         for (int i = 1; i <= count; i++) {
             double t = i / (double) count;
             Vec3 at = new Vec3(from.x + dx * t, to.y, from.z + dz * t);
             float sectionYaw = fromYaw + turn * (float) t;
             pass.distance += distance / count;
-            section.at(at, forward(sectionYaw), left(sectionYaw), sectionYaw, distance / count);
+            section.at(at, forward(sectionYaw), left(sectionYaw), sectionYaw, distance / count, line != null);
         }
         pass.at = to;
         pass.yaw = yaw;
@@ -331,7 +440,8 @@ public final class RoadPaver {
 
     @FunctionalInterface
     interface Section {
-        void at(Vec3 point, Vec3 forward, Vec3 left, float yaw, double step);
+        /** One cross-section; {@code straight} if it's on the straight line through block centers. */
+        void at(Vec3 point, Vec3 forward, Vec3 left, float yaw, double step, boolean straight);
     }
 
     /** The line the paver's following, if it's heading straight along a multiple of 45 degrees. */
@@ -339,8 +449,17 @@ public final class RoadPaver {
     private static Line line(State state, CarEntity paver) {
         float yaw = paver.getYRot();
         float snapped = Math.round(yaw / 45.0F) * 45.0F;
-        if (Math.abs(Mth.wrapDegrees(yaw - snapped)) > STRAIGHT) {
+        boolean steady = Float.isNaN(state.lastYaw) || Math.abs(Mth.wrapDegrees(yaw - state.lastYaw)) < 0.05F;
+        boolean first = Float.isNaN(state.lastYaw);
+        state.lastYaw = yaw;
+        if (Math.abs(Mth.wrapDegrees(yaw - snapped)) > STRAIGHT || !steady) {
+            state.straightTicks = 0;
             state.line = null;
+            return null;
+        }
+        // Coming out of a bend, it's held straight a moment before the road snaps to the line; starting off straight, at once.
+        state.straightTicks = first ? STRAIGHT_TICKS : state.straightTicks + 1;
+        if (state.straightTicks < STRAIGHT_TICKS) {
             return null;
         }
         if (state.line == null || Math.abs(Mth.wrapDegrees(state.line.yaw - snapped)) > 0.01F) {
@@ -360,48 +479,6 @@ public final class RoadPaver {
     public static Vec3 left(float yaw) {
         double r = yaw * Mth.DEG_TO_RAD;
         return new Vec3(Math.cos(r), 0.0, Math.sin(r));
-    }
-
-    /** The marking a road block {@code o} blocks to the left of the paver's line gets, and which way it's drawn. */
-    public record Mark(RoadMarking marking, Direction facing) {
-    }
-
-    /**
-     * The marking for a road block whose center is {@code o} blocks left of the line down the middle of the road, the
-     * road going {@code yaw}.
-     */
-    public static Mark markingFor(PaverSettings settings, double o, float yaw) {
-        Vec3 left = left(yaw);
-        // Half the width of the band of blocks a line down the road passes through: half a block on a road along the
-        // grid, more (0.71) on one at 45 degrees.
-        double tol = 0.5 * (Math.abs(left.x) + Math.abs(left.z));
-        double eps = 1.0E-4; // the lines fall exactly on block centers or between them: don't let rounding pick the wrong side
-        double roadLeft = roadLeft(settings);
-        double roadRight = roadRight(settings);
-        Direction travel = Direction.fromYRot(yaw);
-        RoadMarking marking = RoadMarking.NONE;
-        Direction facing = travel;
-        if (settings.edges() && o >= roadLeft - tol - eps) {
-            marking = RoadMarking.EDGE;
-        } else if (settings.edges() && o <= -roadRight + tol + eps) {
-            marking = RoadMarking.EDGE;
-            facing = travel.getOpposite(); // drawn down its left, which is the road's right
-        } else if (settings.center() != PaverSettings.Center.NONE && Math.abs(o) < tol - eps) {
-            marking = settings.center().marking();
-        } else {
-            int lanes = settings.lanesThatFit();
-            for (int k = 1; k < lanes; k++) {
-                if (Math.abs(o - k * roadLeft / lanes) < tol - eps || Math.abs(o + k * roadRight / lanes) < tol - eps) {
-                    marking = RoadMarking.LANE_DASHED;
-                }
-            }
-        }
-        int eighth = Math.floorMod(Math.round(yaw / 45.0F), 8); // 0 south, 1 south-west, 2 west, ... 5 north-east
-        if (eighth % 2 == 1 && marking != RoadMarking.NONE) {
-            marking = marking.diagonal();
-            facing = eighth == 1 || eighth == 5 ? Direction.NORTH : Direction.EAST; // south-west to north-east, or the other way
-        }
-        return new Mark(marking, facing);
     }
 
     /** How far the road reaches left of the line down its middle, and right of it (an even width's half a block more on the left). */
@@ -429,6 +506,8 @@ public final class RoadPaver {
         final int sidewalkRight;
         final int vergeLeft;
         final int vergeRight;
+        /** The lines it paints, edges first (they win where two would share a block). */
+        final List<Stripe> stripes = new ArrayList<>();
 
         Job(ServerLevel level, CarEntity paver, ServerPlayer driver, PaverSettings settings, State state) {
             this.level = level;
@@ -443,6 +522,22 @@ public final class RoadPaver {
             this.sidewalkRight = settings.sidewalks().right() ? settings.sidewalkWidth() : 0;
             this.vergeLeft = settings.lamps() && settings.lampSides().any(true) && sidewalkLeft == 0 ? 1 : 0;
             this.vergeRight = settings.lamps() && settings.lampSides().any(false) && sidewalkRight == 0 ? 1 : 0;
+            if (settings.edges()) {
+                stripes.add(new Stripe(roadLeft - 0.5, RoadMarking.Line.EDGE));
+                stripes.add(new Stripe(-(roadRight - 0.5), RoadMarking.Line.EDGE));
+            }
+            if (settings.center() != PaverSettings.Center.NONE) {
+                stripes.add(new Stripe(0.0, settings.center() == PaverSettings.Center.DOUBLE ? RoadMarking.Line.CENTER_SOLID : RoadMarking.Line.CENTER_DASHED));
+            }
+            int lanes = settings.lanesThatFit();
+            for (int k = 1; k < lanes; k++) {
+                stripes.add(new Stripe(k * roadLeft / lanes, RoadMarking.Line.LANE));
+                stripes.add(new Stripe(-k * roadRight / lanes, RoadMarking.Line.LANE));
+            }
+        }
+
+        /** A line down the road, {@code offset} blocks left of its middle. */
+        record Stripe(double offset, RoadMarking.Line line) {
         }
 
         double extentLeft() {
@@ -453,10 +548,10 @@ public final class RoadPaver {
             return roadRight + sidewalkRight + vergeRight;
         }
 
-        /** How far out either side a pass works; the front one clears room for the paver too. */
+        /** How far out either side a pass works; the front one shapes the slopes beside the road too. */
         double extent(boolean front) {
             double reach = Math.max(extentLeft(), extentRight());
-            return front ? Math.max(reach, paver.carType().width / 2.0 + 0.6) : reach;
+            return front ? reach + BATTER : reach;
         }
 
         Role role(double o) {
@@ -472,7 +567,12 @@ public final class RoadPaver {
             if (out < sidewalk + (onLeft ? vergeLeft : vergeRight)) {
                 return Role.VERGE;
             }
-            return Role.CLEARANCE;
+            return Role.BATTER;
+        }
+
+        /** How far beyond the road and its sidewalks (and verge) a column is, in blocks, or 0 inside it. */
+        double beyond(double o) {
+            return o > 0 ? Math.max(0.0, o - extentLeft()) : Math.max(0.0, -o - extentRight());
         }
 
         /** Each block column across the road at {@code point}, between {@code left} blocks to its left and {@code right} to its right. */
@@ -488,7 +588,7 @@ public final class RoadPaver {
                     double along = cx * forward.x + cz * forward.z;
                     double o = cx * side.x + cz * side.z;
                     if (Math.abs(along) <= 0.5 && o < left - 1.0E-6 && o > -right + 1.0E-6) {
-                        action.at(x, z, o);
+                        action.at(x, z, o, along);
                     }
                 }
             }
@@ -497,7 +597,7 @@ public final class RoadPaver {
         // ---- the front: getting the ground ready ----
 
         /** The ground ahead of the paver at {@code point}: the grade worked out, then each column cut and filled to it. */
-        void prepare(Vec3 point, Vec3 forward, Vec3 side, float yaw, double step) {
+        void prepare(Vec3 point, Vec3 forward, Vec3 side, float yaw, double step, boolean straight) {
             double target = terrainAhead(point.add(forward.scale(LOOKAHEAD)), side);
             if (!Double.isNaN(target)) {
                 if (target < state.grade - FILL_DEPTH) {
@@ -506,9 +606,17 @@ public final class RoadPaver {
                 state.grade += Mth.clamp(target - state.grade, -MAX_SLOPE * step, MAX_SLOPE * step);
             }
             int here = (int) Math.round(state.grade * 2.0);
-            double reach = extent(true);
             boolean[] bridge = {false};
-            columns(point, forward, side, Math.max(extentLeft(), reach), Math.max(extentRight(), reach), (x, z, o) -> {
+            // The railing's row is one block wide across the road's line: one block along the grid, two at 45 degrees
+            // (a staircase, so the wall joins up).
+            double railing = Math.abs(side.x) + Math.abs(side.z);
+            List<long[]> beside = new ArrayList<>();
+            columns(point, forward, side, extentLeft() + BATTER, extentRight() + BATTER, (x, z, o, along) -> {
+                double beyond = beyond(o);
+                if (beyond > 0.0) {
+                    beside.add(new long[] {x, z, Double.doubleToLongBits(o), Double.doubleToLongBits(along)});
+                    return;
+                }
                 long key = key(x, z);
                 Integer known = state.levels.get(key);
                 int level2 = known != null ? known : here;
@@ -525,6 +633,23 @@ public final class RoadPaver {
                     bridge[0] = true;
                 }
             });
+            // Beside the road, once the road's ready: a bridge's railing, or the slopes of a cut or a bank. No bank beside
+            // a bridge, though: the road's bridging that gap, so the land beside it stays as it is.
+            for (long[] c : beside) {
+                int x = (int) c[0];
+                int z = (int) c[1];
+                double o = Double.longBitsToDouble(c[2]);
+                double along = Double.longBitsToDouble(c[3]);
+                double beyond = beyond(o);
+                if (beyond < railing && (state.bridges.containsKey(key(x, z)) || overGap(x, z, Math.floorDiv(here, 2)))) {
+                    railing(x, z, Math.floorDiv(here, 2));
+                } else {
+                    double edge = o > 0 ? extentLeft() - 0.5 : -(extentRight() - 0.5);
+                    Vec3 at = point.add(forward.scale(along)).add(side.scale(edge));
+                    boolean bridged = state.bridges.containsKey(key(Mth.floor(at.x), Mth.floor(at.z)));
+                    batter(x, z, Math.floorDiv(here, 2), (int) Math.ceil(beyond), !bridged);
+                }
+            }
             // Pillars under a bridge, at its edges, every so often.
             if (bridge[0]) {
                 if (state.front.distance >= state.nextPillar) {
@@ -585,7 +710,7 @@ public final class RoadPaver {
          */
         boolean prepareColumn(int x, int z, int level2, Role role) {
             int base = Math.floorDiv(level2, 2); // the top of the solid ground under the road (a slab goes on it if it's at a half)
-            int head = role == Role.ROAD || role == Role.CLEARANCE ? HEADROOM : role == Role.VERGE ? POLE_HEIGHT + 1 : SIDE_HEADROOM;
+            int head = role == Role.ROAD ? HEADROOM : role == Role.VERGE ? POLE_HEIGHT + 1 : SIDE_HEADROOM;
             for (int y = base; y < base + head; y++) {
                 clear(new BlockPos(x, y, z));
             }
@@ -598,9 +723,6 @@ public final class RoadPaver {
                 } else if (!state.isAir() && !state.canBeReplaced()) {
                     break;
                 }
-            }
-            if (role == Role.CLEARANCE) {
-                return false;
             }
             int ground = base - 1;
             int depth = 0;
@@ -616,6 +738,99 @@ public final class RoadPaver {
             }
             fill(new BlockPos(x, base - 1, z)); // the deck
             return true;
+        }
+
+        /** Whether there's no ground within {@link #FILL_DEPTH} under a road whose ground would be up to {@code base}: a gap to bridge. */
+        boolean overGap(int x, int z, int base) {
+            for (int y = base - 1; y >= base - 1 - FILL_DEPTH; y--) {
+                BlockPos pos = new BlockPos(x, y, z);
+                if (ground(level.getBlockState(pos), pos)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /** A bridge's railing: a wall on the deck along its edge, over the gap, with room cleared above it. */
+        void railing(int x, int z, int base) {
+            BlockPos at = new BlockPos(x, base, z);
+            for (int y = base + 1; y < base + SIDE_HEADROOM; y++) {
+                clear(new BlockPos(x, y, z));
+            }
+            BlockState there = level.getBlockState(at);
+            if (there.is(BlockTags.WALLS) || keep(there, at) || !allowed(at, there)) {
+                return;
+            }
+            BlockPos deck = at.below();
+            if (!ground(level.getBlockState(deck), deck)) {
+                fill(deck);
+            }
+            BlockState wall = use(Material.RAILING);
+            if (wall.hasProperty(BlockStateProperties.WATERLOGGED)) {
+                wall = wall.setValue(BlockStateProperties.WATERLOGGED, false);
+            }
+            set(at, there, wall);
+            // Joined up to the walls either side of it (and they to it).
+            level.setBlock(at, Block.updateFromNeighbourShapes(level.getBlockState(at), level, at), Block.UPDATE_ALL);
+        }
+
+        /**
+         * One column of a cut's or a bank's slope, {@code k} blocks out from the road: the land's cut back so it rises
+         * no more than {@code k} blocks above the road there (only earth, stone, sand, snow and plants: never what
+         * someone built, nor a tree standing on ground that's left), and (if {@code bank}) built up with fill so it falls
+         * no more than {@code k} below it: only on the land, never into water. Freshly cut dirt gets its grass back.
+         */
+        void batter(int x, int z, int base, int k, boolean bank) {
+            int top = base + k;
+            boolean cut = false;
+            for (int y = top; y < base + CUT_HEIGHT; y++) {
+                BlockPos pos = new BlockPos(x, y, z);
+                BlockState there = level.getBlockState(pos);
+                if (!there.isAir() && natural(there)) {
+                    clear(pos);
+                    cut |= level.getBlockState(pos).isAir();
+                }
+            }
+            if (cut) {
+                // A tree whose ground's been cut from under it goes too (its leaves elsewhere wither on their own).
+                for (int y = top; y < base + CUT_HEIGHT; y++) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    BlockState there = level.getBlockState(pos);
+                    if (there.is(BlockTags.LOGS) || there.is(BlockTags.LEAVES)) {
+                        clear(pos);
+                    }
+                }
+            }
+            BlockPos surface = new BlockPos(x, top - 1, z);
+            if (cut && level.getBlockState(surface).is(Blocks.DIRT) && level.getBlockState(surface.above()).isAir() && allowed(surface, Blocks.DIRT.defaultBlockState())) {
+                level.setBlock(surface, Blocks.GRASS_BLOCK.defaultBlockState(), Block.UPDATE_ALL);
+            }
+            // A bank: the ground built up to base - k, if it's lower, and there's land within reach (no further: a gap).
+            if (!bank) {
+                return;
+            }
+            int low = base - k;
+            for (int y = top - 1; y >= low - 1 - FILL_DEPTH; y--) {
+                BlockPos pos = new BlockPos(x, y, z);
+                BlockState there = level.getBlockState(pos);
+                if (!there.getFluidState().isEmpty()) {
+                    return; // water: no bank into it
+                }
+                if (ground(there, pos)) {
+                    if (natural(there)) { // not on a road, nor anything else someone built
+                        for (int fy = y + 1; fy < low; fy++) {
+                            fill(new BlockPos(x, fy, z));
+                        }
+                    }
+                    return;
+                }
+            }
+        }
+
+        /** The land, as opposed to what anyone built on it (or a tree): earth and stone, sand and gravel, snow and ice, plants. */
+        boolean natural(BlockState state) {
+            return state.is(FILL_BLOCKS) || state.getBlock() instanceof FallingBlock || state.is(BlockTags.SNOW) || state.is(BlockTags.ICE)
+                    || state.canBeReplaced() && state.getFluidState().isEmpty();
         }
 
         /** A pillar of fill from under a bridge's deck down to the ground (or as far as it goes). */
@@ -637,21 +852,22 @@ public final class RoadPaver {
         // ---- the back: laying the road ----
 
         /** The road behind the paver at {@code point}: asphalt and its markings, sidewalks, and a lamp when one's due. */
-        void lay(Vec3 point, Vec3 forward, Vec3 side, float yaw, double step) {
+        void lay(Vec3 point, Vec3 forward, Vec3 side, float yaw, double step, boolean straight) {
             int here = settings.shape() ? (int) Math.round(state.grade * 2.0) : Integer.MIN_VALUE;
-            columns(point, forward, side, extentLeft(), extentRight(), (x, z, o) -> {
+            columns(point, forward, side, extentLeft(), extentRight(), (x, z, o, along) -> {
                 Role role = role(o);
                 int level2 = levelOf(x, z, here, role);
                 if (level2 == Integer.MIN_VALUE) {
                     return;
                 }
                 switch (role) {
-                    case ROAD -> layRoad(x, z, level2, markingFor(settings, o, yaw));
+                    case ROAD -> layRoad(x, z, level2);
                     case CURB, SIDEWALK -> laySidewalk(x, z, level2, role);
                     default -> {
                     }
                 }
             });
+            followLines(point, forward, side, straight);
             if (settings.lamps() && state.rear.distance >= state.nextLamp) {
                 for (boolean onLeft : new boolean[] {true, false}) {
                     if (settings.lampSides().has(state.lampIndex, onLeft)) {
@@ -697,7 +913,205 @@ public final class RoadPaver {
             return Integer.MIN_VALUE;
         }
 
-        void layRoad(int x, int z, int level2, Mark mark) {
+        /**
+         * Each line down the road, on to where it is at this cross-section: on the straight line through block
+         * centers the lines sit on rows of blocks (a line between two rows would run along their seam).
+         */
+        void followLines(Vec3 point, Vec3 forward, Vec3 side, boolean straight) {
+            if (!settings.equals(state.tracksFor)) {
+                state.tracks.clear();
+                for (int i = 0; i < stripes.size(); i++) {
+                    Stripe stripe = stripes.get(i);
+                    state.tracks.add(new Track(stripe, stripe.line() == RoadMarking.Line.EDGE ? 0 : stripe.line() == RoadMarking.Line.LANE ? 2 : 1));
+                }
+                state.tracksFor = settings;
+            }
+            double spacing = 1.0 / (Math.abs(side.x) + Math.abs(side.z));
+            for (Track track : state.tracks) {
+                double o = straight ? Math.round(track.stripe.offset() / spacing) * spacing : track.stripe.offset();
+                Vec3 at = new Vec3(point.x + side.x * o, point.y, point.z + side.z * o);
+                if (track.last == null) {
+                    // The line starts here: in this block, coming in from behind.
+                    track.x = Mth.floor(at.x);
+                    track.z = Mth.floor(at.z);
+                    track.entry = boundary(track.x, track.z, at.x, at.z, -forward.x, -forward.z, null);
+                    track.last = at;
+                    track.ahead = null;
+                    paintAhead(track, forward.x, forward.z);
+                    continue;
+                }
+                follow(track, at);
+            }
+        }
+
+        /** Takes a line from where it was to {@code to}, block by block, painting each block's piece as it leaves it. */
+        void follow(Track track, Vec3 to) {
+            double ax = track.last.x;
+            double az = track.last.z;
+            double dx = to.x - ax;
+            double dz = to.z - az;
+            for (int guard = 0; guard < 64; guard++) {
+                double tx = dx > 1.0E-12 ? (track.x + 1 - ax) / dx : dx < -1.0E-12 ? (track.x - ax) / dx : Double.MAX_VALUE;
+                double tz = dz > 1.0E-12 ? (track.z + 1 - az) / dz : dz < -1.0E-12 ? (track.z - az) / dz : Double.MAX_VALUE;
+                double t = Math.min(tx, tz);
+                if (t > 1.0) {
+                    break; // still in this block
+                }
+                boolean acrossX = tx <= tz + 1.0E-9;
+                boolean acrossZ = tz <= tx + 1.0E-9;
+                int[] exit = exitAnchor(track, ax + dx * t, az + dz * t, acrossX ? (dx > 0 ? 1 : -1) : 0, acrossZ ? (dz > 0 ? 1 : -1) : 0);
+                if (exit != null) {
+                    paint(track, exit);
+                } else if (track.ahead != null) {
+                    unpaint(track); // it only clipped this block: what was painted ahead comes off
+                }
+                track.ahead = null;
+                int nx = track.x + (acrossX ? (dx > 0 ? 1 : -1) : 0);
+                int nz = track.z + (acrossZ ? (dz > 0 ? 1 : -1) : 0);
+                int[] carried = exit != null ? exit : track.entry;
+                track.x = nx;
+                track.z = nz;
+                // A block it only clipped gets nothing; the next starts where that one's line came in, if it can.
+                track.entry = onBoundary(nx, nz, carried) ? carried : nearest(nx, nz, ax + dx * t, az + dz * t);
+            }
+            track.last = to;
+            paintAhead(track, dx, dz);
+        }
+
+        /** Paints the piece of the block a line's in as if it went straight on the way it's going ({@code dx}, {@code dz}). */
+        void paintAhead(Track track, double dx, double dz) {
+            if (dx * dx + dz * dz < 1.0E-12) {
+                return;
+            }
+            double ax = track.last.x;
+            double az = track.last.z;
+            double tx = dx > 1.0E-12 ? (track.x + 1 - ax) / dx : dx < -1.0E-12 ? (track.x - ax) / dx : Double.MAX_VALUE;
+            double tz = dz > 1.0E-12 ? (track.z + 1 - az) / dz : dz < -1.0E-12 ? (track.z - az) / dz : Double.MAX_VALUE;
+            double t = Math.min(tx, tz);
+            boolean acrossX = tx <= tz + 1.0E-9;
+            boolean acrossZ = tz <= tx + 1.0E-9;
+            int[] exit = exitAnchor(track, ax + dx * t, az + dz * t, acrossX ? (dx > 0 ? 1 : -1) : 0, acrossZ ? (dz > 0 ? 1 : -1) : 0);
+            if (exit != null) {
+                RoadMarking.Piece piece = paint(track, exit);
+                if (piece != null) {
+                    track.ahead = piece;
+                }
+            }
+        }
+
+        /** Takes off the piece painted ahead in the block a line's in, if it's still there. */
+        void unpaint(Track track) {
+            long key = key(track.x, track.z);
+            Long road = state.roads.get(key);
+            if (road == null) {
+                return;
+            }
+            BlockPos at = BlockPos.of(road);
+            BlockState there = level.getBlockState(at);
+            if (there.is(Asphalt.ROAD) && there.hasProperty(Asphalt.MARKING) && there.getValue(Asphalt.MARKING) == track.ahead.marking()
+                    && there.getValue(Asphalt.FACING) == track.ahead.facing()) {
+                level.setBlock(at, there.setValue(Asphalt.MARKING, RoadMarking.NONE), Block.UPDATE_ALL);
+                state.painted.remove(key, track.rank);
+            }
+        }
+
+        /**
+         * The anchor a line leaves its block by, through the side (or the corner) {@code sx}, {@code sz} points to,
+         * crossing at ({@code cx}, {@code cz}): the one on that side nearest the crossing that makes a piece with the
+         * anchor it came in by; null if none does (it only clipped the block).
+         */
+        @Nullable
+        int[] exitAnchor(Track track, double cx, double cz, int sx, int sz) {
+            List<int[]> candidates = new ArrayList<>();
+            int gx = 2 * track.x + (sx > 0 ? 2 : 0);
+            int gz = 2 * track.z + (sz > 0 ? 2 : 0);
+            if (sx != 0 && sz != 0) {
+                candidates.add(new int[] {gx, gz});
+            } else if (sx != 0) {
+                for (int k = 0; k <= 2; k++) {
+                    candidates.add(new int[] {gx, 2 * track.z + k});
+                }
+                candidates.sort(java.util.Comparator.comparingDouble(a -> Math.abs(a[1] - cz * 2.0)));
+            } else {
+                for (int k = 0; k <= 2; k++) {
+                    candidates.add(new int[] {2 * track.x + k, gz});
+                }
+                candidates.sort(java.util.Comparator.comparingDouble(a -> Math.abs(a[0] - cx * 2.0)));
+            }
+            for (int[] candidate : candidates) {
+                if (!degenerate(track.x, track.z, track.entry, candidate)) {
+                    return candidate;
+                }
+            }
+            return null;
+        }
+
+        /** Whether anchors {@code a} and {@code b} make no piece in block (x, z): the same anchor, or both on one side. */
+        static boolean degenerate(int x, int z, int[] a, int[] b) {
+            int ax = a[0] - 2 * x;
+            int az = a[1] - 2 * z;
+            int bx = b[0] - 2 * x;
+            int bz = b[1] - 2 * z;
+            return ax == bx && az == bz || ax == bx && ax != 1 || az == bz && az != 1;
+        }
+
+        static boolean onBoundary(int x, int z, int[] a) {
+            int ax = a[0] - 2 * x;
+            int az = a[1] - 2 * z;
+            return ax >= 0 && ax <= 2 && az >= 0 && az <= 2 && !(ax == 1 && az == 1);
+        }
+
+        /** The anchor on block (x, z)'s edge nearest the point (cx, cz) on it. */
+        static int[] nearest(int x, int z, double cx, double cz) {
+            int gx = Mth.clamp((int) Math.round(cx * 2.0), 2 * x, 2 * x + 2);
+            int gz = Mth.clamp((int) Math.round(cz * 2.0), 2 * z, 2 * z + 2);
+            if (gx == 2 * x + 1 && gz == 2 * z + 1) {
+                gx = 2 * x; // the middle isn't on the edge: the nearest side's (only for a line that starts mid-block)
+            }
+            return new int[] {gx, gz};
+        }
+
+        /** Where a line from (px, pz) going (fx, fz) leaves block (x, z), as the nearest anchor. */
+        static int[] boundary(int x, int z, double px, double pz, double fx, double fz, @Nullable int[] unused) {
+            double tx = fx > 1.0E-12 ? (x + 1 - px) / fx : fx < -1.0E-12 ? (x - px) / fx : Double.MAX_VALUE;
+            double tz = fz > 1.0E-12 ? (z + 1 - pz) / fz : fz < -1.0E-12 ? (z - pz) / fz : Double.MAX_VALUE;
+            double t = Math.min(tx, tz);
+            return nearest(x, z, px + fx * t, pz + fz * t);
+        }
+
+        /**
+         * Paints the piece of a line in the block it's leaving, on the road laid there this run, unless a line that ranks
+         * higher's there. Returns the piece painted, or null.
+         */
+        @Nullable
+        RoadMarking.Piece paint(Track track, int[] exit) {
+            long key = key(track.x, track.z);
+            Long road = state.roads.get(key);
+            if (road == null) {
+                return null; // not this run's road: one it crossed, say
+            }
+            Integer rank = state.painted.get(key);
+            if (rank != null && rank < track.rank) {
+                return null;
+            }
+            int[] from = {track.entry[0] - 2 * track.x, track.entry[1] - 2 * track.z};
+            int[] to = {exit[0] - 2 * track.x, exit[1] - 2 * track.z};
+            RoadMarking.Piece piece = RoadMarking.between(track.stripe.line(), from, to);
+            BlockPos at = BlockPos.of(road);
+            BlockState there = level.getBlockState(at);
+            if (piece == null || !there.is(Asphalt.ROAD) || !there.hasProperty(Asphalt.MARKING)) {
+                return null;
+            }
+            if (there.getValue(Asphalt.MARKING) == RoadMarking.NONE) {
+                use(Material.PAINT);
+            }
+            state.painted.put(key, track.rank);
+            level.setBlock(at, there.setValue(Asphalt.MARKING, piece.marking()).setValue(Asphalt.FACING, piece.facing()), Block.UPDATE_ALL);
+            return piece;
+        }
+
+        /** A block of plain asphalt (its lines are painted on as they leave it: see {@link #followLines}). */
+        void layRoad(int x, int z, int level2) {
             boolean half = (level2 & 1) != 0;
             int base = Math.floorDiv(level2, 2);
             BlockPos at = half ? new BlockPos(x, base, z) : new BlockPos(x, base - 1, z);
@@ -720,11 +1134,8 @@ public final class RoadPaver {
                 use(Material.ASPHALT);
                 road = ModBlocks.ASPHALT.get().defaultBlockState();
             }
-            if (mark.marking() != RoadMarking.NONE) {
-                use(Material.PAINT);
-                road = road.setValue(Asphalt.MARKING, mark.marking()).setValue(Asphalt.FACING, mark.facing());
-            }
             set(at, there, road);
+            state.roads.put(key(x, z), at.asLong());
             state.laid++;
             clearPlants(at.above(), 2);
         }
@@ -918,6 +1329,7 @@ public final class RoadPaver {
                 case FILL -> Blocks.COBBLESTONE.defaultBlockState();
                 case POLE -> ModBlocks.STREET_POLE.get().defaultBlockState();
                 case LAMP -> ModBlocks.STREET_LAMP.get().defaultBlockState();
+                case RAILING -> Blocks.STONE_BRICK_WALL.defaultBlockState();
             };
         }
 
@@ -980,6 +1392,9 @@ public final class RoadPaver {
                 case LAMP -> {
                     return takeItem(sources, stack -> stack.is(ModItems.STREET_LAMP.get()));
                 }
+                case RAILING -> {
+                    return takeItem(sources, stack -> stack.is(ItemTags.WALLS) && stack.getItem() instanceof BlockItem);
+                }
             }
             return null;
         }
@@ -1032,6 +1447,7 @@ public final class RoadPaver {
 
     @FunctionalInterface
     interface ColumnAction {
-        void at(int x, int z, double o);
+        /** A column {@code o} blocks left of the road's middle, {@code along} blocks ahead of the cross-section. */
+        void at(int x, int z, double o, double along);
     }
 }

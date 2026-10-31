@@ -5,6 +5,7 @@ texture and icons come from the model scripts, as every vehicle's do.
 Usage: python3 tools/paver/assets.py
 """
 import json
+import math
 import os
 import random
 
@@ -18,8 +19,17 @@ YELLOW = (242, 190, 44)
 # The markings, as the block states know them: the straight ones vroads.py made, then the diagonals made here.
 MARKINGS = ['none', 'center_dashed', 'center_solid', 'lane_dashed', 'edge', 'stop_line', 'crosswalk',
             'arrow_straight', 'arrow_left', 'arrow_right',
-            'center_dashed_diagonal', 'center_solid_diagonal', 'lane_dashed_diagonal', 'edge_diagonal']
-DIAGONALS = MARKINGS[10:]
+            'center_dashed_diagonal', 'center_solid_diagonal', 'lane_dashed_diagonal', 'edge_diagonal',
+            'edge_line',
+            'center_dashed_turn', 'center_dashed_shallow_right', 'center_dashed_shallow_left',
+            'center_solid_turn', 'center_solid_shallow_right', 'center_solid_shallow_left',
+            'lane_dashed_turn', 'lane_dashed_shallow_right', 'lane_dashed_shallow_left',
+            'edge_turn', 'edge_shallow_right', 'edge_shallow_left']
+DIAGONALS = MARKINGS[10:14]
+# The road paver's pieces (see RoadMarking): each a path across the block, drawn facing north, in texels (x east, y
+# south): a straight line down the middle, a quarter turn from the middle of the south side to the middle of the east,
+# and shallow lines from the middle of the south side to the north-east (right) or north-west (left) corner.
+PIECES = MARKINGS[14:]
 FACINGS = {'north': 0, 'east': 90, 'south': 180, 'west': 270}
 
 
@@ -50,6 +60,47 @@ def diagonal_mask(marking):
     return m
 
 
+def path(shape, t):
+    """A point t (0 to 1) along a piece's path, from where it comes into the block to where it leaves."""
+    if shape == 'line':
+        return 8.0, 16.0 - 16.0 * t
+    if shape == 'turn':
+        a = math.pi + t * math.pi / 2  # round the south-east corner, radius 8: (8, 16) to (16, 8)
+        return 16.0 + 8.0 * math.cos(a), 16.0 + 8.0 * math.sin(a)
+    if shape == 'shallow_right':
+        return 8.0 + 8.0 * t, 16.0 - 16.0 * t
+    if shape == 'shallow_left':
+        return 8.0 - 8.0 * t, 16.0 - 16.0 * t
+    raise ValueError(shape)
+
+
+def piece_mask(marking):
+    """The painted texels of one of the paver's pieces: a line 2 texels wide (a double yellow is two, 1 wide, either
+    side), dashed ones only in the middle half of the path, so dashes and gaps take turns block by block."""
+    style, shape = None, None
+    for st in ('center_dashed', 'center_solid', 'lane_dashed', 'edge'):
+        if marking.startswith(st + '_'):
+            style, shape = st, marking[len(st) + 1:]
+    colour = YELLOW if style.startswith('center') else WHITE
+    samples = [path(shape, i / 400.0) for i in range(401)]
+    m = {}
+    for y in range(16):
+        for x in range(16):
+            cx, cy = x + 0.5, y + 0.5
+            best, at = 99.0, 0.0
+            for i, (px, py) in enumerate(samples):
+                d = math.hypot(cx - px, cy - py)
+                if d < best:
+                    best, at = d, i / 400.0
+            if style == 'center_solid':
+                hit = 1.0 <= best <= 2.0
+            else:
+                hit = best <= 1.0 and (not style.endswith('dashed') or 0.25 <= at <= 0.75)
+            if hit:
+                m[(x, y)] = colour
+    return m
+
+
 def marked(base, mask, seed):
     img = base.copy()
     px = img.load()
@@ -63,9 +114,22 @@ def marked(base, mask, seed):
 def markings():
     tex = os.path.join(ASSETS, 'textures/block')
     base = Image.open(os.path.join(tex, 'asphalt.png')).convert('RGBA')
+    # The edge line down the middle is drawn as a piece; the straight center and lane lines are vroads.py's.
     for i, marking in enumerate(DIAGONALS):
         name = f'asphalt_{marking}'
         marked(base, diagonal_mask(marking), 31 + i).save(os.path.join(tex, name + '.png'))
+        top = f'reikocars:block/{name}'
+        side = 'reikocars:block/asphalt'
+        write(os.path.join(ASSETS, f'models/block/{name}.json'),
+              {'parent': 'minecraft:block/cube_bottom_top', 'textures': {'top': top, 'side': side, 'bottom': side}})
+        sname = f'asphalt_slab_{marking}'
+        write(os.path.join(ASSETS, f'models/block/{sname}.json'),
+              {'parent': 'minecraft:block/slab', 'textures': {'top': top, 'side': side, 'bottom': side}})
+        write(os.path.join(ASSETS, f'models/block/{sname}_top.json'),
+              {'parent': 'minecraft:block/slab_top', 'textures': {'top': top, 'side': side, 'bottom': side}})
+    for i, marking in enumerate(PIECES):
+        name = f'asphalt_{marking}'
+        marked(base, piece_mask(marking), 61 + i).save(os.path.join(tex, name + '.png'))
         top = f'reikocars:block/{name}'
         side = 'reikocars:block/asphalt'
         write(os.path.join(ASSETS, f'models/block/{name}.json'),

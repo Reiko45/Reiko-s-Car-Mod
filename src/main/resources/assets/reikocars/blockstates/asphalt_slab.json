@@ -126,6 +126,123 @@
     "facing=north,marking=edge_diagonal,type=double": {
       "model": "reikocars:block/asphalt_edge_diagonal"
     },
+    "facing=north,marking=edge_line,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_line"
+    },
+    "facing=north,marking=edge_line,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_line_top"
+    },
+    "facing=north,marking=edge_line,type=double": {
+      "model": "reikocars:block/asphalt_edge_line"
+    },
+    "facing=north,marking=center_dashed_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_turn"
+    },
+    "facing=north,marking=center_dashed_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_turn_top"
+    },
+    "facing=north,marking=center_dashed_turn,type=double": {
+      "model": "reikocars:block/asphalt_center_dashed_turn"
+    },
+    "facing=north,marking=center_dashed_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_right"
+    },
+    "facing=north,marking=center_dashed_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_right_top"
+    },
+    "facing=north,marking=center_dashed_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_center_dashed_shallow_right"
+    },
+    "facing=north,marking=center_dashed_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_left"
+    },
+    "facing=north,marking=center_dashed_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_left_top"
+    },
+    "facing=north,marking=center_dashed_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_center_dashed_shallow_left"
+    },
+    "facing=north,marking=center_solid_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_solid_turn"
+    },
+    "facing=north,marking=center_solid_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_solid_turn_top"
+    },
+    "facing=north,marking=center_solid_turn,type=double": {
+      "model": "reikocars:block/asphalt_center_solid_turn"
+    },
+    "facing=north,marking=center_solid_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_right"
+    },
+    "facing=north,marking=center_solid_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_right_top"
+    },
+    "facing=north,marking=center_solid_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_center_solid_shallow_right"
+    },
+    "facing=north,marking=center_solid_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_left"
+    },
+    "facing=north,marking=center_solid_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_left_top"
+    },
+    "facing=north,marking=center_solid_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_center_solid_shallow_left"
+    },
+    "facing=north,marking=lane_dashed_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_turn"
+    },
+    "facing=north,marking=lane_dashed_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_turn_top"
+    },
+    "facing=north,marking=lane_dashed_turn,type=double": {
+      "model": "reikocars:block/asphalt_lane_dashed_turn"
+    },
+    "facing=north,marking=lane_dashed_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_right"
+    },
+    "facing=north,marking=lane_dashed_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_right_top"
+    },
+    "facing=north,marking=lane_dashed_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_lane_dashed_shallow_right"
+    },
+    "facing=north,marking=lane_dashed_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_left"
+    },
+    "facing=north,marking=lane_dashed_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_left_top"
+    },
+    "facing=north,marking=lane_dashed_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_lane_dashed_shallow_left"
+    },
+    "facing=north,marking=edge_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_turn"
+    },
+    "facing=north,marking=edge_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_turn_top"
+    },
+    "facing=north,marking=edge_turn,type=double": {
+      "model": "reikocars:block/asphalt_edge_turn"
+    },
+    "facing=north,marking=edge_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_right"
+    },
+    "facing=north,marking=edge_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_right_top"
+    },
+    "facing=north,marking=edge_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_edge_shallow_right"
+    },
+    "facing=north,marking=edge_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_left"
+    },
+    "facing=north,marking=edge_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_left_top"
+    },
+    "facing=north,marking=edge_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_edge_shallow_left"
+    },
     "facing=east,marking=none,type=bottom": {
       "model": "reikocars:block/asphalt_slab"
     },
@@ -289,6 +406,162 @@
     },
     "facing=east,marking=edge_diagonal,type=double": {
       "model": "reikocars:block/asphalt_edge_diagonal",
+      "y": 90
+    },
+    "facing=east,marking=edge_line,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_line",
+      "y": 90
+    },
+    "facing=east,marking=edge_line,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_line_top",
+      "y": 90
+    },
+    "facing=east,marking=edge_line,type=double": {
+      "model": "reikocars:block/asphalt_edge_line",
+      "y": 90
+    },
+    "facing=east,marking=center_dashed_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_turn",
+      "y": 90
+    },
+    "facing=east,marking=center_dashed_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_turn_top",
+      "y": 90
+    },
+    "facing=east,marking=center_dashed_turn,type=double": {
+      "model": "reikocars:block/asphalt_center_dashed_turn",
+      "y": 90
+    },
+    "facing=east,marking=center_dashed_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_right",
+      "y": 90
+    },
+    "facing=east,marking=center_dashed_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_right_top",
+      "y": 90
+    },
+    "facing=east,marking=center_dashed_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_center_dashed_shallow_right",
+      "y": 90
+    },
+    "facing=east,marking=center_dashed_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_left",
+      "y": 90
+    },
+    "facing=east,marking=center_dashed_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_left_top",
+      "y": 90
+    },
+    "facing=east,marking=center_dashed_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_center_dashed_shallow_left",
+      "y": 90
+    },
+    "facing=east,marking=center_solid_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_solid_turn",
+      "y": 90
+    },
+    "facing=east,marking=center_solid_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_solid_turn_top",
+      "y": 90
+    },
+    "facing=east,marking=center_solid_turn,type=double": {
+      "model": "reikocars:block/asphalt_center_solid_turn",
+      "y": 90
+    },
+    "facing=east,marking=center_solid_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_right",
+      "y": 90
+    },
+    "facing=east,marking=center_solid_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_right_top",
+      "y": 90
+    },
+    "facing=east,marking=center_solid_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_center_solid_shallow_right",
+      "y": 90
+    },
+    "facing=east,marking=center_solid_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_left",
+      "y": 90
+    },
+    "facing=east,marking=center_solid_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_left_top",
+      "y": 90
+    },
+    "facing=east,marking=center_solid_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_center_solid_shallow_left",
+      "y": 90
+    },
+    "facing=east,marking=lane_dashed_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_turn",
+      "y": 90
+    },
+    "facing=east,marking=lane_dashed_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_turn_top",
+      "y": 90
+    },
+    "facing=east,marking=lane_dashed_turn,type=double": {
+      "model": "reikocars:block/asphalt_lane_dashed_turn",
+      "y": 90
+    },
+    "facing=east,marking=lane_dashed_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_right",
+      "y": 90
+    },
+    "facing=east,marking=lane_dashed_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_right_top",
+      "y": 90
+    },
+    "facing=east,marking=lane_dashed_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_lane_dashed_shallow_right",
+      "y": 90
+    },
+    "facing=east,marking=lane_dashed_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_left",
+      "y": 90
+    },
+    "facing=east,marking=lane_dashed_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_left_top",
+      "y": 90
+    },
+    "facing=east,marking=lane_dashed_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_lane_dashed_shallow_left",
+      "y": 90
+    },
+    "facing=east,marking=edge_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_turn",
+      "y": 90
+    },
+    "facing=east,marking=edge_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_turn_top",
+      "y": 90
+    },
+    "facing=east,marking=edge_turn,type=double": {
+      "model": "reikocars:block/asphalt_edge_turn",
+      "y": 90
+    },
+    "facing=east,marking=edge_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_right",
+      "y": 90
+    },
+    "facing=east,marking=edge_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_right_top",
+      "y": 90
+    },
+    "facing=east,marking=edge_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_edge_shallow_right",
+      "y": 90
+    },
+    "facing=east,marking=edge_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_left",
+      "y": 90
+    },
+    "facing=east,marking=edge_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_left_top",
+      "y": 90
+    },
+    "facing=east,marking=edge_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_edge_shallow_left",
       "y": 90
     },
     "facing=south,marking=none,type=bottom": {
@@ -456,6 +729,162 @@
       "model": "reikocars:block/asphalt_edge_diagonal",
       "y": 180
     },
+    "facing=south,marking=edge_line,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_line",
+      "y": 180
+    },
+    "facing=south,marking=edge_line,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_line_top",
+      "y": 180
+    },
+    "facing=south,marking=edge_line,type=double": {
+      "model": "reikocars:block/asphalt_edge_line",
+      "y": 180
+    },
+    "facing=south,marking=center_dashed_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_turn",
+      "y": 180
+    },
+    "facing=south,marking=center_dashed_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_turn_top",
+      "y": 180
+    },
+    "facing=south,marking=center_dashed_turn,type=double": {
+      "model": "reikocars:block/asphalt_center_dashed_turn",
+      "y": 180
+    },
+    "facing=south,marking=center_dashed_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_right",
+      "y": 180
+    },
+    "facing=south,marking=center_dashed_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_right_top",
+      "y": 180
+    },
+    "facing=south,marking=center_dashed_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_center_dashed_shallow_right",
+      "y": 180
+    },
+    "facing=south,marking=center_dashed_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_left",
+      "y": 180
+    },
+    "facing=south,marking=center_dashed_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_left_top",
+      "y": 180
+    },
+    "facing=south,marking=center_dashed_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_center_dashed_shallow_left",
+      "y": 180
+    },
+    "facing=south,marking=center_solid_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_solid_turn",
+      "y": 180
+    },
+    "facing=south,marking=center_solid_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_solid_turn_top",
+      "y": 180
+    },
+    "facing=south,marking=center_solid_turn,type=double": {
+      "model": "reikocars:block/asphalt_center_solid_turn",
+      "y": 180
+    },
+    "facing=south,marking=center_solid_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_right",
+      "y": 180
+    },
+    "facing=south,marking=center_solid_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_right_top",
+      "y": 180
+    },
+    "facing=south,marking=center_solid_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_center_solid_shallow_right",
+      "y": 180
+    },
+    "facing=south,marking=center_solid_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_left",
+      "y": 180
+    },
+    "facing=south,marking=center_solid_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_left_top",
+      "y": 180
+    },
+    "facing=south,marking=center_solid_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_center_solid_shallow_left",
+      "y": 180
+    },
+    "facing=south,marking=lane_dashed_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_turn",
+      "y": 180
+    },
+    "facing=south,marking=lane_dashed_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_turn_top",
+      "y": 180
+    },
+    "facing=south,marking=lane_dashed_turn,type=double": {
+      "model": "reikocars:block/asphalt_lane_dashed_turn",
+      "y": 180
+    },
+    "facing=south,marking=lane_dashed_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_right",
+      "y": 180
+    },
+    "facing=south,marking=lane_dashed_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_right_top",
+      "y": 180
+    },
+    "facing=south,marking=lane_dashed_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_lane_dashed_shallow_right",
+      "y": 180
+    },
+    "facing=south,marking=lane_dashed_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_left",
+      "y": 180
+    },
+    "facing=south,marking=lane_dashed_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_left_top",
+      "y": 180
+    },
+    "facing=south,marking=lane_dashed_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_lane_dashed_shallow_left",
+      "y": 180
+    },
+    "facing=south,marking=edge_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_turn",
+      "y": 180
+    },
+    "facing=south,marking=edge_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_turn_top",
+      "y": 180
+    },
+    "facing=south,marking=edge_turn,type=double": {
+      "model": "reikocars:block/asphalt_edge_turn",
+      "y": 180
+    },
+    "facing=south,marking=edge_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_right",
+      "y": 180
+    },
+    "facing=south,marking=edge_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_right_top",
+      "y": 180
+    },
+    "facing=south,marking=edge_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_edge_shallow_right",
+      "y": 180
+    },
+    "facing=south,marking=edge_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_left",
+      "y": 180
+    },
+    "facing=south,marking=edge_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_left_top",
+      "y": 180
+    },
+    "facing=south,marking=edge_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_edge_shallow_left",
+      "y": 180
+    },
     "facing=west,marking=none,type=bottom": {
       "model": "reikocars:block/asphalt_slab"
     },
@@ -619,6 +1048,162 @@
     },
     "facing=west,marking=edge_diagonal,type=double": {
       "model": "reikocars:block/asphalt_edge_diagonal",
+      "y": 270
+    },
+    "facing=west,marking=edge_line,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_line",
+      "y": 270
+    },
+    "facing=west,marking=edge_line,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_line_top",
+      "y": 270
+    },
+    "facing=west,marking=edge_line,type=double": {
+      "model": "reikocars:block/asphalt_edge_line",
+      "y": 270
+    },
+    "facing=west,marking=center_dashed_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_turn",
+      "y": 270
+    },
+    "facing=west,marking=center_dashed_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_turn_top",
+      "y": 270
+    },
+    "facing=west,marking=center_dashed_turn,type=double": {
+      "model": "reikocars:block/asphalt_center_dashed_turn",
+      "y": 270
+    },
+    "facing=west,marking=center_dashed_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_right",
+      "y": 270
+    },
+    "facing=west,marking=center_dashed_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_right_top",
+      "y": 270
+    },
+    "facing=west,marking=center_dashed_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_center_dashed_shallow_right",
+      "y": 270
+    },
+    "facing=west,marking=center_dashed_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_left",
+      "y": 270
+    },
+    "facing=west,marking=center_dashed_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_dashed_shallow_left_top",
+      "y": 270
+    },
+    "facing=west,marking=center_dashed_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_center_dashed_shallow_left",
+      "y": 270
+    },
+    "facing=west,marking=center_solid_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_solid_turn",
+      "y": 270
+    },
+    "facing=west,marking=center_solid_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_solid_turn_top",
+      "y": 270
+    },
+    "facing=west,marking=center_solid_turn,type=double": {
+      "model": "reikocars:block/asphalt_center_solid_turn",
+      "y": 270
+    },
+    "facing=west,marking=center_solid_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_right",
+      "y": 270
+    },
+    "facing=west,marking=center_solid_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_right_top",
+      "y": 270
+    },
+    "facing=west,marking=center_solid_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_center_solid_shallow_right",
+      "y": 270
+    },
+    "facing=west,marking=center_solid_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_left",
+      "y": 270
+    },
+    "facing=west,marking=center_solid_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_center_solid_shallow_left_top",
+      "y": 270
+    },
+    "facing=west,marking=center_solid_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_center_solid_shallow_left",
+      "y": 270
+    },
+    "facing=west,marking=lane_dashed_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_turn",
+      "y": 270
+    },
+    "facing=west,marking=lane_dashed_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_turn_top",
+      "y": 270
+    },
+    "facing=west,marking=lane_dashed_turn,type=double": {
+      "model": "reikocars:block/asphalt_lane_dashed_turn",
+      "y": 270
+    },
+    "facing=west,marking=lane_dashed_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_right",
+      "y": 270
+    },
+    "facing=west,marking=lane_dashed_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_right_top",
+      "y": 270
+    },
+    "facing=west,marking=lane_dashed_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_lane_dashed_shallow_right",
+      "y": 270
+    },
+    "facing=west,marking=lane_dashed_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_left",
+      "y": 270
+    },
+    "facing=west,marking=lane_dashed_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_lane_dashed_shallow_left_top",
+      "y": 270
+    },
+    "facing=west,marking=lane_dashed_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_lane_dashed_shallow_left",
+      "y": 270
+    },
+    "facing=west,marking=edge_turn,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_turn",
+      "y": 270
+    },
+    "facing=west,marking=edge_turn,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_turn_top",
+      "y": 270
+    },
+    "facing=west,marking=edge_turn,type=double": {
+      "model": "reikocars:block/asphalt_edge_turn",
+      "y": 270
+    },
+    "facing=west,marking=edge_shallow_right,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_right",
+      "y": 270
+    },
+    "facing=west,marking=edge_shallow_right,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_right_top",
+      "y": 270
+    },
+    "facing=west,marking=edge_shallow_right,type=double": {
+      "model": "reikocars:block/asphalt_edge_shallow_right",
+      "y": 270
+    },
+    "facing=west,marking=edge_shallow_left,type=bottom": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_left",
+      "y": 270
+    },
+    "facing=west,marking=edge_shallow_left,type=top": {
+      "model": "reikocars:block/asphalt_slab_edge_shallow_left_top",
+      "y": 270
+    },
+    "facing=west,marking=edge_shallow_left,type=double": {
+      "model": "reikocars:block/asphalt_edge_shallow_left",
       "y": 270
     }
   }

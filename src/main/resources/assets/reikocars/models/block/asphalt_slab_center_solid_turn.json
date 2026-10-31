@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "top": "reikocars:block/asphalt_center_solid_turn",
+    "side": "reikocars:block/asphalt",
+    "bottom": "reikocars:block/asphalt"
+  }
+}

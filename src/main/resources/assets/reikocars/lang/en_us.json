@@ -1645,5 +1645,19 @@
   "road.reikocars.marking.center_dashed_diagonal": "Center line, diagonal (dashed yellow)",
   "road.reikocars.marking.center_solid_diagonal": "Center line, diagonal (double yellow)",
   "road.reikocars.marking.lane_dashed_diagonal": "Lane line, diagonal (dashed white)",
-  "road.reikocars.marking.edge_diagonal": "Edge line, diagonal"
+  "road.reikocars.marking.edge_diagonal": "Edge line, diagonal",
+  "gui.reikocars.paver.material.railing": "walls for railings",
+  "road.reikocars.marking.edge_line": "Edge line (down the middle)",
+  "road.reikocars.marking.center_dashed_turn": "Center line (dashed yellow), turning",
+  "road.reikocars.marking.center_dashed_shallow_right": "Center line (dashed yellow), bending right",
+  "road.reikocars.marking.center_dashed_shallow_left": "Center line (dashed yellow), bending left",
+  "road.reikocars.marking.center_solid_turn": "Center line (double yellow), turning",
+  "road.reikocars.marking.center_solid_shallow_right": "Center line (double yellow), bending right",
+  "road.reikocars.marking.center_solid_shallow_left": "Center line (double yellow), bending left",
+  "road.reikocars.marking.lane_dashed_turn": "Lane line (dashed white), turning",
+  "road.reikocars.marking.lane_dashed_shallow_right": "Lane line (dashed white), bending right",
+  "road.reikocars.marking.lane_dashed_shallow_left": "Lane line (dashed white), bending left",
+  "road.reikocars.marking.edge_turn": "Edge line, turning",
+  "road.reikocars.marking.edge_shallow_right": "Edge line, bending right",
+  "road.reikocars.marking.edge_shallow_left": "Edge line, bending left"
 }
