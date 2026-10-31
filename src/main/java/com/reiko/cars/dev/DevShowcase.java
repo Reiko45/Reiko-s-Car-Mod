@@ -79,6 +79,8 @@ public final class DevShowcase {
      */
     private static final String MODE = System.getProperty("reikocars.showcase", "false");
     private static final boolean ENABLED = !MODE.equals("false");
+    /** For a gallery: no hand or held item in view, no advancement toasts, no chat (-Pclean). */
+    private static final boolean CLEAN = Boolean.getBoolean("reikocars.clean");
     private static final BlockPos BENCH = new BlockPos(2, -60, 3);
     private static final BlockPos PUMP = new BlockPos(4, -60, 6);
     private static final BlockPos PUMP2 = new BlockPos(8, -60, 6);
@@ -202,6 +204,13 @@ public final class DevShowcase {
             return;
         }
         tick++;
+        if (CLEAN) {
+            minecraft.gameRenderer.setRenderHand(false);
+            minecraft.getToasts().clear();
+            if (tick == 1) {
+                minecraft.options.chatVisibility().set(net.minecraft.world.entity.player.ChatVisiblity.HIDDEN);
+            }
+        }
         if (tick == 1 && !MODE.equals("keys")) {
             // The older scripts drive their cars without cutting keys first.
             minecraft.getSingleplayerServer().execute(() -> com.reiko.cars.config.CarsConfig.REQUIRE_KEYS.set(false));

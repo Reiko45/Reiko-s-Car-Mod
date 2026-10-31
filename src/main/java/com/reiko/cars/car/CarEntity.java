@@ -1534,8 +1534,13 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     @Nullable
     @Override
     public LivingEntity getControllingPassenger() {
-        List<Entity> riders = riders();
-        return !riders.isEmpty() && riders.get(0) instanceof Player player ? player : null;
+        // The first rider (not a trailer or a car it's carrying), if it's a player. Asked many times a tick, so no list.
+        for (Entity passenger : getPassengers()) {
+            if (!(passenger instanceof TrailerEntity) && !(passenger instanceof CarEntity)) {
+                return passenger instanceof Player player ? player : null;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -1665,8 +1670,14 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
         super.tick();
         tickLerp();
+        boolean parked = false;
         if (isPassenger()) {
             stopDead(); // carried on a car hauler or a tow truck: that moves it
+        } else if (isControlledByLocalInstance() && restingNow()) {
+            // Parked and still: nothing to work out, nor to collide with. Once a second it checks again, in case the
+            // ground's gone from under it. (A server full of parked cars spent most of its time here otherwise.)
+            parked = true;
+            setDeltaMovement(Vec3.ZERO);
         } else if (isControlledByLocalInstance()) {
             if (getControllingPassenger() == null) {
                 setInput(false, false, false, false, false);
@@ -1699,7 +1710,23 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         } else {
             serverTick();
         }
-        checkInsideBlocks();
+        if (!parked) {
+            checkInsideBlocks();
+        }
+    }
+
+    /** Ticks it's been sat still, with nobody at the wheel, on the server. */
+    private int restTicks;
+
+    /**
+     * Whether it's parked: nobody at the wheel, not moving, on the ground, out of the water; and not the tick, once a
+     * second, when it's worked out as usual all the same. Server side.
+     */
+    private boolean restingNow() {
+        boolean still = !level().isClientSide && getControllingPassenger() == null && Math.abs(speed) < 1.0E-4 && onGround() && !isInWater()
+                && !isInLava() && getDeltaMovement().horizontalDistanceSqr() < 1.0E-8 && pivotShift.lengthSqr() < 1.0E-8;
+        restTicks = still ? restTicks + 1 : 0;
+        return still && restTicks % 20 != 0;
     }
 
     private void tickLerp() {
@@ -1959,7 +1986,10 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
         CarSignals.serverTick(this);
         com.reiko.cars.gps.CarLocator.carTick(this);
-        boolean listener = getPassengers().stream().anyMatch(passenger -> passenger instanceof Player);
+        boolean listener = false;
+        for (Entity passenger : getPassengers()) {
+            listener |= passenger instanceof Player;
+        }
         if (listener && !radioHadListener) {
             restartRadio();
         }

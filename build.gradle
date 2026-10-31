@@ -44,6 +44,16 @@ neoForge {
             // -Pshowcase=workbench does the same for the Car Workbench.
             def showcase = project.findProperty('showcase')
             systemProperty 'reikocars.showcase', showcase == null ? 'false' : (showcase.toString() ?: 'true')
+            // -Pclean: no hand, toasts or chat in the screenshots (for a gallery).
+            if (project.findProperty('clean') != null) {
+                systemProperty 'reikocars.clean', 'true'
+            }
+            // -PwindowSize=1920x1080: a bigger window, for bigger screenshots.
+            def windowSize = project.findProperty('windowSize')
+            if (windowSize) {
+                def (w, h) = windowSize.toString().tokenize('x')
+                programArguments.addAll('--width', w, '--height', h)
+            }
         }
 
         server {

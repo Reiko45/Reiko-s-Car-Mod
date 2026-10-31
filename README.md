@@ -61,6 +61,8 @@ cars, winning a race and 10,000 blocks without getting out.
 A **Car Manual** (with Patchouli installed) explains all of it in game, with every vehicle turning in 3D, its recipes
 and pictures: every player gets one the first time they join.
 
+What changed in each version is in [CHANGELOG.md](CHANGELOG.md).
+
 ## Requirements
 
 - Minecraft 1.21.1, NeoForge 21.1.265 or newer (as Reiko's Economy Mod needs)
@@ -1453,6 +1455,9 @@ game test then checks there's no manual and no recipe for one).
 ./gradlew runClient -Pshowcase=gallery    # every model from four sides (or -Pshowcase=gallery:sedan,box_trailer,pumps)
 ```
 
+Add `-PwindowSize=1920x1080` (and a big enough virtual screen, `xvfb-run -s "-screen 0 1920x1080x24"`) for bigger
+screenshots.
+
 The `mp` showcase plays as a survival player on a real dedicated server: it joins, is given the manual, builds a
 sedan at the workbench, cuts a key, buys fuel with cash, drives, opens the radio and GPS, hitches and tows with a semi
 and a pickup, sets up camp and sleeps in the camper, loads cows into a livestock trailer, opens a garage door and sets
@@ -1463,6 +1468,12 @@ everything is as it was left; then it paves a road with the road paver. The serv
 `DevServerTest` class added (it builds each scene with `/reikotest`): add
 `build/classes/java/main/com/reiko/cars/dev/DevServerTest.class` to the jar in the server's mods folder. Each check is
 logged as an `MPCHECK` line in the client's log; screenshots go to `run/screenshots/mp_*.png`.
+
+**Load test:** with `DevLoadTest.class` (and `DevLoadTest$Driver.class`) also added to that jar, the server console's
+`/reikoload start <parked> <driving>` parks that many cars in a grid and puts that many stand-in players at the wheel of
+others, driving round in circles; `/reikoload report` logs whether they're all ticking, and `/reikoload stop` clears
+them away. Time it with `/neoforge tps`, and `/jfr start` / `/jfr stop` for a profile. On a 2-core test server, 1,000
+parked cars and 40 drivers ran at a full 20 ticks a second, at 13.5 ms a tick (see CHANGELOG.md, 1.39.1).
 
 ## Editing the models
 
