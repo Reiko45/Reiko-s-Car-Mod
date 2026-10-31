@@ -328,6 +328,11 @@ public final class RepairBenchMenu extends AbstractContainerMenu {
     }
 
     /** The car's condition, to a thousandth. */
+    /** How good {@code part} is, 0 to 1 (the glass and the lamps too, which the condition below leaves out). */
+    public float value(Part part) {
+        return data.get(CONDITION + part.ordinal()) / 1000.0F;
+    }
+
     public CarCondition condition() {
         float[] v = new float[PARTS];
         for (int i = 0; i < PARTS; i++) {

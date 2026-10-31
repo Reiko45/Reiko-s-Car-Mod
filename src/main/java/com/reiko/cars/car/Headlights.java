@@ -34,6 +34,8 @@ public final class Headlights {
     static final double[] REACH = {5.0, 12.0};
     static final int[] BRIGHTNESS = {13, 15};
     static final int BEACON_BRIGHTNESS = 10;
+    /** How much dimmer the road is lit with one headlight smashed. */
+    static final int ONE_LAMP_DIMMER = 4;
     private static final int BEACON = 2;
     private static final int SLOTS = 3;
     /** A light this close to where it should be (squared) stays put. */
@@ -67,10 +69,12 @@ public final class Headlights {
             dark = isDark(level, BlockPos.containing(car.getX(), car.getY() + 0.6, car.getZ()), dark);
             // In rain, snow or a storm they light the road by day too.
             boolean gloomy = beams && CarsConfig.WEATHER_HEADLIGHTS.get() && com.reiko.cars.weather.RoadWeather.precipitation(car);
-            if ((dark || gloomy) && beams) {
+            // Smashed headlights light nothing; with one left, the road's dimmer.
+            int working = car.condition().damage().workingHeadlights();
+            if ((dark || gloomy) && beams && working > 0) {
                 for (int i = 0; i < REACH.length; i++) {
                     want[i] = beam(level, REACH[i]);
-                    brightness[i] = BRIGHTNESS[i];
+                    brightness[i] = working == 2 ? BRIGHTNESS[i] : BRIGHTNESS[i] - ONE_LAMP_DIMMER;
                 }
             }
             if (dark && beacons) {

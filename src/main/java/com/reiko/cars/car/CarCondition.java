@@ -29,15 +29,21 @@ import org.jetbrains.annotations.Nullable;
  * <p>Any part at 0 breaks the car down: the engine won't run until it's repaired, though the brakes still work. Wear
  * rates here are at the server's wear setting of 1.
  */
-public record CarCondition(float oil, float engine, float tires, float brakes, float body) {
+public record CarCondition(float oil, float engine, float tires, float brakes, float body, CarDamage damage) {
     public static final CarCondition NEW = new CarCondition(1.0F, 1.0F, 1.0F, 1.0F, 1.0F);
+
+    /** Wear without any crash damage to show. */
+    public CarCondition(float oil, float engine, float tires, float brakes, float body) {
+        this(oil, engine, tires, brakes, body, CarDamage.NONE);
+    }
 
     public static final Codec<CarCondition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.FLOAT.optionalFieldOf("oil", 1.0F).forGetter(CarCondition::oil),
             Codec.FLOAT.optionalFieldOf("engine", 1.0F).forGetter(CarCondition::engine),
             Codec.FLOAT.optionalFieldOf("tires", 1.0F).forGetter(CarCondition::tires),
             Codec.FLOAT.optionalFieldOf("brakes", 1.0F).forGetter(CarCondition::brakes),
-            Codec.FLOAT.optionalFieldOf("body", 1.0F).forGetter(CarCondition::body)
+            Codec.FLOAT.optionalFieldOf("body", 1.0F).forGetter(CarCondition::body),
+            CarDamage.CODEC.optionalFieldOf("damage", CarDamage.NONE).forGetter(CarCondition::damage)
     ).apply(instance, CarCondition::new));
 
     public static final StreamCodec<ByteBuf, CarCondition> STREAM_CODEC = StreamCodec.composite(
@@ -46,6 +52,7 @@ public record CarCondition(float oil, float engine, float tires, float brakes, f
             ByteBufCodecs.FLOAT, CarCondition::tires,
             ByteBufCodecs.FLOAT, CarCondition::brakes,
             ByteBufCodecs.FLOAT, CarCondition::body,
+            CarDamage.STREAM_CODEC, CarCondition::damage,
             CarCondition::new);
 
     // Blocks driven for a part to wear from new to nothing.
@@ -69,15 +76,27 @@ public record CarCondition(float oil, float engine, float tires, float brakes, f
         tires = clamp(tires);
         brakes = clamp(brakes);
         body = clamp(body);
+        damage = damage == null ? CarDamage.NONE : damage;
     }
 
     private static float clamp(float value) {
         return Float.isNaN(value) ? 1.0F : Mth.clamp(value, 0.0F, 1.0F);
     }
 
-    /** The parts that wear, in the order the dashboard and repair bench show them. */
+    /**
+     * The parts, in the order the repair bench shows them: the five that wear (see {@link #WEAR}), then the glass and the
+     * lamps, which only crashes break.
+     */
     public enum Part {
-        OIL, ENGINE, TIRES, BRAKES, BODY;
+        OIL, ENGINE, TIRES, BRAKES, BODY, GLASS, LIGHTS;
+
+        /** The parts that wear out and can break a car down, in the order the dashboard shows them. */
+        public static final Part[] WEAR = {OIL, ENGINE, TIRES, BRAKES, BODY};
+
+        /** Whether it wears out (and so can break the car down): not the glass or the lamps. */
+        public boolean wears() {
+            return this != GLASS && this != LIGHTS;
+        }
 
         public String id() {
             return name().toLowerCase(Locale.ROOT);
@@ -124,17 +143,27 @@ public record CarCondition(float oil, float engine, float tires, float brakes, f
             case TIRES -> tires;
             case BRAKES -> brakes;
             case BODY -> body;
+            case GLASS -> damage.glassCondition();
+            case LIGHTS -> damage.lightCondition();
         };
     }
 
     public CarCondition with(Part part, float value) {
         return switch (part) {
-            case OIL -> new CarCondition(value, engine, tires, brakes, body);
-            case ENGINE -> new CarCondition(oil, value, tires, brakes, body);
-            case TIRES -> new CarCondition(oil, engine, value, brakes, body);
-            case BRAKES -> new CarCondition(oil, engine, tires, value, body);
-            case BODY -> new CarCondition(oil, engine, tires, brakes, value);
+            case OIL -> new CarCondition(value, engine, tires, brakes, body, damage);
+            case ENGINE -> new CarCondition(oil, value, tires, brakes, body, damage);
+            case TIRES -> new CarCondition(oil, engine, value, brakes, body, damage);
+            case BRAKES -> new CarCondition(oil, engine, tires, value, body, damage);
+            // Mending the body takes the dents out with it.
+            case BODY -> new CarCondition(oil, engine, tires, brakes, value, damage.afterBodyRepair(body, value));
+            // Glass and lamps are mended whole (see withDamage for a window or a lamp at a time).
+            case GLASS -> value >= 1.0F ? withDamage(damage.fixWindows(CarDamage.WINDOWS)) : this;
+            case LIGHTS -> value >= 1.0F ? withDamage(damage.fixLights(CarDamage.LIGHTS)) : this;
         };
+    }
+
+    public CarCondition withDamage(CarDamage newDamage) {
+        return new CarCondition(oil, engine, tires, brakes, body, newDamage);
     }
 
     public Level level(Part part) {
@@ -144,7 +173,7 @@ public record CarCondition(float oil, float engine, float tires, float brakes, f
     /** The first worn-out part, which keeps the car from running; null while it runs. */
     @Nullable
     public Part brokenPart() {
-        for (Part part : Part.values()) {
+        for (Part part : Part.WEAR) {
             if (get(part) <= 0.0F) {
                 return part;
             }
@@ -155,7 +184,7 @@ public record CarCondition(float oil, float engine, float tires, float brakes, f
     /** The most worn part. */
     public Part worstPart() {
         Part worst = Part.OIL;
-        for (Part part : Part.values()) {
+        for (Part part : Part.WEAR) {
             if (get(part) < get(worst)) {
                 worst = part;
             }
@@ -172,7 +201,7 @@ public record CarCondition(float oil, float engine, float tires, float brakes, f
     public float overall(java.util.function.Predicate<Part> has) {
         float sum = 0.0F;
         int count = 0;
-        for (Part part : Part.values()) {
+        for (Part part : Part.WEAR) {
             if (has.test(part)) {
                 sum += get(part);
                 count++;
@@ -182,12 +211,15 @@ public record CarCondition(float oil, float engine, float tires, float brakes, f
     }
 
     public boolean isNew() {
-        return oil >= 1.0F && engine >= 1.0F && tires >= 1.0F && brakes >= 1.0F && body >= 1.0F;
+        return oil >= 1.0F && engine >= 1.0F && tires >= 1.0F && brakes >= 1.0F && body >= 1.0F && damage.isNone();
     }
 
     /** Whether any part differs from {@code other}'s by at least {@code step}, or is at a different warning level. */
     public boolean differs(CarCondition other, float step) {
-        for (Part part : Part.values()) {
+        if (!damage.equals(other.damage)) {
+            return true; // a crack or a smashed lamp shows at once
+        }
+        for (Part part : Part.WEAR) {
             if (Math.abs(get(part) - other.get(part)) >= step || level(part) != other.level(part)) {
                 return true;
             }
@@ -212,7 +244,7 @@ public record CarCondition(float oil, float engine, float tires, float brakes, f
         double engineRate = oil <= 0.0F ? 20.0 : oil < 0.25F ? 4.0 : 1.0;
         double newEngine = engine - blocks / ENGINE_LIFE * engineRate * load * rate;
         double newTires = tires - blocks / TIRE_LIFE * tireFactor * load * rate;
-        return new CarCondition((float) newOil, (float) newEngine, (float) newTires, brakes, body);
+        return new CarCondition((float) newOil, (float) newEngine, (float) newTires, brakes, body, damage);
     }
 
     /** A trailer's wear after being towed {@code blocks}: only its tires, as it has no engine. */
@@ -233,17 +265,17 @@ public record CarCondition(float oil, float engine, float tires, float brakes, f
         }
         double newBrakes = brakes - Math.max(0, speedLost) * BRAKE_WEAR * load * rate;
         double newTires = tires - (Math.max(0, speedLost) + 3.0 * Math.max(0, skidded)) * BRAKE_TIRE_WEAR * load * rate;
-        return new CarCondition(oil, engine, (float) newTires, (float) newBrakes, body);
+        return new CarCondition(oil, engine, (float) newTires, (float) newBrakes, body, damage);
     }
 
-    /** After hitting something at {@code impact} blocks per tick. */
-    public CarCondition afterCrash(double impact, double damage) {
-        if (impact <= CRASH_THRESHOLD || damage <= 0) {
+    /** After hitting something at {@code impact} blocks per tick (the wear only: see {@link CarDamage#afterCrash} for what shows). */
+    public CarCondition afterCrash(double impact, double rate) {
+        if (impact <= CRASH_THRESHOLD || rate <= 0) {
             return this;
         }
-        double newBody = body - (impact - CRASH_THRESHOLD) * CRASH_DAMAGE * damage;
-        double newEngine = engine - Math.max(0, impact - ENGINE_CRASH_THRESHOLD) * 0.25 * damage;
-        return new CarCondition(oil, (float) newEngine, tires, brakes, (float) newBody);
+        double newBody = body - (impact - CRASH_THRESHOLD) * CRASH_DAMAGE * rate;
+        double newEngine = engine - Math.max(0, impact - ENGINE_CRASH_THRESHOLD) * 0.25 * rate;
+        return new CarCondition(oil, (float) newEngine, tires, brakes, (float) newBody, damage);
     }
 
     /** After running into a mob at {@code speed} blocks per tick: a small dent, a percent or three. */

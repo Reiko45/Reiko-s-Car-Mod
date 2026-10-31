@@ -132,10 +132,12 @@ public final class ModNetwork {
 
     private static void handleWear(CarWearPayload payload, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player) || !(player.getVehicle() instanceof CarEntity car)
-                || !Float.isFinite(payload.braked()) || !Float.isFinite(payload.skidded()) || !Float.isFinite(payload.impact())) {
+                || !Float.isFinite(payload.braked()) || !Float.isFinite(payload.skidded()) || !Float.isFinite(payload.impact())
+                || !Float.isFinite(payload.angle())) {
             return;
         }
-        car.applyWearReport(player, Math.max(0.0F, payload.braked()), Math.max(0.0F, payload.skidded()), Math.max(0.0F, payload.impact()));
+        car.applyWearReport(player, Math.max(0.0F, payload.braked()), Math.max(0.0F, payload.skidded()), Math.max(0.0F, payload.impact()),
+                payload.angle());
     }
 
     private static void handleMeter(MeterActionPayload payload, IPayloadContext context) {

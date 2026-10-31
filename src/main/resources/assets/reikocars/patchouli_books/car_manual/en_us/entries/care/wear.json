@@ -10,7 +10,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Worn parts make a car slower, thirstier and slower to stop. The dashboard's warning lights turn amber, then orange, and flash red when a part is gone: at 0% the car $(4)breaks down$() and won't run until it's repaired. Cars are never destroyed.$(br2)Trailers wear their tires, brakes and body too. Electric cars have no oil."
+      "text": "Worn parts make a car slower, thirstier and slower to stop. The dashboard's warning lights turn amber, then orange, and flash red when a part is gone: at 0% the car $(4)breaks down$() and won't run until it's repaired. Cars are never destroyed.$(br2)Trailers wear their tires, brakes and body too. Electric cars have no oil. Crashes also leave $(l:care/crash_damage)dents, broken glass and smashed lamps$(/l)."
     }
   ]
 }

@@ -170,6 +170,22 @@ public final class CarGlass {
         return count > 0;
     }
 
+    /** How much of the texture under these coordinates (0 to 1) is glass, 0 to 1. */
+    public float glassShare(float u0, float v0, float u1, float v1) {
+        load();
+        if (glassBefore == null) {
+            return 0.0F;
+        }
+        int x0 = clamp((int) Math.floor(Math.min(u0, u1) * width + 1.0E-3F), width - 1);
+        int y0 = clamp((int) Math.floor(Math.min(v0, v1) * height + 1.0E-3F), height - 1);
+        int x1 = Math.max(clamp((int) Math.ceil(Math.max(u0, u1) * width - 1.0E-3F), width), x0 + 1);
+        int y1 = Math.max(clamp((int) Math.ceil(Math.max(v0, v1) * height - 1.0E-3F), height), y0 + 1);
+        int stride = width + 1;
+        int count = glassBefore[y1 * stride + x1] - glassBefore[y0 * stride + x1] - glassBefore[y1 * stride + x0]
+                + glassBefore[y0 * stride + x0];
+        return count / (float) ((x1 - x0) * (y1 - y0));
+    }
+
     private static int clamp(int value, int max) {
         return Math.max(0, Math.min(max, value));
     }

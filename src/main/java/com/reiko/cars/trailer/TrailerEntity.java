@@ -367,7 +367,7 @@ public class TrailerEntity extends VehicleEntity implements Repairable, Keyed {
             tellDriver(Component.translatable("car.reikocars.trailer_broke_down." + brokeNow.id()));
             return;
         }
-        for (Part part : Part.values()) {
+        for (Part part : Part.WEAR) {
             CarCondition.Level was = before.level(part);
             CarCondition.Level now = newCondition.level(part);
             if (now.ordinal() > was.ordinal() && now != CarCondition.Level.BROKEN) {

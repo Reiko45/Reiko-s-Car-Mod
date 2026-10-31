@@ -2,7 +2,7 @@
   "name": "Tow Trucks",
   "icon": "reikocars:flatbed",
   "category": "reikocars:care",
-  "sortnum": 3,
+  "sortnum": 4,
   "pages": [
     {
       "type": "patchouli:text",

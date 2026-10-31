@@ -1574,5 +1574,11 @@
   "gui.reikocars.parking.fee_tax": "Overstay: %s (incl. %s tax)",
   "gui.reikocars.parking.leave_hint": "Pay for the time you've overstayed and the door opens to let you out.",
   "gui.reikocars.parking.park_free": "Park free",
-  "gui.reikocars.parking.leave_free": "Open the door"
+  "gui.reikocars.parking.leave_free": "Open the door",
+  "condition.reikocars.glass": "Glass",
+  "condition.reikocars.lights": "Lights",
+  "item.reikocars.car_window": "Car Window",
+  "item.reikocars.car_light": "Car Light",
+  "item.reikocars.car.windows_damaged": "Broken windows: %s",
+  "item.reikocars.car.lamps_smashed": "Smashed lamps: %s"
 }

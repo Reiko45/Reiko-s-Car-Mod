@@ -6,8 +6,8 @@ garbage truck, an ice cream truck, a dump truck and a cement mixer) for Minecraf
 card** through **Reiko's Economy Mod**.
 
 Refine oil into fuel with BuildCraft, pipe it into a pump, set a price, and other players pay you to fill up.
-Cars wear out as they're driven, and a **Repair Bench** fixes them: fit your own parts, or run a mechanic's shop and
-charge for repairs. Tow trucks haul broken-down cars to it, and mailboxes and the mail van carry parcels between
+Cars wear out as they're driven and show where they've crashed, and a **Repair Bench** fixes them: fit your own parts,
+or run a mechanic's shop and charge for repairs. Tow trucks haul broken-down cars to it, and mailboxes and the mail van carry parcels between
 players for postage. Parking meters ticket cars that overstay, toll gates lift for drivers who pay, insurance offices
 cover crash repairs, and the job board pays drivers, mail carriers, mechanics, truckers and garbage collectors.
 Every vehicle has turn signals and hazard lights, and a locked car's alarm catches anyone without a key. Lay
@@ -685,6 +685,21 @@ Cars wear out like real ones. Each car has five parts, each from 100% (new) down
 When any part reaches **0%, the car breaks down**: the engine won't start or run until it's repaired (the brakes
 still work). Cars are never destroyed.
 
+**Crash damage** shows where a car was hit. A head-on crash crumples the front, a side impact caves that side in, a
+knock from behind dents the back, and the paint scrapes off around the dents. Harder hits **crack** the nearest glass
+(the windshield, the back window or a side window), then **shatter** it, and smash the lamps at that corner. It isn't
+only looks:
+
+- **Smashed headlights** don't light the road at night; with one left, it's dimmer.
+- A smashed lamp's **turn signal** stops blinking.
+- A car bent much worse on one side than the other **pulls** toward that side as you drive.
+- An engine worn below about a third **smokes** from under the hood, more the worse it gets.
+
+Motorcycles have no glass, and their lamps break in pairs. Body Panels take the dents out as they mend the body; a
+**Car Window** mends one cracked or shattered window (the shattered ones first) and a **Car Light** puts back one
+smashed lamp. The Repair Bench shows the glass and the lamps as two more rows, and a car's tooltip says when they're
+broken. Bumps too gentle to dent the body leave no mark.
+
 **Trailers** wear too, though they have no oil or engine: their **tires** wear as they're towed (faster loaded or
 off-road), their **brakes** whenever the semi brakes, and their **body** when the rig crashes (the load shoves the
 trailer into the cab) or jackknifes (backing up until it folds against the cab). Worn trailer brakes and tires make
@@ -697,7 +712,7 @@ sparks instead of smoke. Their dashboards leave out the oil light.
 
 **Seeing it:** the dashboard has five warning lights (oil can, engine, tire, brake, car). They come on amber when a
 part is worn (25%), orange when badly worn (10%), and flash red when it has given out, with **BROKEN DOWN** on
-the dashboard. Towing, a second row shows the trailer's tires, brakes and body. A tired engine smokes from under the bonnet, and the action bar tells the driver as each part gets
+the dashboard. Towing, a second row shows the trailer's tires, brakes and body. A tired engine smokes from under the hood, and the action bar tells the driver as each part gets
 low. A car's or trailer's item tooltip shows its condition, and one picked up keeps its wear.
 
 **The Repair Bench:** park within 6 blocks of it and right-click it. It works on any car or trailer there, locked
@@ -708,7 +723,8 @@ part, with two ways to fix each:
 - **Fit:** fits the parts you carry, for nothing. An oil change takes a Motor Oil, tires a full set (one per
   wheel; four for a trailer), brakes a set of Brake Pads (diesel trucks and trailers take two of each). Engine Parts
   each put back a quarter of the engine and Body Panels a fifth of the body (half that on diesel trucks and
-  trailers), so you can fix them a bit at a time.
+  trailers), so you can fix them a bit at a time. A Car Window mends one broken window and a Car Light one smashed
+  lamp.
 - **The price button:** has the bench fit parts from its own stock, at the owner's prices. Click the jobs you want,
   then pay the total by **Card** (with PIN) or **Cash**, as at a pump. Sales tax applies, and the money goes to the
   bench's owner.
@@ -981,8 +997,8 @@ the insurer, and they pay the claims from their bank account.
   tax, by **Card** with PIN or **Cash**) to the office's owner. Buying again at the same office adds another term, up
   to four ahead. Buying at another office replaces the old cover. A car's tooltip shows who insures it and how long
   is left, and cover goes with the car when it's picked up.
-- **Claims:** insurance covers **crash damage**. When an insured car's **body repairs** are paid for at someone's
-  Repair Bench, the insurer pays back what they cost over the **deductible** ($10.00), up to the **claim limit**
+- **Claims:** insurance covers **crash damage**. When an insured car's **body, glass or lamp repairs** are paid for
+  at someone's Repair Bench, the insurer pays back what they cost over the **deductible** ($10.00), up to the **claim limit**
   ($100.00 a claim), straight to whoever paid the bill. The bench's screen shows what'll come back. Wear (oil,
   engine, tires and brakes) isn't covered, and an insurer who can't afford a claim doesn't pay it.
 - **Lapsing:** cover runs out at the end of its term, and stops if the car changes hands.
@@ -1081,6 +1097,8 @@ change the pay; the actions they pay for are `reikocars:taxi_ride`, `bus_rider`,
 | Engine Parts ×2 | iron ingot, piston, iron ingot over iron gear, iron ingot, iron gear |
 | Brake Pads ×2 | three iron ingots over three flint |
 | Body Panel ×2 | four iron ingots in a square |
+| Car Window | three glass panes and an iron nugget (shapeless) |
+| Car Light | a glass pane, glowstone dust and an iron nugget (shapeless) |
 | Electric Motor | copper ingots down both sides, a gold gear over a redstone block over a BuildCraft **Gold Chipset** in the middle |
 | Battery Pack | iron ingots in the corners, redstone blocks top and bottom middle, copper ingots either side of a BuildCraft **Redstone Crystal** |
 | Charging Station | iron ingots in the corners, a BuildCraft **Gold Chipset** on top, copper ingots either side of a Battery Pack, a BuildCraft **gold kinesis pipe** below |
@@ -1192,7 +1210,7 @@ Server settings are in `serverconfig/reikocars-server.toml` in the world folder:
 | `fireTruck.endlessHydrants` | `false` | Whether hydrants never run dry, with no pipes needed |
 | `fireTruck.paidFiresPerDay` | `64` | Fires a day the Firefighter job pays each player for |
 | `wear.wearMultiplier` | `1.0` | How fast oil, engines, tires and brakes wear (0 turns wear off) |
-| `wear.crashDamageMultiplier` | `1.0` | Body damage from crashes (0 turns it off) |
+| `wear.crashDamageMultiplier` | `1.0` | Crash damage: to the body, and the dents, broken glass and smashed lamps (0 turns it off) |
 | `wear.breakdowns` | `true` | A part at 0% breaks the car down. If false, worn parts only make it drive worse |
 | `wear.repairBenchReach` | `6.0` | How close a car must be to a repair bench |
 | `wear.defaultPricePerPart` | `20.0` | Starting price of each part at a new repair bench |
@@ -1298,7 +1316,7 @@ game test then checks there's no manual and no recipe for one).
 
 ```sh
 ./gradlew build             # build the jar into build/libs/
-./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs, tow trucks, mail, keys, fares, buying and selling), then exit
+./gradlew runGameTestServer # run the in-game tests (payments, pumps, pipes, fuel, diesel, locks, the workbench, semis, trailers, motorcycles, wear and repairs, crash damage, tow trucks, mail, keys, fares, buying and selling), then exit
 ./gradlew runClient         # start a dev client
 ./gradlew runClient -Pshowcase  # build a test scene, buy fuel, drive, save screenshots to run/screenshots/, quit
 ./gradlew runClient -Pshowcase=workbench  # the same for the Car Workbench and its JEI pages
@@ -1307,6 +1325,7 @@ game test then checks there's no manual and no recipe for one).
 ./gradlew runClient -Pshowcase=bikes      # the same for the motorcycles: parked, riding and leaning, saddlebags
 ./gradlew runClient -Pshowcase=cars2      # the same for the hatchback, muscle car, convertible, minivan, van, bus, 4x4, tractor
 ./gradlew runClient -Pshowcase=repair     # the Repair Bench, paying for repairs, its owner's tabs, a worn car's dashboard and smoke, a worn trailer
+./gradlew runClient -Pshowcase=damage     # crashed cars: crumpled fronts, caved-in sides, cracked and shattered glass, smashed lamps, one headlight at night, the repair bench
 ./gradlew runClient -Pshowcase=tow        # the tow trucks loaded and towing, posting a parcel, the mail van's round, the inbox
 ./gradlew runClient -Pshowcase=keys       # no key, cutting one, its tooltip, driving with it, locking it from a distance
 ./gradlew runClient -Pshowcase=fares      # paying a bus fare, a taxi's meter running and paid, the owner's fare screen
@@ -1327,7 +1346,8 @@ game test then checks there's no manual and no recipe for one).
 The `mp` showcase plays as a survival player on a real dedicated server: it joins, is given the manual, builds a
 sedan at the workbench, cuts a key, buys fuel with cash, drives, opens the radio and GPS, hitches and tows with a semi
 and a pickup, sets up camp and sleeps in the camper, loads cows into a livestock trailer, opens a garage door and sets
-it up, links a remote to it, pays to park at someone else's parking garage, leaves and comes back, and
+it up, links a remote to it, pays to park at someone else's parking garage, leaves and comes back, sees a crashed
+car's damage, and
 then waits while the server is restarted (restart it when its log says `REIKOTEST before_restart`), to check
 everything is as it was left. The server needs the mod's jar with the dev-only
 `DevServerTest` class added (it builds each scene with `/reikotest`): add
@@ -1397,7 +1417,7 @@ new car gets them as long as its windshield is glass that faces forward.
 ```text
 src/main/java/com/reiko/cars/
 ├── ReikoCars.java        mod entry point
-├── car/                  the car entity and its types, CarDeliveries (moving a car anywhere, loaded or not), fuel (CarFuel, CarTank), wear and tear (CarCondition), the car item, WorkVehicles (sirens, healing, tipping, mixing) and CarSignals (turn signals, hazards, the alarm)
+├── car/                  the car entity and its types, CarDeliveries (moving a car anywhere, loaded or not), fuel (CarFuel, CarTank), wear and tear (CarCondition), crash damage (CarDamage: dents, glass, lamps, pulling), the car item, WorkVehicles (sirens, healing, tipping, mixing) and CarSignals (turn signals, hazards, the alarm)
 ├── garbage/              the Trash Can block and block entity, and GarbageService (the garbage truck's round)
 ├── fire/                 the fire truck's water (FireTrucks), the fire hose and spraying (Firefighting), the ladder and its climbable blocks (FireLadder), the Fire Hydrant, and who lit what (FireEvents)
 ├── radio/                the car radio: its settings (CarRadio), the stations, and its menu
@@ -1437,12 +1457,13 @@ src/main/java/com/reiko/cars/
 ├── network/              packets: the GPS's places and cars, a bus stop's name and routes, a garage's settings and paying to park, pump, repair bench, mailbox, parking meter, toll, car wash, insurance, impound, rental, DMV, ice cream and road sign actions, horn, lock, hitch, siren, signals, hazards and radio, the driver's wear reports, tanker load and unload
 ├── registry/             blocks, items, entities, menus, recipes, sounds, data components, capabilities, creative tab
 ├── config/               server settings
-├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, and the wipers and raindrops on the windshield, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the GPS (GpsClient, its screen and panel, and GpsXaero for Xaero's Minimap), the bus stop's screen and lettering, the garage doors (GarageDoorRenderer) and the garage and parking screens, the camper's screen and its sleepers (CamperClient), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
+├── client/               car and trailer renderers and models (with the plates' numbers, PlateMounts, liveries, LiveryMounts, dirt and snow, CarGrime, the crash damage that CarWreck draws, and the wipers and raindrops on the windshield, Wipers), the car wash's brushes and the wash bay's hoses, traffic cones' and race flags' numbers, the race stopwatch, dashboard, pump, workbench, repair bench, mailbox, meter, toll, insurance, impound, rental, DMV, tuning bench, race control, ice cream, road sign and tanker screens, the speed sign's number, the radio's screen and RadioPlayer (which plays every radio in earshot), the GPS (GpsClient, its screen and panel, and GpsXaero for Xaero's Minimap), the bus stop's screen and lettering, the garage doors (GarageDoorRenderer) and the garage and parking screens, the camper's screen and its sleepers (CamperClient), the toll gate's arm, pump display, engine, siren and alarm sounds, keys
 ├── gametest/             in-game tests
 └── dev/                  the showcases and the multiplayer play test (dev only, not in the jar)
 blockbench/               the car, motorcycle, truck and trailer models (Blockbench projects)
 tools/guidebook/          the Car Manual's writer (book.py) and its pictures' cropper (pictures.py)
 tools/garage/             draws the garage doors' textures and writes their block states, models, loot tables and recipes (assets.py)
+tools/damage/             draws the Car Window and Car Light items and writes their models and recipes (assets.py)
 src/xaeroStubs/java/       compile-time stand-ins for the few classes of Xaero's Minimap the GPS uses (not in the jar)
 ```
 

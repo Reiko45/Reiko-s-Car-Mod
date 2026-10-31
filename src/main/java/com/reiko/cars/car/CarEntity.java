@@ -212,6 +212,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
     private double brakeWork;
     private double skidWork;
     private double crashImpact;
+    /** Where the hardest crash since the last report hit: radians round from straight ahead, positive to the car's left. */
+    private float crashAngle;
     private int squealCooldown;
     // Tilted nose-up on a wrecker's wheel-lift (client and server both work it out).
     private float towPitch;
@@ -380,7 +382,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             tellDriver(Component.translatable("car.reikocars.broke_down." + brokeNow.id()));
             return;
         }
-        for (Part part : Part.values()) {
+        for (Part part : Part.WEAR) {
             CarCondition.Level was = before.level(part);
             CarCondition.Level now = newCondition.level(part);
             if (now.ordinal() > was.ordinal() && now != CarCondition.Level.BROKEN) {
@@ -436,10 +438,14 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return Component.translatable("car.reikocars.trailer_broke_down." + (trailers == null ? Part.BODY : trailers).id());
     }
 
-    /** A car has every part, but an electric one has no oil to change. */
+    /** A car has every part, but an electric one has no oil to change, and a motorcycle no windows. */
     @Override
     public boolean hasPart(Part part) {
-        return part != Part.OIL || !type.isElectric();
+        return switch (part) {
+            case OIL -> !type.isElectric();
+            case GLASS -> !type.isBike();
+            default -> true;
+        };
     }
 
     @Override
@@ -534,10 +540,11 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         if (!crash && (tickCount % 20 != 0 || (brakeWork <= 0.0 && skidWork <= 0.0))) {
             return null;
         }
-        float[] report = {(float) brakeWork, (float) skidWork, (float) (crash ? crashImpact : 0.0)};
+        float[] report = {(float) brakeWork, (float) skidWork, (float) (crash ? crashImpact : 0.0), crashAngle};
         brakeWork = 0.0;
         skidWork = 0.0;
         crashImpact = 0.0;
+        crashAngle = 0.0F;
         return report;
     }
 
@@ -547,8 +554,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
      * @param brakeSpeed speed the brakes took off, in blocks per tick, summed
      * @param skidSpeed speed taken off with the wheels locked
      * @param impact the hardest crash, in blocks per tick (0 for none)
+     * @param angle where it hit, in radians round from straight ahead, positive to the car's left
      */
-    public void applyWearReport(ServerPlayer from, float brakeSpeed, float skidSpeed, float impact) {
+    public void applyWearReport(ServerPlayer from, float brakeSpeed, float skidSpeed, float impact, float angle) {
         if (getControllingPassenger() != from || isPassenger()) {
             return;
         }
@@ -572,7 +580,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
         if (impact > 0.0F && tickCount - lastCrashReport >= REPORT_INTERVAL) {
             lastCrashReport = tickCount;
-            crash(Math.min(impact, type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * 1.6));
+            crash(Math.min(impact, type.topSpeed * CarsConfig.get(CarsConfig.SPEED) * 1.6), angle);
         }
     }
 
@@ -595,14 +603,25 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return type.isElectric() ? ModSounds.EV_READY.get() : ModSounds.ENGINE_START.get();
     }
 
-    /** The car hit something at {@code impact} blocks per tick: dents its body (and its engine, if hard), with a bang. */
+    /** A head-on crash: see {@link #crash(double, double)}. */
     public void crash(double impact) {
+        crash(impact, 0.0);
+    }
+
+    /**
+     * The car hit something at {@code impact} blocks per tick, {@code angle} radians round from straight ahead (positive
+     * to its left, a half turn its back): dents its body (and its engine, if hard) on that side, maybe cracks its glass
+     * and smashes its lamps there, with a bang.
+     */
+    public void crash(double impact, double angle) {
         if (impact <= CarCondition.CRASH_THRESHOLD) {
             return;
         }
         double damage = CarsConfig.get(CarsConfig.CRASH_DAMAGE);
         if (damage > 0.0) {
-            setCondition(condition.afterCrash(impact, damage));
+            CarCondition after = condition.afterCrash(impact, damage);
+            setCondition(after.withDamage(after.damage().afterCrash(impact * Math.min(1.0, damage), angle, condition.body() - after.body(),
+                    type.isBike(), random)));
         }
         TrailerEntity towed = trailer();
         if (towed != null) {
@@ -611,8 +630,9 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         level().playSound(null, getX(), getY(), getZ(), SoundEvents.ZOMBIE_ATTACK_IRON_DOOR, SoundSource.NEUTRAL,
                 (float) Math.min(1.2, 0.3 + impact), 0.7F + (float) Math.min(0.3, impact * 0.2));
         if (level() instanceof ServerLevel server) {
-            Vec3 nose = position().add(forward().scale(Math.signum(speed == 0 ? 1 : speed) * type.length * 0.45));
-            server.sendParticles(ParticleTypes.CRIT, nose.x, getY() + type.height * 0.4, nose.z, (int) (6 + impact * 12),
+            // Sparks where it hit.
+            Vec3 at = position().add(forward().scale(Math.cos(angle) * type.length * 0.45)).add(left().scale(Math.sin(angle) * type.width * 0.45));
+            server.sendParticles(ParticleTypes.CRIT, at.x, getY() + type.height * 0.4, at.z, (int) (6 + impact * 12),
                     type.width * 0.3, 0.2, type.width * 0.3, 0.2);
         }
     }
@@ -1618,6 +1638,7 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
             }
             drive();
             Vec3 before = position();
+            Vec3 intended = getDeltaMovement().add(pivotShift);
             boolean endsWereClear = !endsBlocked();
             TrailerEntity towing = trailer();
             boolean trailerWasClear = towing == null || !towing.blockedAt(new TrailerEntity.Pose(towing.position(), towing.getYRot()));
@@ -1627,13 +1648,13 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
                     && towing.blockedAt(towing.poseBehind(hitchPoint(), getYRot()))) {
                 // A long vehicle's nose or tail ran into a wall, or its trailer did: stop it there, as its hitbox alone
                 // wouldn't.
-                noteImpact(Math.abs(speed));
+                noteImpact(Math.abs(speed), speed >= 0.0 ? 0.0F : Mth.PI);
                 setPos(before.x, getY(), before.z);
                 setYRot(yawBefore);
                 speed = 0.0;
                 setDeltaMovement(0.0, getDeltaMovement().y, 0.0);
             }
-            afterMove(before);
+            afterMove(before, intended);
         } else {
             setDeltaMovement(Vec3.ZERO);
         }
@@ -1735,6 +1756,8 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         double turnFactor = Mth.clamp(pace / 0.15, 0.0, 1.0) * (1.0 - 0.35 * Math.min(1.0, pace / type.topSpeed));
         float turn = (float) (steering * type.turnRate * tuned.turning() * turnFactor * Math.signum(speed) * (onGround() ? 1.0 : 0.2)
                 * (0.75 + 0.25 * tires)); // bald tires don't bite into the turn
+        // A car bent on one side pulls that way, and the driver has to hold it straight.
+        turn += (float) (wear.damage().pull() * turnFactor * Math.signum(speed) * (onGround() ? 1.0 : 0.0));
         Vec3 pivotBefore = forward().scale(-type.pivotBack());
         setYRot(getYRot() - turn);
         pivotShift = type.pivotBack() > 0.0 ? pivotBefore.subtract(forward().scale(-type.pivotBack())) : Vec3.ZERO;
@@ -1768,11 +1791,21 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         }
     }
 
-    /** The car ran into something this tick at {@code impact} blocks per tick: reported to the server. */
-    private void noteImpact(double impact) {
-        if (level().isClientSide && getControllingPassenger() instanceof Player) {
-            crashImpact = Math.max(crashImpact, impact);
+    /**
+     * The car ran into something this tick at {@code impact} blocks per tick, {@code angle} radians round from straight
+     * ahead (positive to its left): reported to the server.
+     */
+    private void noteImpact(double impact, float angle) {
+        if (level().isClientSide && getControllingPassenger() instanceof Player && impact > crashImpact) {
+            crashImpact = impact;
+            crashAngle = angle;
         }
+    }
+
+    /** The way to the car's left, level. */
+    public Vec3 left() {
+        float radians = getYRot() * Mth.DEG_TO_RAD;
+        return new Vec3(Mth.cos(radians), 0.0, Mth.sin(radians));
     }
 
     /** Stops the car where it is, for when it's carried or moved. */
@@ -1804,12 +1837,19 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return false;
     }
 
-    /** Hitting a wall stops the car instead of leaving it pushing forever at full speed. */
-    private void afterMove(Vec3 before) {
+    /**
+     * Hitting a wall stops the car instead of leaving it pushing forever at full speed. Where it hit is the way it was
+     * stopped from going: the movement it lost, seen from the car.
+     */
+    private void afterMove(Vec3 before, Vec3 intended) {
         if (horizontalCollision) {
-            double along = position().subtract(before).dot(forward());
+            Vec3 moved = position().subtract(before);
+            double along = moved.dot(forward());
             if (Math.abs(along) < Math.abs(speed)) {
-                noteImpact(Math.abs(speed) - Math.abs(along));
+                Vec3 lost = new Vec3(intended.x - moved.x, 0.0, intended.z - moved.z);
+                float angle = lost.lengthSqr() < 1.0E-6 ? (speed >= 0.0 ? 0.0F : Mth.PI)
+                        : (float) Mth.atan2(lost.dot(left()), lost.dot(forward()));
+                noteImpact(Math.abs(speed) - Math.abs(along), angle);
                 speed = along;
             }
         }
@@ -1987,7 +2027,32 @@ public class CarEntity extends VehicleEntity implements Repairable, Keyed {
         return along == 0.0 ? moved : along;
     }
 
+    /** Below this, the engine smokes while it runs (and a dead one with someone trying to start it). */
+    static final float SMOKES_BELOW = 0.35F;
+
+    /** Smoke from under the hood, thicker and darker the worse the engine is. Client side. */
+    private void smokeFromEngine() {
+        float engine = condition().engine();
+        if (engine >= SMOKES_BELOW || isPassenger() || !(isEngineRunning() || (engine <= 0.0F && getControllingPassenger() != null))) {
+            return;
+        }
+        float badness = 1.0F - engine / SMOKES_BELOW; // 0 just hurt, 1 dead
+        if (random.nextFloat() > 0.25F + 0.75F * badness) {
+            return;
+        }
+        Vec3 hood = position().add(forward().scale(type.length / 2.0 - Math.min(0.9, type.length * 0.18)))
+                .add(left().scale((random.nextDouble() - 0.5) * type.width * 0.5));
+        double y = getY() + type.height * (type.isBike() ? 0.35 : 0.6);
+        Vec3 drift = getDeltaMovement().scale(0.4);
+        level().addParticle(badness > 0.55F ? ParticleTypes.LARGE_SMOKE : ParticleTypes.SMOKE, hood.x, y, hood.z, drift.x,
+                0.03 + 0.04 * badness, drift.z);
+        if (badness > 0.85F && random.nextInt(3) == 0) {
+            level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, hood.x, y, hood.z, drift.x * 0.5, 0.02, drift.z * 0.5);
+        }
+    }
+
     private void clientTick() {
+        smokeFromEngine();
         Vec3 delta = position().subtract(xo, yo, zo);
         measuredSpeed = delta.dot(forward());
         wheelAngleO = wheelAngle;

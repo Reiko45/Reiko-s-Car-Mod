@@ -247,7 +247,7 @@ public final class CarHud implements LayeredDraw.Layer {
         int lightsX = x + (WIDTH - (LIGHT_SPACING * (LIGHTS.length - 1) + 9)) / 2;
         int lightsY = y + 38 + (fireTruck ? WATER_ROW : 0);
         boolean flash = (minecraft.player.tickCount / 5) % 2 == 0;
-        for (Part part : Part.values()) {
+        for (Part part : Part.WEAR) {
             if (car.hasPart(part)) { // (an electric car has no oil light)
                 drawLight(graphics, LIGHTS[part.ordinal()], lightsX + part.ordinal() * LIGHT_SPACING, lightsY, lightColor(condition.level(part), flash));
             }
@@ -259,7 +259,7 @@ public final class CarHud implements LayeredDraw.Layer {
             // The trailer's own row: a trailer, then its tires, brakes and body under the car's.
             CarCondition trailerWear = towed.condition();
             drawLight(graphics, TRAILER, lightsX, lightsY + TRAILER_ROW, 0x90FFFFFF);
-            for (Part part : Part.values()) {
+            for (Part part : Part.WEAR) {
                 if (towed.hasPart(part)) {
                     drawLight(graphics, LIGHTS[part.ordinal()], lightsX + part.ordinal() * LIGHT_SPACING, lightsY + TRAILER_ROW,
                             lightColor(trailerWear.level(part), flash));

@@ -129,6 +129,10 @@ public final class ModItems {
     public static final DeferredItem<Item> BRAKE_PADS = ITEMS.registerSimpleItem("brake_pads", new Item.Properties().stacksTo(16));
     /** A fifth of a body repair. */
     public static final DeferredItem<Item> BODY_PANEL = ITEMS.registerSimpleItem("body_panel");
+    /** A new window for a car: the windshield, the back window or a side window, cracked or shattered. */
+    public static final DeferredItem<Item> CAR_WINDOW = ITEMS.registerSimpleItem("car_window", new Item.Properties().stacksTo(16));
+    /** A new lamp cluster: a headlight or a taillight, with its turn signal. */
+    public static final DeferredItem<Item> CAR_LIGHT = ITEMS.registerSimpleItem("car_light", new Item.Properties().stacksTo(16));
 
     public static final DeferredItem<BlockItem> GARAGE_DOOR = ITEMS.registerSimpleBlockItem(ModBlocks.GARAGE_DOOR);
     public static final DeferredItem<BlockItem> ROLLER_SHUTTER = ITEMS.registerSimpleBlockItem(ModBlocks.ROLLER_SHUTTER);

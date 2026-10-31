@@ -274,15 +274,15 @@ public final class RepairService {
         }
 
         int fitted = 0;
-        int bodyWork = 0;
+        long crashWork = 0;
         for (Part part : Part.values()) {
             int count = counts[part.ordinal()];
             if (count > 0) {
                 int taken = bench.take(part, count);
                 condition = RepairJobs.fit(part, car, condition, taken);
                 fitted += taken;
-                if (part == Part.BODY) {
-                    bodyWork = taken;
+                if (part == Part.BODY || part == Part.GLASS || part == Part.LIGHTS) {
+                    crashWork += taken * bench.price(part);
                 }
             }
         }
@@ -293,9 +293,9 @@ public final class RepairService {
         }
         if (!free) {
             bench.recordJob(total);
-            if (bodyWork > 0 && car instanceof CarEntity insured) {
-                // Crash damage: an insurance claim, paid back to whoever paid the bill.
-                com.reiko.cars.insurance.InsuranceService.claim(player, insured, bodyWork * bench.price(Part.BODY));
+            if (crashWork > 0 && car instanceof CarEntity insured) {
+                // Crash damage (the body, the glass and the lamps): an insurance claim, paid back to whoever paid the bill.
+                com.reiko.cars.insurance.InsuranceService.claim(player, insured, crashWork);
             }
         }
         finished(bench, car);

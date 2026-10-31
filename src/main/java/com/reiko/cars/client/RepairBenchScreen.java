@@ -29,13 +29,14 @@ import org.jetbrains.annotations.Nullable;
 public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
     private static final int WIDTH = 194;
     private static final int TABS_ROW = 16;
-    private static final int ROW_HEIGHT = 18;
+    /** A part's row: its icon, name and bar, with the Fit and shop buttons beside them (seven rows, so they're snug). */
+    private static final int ROW_HEIGHT = 16;
     private static final int BAR_WIDTH = 62;
     private static final int FIT_X = 96;
     private static final int SHOP_X = 130;
     private static final int SHOP_WIDTH = 56;
     private static final int PIN_X = WIDTH - 8 - 34;
-    private static final int FEEDBACK_LINES = 3;
+    private static final int FEEDBACK_LINES = 2;
     private static final Part[] PARTS = Part.values();
 
     /** A price change reopens the screen: on the Prices tab, if it's the same bench. */
@@ -62,29 +63,29 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
     private Button freeButton;
 
     public RepairBenchScreen(RepairBenchMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title, WIDTH, menu.isManager() ? 237 : 225);
+        super(menu, inventory, title, WIDTH, menu.isManager() ? 238 : 228);
         this.top = menu.isManager() ? 30 : 18;
     }
 
     private int partsRow() {
-        return top + 12;
+        return top + 10;
     }
 
     private int totalRow() {
-        return partsRow() + PARTS.length * ROW_HEIGHT + 3;
+        return partsRow() + PARTS.length * ROW_HEIGHT + 2;
     }
 
     private int cardRow() {
-        return totalRow() + 12;
+        return totalRow() + 11;
     }
 
     /** Cash on hand, with the PIN box beside it. */
     private int cashRow() {
-        return cardRow() + 12;
+        return cardRow() + 11;
     }
 
     private int payRow() {
-        return cashRow() + 20;
+        return cashRow() + 18;
     }
 
     private int feedbackRow() {
@@ -109,11 +110,11 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
             int i = part.ordinal();
             int y = topPos + partsRow() + i * ROW_HEIGHT;
             fitButtons[i] = addRenderableWidget(Button.builder(Component.translatable("gui.reikocars.fit"), button -> fit(part))
-                    .bounds(leftPos + FIT_X, y + 1, 30, 16).build());
+                    .bounds(leftPos + FIT_X, y + 1, 30, 14).build());
             shopButtons[i] = addRenderableWidget(Button.builder(Component.empty(), button -> {
                 chosen[i] = !chosen[i];
                 updateButtons();
-            }).bounds(leftPos + SHOP_X, y + 1, SHOP_WIDTH, 16).build());
+            }).bounds(leftPos + SHOP_X, y + 1, SHOP_WIDTH, 14).build());
 
             int priceY = topPos + top + 14 + i * 22;
             priceBoxes[i] = addRenderableWidget(new EditBox(font, leftPos + 108, priceY + 1, 46, 16, Component.translatable("gui.reikocars.price")));
@@ -306,9 +307,8 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
             boolean hasCar = menu.hasTarget();
             for (Part part : PARTS) {
                 int y = topPos + partsRow() + part.ordinal() * ROW_HEIGHT;
-                drawSlot(graphics, leftPos + 8, y + 1);
                 if (hasCar && menu.hasPart(part)) {
-                    drawBar(graphics, leftPos + 28, y + 12, condition.get(part), barColor(condition.level(part)));
+                    drawBar(graphics, leftPos + 28, y + 11, menu.value(part), barColor(CarCondition.Level.of(menu.value(part))));
                 }
             }
             if (!menu.isOwner()) {
@@ -388,15 +388,16 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
         }
         for (Part part : PARTS) {
             int y = partsRow() + part.ordinal() * ROW_HEIGHT;
-            graphics.renderFakeItem(new ItemStack(RepairJobs.item(part)), 8, y + 1);
+            graphics.renderFakeItem(new ItemStack(RepairJobs.item(part)), 8, y);
             boolean present = !hasCar || menu.hasPart(part);
-            graphics.drawString(font, part.displayName(), 28, y + 2, present ? LABEL_COLOR : MUTED_COLOR, false);
+            graphics.drawString(font, part.displayName(), 28, y + 1, present ? LABEL_COLOR : MUTED_COLOR, false);
             if (hasCar && !present) {
-                graphics.drawString(font, Component.translatable("gui.reikocars.part_none"), 28, y + 11, MUTED_COLOR, false);
+                Component none = Component.translatable("gui.reikocars.part_none");
+                graphics.drawString(font, none, 28 + BAR_WIDTH - font.width(none), y + 1, MUTED_COLOR, false);
             } else if (hasCar) {
-                CarCondition.Level level = condition.level(part);
-                String percent = CarCondition.percent(condition.get(part));
-                graphics.drawString(font, percent, 28 + BAR_WIDTH - font.width(percent), y + 2, textColor(level), false);
+                CarCondition.Level level = CarCondition.Level.of(menu.value(part));
+                String percent = CarCondition.percent(menu.value(part));
+                graphics.drawString(font, percent, 28 + BAR_WIDTH - font.width(percent), y + 1, textColor(level), false);
             }
         }
         for (Button button : shopButtons) {
@@ -413,7 +414,11 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
         graphics.drawString(font, totalLine, 8, totalRow(), LABEL_COLOR, false);
         if (!menu.isOwner() && menu.insured()) {
             // Crash damage is claimed back from the car's insurance once it's paid for.
-            long back = chosen[Part.BODY.ordinal()] ? menu.insurancePayout(benchJob(Part.BODY) * menu.price(Part.BODY)) : 0;
+            long crash = 0;
+            for (Part part : new Part[] {Part.BODY, Part.GLASS, Part.LIGHTS}) {
+                crash += chosen[part.ordinal()] ? benchJob(part) * menu.price(part) : 0;
+            }
+            long back = crash > 0 ? menu.insurancePayout(crash) : 0;
             Component claim = back > 0 ? Component.translatable("gui.reikocars.insurance_pays", format(back))
                     : Component.translatable("gui.reikocars.insured_car");
             graphics.drawString(font, claim, imageWidth - 8 - font.width(claim), totalRow(), 0x1B7A2B, false);
@@ -434,7 +439,7 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
     private void renderStock(GuiGraphics graphics) {
         graphics.drawString(font, fit(Component.translatable("gui.reikocars.stock_label"), imageWidth - 16), 8, top + 1, LABEL_COLOR, false);
         // How many of each part, under the slots.
-        int x = RepairBenchMenu.STOCK_X;
+        int x = 8;
         int y = RepairBenchMenu.STOCK_Y + 38;
         for (Part part : PARTS) {
             var pose = graphics.pose();
@@ -444,7 +449,7 @@ public final class RepairBenchScreen extends ShopScreenBase<RepairBenchMenu> {
             graphics.renderFakeItem(new ItemStack(RepairJobs.item(part)), 0, 0);
             pose.popPose();
             graphics.drawString(font, "×" + menu.stock(part), x + 13, y + 3, LABEL_COLOR, false);
-            x += 34;
+            x += 25;
         }
         graphics.drawString(font, playerInventoryTitle, RepairBenchMenu.STOCK_X, RepairBenchMenu.INVENTORY_Y - 10, LABEL_COLOR, false);
     }

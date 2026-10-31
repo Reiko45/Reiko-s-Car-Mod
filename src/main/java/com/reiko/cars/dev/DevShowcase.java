@@ -182,6 +182,8 @@ public final class DevShowcase {
             rigCameraScript();
         } else if (MODE.equals("garages")) {
             garageScript();
+        } else if (MODE.equals("damage")) {
+            damageScript();
         } else if (MODE.startsWith("gallery")) {
             galleryScript(MODE.contains(":") ? MODE.substring(MODE.indexOf(':') + 1) : "");
         } else {
@@ -4026,6 +4028,112 @@ public final class DevShowcase {
         at(478, mc -> look(mc, 5.6, -59.1, -1.5, -90.0F, 14.0F));
         at(500, mc -> shot(mc, "342_bus_stop_sign_night"));
         at(508, mc -> mc.stop());
+    }
+
+    // ---- crash damage: ./gradlew runClient -Pshowcase=damage ----
+
+    /** A {@code type} at (x, z), facing {@code yaw}, with crash damage {@code damage} and its engine at {@code engine}. */
+    private static CarEntity wreck(ServerLevel level, ServerPlayer owner, CarType type, double x, double z, float yaw, float engine,
+                                   com.reiko.cars.car.CarDamage damage) {
+        CarEntity car = spawned(level, type, x, z, yaw, 0.8);
+        car.setOwner(owner);
+        float body = 1.0F - Math.min(0.95F, damage.worstDent() * 0.5F);
+        car.setCondition(new com.reiko.cars.car.CarCondition(1.0F, engine, 1.0F, 1.0F, body, damage));
+        return car;
+    }
+
+    private static void damageScript() {
+        at(20, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            server(mc, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setDayTime(5000);
+                level.getGameRules().getRule(net.minecraft.world.level.GameRules.RULE_DAYLIGHT).set(false, level.getServer());
+                for (int x = -10; x <= 40; x++) {
+                    for (int z = -12; z <= 12; z++) {
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), ModBlocks.ASPHALT.get().defaultBlockState());
+                    }
+                }
+                com.reiko.cars.car.CarDamage none = com.reiko.cars.car.CarDamage.NONE;
+                // A head-on crash: the front crumpled, the windshield cracked, both headlights smashed, the engine smoking.
+                wreck(level, player, CarType.SEDAN, 0.5, 0.5, 0.0F, 0.12F, none.withDent(com.reiko.cars.car.CarDamage.Zone.FRONT, 0.9F)
+                        .withWindow(com.reiko.cars.car.CarDamage.WINDSHIELD, com.reiko.cars.car.CarDamage.CRACKED)
+                        .withLight(com.reiko.cars.car.CarDamage.FRONT_RIGHT, true));
+                // A side swipe: the left side caved in, its window shattered, a taillight gone.
+                wreck(level, player, CarType.SEDAN, 6.5, 0.5, 0.0F, 1.0F, none.withDent(com.reiko.cars.car.CarDamage.Zone.LEFT, 0.85F)
+                        .withWindow(com.reiko.cars.car.CarDamage.LEFT_WINDOW, com.reiko.cars.car.CarDamage.SHATTERED)
+                        .withLight(com.reiko.cars.car.CarDamage.REAR_LEFT, true));
+                // Rear-ended: the back crumpled and its window shattered, the taillights smashed.
+                wreck(level, player, CarType.PICKUP_TRUCK, 12.5, 0.5, 0.0F, 1.0F, none.withDent(com.reiko.cars.car.CarDamage.Zone.REAR, 0.8F)
+                        .withWindow(com.reiko.cars.car.CarDamage.BACK_WINDOW, com.reiko.cars.car.CarDamage.SHATTERED)
+                        .withLight(com.reiko.cars.car.CarDamage.REAR_LEFT, true).withLight(com.reiko.cars.car.CarDamage.REAR_RIGHT, true));
+                // A fender bender: a light dent and a cracked windshield.
+                wreck(level, player, CarType.SPORTS_CAR, 18.5, 0.5, 0.0F, 1.0F, none.withDent(com.reiko.cars.car.CarDamage.Zone.FRONT, 0.3F)
+                        .withWindow(com.reiko.cars.car.CarDamage.WINDSHIELD, com.reiko.cars.car.CarDamage.CRACKED)
+                        .withLight(com.reiko.cars.car.CarDamage.FRONT_RIGHT, true));
+                // A wrecked bus front, and a bent motorcycle.
+                wreck(level, player, CarType.CITY_BUS, 26.5, 0.5, 0.0F, 0.3F, none.withDent(com.reiko.cars.car.CarDamage.Zone.FRONT, 0.7F)
+                        .withDent(com.reiko.cars.car.CarDamage.Zone.RIGHT, 0.5F)
+                        .withWindow(com.reiko.cars.car.CarDamage.WINDSHIELD, com.reiko.cars.car.CarDamage.SHATTERED));
+                wreck(level, player, CarType.SPORT_BIKE, 33.5, 0.5, 0.0F, 1.0F, none.withDent(com.reiko.cars.car.CarDamage.Zone.FRONT, 0.8F)
+                        .withLight(com.reiko.cars.car.CarDamage.FRONT_LEFT, true).withLight(com.reiko.cars.car.CarDamage.FRONT_RIGHT, true));
+                // And one untouched, to compare.
+                spawned(level, CarType.SEDAN, -5.5, 0.5, 0.0F, 0.8).setOwner(player);
+                level.setBlockAndUpdate(new BlockPos(3, -60, -4), ModBlocks.REPAIR_BENCH.get().defaultBlockState()
+                        .setValue(RepairBenchBlock.FACING, Direction.SOUTH));
+                EconomyService.INSTANCE.ensureAccount(player.server, player.getUUID(), player.getGameProfile().getName());
+                Purse.give(player, 5_000);
+                player.setGameMode(GameType.CREATIVE);
+            });
+        });
+        // The line-up from the front, then from the back
+        at(60, mc -> look(mc, 14.0, -57.6, 12.0, 180.0F, 14.0F));
+        at(84, mc -> shot(mc, "370_damage_front"));
+        at(86, mc -> look(mc, 14.0, -57.6, -11.5, 0.0F, 14.0F));
+        at(110, mc -> shot(mc, "371_damage_back"));
+        // Close up: the head-on crash, the side swipe, the rear end, the bus
+        at(112, mc -> look(mc, 2.6, -58.6, 5.2, 155.0F, 16.0F));
+        at(132, mc -> shot(mc, "372_damage_head_on"));
+        at(134, mc -> look(mc, 10.2, -58.8, 2.4, 105.0F, 10.0F));
+        at(154, mc -> shot(mc, "373_damage_side"));
+        at(156, mc -> look(mc, 14.4, -58.6, -4.6, 25.0F, 18.0F));
+        at(176, mc -> shot(mc, "374_damage_rear"));
+        at(178, mc -> look(mc, 29.5, -57.8, 9.5, 160.0F, 12.0F));
+        at(198, mc -> shot(mc, "375_damage_bus"));
+        // Inside the head-on car: the cracked windshield, and smoke from the hood
+        at(200, mc -> server(mc, player -> {
+            player.setGameMode(GameType.SURVIVAL);
+            player.getAbilities().flying = false;
+            player.onUpdateAbilities();
+            player.startRiding(carAt(player.serverLevel(), 0.5, 0.5), true);
+        }));
+        at(204, mc -> {
+            mc.options.hideGui = false;
+            mc.player.setXRot(4.0F);
+        });
+        at(230, mc -> shot(mc, "376_damage_windshield"));
+        // At night, from in front: one car's headlights gone, the engine smoking
+        at(232, mc -> {
+            mc.options.hideGui = true;
+            mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+            server(mc, player -> player.serverLevel().setDayTime(18_000));
+        });
+        at(262, mc -> shot(mc, "377_damage_night"));
+        // The repair bench: seven parts now
+        at(264, mc -> {
+            mc.options.setCameraType(CameraType.FIRST_PERSON);
+            mc.options.hideGui = false;
+            server(mc, player -> {
+                player.stopRiding();
+                player.serverLevel().setDayTime(5000);
+                player.teleportTo(player.serverLevel(), 2.5, -60.0, -2.5, 180.0F, 30.0F);
+            });
+        });
+        at(270, mc -> server(mc, player -> com.reiko.cars.repair.RepairBenchMenu.open(player,
+                (com.reiko.cars.repair.RepairBenchBlockEntity) player.level().getBlockEntity(new BlockPos(3, -60, -4)))));
+        at(290, mc -> shot(mc, "378_damage_bench"));
+        at(296, mc -> mc.stop());
     }
 
     // ---- garages: ./gradlew runClient -Pshowcase=garages ----

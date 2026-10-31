@@ -90,6 +90,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.ENGINE_PARTS.get());
                 output.accept(ModItems.BRAKE_PADS.get());
                 output.accept(ModItems.BODY_PANEL.get());
+                output.accept(ModItems.CAR_WINDOW.get());
+                output.accept(ModItems.CAR_LIGHT.get());
                 for (CarType type : CarType.values()) {
                     for (CarPart part : CarPart.values()) {
                         output.accept(ModItems.part(type, part));

@@ -2,7 +2,7 @@
   "name": "Dirt and Car Washes",
   "icon": "reikocars:car_wash",
   "category": "reikocars:care",
-  "sortnum": 2,
+  "sortnum": 3,
   "pages": [
     {
       "type": "patchouli:text",

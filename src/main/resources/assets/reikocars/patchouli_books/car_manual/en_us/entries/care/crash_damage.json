@@ -1,0 +1,49 @@
+{
+  "name": "Crash Damage",
+  "icon": "reikocars:car_window",
+  "category": "reikocars:care",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A crash shows where it hit: the front crumples, a side caves in, the back gets dented, and the paint scrapes off there. The harder the hit, the worse it gets: the glass nearest it $(l)cracks$(), then $(l)shatters$(), and the lamps there get smashed."
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/crash_head_on.png"
+      ],
+      "border": true,
+      "text": "Head on: the hood crumpled, the windshield in pieces, both headlights out."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "It's not only looks:$(li)Smashed headlights don't light the road; with one left it's dimmer$(li)A smashed lamp's turn signal stops blinking$(li)A car bent badly on one side $(4)pulls$() toward it$(li)An engine worn below about a third smokes from under the hood"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/crash_side.png"
+      ],
+      "border": true,
+      "text": "Hit on the left: that side caved in, its window shattered."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Fix it all at a $(l:care/repair_bench)Repair Bench$(/l):$(li)$(item)Body Panel$()s take the dents out as they mend the body$(li)a $(item)Car Window$() mends one window, the shattered ones first$(li)a $(item)Car Light$() puts back one smashed lamp$(br2)$(l:business/insurance)Insurance$(/l) pays for crash damage, glass and lamps too."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:car_window",
+      "recipe2": "reikocars:car_light"
+    },
+    {
+      "type": "patchouli:image",
+      "images": [
+        "reikocars:textures/gui/guide/crash_night.png"
+      ],
+      "border": true,
+      "text": "One headlight left, and a smoking engine."
+    }
+  ]
+}

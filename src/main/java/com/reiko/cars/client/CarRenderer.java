@@ -32,6 +32,7 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
     private final CarGlass glass;
     private final CarGrime grime;
     private final CarGrime snowCover;
+    private final CarWreck wreck;
     @org.jetbrains.annotations.Nullable
     private final Wipers wipers;
     private final Font font;
@@ -48,6 +49,7 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         this.glass = new CarGlass(texture);
         this.grime = new CarGrime(texture, glass);
         this.snowCover = new CarGrime(texture, glass, true);
+        this.wreck = new CarWreck(texture, glass, model, type);
         this.wipers = type.isBike() ? null : new Wipers(model, glass, texture);
         this.font = context.getFont();
         this.plates = PlateMounts.of(type.id());
@@ -70,10 +72,14 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         if (hurt > 0.0F) {
             poseStack.mulPose(Axis.XP.rotationDegrees(Mth.sin(hurt) * hurt * damage / 40.0F * car.getHurtDir()));
         }
-        drawPlates(car, poseStack, buffers, light);
+        boolean wrecked = wreck.setup(car);
+        drawPlates(car, poseStack, buffers, light, wrecked);
         drawLivery(car, poseStack, buffers, light);
         poseStack.scale(-1.0F, -1.0F, 1.0F);
         poseStack.translate(0.0F, -1.501F, 0.0F);
+        if (wrecked) {
+            wreck.pose(new org.joml.Matrix4f(poseStack.last().pose()));
+        }
 
         model.pose(car.wheelAngle(partialTick), car.steerAngle(partialTick));
         model.poseWork(car.bedTilt(partialTick) * WorkVehicles.TIP_DEGREES * Mth.DEG_TO_RAD, car.drumSpin(partialTick));
@@ -83,22 +89,30 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         }
         int overlay = OverlayTexture.NO_OVERLAY;
         RenderType solid = RenderType.entityCutoutNoCull(texture);
-        model.renderBody(poseStack, buffers.getBuffer(solid), light, overlay, 0xFF000000 | car.color());
-        glass.draw(buffers, solid, consumer -> model.renderTrim(poseStack, consumer, light, overlay));
+        // Crash damage (see CarWreck): every pass bends the model the same way, all but the wheels.
+        model.renderBody(poseStack, bent(wrecked, buffers.getBuffer(solid), CarWreck.SOLID), light, overlay, 0xFF000000 | car.color());
+        glass.draw(buffers, solid, consumer -> model.renderTrim(poseStack, bent(wrecked, consumer, CarWreck.SOLID), consumer, light, overlay));
+        if (wrecked) {
+            // Its scrapes, and its cracked and shattered windows.
+            wreck.drawOverlays(buffers, consumer -> {
+                model.renderBody(poseStack, consumer, light, overlay, 0xFFFFFFFF);
+                model.renderTrim(poseStack, consumer, CarWreck.SINK, light, overlay);
+            });
+        }
         float dirt = car.dirt();
         if (dirt > 0.0F) {
             // Its dirt, over the paint and trim.
             grime.draw(dirt, car.carType().height, new org.joml.Matrix4f(poseStack.last().pose()), buffers, consumer -> {
-                model.renderBody(poseStack, consumer, light, overlay, 0xFFFFFFFF);
-                model.renderTrim(poseStack, consumer, light, overlay);
+                model.renderBody(poseStack, bent(wrecked, consumer, CarWreck.SOLID), light, overlay, 0xFFFFFFFF);
+                model.renderTrim(poseStack, bent(wrecked, consumer, CarWreck.SOLID), consumer, light, overlay);
             });
         }
         float snow = car.snow();
         if (snow > 0.0F) {
             // Snow on its roof, hood and trunk (off the glass while the engine runs: the wipers and heater see to that).
             snowCover.draw(snow, car.carType().height, new org.joml.Matrix4f(poseStack.last().pose()), buffers, car.isEngineRunning(), consumer -> {
-                model.renderBody(poseStack, consumer, light, overlay, 0xFFFFFFFF);
-                model.renderTrim(poseStack, consumer, light, overlay);
+                model.renderBody(poseStack, bent(wrecked, consumer, CarWreck.SOLID), light, overlay, 0xFFFFFFFF);
+                model.renderTrim(poseStack, bent(wrecked, consumer, CarWreck.SOLID), consumer, light, overlay);
             });
         }
         if (wipers != null) {
@@ -106,13 +120,19 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         }
         boolean lit = car.isEngineRunning() || car.lightsFlashing() || (car.alarmOn() && CarSignals.blinkOn(car));
         if (lit) {
-            model.renderLights(poseStack, buffers.getBuffer(RenderType.entityTranslucentEmissive(texture)), LightTexture.FULL_BRIGHT, overlay);
+            model.renderLights(poseStack, bent(wrecked, buffers.getBuffer(RenderType.entityTranslucentEmissive(texture)), CarWreck.LAMPS_LIT),
+                    LightTexture.FULL_BRIGHT, overlay);
+            if (wrecked && wreck.heldLamps()) {
+                // The smashed ones, dark.
+                glass.draw(buffers, solid, consumer -> wreck.replayLamps(consumer, light));
+            }
         } else {
-            glass.draw(buffers, solid, consumer -> model.renderLights(poseStack, consumer, light, overlay));
+            glass.draw(buffers, solid, consumer -> model.renderLights(poseStack, bent(wrecked, consumer, CarWreck.LAMPS_OFF), light, overlay));
         }
         for (boolean left : new boolean[] {true, false}) {
             if (CarSignals.lit(car, left)) {
-                model.renderSignal(left, poseStack, buffers.getBuffer(RenderType.entityTranslucentEmissive(texture)), LightTexture.FULL_BRIGHT, overlay);
+                model.renderSignal(left, poseStack, bent(wrecked, buffers.getBuffer(RenderType.entityTranslucentEmissive(texture)), CarWreck.SIGNAL),
+                        LightTexture.FULL_BRIGHT, overlay);
             }
         }
         if (model.hasBeacons()) {
@@ -121,9 +141,10 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
             for (boolean first : new boolean[] {true, false}) {
                 boolean flashing = car.sirenOn() && first == firstOn;
                 if (flashing) {
-                    model.renderBeacons(first, poseStack, buffers.getBuffer(RenderType.entityTranslucentEmissive(texture)), LightTexture.FULL_BRIGHT, overlay);
+                    model.renderBeacons(first, poseStack, bent(wrecked, buffers.getBuffer(RenderType.entityTranslucentEmissive(texture)), CarWreck.PLAIN),
+                            LightTexture.FULL_BRIGHT, overlay);
                 } else {
-                    glass.draw(buffers, solid, consumer -> model.renderBeacons(first, poseStack, consumer, light, overlay));
+                    glass.draw(buffers, solid, consumer -> model.renderBeacons(first, poseStack, bent(wrecked, consumer, CarWreck.PLAIN), light, overlay));
                 }
             }
         }
@@ -155,6 +176,11 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
         super.render(car, entityYaw, partialTick, poseStack, buffers, light);
     }
 
+    /** {@code consumer}, bent by the crash damage (and whatever else {@code mode} does: see {@link CarWreck}) if the car has any. */
+    private com.mojang.blaze3d.vertex.VertexConsumer bent(boolean wrecked, com.mojang.blaze3d.vertex.VertexConsumer consumer, int mode) {
+        return wrecked ? wreck.bend(consumer, mode) : consumer;
+    }
+
     /**
      * Patchouli's entity pages (the Car Manual's 3D views) draw an entity mirrored: a screen's axes are left-handed,
      * and unlike the inventory's view of the player it doesn't flip z to make up for it, so the lettering on a
@@ -173,7 +199,7 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
      * Writes the car's plate number on its plate panels. The pose here has the model's pixels at (x, y, z) / 16, the
      * front toward -z; the back plate is read from behind (+z), the front one from in front.
      */
-    private void drawPlates(CarEntity car, PoseStack poseStack, MultiBufferSource buffers, int light) {
+    private void drawPlates(CarEntity car, PoseStack poseStack, MultiBufferSource buffers, int light, boolean wrecked) {
         String number = car.plate();
         if (plates == null || number.isEmpty()) {
             return;
@@ -186,6 +212,11 @@ public final class CarRenderer extends EntityRenderer<CarEntity> {
             boolean back = i == 1;
             poseStack.pushPose();
             poseStack.translate(0.0F, mount.y() / 16.0F, (mount.z() + (back ? 0.01F : -0.01F)) / 16.0F);
+            if (wrecked) {
+                // Moved with the bumper it's on (this pose has the model's x and y turned over).
+                org.joml.Vector3f shift = wreck.displacement(0.0F, 1.501F - mount.y() / 16.0F, mount.z() / 16.0F, new org.joml.Vector3f());
+                poseStack.translate(-shift.x, -shift.y, shift.z);
+            }
             if (!back) {
                 poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
             }

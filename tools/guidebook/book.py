@@ -295,7 +295,8 @@ entry('care', 'wear', 'Wear and Tear', 'reikocars:engine_parts', [
          'slowly, and in hard crashes$(li)$(l)Tires$(): by distance, faster off-road$(li)$(l)Brakes$(): every stop$(li)$(l)Body$(): crashes'),
     text('Worn parts make a car slower, thirstier and slower to stop. The dashboard\'s warning lights turn amber, then orange, and '
          'flash red when a part is gone: at 0% the car $(4)breaks down$() and won\'t run until it\'s repaired. Cars are never '
-         'destroyed.$(br2)Trailers wear their tires, brakes and body too. Electric cars have no oil.'),
+         'destroyed.$(br2)Trailers wear their tires, brakes and body too. Electric cars have no oil. Crashes also leave '
+         + L('care/crash_damage', 'dents, broken glass and smashed lamps') + '.'),
 ], sort=0)
 
 entry('care', 'repair_bench', 'The Repair Bench', 'reikocars:repair_bench', [
@@ -304,13 +305,30 @@ entry('care', 'repair_bench', 'The Repair Bench', 'reikocars:repair_bench', [
     craft('repair_bench'),
     text('An oil change takes a $(item)Motor Oil$(), brakes a set of $(item)Brake Pads$(). $(item)Engine Parts$() put back a quarter '
          'of the engine, $(item)Body Panel$()s a fifth of the body, and tires take a full set of $(item)Tire$()s. Diesel trucks and '
-         'trailers take two of each.'),
+         'trailers take two of each.$(br2)A $(item)Car Window$() mends a broken window, a $(item)Car Light$() a smashed lamp.'),
     craft('motor_oil', 'brake_pads'),
     craft('engine_parts', 'body_panel'),
+    craft('car_window', 'car_light'),
     text('The bench\'s owner gets '
          '$(l)Stock$() and $(l)Prices$() tabs, to run it as a mechanic\'s shop: hoppers and pipes can fill its stock. Fitting parts to '
          'someone else\'s car pays the $(thing)Mechanic$() job.'),
 ], sort=1)
+
+entry('care', 'crash_damage', 'Crash Damage', 'reikocars:car_window', [
+    text('A crash shows where it hit: the front crumples, a side caves in, the back gets dented, and the paint scrapes off '
+         'there. The harder the hit, the worse it gets: the glass nearest it $(l)cracks$(), then $(l)shatters$(), and the lamps '
+         'there get smashed.'),
+    image('crash_head_on', 'Head on: the hood crumpled, the windshield in pieces, both headlights out.'),
+    text('It\'s not only looks:$(li)Smashed headlights don\'t light the road; with one left it\'s dimmer$(li)A smashed lamp\'s '
+         'turn signal stops blinking$(li)A car bent badly on one side $(4)pulls$() toward it$(li)An engine worn below about a '
+         'third smokes from under the hood'),
+    image('crash_side', 'Hit on the left: that side caved in, its window shattered.'),
+    text('Fix it all at a ' + L('care/repair_bench', 'Repair Bench') + ':$(li)$(item)Body Panel$()s take the dents out as they '
+         'mend the body$(li)a $(item)Car Window$() mends one window, the shattered ones first$(li)a $(item)Car Light$() puts back '
+         'one smashed lamp$(br2)' + L('business/insurance', 'Insurance') + ' pays for crash damage, glass and lamps too.'),
+    craft('car_window', 'car_light'),
+    image('crash_night', 'One headlight left, and a smoking engine.'),
+], sort=2)
 
 entry('care', 'washing', 'Dirt and Car Washes', 'reikocars:car_wash', [
     text('Cars get dirty as they\'re driven, more off-road, most in mud, twice as fast in the rain. A filthy car sells for '
@@ -318,7 +336,7 @@ entry('care', 'washing', 'Dirt and Car Washes', 'reikocars:car_wash', [
     image('car_wash', 'The Car Wash: drive up, press ' + K('hitch') + ' to pay, then drive through slowly.'),
     craft('car_wash', 'wash_bay'),
     image('wash_bay', 'The Wash Bay rents you a pressure washer: hold right-click to spray a car clean.'),
-], sort=2)
+], sort=3)
 
 entry('care', 'towing', 'Tow Trucks', 'reikocars:flatbed', [
     text(f'Two diesel tow trucks fetch broken-down cars. Back up to the car and press {K("hitch")}:'
@@ -327,7 +345,7 @@ entry('care', 'towing', 'Tow Trucks', 'reikocars:flatbed', [
     text('They take any car, van or pickup up to about 4.8 blocks long (the flatbed takes motorcycles too), if it\'s yours or '
          'unlocked and nobody\'s in it. Towing someone else\'s broken-down car to a Repair Bench pays the Mechanic job. '
          'Cars at an expired parking meter can be towed to an ' + L('business/impound', 'impound lot') + ', locked or not.'),
-], sort=3)
+], sort=4)
 
 # -- Towing --
 
@@ -482,7 +500,7 @@ entry('business', 'impound', 'Impound Lots', 'reikocars:impound_office', [
 
 entry('business', 'insurance', 'Insurance', 'reikocars:insurance_office', [
     text('Park within 10 blocks of an $(item)Insurance Office$() and buy cover: a term of 7 Minecraft days. Then when crash damage '
-         'to the body is repaired at a Repair Bench, the insurer pays back what it cost over the deductible, up to the claim limit.'
+         '(the body, the glass, the lamps) is repaired at a Repair Bench, the insurer pays back what it cost over the deductible, up to the claim limit.'
          '$(br2)Wear isn\'t covered. The office\'s owner sets the prices and pays the claims.'),
     craft('insurance_office'),
 ], sort=4)

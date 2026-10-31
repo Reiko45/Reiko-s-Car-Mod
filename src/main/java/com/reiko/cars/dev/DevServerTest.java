@@ -71,6 +71,7 @@ public final class DevServerTest {
                 .then(Commands.literal("clearmanual").executes(context -> run(context, DevServerTest::clearManual)))
                 .then(Commands.literal("garage").executes(context -> run(context, DevServerTest::garage)))
                 .then(Commands.literal("parking").executes(context -> run(context, DevServerTest::parking)))
+                .then(Commands.literal("crash").executes(context -> run(context, DevServerTest::crash)))
                 .then(Commands.literal("op").executes(context -> run(context, player -> player.server.getPlayerList().op(player.getGameProfile()))))
                 .then(Commands.literal("report").then(Commands.argument("what", StringArgumentType.word())
                         .executes(context -> run(context, player -> report(player, StringArgumentType.getString(context, "what")))))));
@@ -281,6 +282,19 @@ public final class DevServerTest {
         log(player, "parking ready");
     }
 
+    /** Where the crashed sports car is. */
+    static final double WRECK_X = 64.5;
+    static final double WRECK_Z = 18.5;
+
+    /** A sports car hit head on and then on its left side: crash damage to see from the client, and to keep over a restart. */
+    private static void crash(ServerPlayer player) {
+        CarEntity car = car(player, CarType.SPORTS_CAR, WRECK_X, WRECK_Z, 0.0F);
+        car.crash(1.2, 0.0);
+        car.crash(0.9, net.minecraft.util.Mth.HALF_PI);
+        player.teleportTo(player.serverLevel(), WRECK_X + 2.5, Y, WRECK_Z + 4.5, 150.0F, 20.0F);
+        log(player, "crashed: " + car.condition().damage());
+    }
+
     private static void check(boolean ok, String what) {
         if (!ok) {
             throw new IllegalStateException("reikotest: " + what + " failed");
@@ -313,7 +327,8 @@ public final class DevServerTest {
             log(player, what + ": car " + car.carType() + " at " + String.format("%.1f,%.1f,%.1f", car.getX(), car.getY(), car.getZ())
                     + " fuel=" + String.format("%.0f/%.0f", car.fuel(), (double) car.carType().tankCapacity())
                     + " owner=" + car.ownerName() + " trailer=" + (car.trailer() == null ? "none" : car.trailer().trailerType())
-                    + " passengers=" + car.getPassengers().size());
+                    + " passengers=" + car.getPassengers().size()
+                    + (car.condition().damage().isNone() ? "" : " damage=" + car.condition().damage()));
         }
         for (TrailerEntity trailer : level.getEntitiesOfClass(TrailerEntity.class, area)) {
             List<Entity> riders = trailer.getPassengers();

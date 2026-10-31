@@ -172,19 +172,36 @@ public final class CarModel {
 
     /** Everything that isn't paint or a light. */
     public void renderTrim(PoseStack poseStack, VertexConsumer consumer, int light, int overlay) {
+        renderTrim(poseStack, consumer, consumer, light, overlay);
+    }
+
+    /** Everything that isn't paint or a light: the wheels (and a motorcycle's forks) into {@code wheelConsumer}, the rest into {@code consumer}. */
+    public void renderTrim(PoseStack poseStack, VertexConsumer consumer, VertexConsumer wheelConsumer, int light, int overlay) {
         trim.render(poseStack, consumer, light, overlay);
         renderWorkParts(poseStack, consumer, light, overlay, -1);
         if (fork != null) {
-            fork.render(poseStack, consumer, light, overlay); // the front wheel with it
+            fork.render(poseStack, wheelConsumer, light, overlay); // the front wheel with it
         }
         for (int i = fork != null ? 1 : 0; i < wheels.length; i++) {
             if (wheels[i] != null) {
-                wheels[i].render(poseStack, consumer, light, overlay);
+                wheels[i].render(poseStack, wheelConsumer, light, overlay);
             }
         }
         for (ModelPart wheel : twins) {
-            wheel.render(poseStack, consumer, light, overlay);
+            wheel.render(poseStack, wheelConsumer, light, overlay);
         }
+    }
+
+    /** Which way along z the model's front is, 1 or -1: toward its front wheels from its back ones. */
+    public float frontSign() {
+        float front = fork != null ? fork.z + wheels[0].z : wheels[0].z;
+        float rear = wheels[2].z;
+        return front == rear ? -1.0F : Math.signum(front - rear);
+    }
+
+    /** Which way along x the car's left is, 1 or -1: toward its front left wheel (+1 for a motorcycle). */
+    public float leftSign() {
+        return fork != null || wheels[0].x == 0.0F ? 1.0F : Math.signum(wheels[0].x);
     }
 
     public void renderLights(PoseStack poseStack, VertexConsumer consumer, int light, int overlay) {

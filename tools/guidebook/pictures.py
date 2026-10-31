@@ -50,6 +50,9 @@ CROPS = {
     'parking_screen': ('362_parking_screen', 204, 66, 648, 412),
     'garage_evening': ('365_garage_evening', 230, 40, 830, 440),
     'garage_shut': ('357_sectional_painted', 227, 15, 627, 415),
+    'crash_head_on': ('372_damage_head_on', 295, 165, 555, 425),
+    'crash_side': ('373_damage_side', 335, 170, 625, 460),
+    'crash_night': ('377_damage_night', 245, 95, 525, 375),
 }
 
 

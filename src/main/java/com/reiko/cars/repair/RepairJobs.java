@@ -15,7 +15,9 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Engine: Engine Parts, each putting back a quarter of the engine (an eighth of a truck's).</li>
  *   <li>Tires: a new set, one Tire per wheel.</li>
  *   <li>Brakes: a set of Brake Pads (two for a diesel truck or a trailer), as new.</li>
- *   <li>Body: Body Panels, each mending a fifth of the body (a tenth of a truck's or a trailer's).</li>
+ *   <li>Body: Body Panels, each mending a fifth of the body (a tenth of a truck's or a trailer's), and its dents with it.</li>
+ *   <li>Glass: a Car Window for each cracked or shattered window.</li>
+ *   <li>Lights: a Car Light for each smashed lamp.</li>
  * </ul>
  *
  * An oil change, tires and brakes are all-or-nothing; engine and body repairs can be done a piece at a time. A
@@ -33,6 +35,8 @@ public final class RepairJobs {
             case TIRES -> ModItems.TIRE.get();
             case BRAKES -> ModItems.BRAKE_PADS.get();
             case BODY -> ModItems.BODY_PANEL.get();
+            case GLASS -> ModItems.CAR_WINDOW.get();
+            case LIGHTS -> ModItems.CAR_LIGHT.get();
         };
     }
 
@@ -73,6 +77,8 @@ public final class RepairJobs {
             case OIL, BRAKES -> vehicle.isHeavy() ? 2 : 1;
             case TIRES -> vehicle.wheelCount();
             case ENGINE, BODY -> (int) Math.ceil((1.0F - value) / perItem(part, vehicle) - 1.0E-4);
+            case GLASS -> condition.damage().damagedWindows();
+            case LIGHTS -> condition.damage().brokenLights();
         };
     }
 
@@ -83,6 +89,12 @@ public final class RepairJobs {
         }
         if (allAtOnce(part)) {
             return count >= needed(part, vehicle, condition) ? condition.with(part, 1.0F) : condition;
+        }
+        if (part == Part.GLASS) {
+            return condition.withDamage(condition.damage().fixWindows(count));
+        }
+        if (part == Part.LIGHTS) {
+            return condition.withDamage(condition.damage().fixLights(count));
         }
         return condition.with(part, Math.min(1.0F, condition.get(part) + count * perItem(part, vehicle)));
     }

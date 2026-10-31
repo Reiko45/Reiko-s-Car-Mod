@@ -189,7 +189,7 @@ public final class CarGameTests {
     }
 
     /** An empty car parked next to the pump. */
-    private static CarEntity car(GameTestHelper helper, CarType type) {
+    static CarEntity car(GameTestHelper helper, CarType type) {
         CarEntity car = ModEntities.car(type).create(helper.getLevel());
         Vec3 at = helper.absoluteVec(new Vec3(4.5, 1.0, 1.5));
         car.moveTo(at.x, at.y, at.z, 0.0F, 0.0F);
@@ -1256,7 +1256,7 @@ public final class CarGameTests {
     private static final BlockPos BENCH = new BlockPos(1, 1, 1);
 
     /** A repair bench owned by {@code owner}, every part at {@code price} cents. */
-    private static RepairBenchBlockEntity bench(GameTestHelper helper, ServerPlayer owner, long price) {
+    static RepairBenchBlockEntity bench(GameTestHelper helper, ServerPlayer owner, long price) {
         helper.setBlock(BENCH, ModBlocks.REPAIR_BENCH.get().defaultBlockState().setValue(RepairBenchBlock.FACING, Direction.NORTH));
         RepairBenchBlockEntity bench = (RepairBenchBlockEntity) helper.getBlockEntity(BENCH);
         bench.setOwner(owner);
@@ -1266,7 +1266,7 @@ public final class CarGameTests {
         return bench;
     }
 
-    private static void close(GameTestHelper helper, double actual, double expected, String what) {
+    static void close(GameTestHelper helper, double actual, double expected, String what) {
         helper.assertTrue(Math.abs(actual - expected) < 1.0E-5, what + ": expected " + expected + " but was " + actual);
     }
 
@@ -1374,9 +1374,9 @@ public final class CarGameTests {
             car.setOwner(driver);
             driver.startRiding(car, true);
             passenger.startRiding(car, true);
-            car.applyWearReport(passenger, 0, 0, 0.9F);
+            car.applyWearReport(passenger, 0, 0, 0.9F, 0.0F);
             check(helper, car.condition().isNew(), "only the driver's reports count");
-            car.applyWearReport(driver, 0, 0, 50.0F);
+            car.applyWearReport(driver, 0, 0, 50.0F, 0.0F);
             double most = CarType.SEDAN.topSpeed * 1.6;
             close(helper, car.condition().body(), 1 - (most - 0.15) * 0.6, "a crash can't be harder than the car can go");
         } finally {
@@ -1547,7 +1547,7 @@ public final class CarGameTests {
                 check(helper, wear.oil() == 1.0F && wear.engine() == 1.0F, "a trailer has no oil or engine to wear");
                 check(helper, wear.brakes() == 1.0F && wear.body() == 1.0F, "no braking or crashes yet");
 
-                semi.applyWearReport(driver, 2.0F, 0.0F, 0.0F);
+                semi.applyWearReport(driver, 2.0F, 0.0F, 0.0F, 0.0F);
                 close(helper, trailer.condition().brakes(), 1 - 2 * 0.002, "the trailer's brakes wear when the semi brakes");
                 semi.crash(0.9);
                 close(helper, trailer.condition().body(), 1 - (0.9 * TrailerEntity.CRASH_SHARE - 0.15) * 0.6, "a crash dents the trailer too");
@@ -3220,6 +3220,19 @@ public final class CarGameTests {
                     check(helper, lit.stream().noneMatch(pos -> pos.getZ() >= 19), "no light through the wall: " + lit);
                     check(helper, lit.stream().anyMatch(pos -> pos.getZ() == 18), "the far one stops at it: " + lit);
                     check(helper, blockLight(helper, 5, 0, 21) <= 2, "dark beyond it: " + blockLight(helper, 5, 0, 21));
+                    // One headlight smashed in a crash: the road's lit dimmer.
+                    car.setCondition(car.condition().withDamage(com.reiko.cars.car.CarDamage.NONE.withLight(com.reiko.cars.car.CarDamage.FRONT_LEFT, true)));
+                }))
+                .thenIdle(6)
+                .thenExecute(step.apply(() -> {
+                    List<BlockPos> lit = glows(helper);
+                    check(helper, !lit.isEmpty() && lit.stream().allMatch(pos -> helper.getBlockState(pos)
+                            .getValue(com.reiko.cars.car.HeadlightGlowBlock.LEVEL) <= 11), "one headlight left: dimmer, " + lit);
+                    car.setCondition(car.condition().withDamage(car.condition().damage().withLight(com.reiko.cars.car.CarDamage.FRONT_RIGHT, true)));
+                }))
+                .thenIdle(6)
+                .thenExecute(step.apply(() -> {
+                    check(helper, glows(helper).isEmpty(), "both headlights smashed: no light");
                     driver.stopRiding();
                 }))
                 .thenIdle(6)
@@ -3369,7 +3382,7 @@ public final class CarGameTests {
             try {
                 check(helper, ev.isEngineRunning(), "it's on");
                 near(helper, ev.fuel(), 50_000, "no draw standing still");
-                ev.applyWearReport(driver, 0.5F, 0.0F, 0.0F);
+                ev.applyWearReport(driver, 0.5F, 0.0F, 0.0F, 0.0F);
                 near(helper, ev.fuel(), 50_000 + 0.5 * CarType.ELECTRIC_SEDAN.fuelPerBlock * 8, "braking puts some back");
                 check(helper, ev.condition().oil() >= 1.0F, "never any oil wear");
             } catch (RuntimeException e) {
@@ -3378,7 +3391,7 @@ public final class CarGameTests {
             }
             helper.runAfterDelay(8, () -> {
                 double before = ev.fuel();
-                ev.applyWearReport(driver, 0.4F, 0.4F, 0.0F);
+                ev.applyWearReport(driver, 0.4F, 0.4F, 0.0F, 0.0F);
                 near(helper, ev.fuel(), before, "not with the wheels locked");
                 leave(helper, driver);
                 helper.succeed();

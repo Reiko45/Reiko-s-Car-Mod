@@ -313,7 +313,7 @@ public final class ReikoCarsClient {
                     !typing && input.jumping);
             float[] wear = car.takeWearReport();
             if (wear != null) {
-                PacketDistributor.sendToServer(new CarWearPayload(wear[0], wear[1], wear[2]));
+                PacketDistributor.sendToServer(new CarWearPayload(wear[0], wear[1], wear[2], wear[3]));
             }
         }
         while (HORN.consumeClick()) {

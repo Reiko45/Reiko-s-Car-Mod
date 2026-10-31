@@ -14,7 +14,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "An oil change takes a $(item)Motor Oil$(), brakes a set of $(item)Brake Pads$(). $(item)Engine Parts$() put back a quarter of the engine, $(item)Body Panel$()s a fifth of the body, and tires take a full set of $(item)Tire$()s. Diesel trucks and trailers take two of each."
+      "text": "An oil change takes a $(item)Motor Oil$(), brakes a set of $(item)Brake Pads$(). $(item)Engine Parts$() put back a quarter of the engine, $(item)Body Panel$()s a fifth of the body, and tires take a full set of $(item)Tire$()s. Diesel trucks and trailers take two of each.$(br2)A $(item)Car Window$() mends a broken window, a $(item)Car Light$() a smashed lamp."
     },
     {
       "type": "patchouli:crafting",
@@ -25,6 +25,11 @@
       "type": "patchouli:crafting",
       "recipe": "reikocars:engine_parts",
       "recipe2": "reikocars:body_panel"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "reikocars:car_window",
+      "recipe2": "reikocars:car_light"
     },
     {
       "type": "patchouli:text",

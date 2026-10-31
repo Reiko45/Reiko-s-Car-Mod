@@ -84,19 +84,26 @@ public final class CarItem extends Item {
             return;
         }
         CarCondition.Level worst = CarCondition.Level.GOOD;
-        for (CarCondition.Part part : CarCondition.Part.values()) {
+        for (CarCondition.Part part : CarCondition.Part.WEAR) {
             if (has.test(part) && condition.level(part).ordinal() > worst.ordinal()) {
                 worst = condition.level(part);
             }
         }
         tooltip.add(Component.translatable("item.reikocars.car.condition", CarCondition.percent(condition.overall(has)))
                 .withStyle(worst == CarCondition.Level.GOOD ? ChatFormatting.GRAY : worst.color()));
-        for (CarCondition.Part part : CarCondition.Part.values()) {
+        for (CarCondition.Part part : CarCondition.Part.WEAR) {
             CarCondition.Level level = condition.level(part);
             if (has.test(part) && level != CarCondition.Level.GOOD) {
                 tooltip.add(Component.translatable("item.reikocars.car.worn", part.displayName(),
                         CarCondition.percent(condition.get(part))).withStyle(level.color()));
             }
+        }
+        com.reiko.cars.car.CarDamage damage = condition.damage();
+        if (damage.damagedWindows() > 0) {
+            tooltip.add(Component.translatable("item.reikocars.car.windows_damaged", damage.damagedWindows()).withStyle(ChatFormatting.GOLD));
+        }
+        if (damage.brokenLights() > 0) {
+            tooltip.add(Component.translatable("item.reikocars.car.lamps_smashed", damage.brokenLights()).withStyle(ChatFormatting.GOLD));
         }
     }
 

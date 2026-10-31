@@ -735,6 +735,19 @@ public final class DevMultiplayer {
         });
         // A hitched rig and a trailer with cows aboard, to be saved when the server is restarted and loaded again.
         at(1, 65, mc -> cmd(mc, "reikotest rig"));
+        // A crashed sports car: the client sees where it was hit, and it's still bent after the restart.
+        at(1, 90, mc -> cmd(mc, "reikotest crash"));
+        at(1, 125, mc -> {
+            CarEntity wreck = car(mc, CarType.SPORTS_CAR);
+            com.reiko.cars.car.CarDamage damage = wreck == null ? null : wreck.condition().damage();
+            check("the client sees the crashed car's front crumpled and its side caved in", damage != null && damage.front() >= 0.99F && damage.left() > 0.4F,
+                    String.valueOf(damage));
+            check("its windshield shattered, both headlights smashed", damage != null && damage.window(com.reiko.cars.car.CarDamage.WINDSHIELD)
+                    == com.reiko.cars.car.CarDamage.SHATTERED && damage.workingHeadlights() == 0, String.valueOf(damage));
+            check("and it pulls to the left", damage != null && damage.pull() > 0.0F, damage == null ? "none" : "pull " + damage.pull());
+            shot(mc, "31_crash_damage");
+        });
+        at(1, 135, mc -> cmd(mc, "tp @s 52.5 -60 -2.0"));
         at(1, 150, mc -> cmd(mc, "reikotest report before_restart"));
         at(1, 170, mc -> {
             ReikoCars.LOGGER.info("MPCHECK leaving for the server's restart");
@@ -766,6 +779,11 @@ public final class DevMultiplayer {
             com.reiko.cars.garage.GarageDoorBlockEntity shutter = garageDoor(mc, DevServerTest.SHUTTER_DOOR);
             check("the parking garage remembers the car parked", shutter != null && shutter.parked().size() == 1,
                     shutter == null ? "no shutter" : "parked=" + shutter.parked().size());
+            CarEntity wreck = car(mc, CarType.SPORTS_CAR);
+            com.reiko.cars.car.CarDamage damage = wreck == null ? null : wreck.condition().damage();
+            check("the crashed car's still bent and broken after the restart", damage != null && damage.front() >= 0.99F && damage.left() > 0.4F
+                    && damage.workingHeadlights() == 0 && damage.window(com.reiko.cars.car.CarDamage.WINDSHIELD) == com.reiko.cars.car.CarDamage.SHATTERED,
+                    String.valueOf(damage));
             shot(mc, "24_after_restart");
             if (sedan != null) {
                 cmd(mc, String.format("tp @s %.1f -60 %.1f", sedan.getX(), sedan.getZ() + 2.5));
